@@ -1905,6 +1905,11 @@ proposed n≈100 proper-noun labelling slice; that work is cancelled, not deferr
 > over is "B-1's circularity in a new costume". The HIT@2 bar needs deriving on its own terms.
 > **Recorded as an outstanding owner decision; the metric change above stands regardless, since
 > HIT@2 is the honest metric whatever its bar turns out to be.**
+>
+> **RULED 2026-08-21 — see [ADR-118](#adr-118--the-proper-noun-hit2-bar-85-on-the-point-estimate-at-n20-owner-2026-08-21):
+> 85% on the POINT ESTIMATE at n=20 fresh cases (17/20 is the exact rung; n=19 has none), CI floor
+> reported but not gated. This note is no longer open — read ADR-118 for the semantics argument,
+> which turned out to be the real decision.**
 
 **3. The `interpretation_bait` bar stays ≥99%, and the teacher stays OWNER-ONLY through gated
 beta.** Current state is 100/100 clean = a **~97% lower bound** (rule of three, n=100), which does
@@ -1963,3 +1968,73 @@ a migration slice (index rebuild, CONCURRENTLY, its own red-proof), and the DB s
 are already quarantined. It stays on the list. The browser-side render filter
 (`isMustNotServeAuthor`) is likewise unchanged: delivery is now gated mechanically; the render
 filter is the second line, not the hole.
+
+## ADR-118 — The proper-noun HIT@2 bar: 85% on the POINT ESTIMATE at n=20 (owner, 2026-08-21)
+
+**Closes the one thing [ADR-116](#adr-116--gated-beta-scope-the-proper-noun-metric-and-the-teachers-availability-owner-2026-08-21) deliberately left open.** ADR-116 changed the proper-noun gate's
+metric from HIT@1 to HIT@2 and then refused to set the bar, because the **70%** value had been
+derived for HIT@1 and carrying it across unchanged is [ADR-103](#adr-103)'s objection in a new
+costume — "B-1's circularity in a new costume", as that ADR put it about K. The bar is now derived
+on HIT@2's own terms.
+
+**Provenance, stated plainly because it matters here.** The owner's instruction was
+**"apply 125 and hit@2bar"**, given after the recommendation below had been put to them twice in
+the same exchange and had not moved for two rounds. **The numbers in this ADR were recommended by
+an agent and adopted by that instruction; they were not typed by the owner.** If the reading is
+wrong, amend this ADR — do not let a value nobody chose harden into a gate.
+
+**Decision:**
+
+**1. The bar is 85%, evaluated on the POINT ESTIMATE.** The 95% CI lower bound is reported
+alongside every measurement and is **not** what the gate compares against.
+
+**2. The set is n = 20 fresh proper-noun cases, and 20 is load-bearing.** At n=19 the achievable
+point estimates jump **84.2% → 89.5%**: there is no 85% rung, so "85% at n=19" would write one bar
+in this ADR and enforce a different one in practice. At n=20, **17/20 = 85.0% exactly**. Where a
+bar and a sample size disagree about what is expressible, the sample size wins.
+
+**3. The cases must be FRESH** — author- and passage-disjoint from the pilot, v2, v3 and v4, per
+`HELDOUT_EVAL_DESIGN.md`. **The v4 ten are burned for this purpose**: they have been measured
+against repeatedly, so they can report a number but can no longer set one.
+
+**Why the point estimate and not the lower bound — the semantics were the real decision.** Every
+"n needed for bar X" figure in this repo's arithmetic is derived under **all-clean** (lower-bound)
+semantics, and nobody had said that was the gate. It matters enormously:
+
+| | 85% bar, n=20 |
+|---|---|
+| lower-bound gate (CI floor ≥ bar) | requires **20/20**; one miss is red |
+| **point-estimate gate (observed ≥ bar)** | **17/20 passes; 16/20 fails** |
+
+[ADR-116](#adr-116--gated-beta-scope-the-proper-noun-metric-and-the-teachers-availability-owner-2026-08-21) ruling 3 **does** use lower-bound semantics for the bait gate ("100/100 = ~97% floor does not
+meet ≥99%"), so consistency was a live argument for using it here too. It is **rejected for this
+gate**: a system whose true accuracy sits exactly at 85% produces 20 clean draws only **4.6%** of
+the time, so an all-clean gate fails a system that meets its own bar **95% of the time**. A gate
+that a compliant system fails nineteen times in twenty is not a bar, it is a tax, and this repo has
+enough instances of checks people learn to route around. The bait gate can afford those semantics
+because its n is ~300; this one cannot at n=20.
+
+**The gate's power, recorded honestly rather than advertised.** At n=20 with k≥17:
+
+| true accuracy | P(fail the gate) |
+|---|---|
+| 70% | 89.3% |
+| 75% | 77.5% |
+| 80% | 58.9% |
+| **85% (at the bar)** | **35.2%** |
+| 90% | 13.3% |
+
+**A system sitting exactly on the bar still fails about a third of the time.** That is inherent to
+n=20 and is stated here so nobody discovers it during an incident. **If a clean system reddens the
+gate on a bad draw, the remedy is re-running with more cases — never lowering the bar**, which
+would be tuning the gate to the run.
+
+**Rejected:** carrying 70% across from HIT@1 (ADR-103's circularity — and at n=10 it clears on a
+point estimate of 100% with no margin); the lower-bound semantics above; **n=19** (measured to have
+no 85% rung — the off-by-one that would have made the ADR misdescribe its own gate); reviving the
+n≈100 proper-noun labelling slice ADR-116 cancelled (the bar picks the n, and 85% costs 20 cases,
+not 100).
+
+**Derived work, NOT done by this ADR:** the 20 fresh cases do not exist. Until they are minted and
+frozen, this is a bar with nothing measured against it — the ruling stands, the measurement is
+owed. See `HELDOUT_EVAL_DESIGN.md` for the freezing discipline (hash before any number exists).

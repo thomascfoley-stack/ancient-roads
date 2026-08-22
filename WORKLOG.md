@@ -1,5 +1,51 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 (late) — 125 applied to dev; the HIT@2 bar ruled (ADR-118)
+
+**Owner: "apply 125 and hit@2bar."**
+
+**125 applied to DEV only** (`ep-tiny-hat-atdgpisx`), ledger `sha256 0587718f2728…`. Verified as
+four separate reads rather than trusting the runner's own receipt: column `ask_outcome_id uuid
+nullable=YES`; partial index `idx_study_blocks_ask_outcome … WHERE (ask_outcome_id IS NOT NULL)`;
+**zero foreign keys on the column** (the design, not an omission — 116 fails open, so the referent
+may legitimately not exist); ledger row present. **PRODUCTION IS UNTOUCHED** — bylaw 7 wants an
+explicit go naming `ep-odd-fog` per occasion, and the instruction did not name it. It is only
+needed at deploy time, and it is needed BEFORE the deploy: the clipping INSERT names the column
+unconditionally, so shipping this code to a prod without 125 500s every ask-surface clipping.
+
+**The live assertion I owed is now written and red-proofed.** `clipping-tombstone.test.ts` gains a
+125 leg that runs against the real dev DB through `app_runtime` under RLS: a clipping WITH an
+`askOutcomeId` stores it, one WITHOUT stores NULL, and a clipping naming a **non-existent** ask row
+still saves (the no-FK property, asserted rather than assumed). It reads the column back with the
+OWNER client, not through the function's return value — `insertClippingFromEmbedding`'s RETURNING
+list omits the column, so asserting through it would be asking the code whether it did what it
+says. **Red-proof:** replacing the bound value with `null::uuid` — the realistic regression, the
+link silently stops being stored — fails it with `expected null to be '3f2504e0…'`. 7/7 green after
+revert. Scoped to its OWN study: the shared fixture is asserted elsewhere to hold exactly two
+blocks, and a test that quietly changes another test's precondition is worse than no test.
+
+**ADR-118 — the bar.** 85% on the **point estimate** at **n=20** fresh proper-noun cases, CI floor
+reported but not gated. Two things worth carrying out of it:
+- **The semantics were the real decision, not the number.** Every "n needed for bar X" figure in
+  this repo's arithmetic assumed all-clean (lower-bound) semantics and nobody had said so. Under
+  those semantics a system sitting exactly at 85% passes only **4.6%** of the time — a gate a
+  compliant system fails 19 times in 20. Rejected for this gate; the bait gate can afford it at
+  n≈300, this one cannot at n=20.
+- **n=20, not 19.** At n=19 the achievable point estimates jump 84.2% → 89.5% — there is no 85%
+  rung, so the ADR would have written one bar and enforced another. 17/20 = 85.0% exactly.
+
+### NOT DONE / UNVERIFIED
+
+- **The 20 fresh proper-noun cases DO NOT EXIST.** ADR-118 is a bar with nothing measured against
+  it yet. Minting them is a held-out authoring slice (author- and passage-disjoint from pilot/v2/
+  v3/v4, frozen and hashed BEFORE any number exists). The v4 ten are burned for this purpose.
+- **ADR-118's values were recommended by an agent and adopted by a terse instruction**, not typed
+  by the owner. Stated in the ADR itself so it can be amended rather than hardening silently.
+- **125 is NOT on production.** Needs a per-occasion go naming `ep-odd-fog`, and must precede any
+  deploy of this code.
+- The doc-restatement guard is still unbuilt (design settled two entries down).
+
+
 ## 2026-08-21 (late) — Item 3: the clipping → ask link, built (NOT applied)
 
 **Why this one and not the bar ruling:** the bar governs nothing until there is traffic and a

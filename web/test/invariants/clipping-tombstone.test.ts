@@ -119,6 +119,48 @@ describe.skipIf(SKIP)('S-2/S-3/S-10 — the servability re-check and the tombsto
     expect(fromEmbedding.ok, 'fixture: the ask clipping must save while the row is served').toBe(true);
   }, 60_000);
 
+  // ── migration 125: the clipping → ask link ───────────────────────────────────────────────────
+  // The ONLY behavioural relevance signal this product records is "a reader kept this voice", and
+  // it is un-backfillable — nothing reconstructs which ask a past clipping came from. So the
+  // column landing is worth a live assertion, not just a mocked bind-parameter check: the write
+  // goes through app_runtime under RLS, and a lost GRANT or a dropped column would surface here.
+  //
+  // Read back with the OWNER client on purpose: `insertClippingFromEmbedding`'s RETURNING list
+  // does not include the column, so asserting through the function's own return value would be
+  // asking the code whether it did what it says it did.
+  it('125: an ask-surface clipping stores the ask it was kept from — and NULL when there is none', async () => {
+    // Its OWN study: the shared `studyId` fixture is asserted to hold exactly two blocks by the
+    // baseline test, and three extra clippings there would break it — a test that quietly changes
+    // another test's precondition is worse than no test.
+    const linkStudy = await createStudy(USER, 'Ask-link QA');
+    const askId = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+    const withAsk = await insertClippingFromEmbedding(USER, linkStudy.id, { sourceId: EMBED_SOURCE_ID, askOutcomeId: askId });
+    expect(withAsk.ok, 'the linked clipping must save').toBe(true);
+    const withoutAsk = await insertClippingFromEmbedding(USER, linkStudy.id, { sourceId: EMBED_SOURCE_ID });
+    expect(withoutAsk.ok, 'an unlinked clipping must still save — the link is optional by design').toBe(true);
+
+    const linked = await owner!.query<{ ask_outcome_id: string | null }>(
+      'SELECT ask_outcome_id FROM study_blocks WHERE id = $1',
+      [withAsk.ok ? withAsk.block.id : ''],
+    );
+    expect(linked.rows[0]?.ask_outcome_id).toBe(askId);
+
+    // NULL means "not from an ask, or from one we cannot name" — never an accidental default.
+    const unlinked = await owner!.query<{ ask_outcome_id: string | null }>(
+      'SELECT ask_outcome_id FROM study_blocks WHERE id = $1',
+      [withoutAsk.ok ? withoutAsk.block.id : ''],
+    );
+    expect(unlinked.rows[0]?.ask_outcome_id).toBeNull();
+
+    // No FK, deliberately (116 fails open — the referent may legitimately not exist). If someone
+    // adds one, THIS is what tells them why it is wrong, rather than a user's save 500ing.
+    const dangling = await insertClippingFromEmbedding(USER, linkStudy.id, {
+      sourceId: EMBED_SOURCE_ID,
+      askOutcomeId: '00000000-0000-4000-8000-000000000000', // no such ask_outcomes row
+    });
+    expect(dangling.ok, 'a clipping naming a lost ask row must still save — no foreign key').toBe(true);
+  }, 60_000);
+
   afterAll(async () => {
     if (!owner) return;
     const attempt = async (label: string, fn: () => Promise<unknown>) => {
