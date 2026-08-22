@@ -1,0 +1,35 @@
+
+ RUN  v2.1.9 /private/tmp/swarm-basefix
+
+ ❯ test/publish-flip-toolchain.test.ts (39 tests | 1 failed) 3889ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > adjudicates the REAL production census — the positive control 597ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 965ms
+   × thayers evidence gate > the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file) 3ms
+     → expected true to be false // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/publish-flip-toolchain.test.ts > thayers evidence gate > the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/publish-flip-toolchain.test.ts:473:67
+    471|   });
+    472|   it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no …
+    473|     expect(fs.existsSync(path.join(ROOT, THAYERS_EVIDENCE_PATH))).toBe…
+       |                                                                   ^
+    474|     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thayers-gate-')…
+    475|     const manifest = path.join(tmp, 'slugs.json');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 38 passed (39)
+   Start at  10:14:31
+   Duration  4.12s (transform 26ms, setup 0ms, collect 26ms, tests 3.89s, environment 0ms, prepare 33ms)
+

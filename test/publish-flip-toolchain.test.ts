@@ -469,24 +469,54 @@ describe('thayers evidence gate', () => {
     expect(thayersEvidenceError(['thayers-lexicon'], { reverse: true, evidenceText: null })).toBeNull();
     expect(thayersEvidenceError(['bdb-lexicon'], { reverse: false, evidenceText: null })).toBeNull();
   });
-  it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)', () => {
-    expect(fs.existsSync(path.join(ROOT, THAYERS_EVIDENCE_PATH))).toBe(false);
+  it('the SHIPPED CLI obeys the same gate in both directions (subprocess, no DB)', () => {
+    // 2026-08-22 (W-BASEFIX): this leg used to assert the repo LACKED the evidence file and
+    // then watch the refusal. That precondition went stale when the 2026-08-22 verification
+    // session committed the real evidence (abe5252: prod/dev thayers byte-identical, sha256
+    // e10b468b…, WORKLOG 2026-08-22 entry 1). The gate's property is unchanged — refuse
+    // unverified thayers, accept verified — so the leg now CREATES each condition instead of
+    // assuming repo state, and asserts both directions through the shipped CLI:
+    //   1. evidence present (the committed truth): the CLI passes the gate and dies LATER,
+    //      on the missing connection string — never on the verification refusal;
+    //   2. evidence moved aside (atomic rename, restored in finally): the SAME CLI refuses
+    //      at the gate, exit 2, before any connection. If this test is ever hard-killed
+    //      mid-run the file sits at the `.gate-test-aside` path — rename it back.
+    const evidence = path.join(ROOT, THAYERS_EVIDENCE_PATH);
+    const aside = `${evidence}.gate-test-aside`;
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thayers-gate-'));
     const manifest = path.join(tmp, 'slugs.json');
     fs.writeFileSync(manifest, JSON.stringify({ slugs: ['thayers-lexicon'] }));
-    let out = '';
+    const runCli = () => {
+      try {
+        execFileSync('node', ['scripts/publish-flip.mjs', `--slugs=${manifest}`], {
+          cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+          // No connection string on purpose: a run that passes the gate must die there,
+          // which is what leg 1 asserts. Delete, don't blank — the value is never printed.
+          env: (() => { const e = { ...process.env }; delete e.CUTOVER_DATABASE_URL; return e; })(),
+        });
+        return { status: 0, out: '' };
+      } catch (e: unknown) {
+        const err = e as { status?: number; stdout?: string; stderr?: string };
+        return { status: err.status ?? -1, out: `${err.stdout ?? ''}${err.stderr ?? ''}` };
+      }
+    };
     try {
-      execFileSync('node', ['scripts/publish-flip.mjs', `--slugs=${manifest}`], {
-        cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      throw new Error('the CLI did not refuse');
-    } catch (e: unknown) {
-      const err = e as { status?: number; stdout?: string; stderr?: string };
-      out = `${err.stdout ?? ''}${err.stderr ?? ''}`;
-      expect(err.status).toBe(2);
+      // 1. Verified thayers passes the gate.
+      const verified = runCli();
+      expect(verified.status).toBe(2);
+      expect(verified.out).not.toMatch(/may not be published without source verification/);
+      expect(verified.out).toMatch(/no connection string/);
+      // 2. Unverified thayers is refused at the gate.
+      fs.renameSync(evidence, aside);
+      try {
+        const refused = runCli();
+        expect(refused.status).toBe(2);
+        expect(refused.out).toMatch(/thayers-lexicon may not be published without source verification/);
+      } finally {
+        fs.renameSync(aside, evidence);
+      }
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
     }
-    expect(out).toMatch(/thayers-lexicon may not be published without source verification/);
   });
 });

@@ -1,0 +1,48 @@
+=== PART 1: shipped CLI with evidence seeded absent ===
+serve:false  1 standing ruling(s) (HEAD 1, tree 1)
+STOP: thayers-lexicon may not be published without source verification.
+  Required: docs/evidence/thayers-source-verification.md — the record of a checksum/shingle-diff of the TARGET
+  database's copy against the CC0 source edition, containing the sha256 value(s) compared.
+  The file does not exist.
+cli-exit=2
+=== PART 2: repaired test under the same seed ===
+
+ RUN  v2.1.9 /private/tmp/swarm-basefix
+
+ ❯ test/publish-flip-toolchain.test.ts (39 tests | 1 failed) 3624ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 991ms
+   × thayers evidence gate > the SHIPPED CLI obeys the same gate in both directions (subprocess, no DB) 51ms
+     → expected 'serve:false  1 standing ruling(s) (HE…' not to match /may not be published without source v…/
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/publish-flip-toolchain.test.ts > thayers evidence gate > the SHIPPED CLI obeys the same gate in both directions (subprocess, no DB)
+AssertionError: expected 'serve:false  1 standing ruling(s) (HE…' not to match /may not be published without source v…/
+
+- Expected: 
+/may not be published without source verification/
+
++ Received: 
+"serve:false  1 standing ruling(s) (HEAD 1, tree 1)
+STOP: thayers-lexicon may not be published without source verification.
+  Required: docs/evidence/thayers-source-verification.md — the record of a checksum/shingle-diff of the TARGET
+  database's copy against the CC0 source edition, containing the sha256 value(s) compared.
+  The file does not exist.
+"
+
+ ❯ test/publish-flip-toolchain.test.ts:507:32
+    505|       const verified = runCli();
+    506|       expect(verified.status).toBe(2);
+    507|       expect(verified.out).not.toMatch(/may not be published without s…
+       |                                ^
+    508|       expect(verified.out).toMatch(/no connection string/);
+    509|       // 2. Unverified thayers is refused at the gate.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 38 passed (39)
+   Start at  10:17:22
+   Duration  3.85s (transform 32ms, setup 0ms, collect 30ms, tests 3.62s, environment 0ms, prepare 37ms)
+
+vitest-exit=1

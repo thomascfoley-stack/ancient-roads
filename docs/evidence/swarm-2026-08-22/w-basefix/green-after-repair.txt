@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /private/tmp/swarm-basefix
+
+ ✓ test/publish-flip-toolchain.test.ts (39 tests) 3911ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 981ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > a published work in NO served list still STOPS — the fix did not just admit everything 312ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a DUPLICATE slug, which would inflate the flip list 330ms
+
+ Test Files  1 passed (1)
+      Tests  39 passed (39)
+   Start at  10:16:59
+   Duration  4.12s (transform 34ms, setup 0ms, collect 28ms, tests 3.91s, environment 0ms, prepare 39ms)
+
