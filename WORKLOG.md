@@ -1,5 +1,45 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — The CI corpus-assets slice, built: bible/kjv fetched-and-verified in CI (the ENOENT was the real blocker)
+
+**Run `32559250346`'s self-reporting red finally named CI's true cause** (my key-conflation is
+corrected one entry down; the key was present all along):
+
+```
+parseError=ENOENT: no such file or directory, scandir '.../web/public/bible'
+```
+
+The drain's ADR-100 translation detection scans `web/public/bible` — gitignored, absent from
+every CI checkout: ADR-119 family 3's exact artifact, whose fetch slice was filed as
+[2026-08-22-ci-corpus-assets.md](docs/pm/orders/2026-08-22-ci-corpus-assets.md). That order is
+now BUILT, per its own constraints:
+
+- `scripts/ci-fetch-bible-kjv.mjs` — manifest-driven (the committed CDN sync-manifest; never a
+  hand list), **content-addressed cache key over the kjv entries' per-file sha256 set**, every
+  download **verified against its manifest sha256**, installed atomically (temp-then-rename — a
+  partial tree can never land), and **fail-open to the honest skip**: any failure warns, exits 0,
+  installs nothing, and the suites announceSkip kind `artifact` exactly as before.
+- Wired into `db-invariants` after the describe step: cache-key → actions/cache → fetch-on-miss.
+- kjv alone suffices by construction: `availableTranslations()` derives from disk
+  (bible-index.ts:117), so detection runs against whatever is present.
+
+**Measured, verbatim (order constraint: state cold and warm before adopting):**
+
+```
+$ node scripts/ci-fetch-bible-kjv.mjs               # operator tree (fast path)
+bible/kjv already complete: 1255 files (cache hit or operator tree)
+$ time node .../ci-fetch-bible-kjv.mjs              # COLD, scratch tree
+bible/kjv installed: 1255 files in 8.9s from https://mbp8qokd9o4o9qnz.public.blob.vercel-storage.com
+cold files: 1255 vs manifest 1255
+jhn.json IDENTICAL to operator tree
+$ node .../ci-fetch-bible-kjv.mjs                   # RED LEG: unreachable base
+::warning title=bible/kjv fetch FAILED (suites will skip honestly)::... — 0/1255 fetched, nothing installed
+exit=0
+```
+
+Warm cost is an actions/cache restore of ~12MB. The order's definition of done ("the four suites
+EXECUTE... measured on a real run") is judged by the NEXT CI run, not by this entry.
+
 ## 2026-08-22 — CORRECTION to my own entry below; both rulings sourced; the Thayer's gate fired live
 
 **Correction (mine, of mine):** my blob-round-trip entry below says CI's env lacked

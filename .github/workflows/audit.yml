@@ -295,6 +295,24 @@ jobs:
       - name: describe the test branch (read-only)
         run: node db/describe-target.mjs
 
+      # CI corpus assets (docs/pm/orders/2026-08-22-ci-corpus-assets.md, ADR-119 family 3):
+      # web/public/bible/kjv is gitignored, and four DB-backed suites plus the drain's ADR-100
+      # translation detection need it (run 32559250346's blob-round-trip red named the ENOENT).
+      # Content-addressed cache keyed on the committed CDN manifest's per-file sha256 set; on a
+      # miss the fetch script downloads and VERIFIES every file, installs atomically, and on any
+      # failure warns + exits 0 so the suites announceSkip kind `artifact` instead of a
+      # meaningless red. Measured 2026-08-22: cold 8.9s (1,255 files, 12MB), fast-path instant.
+      - name: bible/kjv assets — cache key from the manifest
+        id: kjvkey
+        run: echo "key=$(node scripts/ci-fetch-bible-kjv.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+      - name: bible/kjv assets — restore cache
+        uses: actions/cache@v4
+        with:
+          path: web/public/bible/kjv
+          key: ${{ steps.kjvkey.outputs.key }}
+      - name: bible/kjv assets — fetch on miss (verified, atomic, fail-open to the honest skip)
+        run: node scripts/ci-fetch-bible-kjv.mjs
+
       # timeout-minutes, because this step wedged CI for 35 minutes on 2026-08-08 (CONCURRENTLY in
       # an implicit transaction) with no output and no failure. An unbounded migration step is a way
       # for one bad file to block every future run.
