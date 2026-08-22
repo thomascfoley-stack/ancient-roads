@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 (evening) — The owner's list, knocked out
+
+**Owner: "do them, knock all of these out." All seven, executed, each verified:**
+
+1. **CI ledger fixed on dev** — 13 wrongly-named backfill rows (032's error, kimi's diagnosis;
+   the count was 13, not 6) each EFFECT-VERIFIED on dev before its corrected row was inserted
+   (the bar kimi set: don't repeat 032's assert-without-checking); 119 genuinely un-applied,
+   applied for real (concurrent runner, index VALID). **Phantom-pending now computes EMPTY** —
+   the next db-invariants run applies nothing and goes straight to the tests.
+2. **The prod ledger's first committed record** — `docs/evidence/prod-schema-migrations-2026-08-21.md`.
+   SECURITY.md:194 TRUE, :266 FALSE, settled by measurement; prod carries the same 13 phantom
+   rows (inert there), noted.
+3. **Migrations 122 + 124 applied to PROD and verified live** — FORCE RLS true on all five user
+   tables, grants narrowed to the measured verbs, both suggestion columns present.
+4. **H9's owed EXPLAIN discharged** — unfiltered sweep HEALTHY under ef_search 400 (300/300);
+   register sweeps SEQ SCAN 1.1M rows, 28.5s cold vs the 30s route ceiling — follow-up filed
+   into the halfvec design. `docs/evidence/uploader-deep-dive-2026-08-20/H9-explain-prod-2026-08-21.md`.
+5. **fix/chesterton-surname-gate merged** (16/16 gate tests) — the prevention rule now rides main.
+6. **The history similarity floor** — calibrated (real 0.71-0.75 vs nonsense 0.44-0.54),
+   pre-registered at 0.6, 8/8 nonsense suppressed, entity heroes kept; shipped WITH the lane's
+   ef_search fix and a cosine backfill so the floor judges semantics. Prod recall projected from
+   calibration; post-deploy walk owed. `docs/evidence/history-similarity-floor-2026-08-21.md`.
+7. **main fast-forwarded to the tip** — main IS the product for the first time since 2026-08-01.
+
+Remaining for the owner alone: the signed-in product walk (upload a sermon — closes B019/B022's
+live legs), and /word/H430 behind the gate (the word-lookup session verifies).
+
 ## 2026-08-21 — GATED-BETA DEPLOY: teacher owner-gate live on production (0c47219)
 
 **`npm run audit`: AUDIT PASSED — all gates green** (re-run after a real failure it caught: adding
