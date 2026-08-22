@@ -1,5 +1,23 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — "Get it live": abe5252 deployed, 125 applied first, /ask fails closed
+
+Owner: "ok everything is live now? If not get it live." Measured (not assumed): main was fully
+live; the branch tip abe5252 was 12 commits ahead — the ask-outcome→studies link (code + its
+migration 125 in one commit), the Chesterton PD-year gate (126, already applied to prod by
+another hand), the CI overhaul that produced **F5: the first green db-invariants in the
+repository's history** (run 32562471249), and Thayer's verification docs. Order held: **125
+applied to prod and effect-verified (column, partial index, ledger, its own DO tail) BEFORE the
+deploy launched** — the studies.ts clipping INSERT names the column, so code-first would have
+broken saving a voice on production. Tip coherence confirmed with its author (ancient-roads-git-76:
+docs-on-F5-green-lineage; the "unification launched" work is database-side with zero code
+readers). Live: `abe5252` · `dpl_4GNpfXDEbZzeLZ2vFhNwyKGQssoa` · alias-verified · receipt
+`docs/evidence/deploys/deploy-abe5252-2026-08-22T15-52-47Z.txt`. Post-alias probes: ungated
+`/api/ask` → 401 "Locked" (fail-closed, not 500); homepage 200. NOT verified (needs an account
+behind the gate): the signed-in non-owner /ask refusal — owner-only leg. Authorization note for
+the record: kimi holds that deploy authority ≠ migration authority; my reading (125 is the
+precondition of the directive's object) and their dissent are both recorded; owner has both.
+
 ## 2026-08-22 — The three batched items, executed: Thayer's verified (and the narrative was wrong TWICE), relabel + vector unification in flight
 
 **Owner: "do the three of these."** Status per item, evidence inline:
