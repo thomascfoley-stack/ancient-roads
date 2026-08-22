@@ -160,3 +160,25 @@ export function assertPublishTarget(url, { allow, declared, localOk = false } = 
   }
   return host;
 }
+
+// ── THAYER'S SOURCE-VERIFICATION GATE (owner ruling 2026-08-21) ───────────────────────────
+// Publishing thayers-lexicon requires committed evidence that the TARGET database's copy was
+// verified against the CC0 source (checksum/shingle-diff) — prod may hold the dead OCR copy,
+// and a citation pointing at corrupted data is worse than no citation. Pure: the caller reads
+// the evidence file and passes its text (or null when absent), so every refusal is unit-testable.
+// Returns an error string to die with, or null when the flip may proceed.
+export const THAYERS_EVIDENCE_PATH = 'docs/evidence/thayers-source-verification.md';
+export function thayersEvidenceError(slugs, { reverse, evidenceText }) {
+  if (reverse) return null; // un-publishing carries no fidelity risk
+  if (!slugs.includes('thayers-lexicon')) return null;
+  const hasSha = typeof evidenceText === 'string' && /\b[0-9a-f]{64}\b/i.test(evidenceText);
+  if (hasSha) return null;
+  return (
+    'STOP: thayers-lexicon may not be published without source verification.\n' +
+    `  Required: ${THAYERS_EVIDENCE_PATH} — the record of a checksum/shingle-diff of the TARGET\n` +
+    "  database's copy against the CC0 source edition, containing the sha256 value(s) compared.\n" +
+    (evidenceText != null
+      ? '  The file exists but carries no sha256 — a placeholder does not satisfy the gate.'
+      : '  The file does not exist.')
+  );
+}

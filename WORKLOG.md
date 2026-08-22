@@ -1,5 +1,79 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — Two licensing controls made mechanical: the Chesterton PD-year gate (migration 126, LIVE on prod) and the Thayer's evidence gate
+
+**Owner directives, both executed as CONTROLS rather than filed notes. Evidence inline per the
+owner's new standing rule: a claim of "verified" carries the actual output, not a link.**
+
+### 1. Migration 126 — Chesterton years backfilled + a CHECK that fails closed (dev AND prod)
+
+The 21 staged Chesterton works had `year_written NULL`, so the pre-1931 rule was mechanically
+uncheckable. 126 backfills first-publication years (source: the G. K. Chesterton bibliography,
+en.wikipedia.org, fetched 2026-08-21 — it independently corroborates the one year already in the
+DB, historyengland=1917) and adds `sources_chesterton_pd_gate`: no author matching Chesterton may
+hold `status='published'` without `year_written < 1931`. Postgres re-checks on UPDATE, so a flip
+of a year-less or post-1930 Chesterton dies at the database, on every write path.
+
+Red-proof on a throwaway PG 14 (both refusals WATCHED, verbatim):
+
+```
+--- RED 1: publish the year-less quarantined row (must refuse) ---
+ERROR:  new row for relation "sources" violates check constraint "sources_chesterton_pd_gate"
+DETAIL:  Failing row contains (3, chesterton-preexistence, Chesterton, Gilbert Keith, published, null).
+--- RED 2: publish a 1933 Chesterton (must refuse) ---
+ERROR:  new row for relation "sources" violates check constraint "sources_chesterton_pd_gate"
+DETAIL:  Failing row contains (5, chesterton-aquinas, Chesterton, Gilbert Keith, published, 1933).
+--- GREEN: publish backfilled orthodoxy (1908, must pass) ---
+UPDATE 1
+```
+
+Applied dev + prod, same ledger hash (`✓ ledger: 126_chesterton_pd_year_gate.sql (neondb_owner,
+sha256 5b4c69fe760a…)` on both). Prod verification INCLUDING a live refusal probe inside a
+rolled-back transaction — the gate fired against production itself:
+
+```
+{
+ "years": { "with_year": 22, "null_year": 1, "min_y": 1901, "max_y": 1925 },
+ "constraintValidated": true,
+ "liveRefusalProbe": "new row for relation \"sources\" violates check constraint \"sources_chesterton_pd_gate\"",
+ "preexistenceAfterRollback": { "status": "quarantined" }
+}
+```
+
+The one NULL is `chesterton-preexistence` (quarantined, likely misattributed — the title is not
+a Chesterton work): deliberately NOT backfilled, therefore publishable-never until identified.
+
+### 2. The Thayer's gate — a WORKLOG line became a refusal in the flip tool
+
+`thayers-lexicon` is `serve: true` in `ingest/sources.config.json`, so the serve:false gate does
+NOT stand between a lifted DB quarantine and a publish — this gate is now the only mechanical
+barrier. `publish-flip.mjs` refuses to publish thayers unless
+`docs/evidence/thayers-source-verification.md` exists and carries a real sha256 (64-hex; a
+placeholder file does not satisfy it). Decision logic is pure in
+`scripts/lib/publish-flip-guard.mjs` (`thayersEvidenceError`), five test legs in
+`test/publish-flip-toolchain.test.ts` including a SUBPROCESS leg driving the shipped CLI:
+
+```
+ Test Files  1 passed (1)
+      Tests  39 passed (39)
+```
+
+(The subprocess leg asserts exit 2 AND the message
+`thayers-lexicon may not be published without source verification` from the real
+`scripts/publish-flip.mjs` — not a reimplementation.)
+
+### 3. Skip-ceiling tradeoff write-up — MOOT, deliberately not written
+
+The owner's directive to present the tradeoff arrived while the ruling it would inform was being
+executed in the parallel lane: ADR-119 (entry below) rules all four families with red-proofs.
+Writing the tradeoff now would re-litigate a recorded ADR; not done, and said so.
+
+### NOT DONE / UNVERIFIED
+- `register='prose'` relabel + search-vector unification — owner ruled batch-whenever; still filed.
+- The Thayer's verification evidence file itself does not exist yet (BY DESIGN — the gate proves
+  its absence blocks; whoever does the Thayer's slice produces it).
+- CI run 32555836983 (the 020 fix's verifier) — still not read by anyone at write time.
+
 ## 2026-08-22 — The skip-ceiling ruling, executed (ADR-119)
 
 **Owner ruled all four families; all four implemented.**

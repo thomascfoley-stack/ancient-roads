@@ -441,3 +441,52 @@ describe('the pre-connect serve gates refuse without touching any database', () 
     expect(r.err).not.toMatch(/serve:false in the manifest/);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE THAYER'S SOURCE-VERIFICATION GATE (owner ruling 2026-08-21). thayers-lexicon is
+// serve:true in the manifest, so this gate is the ONLY mechanical barrier between a lifted DB
+// quarantine and a publish of an unverified copy. Every leg below is the pure function; the
+// last leg drives the real CLI as a subprocess and watches the same refusal at the exit.
+import { thayersEvidenceError, THAYERS_EVIDENCE_PATH } from '../scripts/lib/publish-flip-guard.mjs';
+
+describe('thayers evidence gate', () => {
+  const SHA = 'a'.repeat(64);
+  it('refuses thayers with NO evidence file', () => {
+    expect(thayersEvidenceError(['thayers-lexicon'], { reverse: false, evidenceText: null }))
+      .toMatch(/may not be published without source verification/);
+  });
+  it('refuses a PLACEHOLDER file carrying no sha256', () => {
+    expect(thayersEvidenceError(['thayers-lexicon'], { reverse: false, evidenceText: 'verified, trust me' }))
+      .toMatch(/carries no sha256/);
+  });
+  it('refuses a 63-hex near-miss, accepts a real sha256', () => {
+    expect(thayersEvidenceError(['thayers-lexicon'], { reverse: false, evidenceText: `sha256 ${SHA.slice(1)}` }))
+      .toMatch(/STOP/);
+    expect(thayersEvidenceError(['thayers-lexicon'], { reverse: false, evidenceText: `compared sha256 ${SHA} equal` }))
+      .toBeNull();
+  });
+  it('does not bind reverses or thayers-free lists', () => {
+    expect(thayersEvidenceError(['thayers-lexicon'], { reverse: true, evidenceText: null })).toBeNull();
+    expect(thayersEvidenceError(['bdb-lexicon'], { reverse: false, evidenceText: null })).toBeNull();
+  });
+  it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)', () => {
+    expect(fs.existsSync(path.join(ROOT, THAYERS_EVIDENCE_PATH))).toBe(false);
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thayers-gate-'));
+    const manifest = path.join(tmp, 'slugs.json');
+    fs.writeFileSync(manifest, JSON.stringify({ slugs: ['thayers-lexicon'] }));
+    let out = '';
+    try {
+      execFileSync('node', ['scripts/publish-flip.mjs', `--slugs=${manifest}`], {
+        cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      throw new Error('the CLI did not refuse');
+    } catch (e: unknown) {
+      const err = e as { status?: number; stdout?: string; stderr?: string };
+      out = `${err.stdout ?? ''}${err.stderr ?? ''}`;
+      expect(err.status).toBe(2);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+    expect(out).toMatch(/thayers-lexicon may not be published without source verification/);
+  });
+});

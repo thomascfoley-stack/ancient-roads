@@ -39,7 +39,7 @@ import { execFileSync } from 'node:child_process';
 import { ALLOWED_LICENSES, isAllowedLicense } from '../src/ingest/allowed-licenses.mjs';
 import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mjs';
 import { eligibility, flipDelta } from './lib/publish-flip-delta.mjs';
-import { assertPublishTarget, assertStrongTls } from './lib/publish-flip-guard.mjs';
+import { assertPublishTarget, assertStrongTls, thayersEvidenceError, THAYERS_EVIDENCE_PATH } from './lib/publish-flip-guard.mjs';
 import { scrubCredentialText } from './lib/neon-connection.mjs';
 import { isMustNotServe } from './lib/served-corpus-authors.mjs';
 
@@ -179,6 +179,17 @@ if (!reverse) {
     die(`STOP: listed slug(s) are serve:false in the manifest (a standing quality/quarantine ruling): ${blocked.join(', ')}.\n` +
         '  Publishing now MEANS serving. Revisit the ruling in ingest/sources.config.json first, or drop the slug.', 2);
   }
+}
+
+// ── THAYER'S SOURCE-VERIFICATION GATE (owner ruling 2026-08-21) ────────────────────────────
+// Prod may hold the dead OCR copy of thayers-lexicon (the healthy CC0 re-ingest postdates the
+// 08-10 dev reset). A WORKLOG line is not a gate; this is. Decision logic lives in the guard
+// lib (pure, unit-tested red); this block only reads the file and dies on the returned error.
+{
+  let evidenceText = null;
+  try { evidenceText = fs.readFileSync(THAYERS_EVIDENCE_PATH, 'utf8'); } catch { /* absent */ }
+  const err = thayersEvidenceError(slugs, { reverse, evidenceText });
+  if (err) die(err, 2);
 }
 
 const url = process.env.CUTOVER_DATABASE_URL;
