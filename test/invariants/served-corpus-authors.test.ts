@@ -17,16 +17,22 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { IN_COPYRIGHT_SUSPECTS, MUST_NOT_SERVE, isMustNotServe, scanServedCorpusAuthors } from '../../scripts/lib/served-corpus-authors.mjs';
+import { IN_COPYRIGHT_SUSPECTS, MUST_NOT_SERVE, MUST_NOT_SERVE_SURNAMES, MUST_NOT_SERVE_WORK_EXCEPTIONS, ADR112_CUTOFF_YEAR, REVIEWED_SURNAME_CLEARANCES, isMustNotServe, scanServedCorpusAuthors } from '../../scripts/lib/served-corpus-authors.mjs';
 import { isMustNotServeAuthor } from '../../web/src/lib/legal-corpus';
 import { MUST_NOT_SERVE_AUTHORS } from '../../web/src/lib/legal-corpus';
+import {
+  MUST_NOT_SERVE_SURNAMES as SHIPPED_SURNAMES,
+  MUST_NOT_SERVE_WORK_EXCEPTIONS as SHIPPED_WORK_EXCEPTIONS,
+  ADR112_CUTOFF_YEAR as SHIPPED_CUTOFF_YEAR,
+  REVIEWED_SURNAME_CLEARANCES as SHIPPED_CLEARANCES,
+} from '../../web/src/lib/must-not-serve-audit';
 
 const tmps: string[] = [];
 afterEach(() => {
   for (const d of tmps.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
-function fixture(entries: Array<{ author: string; text?: string }>): string {
+function fixture(entries: Array<{ author: string; work?: string; text?: string }>): string {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'served-authors-'));
   tmps.push(dir);
   mkdirSync(path.join(dir, 'gen'), { recursive: true });
@@ -150,5 +156,65 @@ describe('the scan can fail, and says what it found', () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'served-authors-'));
     tmps.push(dir);
     expect(scanServedCorpusAuthors(dir)).toMatchObject({ files: 0, entries: 0, offenders: [] });
+  });
+});
+
+describe('the surname-token rule — the chesterton-preexistence hole, closed', () => {
+  // THE HOLE, measured 2026-08-21: the static corpus carried 5 entries under
+  // author 'Chesterton, Gilbert Keith' — surname-first, so the exact list, the of/the split, and
+  // the name-prefix rule ALL missed them, and the deploy gate printed green over entries whose PD
+  // basis was void (the text cites the NIV, 1978 — it is not Chesterton at all; owner close-out
+  // 2026-08-21, ADR-112 follow-up). The veto knew the NAME; it could not see the SURNAME in any
+  // format. This block pins the token rule that closes it, the three lists it depends on
+  // (surnames, ruling admissions, reviewed clearances — mirrored between the gate copy and
+  // web/src/lib/must-not-serve-audit.ts, identical by assertion, because a hand-maintained copy
+  // drifting is the exact defect the first describe block was written against), and the two
+  // recorded ways OUT of a surname hit.
+
+  it('the gate surname list is identical to the shipped audit list', () => {
+    // SEED: add a surname on either side only -> RED.
+    expect([...MUST_NOT_SERVE_SURNAMES].sort()).toEqual([...SHIPPED_SURNAMES].sort());
+  });
+
+  it('the gate work-exceptions and cutoff are identical to the shipped ones', () => {
+    // SEED: admit a work on one side only, or move the cutoff -> RED.
+    expect(MUST_NOT_SERVE_WORK_EXCEPTIONS).toEqual(SHIPPED_WORK_EXCEPTIONS);
+    expect(ADR112_CUTOFF_YEAR).toBe(SHIPPED_CUTOFF_YEAR);
+  });
+
+  it('the gate reviewed clearances are identical to the shipped ones', () => {
+    // SEED: clear an author on one side only -> RED.
+    expect(REVIEWED_SURNAME_CLEARANCES).toEqual(SHIPPED_CLEARANCES);
+  });
+
+  it('the exact string that slipped through is now an offender', () => {
+    // This fixture IS the hole: before the rule, the scan returned zero offenders over it.
+    const r = scanServedCorpusAuthors(fixture([{ author: 'Chesterton, Gilbert Keith', work: 'chesterton-preexistence' }]));
+    expect(r.offenders).toHaveLength(1);
+    expect(r.offenders[0]).toMatchObject({ author: 'Chesterton, Gilbert Keith', kind: 'must-not-serve', entries: 1 });
+  });
+
+  it('a ruling-admitted work of a vetoed surname is NOT an offender (ADR-112 keeps its 21)', () => {
+    const r = scanServedCorpusAuthors(fixture([{ author: 'Chesterton, Gilbert Keith', work: 'chesterton-orthodoxy' }]));
+    expect(r.offenders).toEqual([]);
+  });
+
+  it('an UNADMITTED work of a vetoed surname IS an offender (chesterton-aquinas, 1933 — ADR-112 cut)', () => {
+    const r = scanServedCorpusAuthors(fixture([{ author: 'Chesterton, Gilbert Keith', work: 'chesterton-aquinas' }]));
+    expect(r.offenders.map((o) => o.author)).toEqual(['Chesterton, Gilbert Keith']);
+  });
+
+  it('a reviewed surname clearance is NOT an offender (Bayly, Lewis — d.1631, not CS Lewis)', () => {
+    // The only surname-token hit in the measured 1,212-file corpus. If this goes red because the
+    // clearance was removed, the gate blocks every deploy on a public-domain bishop — which is
+    // the correct fail-closed posture ONLY until a human re-reviews; the clearance is the record
+    // that a human already did.
+    const r = scanServedCorpusAuthors(fixture([{ author: 'Bayly, Lewis', work: 'bayly-piety' }]));
+    expect(r.offenders).toEqual([]);
+  });
+
+  it('token boundaries hold — substrings are not surnames', () => {
+    const r = scanServedCorpusAuthors(fixture([{ author: 'Lewisham' }, { author: 'Chestertonfield, John' }, { author: 'Wilsonian, Mark' }]));
+    expect(r.offenders).toEqual([]);
   });
 });

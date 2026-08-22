@@ -336,6 +336,54 @@ flip is the switch that lights it (design: `docs/WORD_REFERENCE_PANE_DESIGN.md` 
   `web/test/user-corpus/zzz-regression-remeasure.test.ts`) are a peer session's — not touched,
   not committed here (explicit-pathspec commit per the peer protocol).
 
+
+## 2026-08-21 — `chesterton-preexistence` CLOSED OUT: static JSON removed, deploy gate widened to surnames (ADR-117)
+
+**Owner ruling in chat: "close out this chesterton thing."** Branch `fix/chesterton-surname-gate`
+(off `origin/fix/q1-signed-out-state` @ `d18ab1f`).
+
+**What was found already done (measured, not recalled):** the DB surfaces were quarantined
+2026-08-19 under ADR-112 — `sources.status='quarantined'`, 25 `embeddings` rows `served=false`,
+zero `commentary_entries`. Re-verified live on prod AND dev. This morning's inspector report of
+"25 served=true rows" was STALE; the only live surface left was the static JSON.
+
+**What this session did:**
+
+1. **Static JSON** (the git-ignored deploy artifact `web/public/commentaries/`, the surface no
+   `served` flag can reach): removed the 5 `chesterton-preexistence` entries (jhn/1 ×4, php/2 ×1)
+   from the deploy-source corpus; both files re-validated (parse clean, 698/350 entries, zero
+   chesterton strings). Removed entries snapshotted to
+   `docs/evidence/content-quarantine/chesterton-preexistence-static-json-2026-08-21.json`.
+   NOTE for the next deployer: the removal lives in the MAIN tree's ignored corpus dirs — any
+   deploy whose `web/public/` was snapshotted BEFORE 2026-08-21 ~10:00 PDT still carries them.
+2. **The gate blind spot** — `'GK Chesterton'` on the veto list never matched
+   `'Chesterton, Gilbert Keith'` in the data (exact/of-the/prefix rules all surname-blind).
+   `scripts/lib/served-corpus-authors.mjs` gained the surname-token rule + the ADR-112 work
+   exceptions + `REVIEWED_SURNAME_CLEARANCES`, all mirrored from `must-not-serve-audit.ts` and
+   pinned identical by `test/invariants/served-corpus-authors.test.ts` (7 new tests, watched RED
+   4/16 before implementation, 16/16 green after).
+3. **End-to-end red-proof:** the widened gate over the PRE-removal files reports exactly
+   1 offender / 5 entries / 24,309 chars (`Chesterton, Gilbert Keith`); over the post-removal
+   real corpus (1,212 files, 162,371 entries) it reports ZERO offenders — the next deploy is not
+   blocked.
+4. **The one false positive, recorded not litigated:** the surname rule's only other corpus hit is
+   `Bayly, Lewis` (26 entries) — Lewis Bayly d. 1631, a PD bishop, not CS Lewis. Cleared in
+   `REVIEWED_SURNAME_CLEARANCES` with the evidence; the owner can overrule by deleting one line.
+5. **Manifest + ADR-115**: `ingest/sources.config.json` entry carries the `quarantine` marker with
+   the re-admission bar (verified pre-1931 printing of this exact text).
+
+### NOT DONE / UNVERIFIED
+
+- The widened gate has not run inside a real `deploy.sh` — verified by direct invocation of
+  `scanServedCorpusAuthors` only. First real deploy exercises it.
+- The DB-side SQL veto predicate (migrations 117–119's index text) was deliberately NOT widened —
+  a migration slice of its own; the DB surfaces it guards are already quarantined. Browser-side
+  render filter unchanged (delivery is now the gated line).
+- Full `npm run audit` not yet run on this branch at this writing.
+- Deploy timing left for when the in-flight lanes settle, per owner ("close out the thing when
+  its safe to do so").
+
+
 ## 2026-08-21 — Lexicon quality pass: all five held works are serve-quality; Thayer's is back from the dead
 
 **Owner-directed, ahead of the reference-works flip.** Read-only against dev (`ep-tiny-hat`),

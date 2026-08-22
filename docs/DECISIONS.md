@@ -1923,3 +1923,44 @@ teacher access owner-gated.
 differentiator, and n=100 is honest evidence for ~97%, not for ≥99%); re-deriving the HIT@2 bar
 inside this ADR without the owner (that is the error ADR-103 names); and building the n≈100
 proper-noun set, which the metric change makes unnecessary.
+
+## ADR-117 — `chesterton-preexistence`: not Chesterton, PD basis void; full close-out (2026-08-21)
+
+**Owner ruling, in chat: "close out this chesterton thing."** Closes ADR-112's open follow-up #1,
+which had held the work as "undated, does not demonstrably clear 1931, quarantine an owner call."
+The 2026-08-21 inspector finding settled the question more strongly than dating ever could: the
+text cites the NIV (1978), NEB, TEV and J.N.D. Kelly — it is a modern, unknown, presumptively
+copyrighted author served under a false attribution. Fail closed.
+
+**What was already true when the ruling landed (measured, not recalled):** the DB surfaces were
+quarantined 2026-08-19 under ADR-112 — `sources.status = 'quarantined'`, the 25 `embeddings` rows
+`served=false`, zero `commentary_entries` rows. Re-verified live on both prod and dev 2026-08-21.
+The earlier report of "25 served=true rows" was stale.
+
+**What this ruling closed:**
+
+1. **The static-JSON surface.** 5 entries (`web/public/commentaries/jhn/1.json` ×4,
+   `php/2.json` ×1) shipped with every deploy as unauthenticated static files, reachable by no
+   `served` flag. Removed from the deploy-source corpus; the removed entries are snapshotted at
+   `docs/evidence/content-quarantine/chesterton-preexistence-static-json-2026-08-21.json`.
+2. **The gate blind spot that let them in.** The deploy gate's author matcher (exact name,
+   of/the-split, name-prefix) could not see surname-first forms — `'GK Chesterton'` on the veto
+   list never matches `'Chesterton, Gilbert Keith'` in the data. `served-corpus-authors.mjs`
+   gained the surname-token rule, mirrored from `must-not-serve-audit.ts` with the same
+   identity-by-test discipline as the author list. Red-proved end to end: the pre-removal files
+   now scan as 1 offender / 5 entries; the post-removal corpus (1,212 files, 162,371 entries)
+   scans clean.
+3. **The one false positive, reviewed and recorded.** Widening the matcher hits exactly one other
+   author in the corpus: `Bayly, Lewis` (26 entries) — Lewis Bayly, d. 1631, *The Practice of
+   Piety*, a different person from C. S. Lewis and public domain in fact. Recorded in
+   `REVIEWED_SURNAME_CLEARANCES`; without that record the gate would block every deploy on a PD
+   bishop, which is fail-closed pointing at the wrong target.
+4. **The manifest.** The entry carries a `quarantine` marker naming the evidence and the bar for
+   any re-admission (a verified pre-1931 printing of this exact text).
+
+**Deliberately NOT done here:** the DB-side SQL veto predicate (`mustNotServeVetoSql`, the
+partial-index text rebuilt by migrations 117–119) was NOT widened to the surname forms — that is
+a migration slice (index rebuild, CONCURRENTLY, its own red-proof), and the DB surfaces it guards
+are already quarantined. It stays on the list. The browser-side render filter
+(`isMustNotServeAuthor`) is likewise unchanged: delivery is now gated mechanically; the render
+filter is the second line, not the hole.
