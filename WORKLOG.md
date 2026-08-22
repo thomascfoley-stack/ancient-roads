@@ -1,5 +1,36 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — The kjv slice WORKED and woke a fifth suite; scope extended to all 18 translations
+
+**Run `32559751268` proved the fetch mechanism on a real run:** `blob-round-trip` PASSED
+end-to-end (upload → blob → drain → parse → chunk → embed → ready, real storage, real embedder),
+the four bible-asset suites EXECUTED (147 passed vs 143; skips 8 → 4), and migration replay +
+audit stayed green. The one red was new information again: `translation-detect` — a FIFTH
+asset-gated suite, skip-hidden until the bible dir existed — asserts the REAL shipped set:
+
+```
+ FAIL  test/user-corpus/translation-detect.test.ts
+AssertionError: expected [ 'kjv' ] to include 'bsb'
+ Test Files  1 failed | 147 passed | 4 skipped (152)
+```
+
+Right failure: detection in CI must derive from the corpus prod serves, not a subset. The fetch
+is generalized to the whole `bible/` prefix (`scripts/ci-fetch-bible-assets.mjs`, same contract:
+manifest-driven, per-file sha256 verified, atomic install, fail-open to the honest skip;
+`commentaries/` ~850MB stays out per the order). Measured, verbatim:
+
+```
+$ time node .../ci-fetch-bible-assets.mjs           # COLD, scratch tree
+bible assets installed: 22590 files in 75.2s from https://mbp8qokd9o4o9qnz.public.blob.vercel-storage.com
+cold files: 22590 vs manifest 22590; translations: 18
+akjv anderson asv bbe bsb darby geneva kjv lsv nheb noyes rotherham rwebster tyndale ukjv web webster ylt
+$ node scripts/ci-fetch-bible-assets.mjs            # operator tree (fast path)
+bible assets already complete: 22590 files (cache hit or operator tree)
+```
+
+Cold fires only on a manifest change; warm is an actions/cache restore of 186MB — the next real
+run states that number. The order's warm bar (~30s) is judged there, not here.
+
 ## 2026-08-22 — The CI corpus-assets slice, built: bible/kjv fetched-and-verified in CI (the ENOENT was the real blocker)
 
 **Run `32559250346`'s self-reporting red finally named CI's true cause** (my key-conflation is
