@@ -33,7 +33,12 @@ const SECRET = process.env.NEON_AUTH_COOKIE_SECRET;
 // is what teaches readers to ignore red. It now reports NOT RUN, loudly, which is the
 // truth. If a non-production instance is ever provisioned, change this back to `secret`.
 const SKIP = announceSkip(
-  'neon-auth-live',
+  // MUST match the describe title below: ci-skip-ceiling.mjs cross-checks the manifest record's
+  // check name against the suite's vitest titles (the anti-hand-edit guard), and the short name
+  // 'neon-auth-live' matched neither direction — so the one suite declaring `withheld` correctly
+  // was still counted secret-caused (run 32561448762, the last unaccounted suite). Every other
+  // declared suite already uses its describe title as its check name.
+  'Neon Auth against the real hosted service',
   [
     { name: 'NEON_AUTH_BASE_URL', present: Boolean(BASE_URL), kind: 'withheld' },
     { name: 'NEON_AUTH_COOKIE_SECRET', present: Boolean(SECRET), kind: 'withheld' },

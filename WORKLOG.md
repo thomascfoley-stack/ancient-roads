@@ -1,5 +1,35 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — Down to ONE unaccounted suite, and it was two stacked name/format defects; both fixed with three-leg fixture proofs
+
+**Run `32561448762`: zero failing tests, EIGHT declared skips all counted** (the NDJSON manifest
+fixes work in production CI), one holdout: `neon-auth-live` counted `(secret)` while declaring
+`withheld` correctly. Two stacked causes:
+
+1. **The anti-hand-edit cross-check rejected an honest record.** `ci-skip-ceiling.mjs` requires
+   the manifest record's check name to appear in the suite's vitest titles; the check was
+   `'neon-auth-live'`, the describe title `'Neon Auth against the real hosted service'` —
+   neither contains the other. Every other declared suite uses its describe title as its check
+   name; this one now does too (comment in the test says why).
+2. **My OWN reader had a single-record blind spot, caught by fixture before it shipped a false
+   count:** every NDJSON file starts with `{`, so a ONE-record manifest parsed as legacy JSON,
+   found no `artifactSkips` key, and returned empty — a run where exactly one suite declares
+   would have had its declaration silently dropped. Legacy detection is now by SHAPE (an
+   `artifactSkips` array = legacy; `check`+`suiteFile` on the object = one record; parse
+   failure = per-line NDJSON).
+
+Fixture proofs, verbatim:
+
+```
+--- single-record NDJSON (the blind spot) ---
+  NOT RUN (withheld): /ci/web/test/invariants/neon-auth-live.test.ts — missing NEON_AUTH_BASE_URL
+skip ceiling OK            exit=0
+--- legacy object form --- skip ceiling OK, exit=0
+--- undeclared control (no manifest) --- REFUSING green … exit=1
+```
+
+The bar stays where ADR-119 put it: skipping without saying why still refuses green.
+
 ## 2026-08-22 — The store rate-limits CI's egress; the cache never saved on failing jobs; blob-round-trip never declared the assets. Three fixes
 
 **Run `32560946966` regressed to the ENOENT** because the assets never arrived, and its log

@@ -25,9 +25,16 @@ function loadArtifactSkips() {
   if (!manifestPath || !existsSync(manifestPath)) return [];
   const raw = readFileSync(manifestPath, 'utf8').trim();
   if (raw === '') return [];
-  if (raw.startsWith('{')) {
-    try { return JSON.parse(raw).artifactSkips ?? []; } catch { /* fall through to lines */ }
-  }
+  // Legacy detection by SHAPE, not first character: a single-record NDJSON file also starts
+  // with '{' and parses as one JSON object — the first-char test swallowed it into the legacy
+  // branch and returned [] (caught by fixture before it shipped a false secret-count). Legacy
+  // means the parsed object actually carries an artifactSkips ARRAY; one record means it
+  // carries check/suiteFile itself; anything else falls to line parsing.
+  try {
+    const whole = JSON.parse(raw);
+    if (Array.isArray(whole?.artifactSkips)) return whole.artifactSkips;
+    if (whole && typeof whole === 'object' && whole.check && whole.suiteFile) return [whole];
+  } catch { /* NDJSON with 2+ lines — parse per line below */ }
   const records = [];
   for (const line of raw.split('\n')) {
     const t = line.trim();
