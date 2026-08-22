@@ -1854,8 +1854,7 @@ pre-existing `SCAN_RE` behaviour and not introduced here. Filed separately — s
 in `WORKLOG.md` 2026-08-21.
 
 **The n, because a precision claim without its denominator is not a claim.** The adversarial set is
-**n = 10**, a ~74% lower bound by the rule of three — the same arithmetic `CLAUDE.md` applies to the
-bait gate. It is evidence, not proof, and the set grows: real topical queries are near-free cases.
+**n = 10**, a ~74% lower bound — the same arithmetic `CLAUDE.md` applies to the bait gate. (**Label corrected 2026-08-21:** this said "by the rule of three", which it is not. Rule of three is the approximation `1 - 3/n` and gives **70%** at n=10; **74.1%** is the exact one-sided 95% binomial bound `0.05^(1/n)`. Both are defensible; naming the wrong one in the ADR about carrying numbers forward is the class this ADR is about.) It is evidence, not proof, and the set grows: real topical queries are near-free cases.
 
 **Known residual, approved to fix under this same ruling.** The new pass is additive and dedupes by
 display, so where a bare book name is *itself* an alias the old wrong match survives beside the new
