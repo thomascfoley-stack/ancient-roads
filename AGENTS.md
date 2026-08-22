@@ -48,7 +48,7 @@ rediscovering them. Do not duplicate their content here - go read them.
 - **THE MAIN TREE BELONGS TO WHOEVER HOLDS THE DEPLOY. Every other session works in a worktree**
   (owner ruling, 2026-08-21). The older rule below said "read-only, or work in a separate clone",
   which was right and was ignored because a clone sounds expensive. **A worktree is the cheap clone,
-  and this repo already has fourteen of them** — `git worktree list` — so this is not a new practice,
+  and this repo is already full of them** — run `git worktree list` — so this is not a new practice,
   it is the practice this repo already follows on the days when it is not four sessions deep in one
   checkout.
 
