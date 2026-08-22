@@ -1977,6 +1977,11 @@ filter is the second line, not the hole.
 > ADR-119's dispute produced: an authorization carries the owner's verbatim words or it is an
 > unverified claim.
 >
+> **Citation completed 2026-08-22** (the line above named no timestamp or session — two of the
+> rule's three parts): the owner re-confirmed the bar directly at **2026-08-22T07:14:57Z, in
+> chat, session `699cded5-0b8f-430f-b533-81f439d2cac4`**, verbatim: *"should be at 90% now,
+> we're changing it."* The 90% bar is fully sourced.
+>
 > **Pass requires 18/20.** `18/20 = 90.0%` exactly — the bar written here is still the bar
 > enforced, which is the whole reason n=20 was chosen. n=19 has neither an 85% nor a 90% rung.
 >

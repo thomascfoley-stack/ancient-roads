@@ -1,5 +1,28 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — CORRECTION to my own entry below; both rulings sourced; the Thayer's gate fired live
+
+**Correction (mine, of mine):** my blob-round-trip entry below says CI's env lacked
+`DEEPINFRA_API_KEY`. **The run log disproves it** — run `32557649616`'s vitest step printed
+`DEEPINFRA_API_KEY: ***` in its env block, so the key was PRESENT in CI. The "is not set" error
+came from MY LOCAL probe, which lacked the key because I didn't pass it; I conflated my
+reproduction's cause with CI's. **CI's actual requeue cause is UNKNOWN** and the entry below this
+one (the failure now carries its cause) is what will name it on the next run. The env line has
+been in the workflow since `8ad9398`; nothing needed wiring.
+
+**Both rulings now fully sourced, owner in chat, session `699cded5-0b8f-430f-b533-81f439d2cac4`,
+2026-08-22T07:14:57Z:** *"should be at 90% now, we're changing it. CI, pass the password into
+it, no more gating there, its prohibiting the runs and tests from happening."* ADR-118's
+citation is completed in the ADR (the 90% bar is confirmed with timestamp+session); the CI
+half was already satisfied on disk — the ruling ratifies it.
+
+**The Thayer's evidence gate FIRED IN THE WILD** — first live firing, hours after it shipped:
+[flip-run-2026-08-22T06-13-21-975Z.log](docs/evidence/work-order-v2-stage2/flip-run-2026-08-22T06-13-21-975Z.log)
+records a flip attempt including `thayers-lexicon` refused before any connection:
+`STOP: thayers-lexicon may not be published without source verification. … The file does not
+exist.` Nothing was written. Whoever attempted it: the gate wants
+`docs/evidence/thayers-source-verification.md` with the real sha256(s) compared.
+
 ## 2026-08-22 — blob-round-trip: the test can now say why it failed
 
 **The suite is healthy; the CI failure is environment-specific; and the test could not tell anyone
