@@ -237,12 +237,19 @@ export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LIS
 // backfilled column against the FROZEN pre-044 filters (never against this module: deriving the
 // expectation from the file under test is the circularity the 2026-08-03 audit confirmed).
 export const EXEGETICAL_TYPE_SQL = `source_type IN ('commentary','father')`;
-export const SERMON_CORPUS_FILTER = `(served AND source_type = 'sermon')`;
-export const THEOLOGY_CORPUS_FILTER = `(served AND source_type IN ('theology','confession'))`;
+// The lane TYPE legs, separated from the filters below so a caller that already carries its own
+// served predicate (related-voices.ts takes LEGAL_CORPUS_FILTER as the injected CorpusPredicate,
+// ADR-104) can conjunct the register WITHOUT re-typing the source_type set or double-ANDing
+// `served`. The filters are DERIVED from these — one body per register, never two copies.
+export const SERMON_TYPE_SQL = `source_type = 'sermon'`;
+export const THEOLOGY_TYPE_SQL = `source_type IN ('theology','confession')`;
+export const HISTORIAN_TYPE_SQL = `source_type = 'historian'`;
+export const SERMON_CORPUS_FILTER = `(served AND ${SERMON_TYPE_SQL})`;
+export const THEOLOGY_CORPUS_FILTER = `(served AND ${THEOLOGY_TYPE_SQL})`;
 // The historian lane's filter (2026-08-13, corpus-backlog #6). Its byte-matched partial HNSW
 // index is idx_embeddings_served_historian (migration 114, built the same day — the gap this
 // comment previously recorded is closed), guarded by a legal-hnsw-index-sync LOCKSTEP entry.
-export const HISTORIAN_CORPUS_FILTER = `(served AND source_type = 'historian')`;
+export const HISTORIAN_CORPUS_FILTER = `(served AND ${HISTORIAN_TYPE_SQL})`;
 
 // Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
 // song/verse AND lane (sermon/theology/confession/historian) rows TWO ways so neither a

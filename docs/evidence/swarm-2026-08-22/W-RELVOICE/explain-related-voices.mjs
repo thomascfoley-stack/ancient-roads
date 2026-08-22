@@ -35,12 +35,17 @@ if (!prefix) { console.error('usage: explain-related-voices.mjs <out-prefix>'); 
 
 // ── The query shape, copied from web/src/lib/user-corpus/related-voices.ts `sweep()`. ──
 // When the module changes, change this to match — the instrument measures the SHIPPED shape.
-// predicate = LEGAL_CORPUS_FILTER = '(served)' (web/src/lib/teacher/routing.ts).
+// predicate = LEGAL_CORPUS_FILTER = '(served)' (web/src/lib/teacher/routing.ts). The conjuncts
+// below ARE the routing.ts constants the module imports (EXEGETICAL/SERMON/THEOLOGY/HISTORIAN/
+// SONG_VERSE_TYPE_SQL), inlined here because this instrument runs under plain node.
 const SWEEP = 300;
 const CONJUNCTS = {
-  general: process.env.RV_GENERAL_CONJUNCT ?? '',
-  hymn: process.env.RV_HYMN_CONJUNCT ?? `AND e.metadata->>'register' = 'hymn'`,
-  poetry: process.env.RV_POETRY_CONJUNCT ?? `AND e.metadata->>'register' = 'poetry'`,
+  exegetical: `AND source_type IN ('commentary','father')`,
+  sermon: `AND source_type = 'sermon'`,
+  theology: `AND source_type IN ('theology','confession')`,
+  historian: `AND source_type = 'historian'`,
+  hymn: `AND e.metadata->>'register' = 'hymn' AND source_type IN ('hymn','poetry')`,
+  poetry: `AND e.metadata->>'register' = 'poetry' AND source_type IN ('hymn','poetry')`,
 };
 const sweep = (extra) => `
   WITH near AS (
