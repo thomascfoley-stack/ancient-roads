@@ -5,6 +5,7 @@
  * Usage: vitest ... --reporter=json --outputFile=/tmp/vitest.json && node scripts/ci-skip-ceiling.mjs /tmp/vitest.json
  */
 import { existsSync, readFileSync } from 'node:fs';
+import { loadArtifactSkips } from './lib/skip-manifest.mjs';
 
 const reportPath = process.argv[2];
 const ceiling = Number(process.env.DB_INVARIANTS_SKIP_CEILING ?? '2');
@@ -15,35 +16,8 @@ if (!reportPath) {
   process.exit(2);
 }
 
-/** Artifact skips recorded by announceSkip — not a hand-maintained exempt list.
- *
- * NDJSON, one record per line (2026-08-22): the writer appends atomically per record because
- * the old single-JSON read-modify-write LOST records under vitest's parallel workers (run
- * 32560311067 — three declared skips clobbered, counted secret-caused). The object form
- * `{"artifactSkips":[...]}` is still accepted so a stale manifest cannot crash the gate. */
-function loadArtifactSkips() {
-  if (!manifestPath || !existsSync(manifestPath)) return [];
-  const raw = readFileSync(manifestPath, 'utf8').trim();
-  if (raw === '') return [];
-  // Legacy detection by SHAPE, not first character: a single-record NDJSON file also starts
-  // with '{' and parses as one JSON object — the first-char test swallowed it into the legacy
-  // branch and returned [] (caught by fixture before it shipped a false secret-count). Legacy
-  // means the parsed object actually carries an artifactSkips ARRAY; one record means it
-  // carries check/suiteFile itself; anything else falls to line parsing.
-  try {
-    const whole = JSON.parse(raw);
-    if (Array.isArray(whole?.artifactSkips)) return whole.artifactSkips;
-    if (whole && typeof whole === 'object' && whole.check && whole.suiteFile) return [whole];
-  } catch { /* NDJSON with 2+ lines — parse per line below */ }
-  const records = [];
-  for (const line of raw.split('\n')) {
-    const t = line.trim();
-    if (!t) continue;
-    try { records.push(JSON.parse(t)); } catch { /* a torn line is dropped, never a crash */ }
-  }
-  return records;
-}
-
+// Loader single-sourced in scripts/lib/skip-manifest.mjs (see its header for the two
+// incidents that put it there: the parallel-writer race and the reader-format divergence).
 function suiteFileMatches(filePath, suiteFile) {
   const norm = filePath.replace(/\\/g, '/');
   const rel = suiteFile.replace(/\\/g, '/');
@@ -61,7 +35,7 @@ function isArtifactSkip(fileResult, artifactSkips) {
 
 const report = JSON.parse(readFileSync(reportPath, 'utf8'));
 const files = report.testResults ?? [];
-const artifactSkips = loadArtifactSkips();
+const artifactSkips = loadArtifactSkips(manifestPath);
 
 const fullySkipped = files.filter((f) => {
   const pending = f.assertionResults?.filter((a) => a.status === 'skipped').length ?? 0;

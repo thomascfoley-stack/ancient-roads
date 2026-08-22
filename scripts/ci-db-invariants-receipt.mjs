@@ -7,6 +7,7 @@
  * Usage: vitest ... --outputFile=report.json && node scripts/ci-db-invariants-receipt.mjs report.json
  */
 import { existsSync, readFileSync } from 'node:fs';
+import { loadArtifactSkips } from './lib/skip-manifest.mjs';
 
 const reportPath = process.argv[2];
 const manifestPath = process.env.LOUD_SKIP_MANIFEST;
@@ -16,11 +17,9 @@ if (!reportPath) {
   process.exit(2);
 }
 
-function loadArtifactSkips() {
-  if (!manifestPath || !existsSync(manifestPath)) return [];
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  return manifest.artifactSkips ?? [];
-}
+// Loader single-sourced in scripts/lib/skip-manifest.mjs — this file's own copy kept the
+// legacy format after the ceiling learned NDJSON, and the divergence killed the first
+// fully-accounted run AFTER "skip ceiling OK" had printed (run 32561891829).
 
 function suiteFileMatches(filePath, suiteFile) {
   const norm = filePath.replace(/\\/g, '/');
@@ -33,7 +32,7 @@ const executed = report.numTotalTests ?? 0;
 const passed = report.numPassedTests ?? 0;
 const failed = report.numFailedTests ?? 0;
 const skipped = report.numPendingTests ?? 0;
-const artifactSkips = loadArtifactSkips();
+const artifactSkips = loadArtifactSkips(manifestPath);
 
 console.log(`db-invariants receipt: executed=${executed} passed=${passed} failed=${failed} skipped=${skipped}`);
 

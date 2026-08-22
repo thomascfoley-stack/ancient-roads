@@ -1,5 +1,33 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — "skip ceiling OK" printed for the FIRST TIME — and a second manifest reader I never swept for died one step later. Single-sourced
+
+**Run `32561891829` was the closest yet, and everything built tonight WORKED on it, verbatim:**
+
+```
+bible assets installed: 22590 files in 76.5s   ← the backoff beat the rate limit
+Cache saved with key: bible-assets-f7dfe89bc5578afb   ← seeded permanently; future runs restore
+ Test Files  148 passed | 4 skipped (152)
+db-invariants skip ceiling: 0; secret-caused fully-skipped files: 0
+skip ceiling OK                                 ← FIRST fully-accounted verdict ever
+```
+
+Then the job died anyway — in `ci-db-invariants-receipt.mjs`, a SECOND reader of the same
+manifest that kept its own legacy `JSON.parse` copy of the loader:
+
+```
+SyntaxError: Unexpected non-whitespace character after JSON at position 311 (line 2 column 1)
+    at loadArtifactSkips (scripts/ci-db-invariants-receipt.mjs:21:25)
+```
+
+My failure class, named: I taught ONE reader the new format and never enumerated the file's
+other consumers — the watchlist's enumerate-every-path lesson, applied to me. Swept now
+(`grep -rl LOUD_SKIP_MANIFEST|loadArtifactSkips`): exactly four touchpoints — the writer, the
+two readers, the workflow env. The loader is SINGLE-SOURCED in `scripts/lib/skip-manifest.mjs`
+(shape-based legacy/single-record/NDJSON detection, header carries both incidents); both
+scripts import it; both proven on the same NDJSON fixture: receipt `receipt OK` exit 0 at the
+exact crash site, ceiling `skip ceiling OK` exit 0.
+
 ## 2026-08-22 — Down to ONE unaccounted suite, and it was two stacked name/format defects; both fixed with three-leg fixture proofs
 
 **Run `32561448762`: zero failing tests, EIGHT declared skips all counted** (the NDJSON manifest
