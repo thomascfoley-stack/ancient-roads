@@ -15,11 +15,26 @@ if (!reportPath) {
   process.exit(2);
 }
 
-/** Artifact skips recorded by announceSkip — not a hand-maintained exempt list. */
+/** Artifact skips recorded by announceSkip — not a hand-maintained exempt list.
+ *
+ * NDJSON, one record per line (2026-08-22): the writer appends atomically per record because
+ * the old single-JSON read-modify-write LOST records under vitest's parallel workers (run
+ * 32560311067 — three declared skips clobbered, counted secret-caused). The object form
+ * `{"artifactSkips":[...]}` is still accepted so a stale manifest cannot crash the gate. */
 function loadArtifactSkips() {
   if (!manifestPath || !existsSync(manifestPath)) return [];
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  return manifest.artifactSkips ?? [];
+  const raw = readFileSync(manifestPath, 'utf8').trim();
+  if (raw === '') return [];
+  if (raw.startsWith('{')) {
+    try { return JSON.parse(raw).artifactSkips ?? []; } catch { /* fall through to lines */ }
+  }
+  const records = [];
+  for (const line of raw.split('\n')) {
+    const t = line.trim();
+    if (!t) continue;
+    try { records.push(JSON.parse(t)); } catch { /* a torn line is dropped, never a crash */ }
+  }
+  return records;
 }
 
 function suiteFileMatches(filePath, suiteFile) {

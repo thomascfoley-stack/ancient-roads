@@ -1,5 +1,47 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — ZERO failing tests again, and the last red was the counter EATING ITS OWN RECORDS: two defects in the skip manifest, both fixed and proven
+
+**Run `32560311067`: 148/148 test files passed** (translation-detect cleared with the full
+18-translation corpus — the asset slice is complete). The only red:
+
+```
+db-invariants skip ceiling: 0; secret-caused fully-skipped files: 3
+REFUSING green: 3 secret-caused suite(s) fully skipped, ceiling is 0.
+```
+
+— while the SAME run's log shows all four skipped suites ANNOUNCING with proper kinds. Three
+honestly-declared skips were counted as undeclared. Two instrument defects, found by reading the
+mechanism, not the tea leaves:
+
+1. **The manifest write RACES.** `recordArtifactSkip` did read-modify-write of one JSON file
+   with no locking; vitest's parallel workers clobber each other and the last writer wins.
+   verse-keys survived only because it wrote last (07:50:08, 35s before the counter read).
+   Fixed: **append-only NDJSON**, one atomic `appendFileSync` line per record; the reader
+   parses lines (legacy object form still accepted, torn lines dropped never crash).
+2. **`detectSuiteFile()` only matched `test/invariants/`.** Every suite outside that directory
+   recorded `suiteFile: 'unknown'` — a record the ceiling can never match, so user-corpus
+   declarations were unmatchable even WITHOUT the race. Fixed: any `/test/` path excluding the
+   helpers' own frames, requiring a `.test.*` suffix.
+
+**Proofs, verbatim** — 12 concurrent real processes through the shipped (bundled) helper:
+
+```
+records: 12 / 12 expected
+{"check":"race probe 0","missing":["PROBE_0"],"suiteFile":"test/user-corpus/probe-0.test.mjs","kind":"artifact"}
+correct suiteFile count: 12
+```
+
+and the ceiling both ways against crafted fixtures with the NDJSON reader:
+
+```
+GREEN LEG (artifact + withheld declared): secret-caused fully-skipped files: 0 → skip ceiling OK → exit=0
+RED LEG (+1 undeclared mystery suite):    secret-caused fully-skipped files: 1 → REFUSING green → exit=1
+```
+
+The bar did not move: an undeclared skip still refuses green, always. The next run is the F5
+candidate with nothing left in front of it but the truth of its own suites.
+
 ## 2026-08-22 — The kjv slice WORKED and woke a fifth suite; scope extended to all 18 translations
 
 **Run `32559751268` proved the fetch mechanism on a real run:** `blob-round-trip` PASSED

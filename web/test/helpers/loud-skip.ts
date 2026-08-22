@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 // A skipped invariant must READ as "NOT RUN", never as coverage.
@@ -58,25 +58,32 @@ interface ArtifactSkipRecord {
 }
 
 function detectSuiteFile(): string {
+  // Any /test/ path EXCEPT the helpers' own frames (this file is test/helpers/loud-skip.ts and
+  // always tops the stack). The old regex matched test/invariants/ ONLY, so every suite outside
+  // that directory recorded suiteFile 'unknown' — a record the ceiling could never match, which
+  // silently reclassified honestly-declared skips as secret-caused (run 32560311067: three of
+  // four declared skips uncounted; verse-keys, the one invariants file, was the sole survivor).
   const stack = new Error().stack ?? '';
   for (const line of stack.split('\n')) {
-    const m = line.match(/(\/test\/invariants\/[^:)]+)/);
-    if (m) return m[1]!.replace(/^.*(\/test\/invariants\/)/, 'test/invariants/');
+    const m = line.match(/(\/test\/(?!helpers\/)[^:)]+?\.test\.[a-z]+)/);
+    if (m) return m[1]!.replace(/^.*\/(test\/)/, '$1');
   }
   return 'unknown';
 }
 
-/** Record artifact-only skips for CI scripts — derived from announceSkip, not a hand-maintained list. */
+/** Record artifact-only skips for CI scripts — derived from announceSkip, not a hand-maintained list.
+ *
+ * APPEND-ONLY NDJSON (2026-08-22): the old read-modify-write of one JSON object LOST RECORDS
+ * under vitest's parallel workers — a classic unlocked read/write race; run 32560311067 kept
+ * only the last writer's record and the ceiling counted three honestly-declared skips as
+ * secret-caused. One appendFileSync line per record is atomic at these sizes; the reader
+ * (scripts/ci-skip-ceiling.mjs) parses lines. */
 function recordArtifactSkip(check: string, missing: readonly string[], kind: ArtifactSkipRecord['kind']): void {
   const manifestPath = process.env[MANIFEST_ENV];
   if (!manifestPath) return;
   mkdirSync(path.dirname(manifestPath), { recursive: true });
-  let manifest: { artifactSkips: ArtifactSkipRecord[] } = { artifactSkips: [] };
-  if (existsSync(manifestPath)) {
-    manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { artifactSkips: ArtifactSkipRecord[] };
-  }
-  manifest.artifactSkips.push({ check, missing, suiteFile: detectSuiteFile(), kind });
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  const record: ArtifactSkipRecord = { check, missing, suiteFile: detectSuiteFile(), kind };
+  appendFileSync(manifestPath, `${JSON.stringify(record)}\n`);
 }
 
 /**
