@@ -1,0 +1,8 @@
+
+ ✓ test/invariants/provider-availability.test.ts (10 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  10:32:58
+   Duration  165ms (transform 16ms, setup 0ms, collect 14ms, tests 3ms, environment 0ms, prepare 25ms)
+

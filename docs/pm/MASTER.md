@@ -424,8 +424,11 @@ repairs the defect it measures (the perturbation suite's unscoped backfill) · *
 `web/test/invariants/section-vector-pairing.test.ts` calls the live DeepInfra embedding API and got
 `429 engine_overloaded`. Re-run with no code change: green. The gate is therefore non-deterministic,
 and a red does not distinguish "broken" from "the provider was busy" — which is how a real red gets
-waved through. Not fixed here; a bounded retry on 429, or an explicit NOT RUN on provider
-unavailability, would make the signal mean one thing again.
+waved through. **CLOSED at `f462114` (2026-08-01), jitter added 2026-08-22**:
+`web/test/helpers/provider-availability.ts` gives the suite a bounded retry (≤3 attempts,
+exponential backoff with jitter) on 429/5xx/network errors, and a persistent outage reports an
+explicit loud-skip **NOT RUN** (`kind: 'provider'`, `ctx.skip()` — never a pass, never a red) while
+a genuine failure (400/401 or a wrong vector) still fails. The signal means one thing again.
 
 **A fifth, found by T1 (2026-08-01): a gate nobody runs is not a gate.** `next build` was not in CI —
 neither `audit` nor `db-invariants` compiled the app — so the production build sat broken at HEAD with

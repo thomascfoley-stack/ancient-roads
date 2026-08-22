@@ -63,7 +63,7 @@ export interface ProviderProbe {
  */
 export async function probeProvider<T>(
   fn: () => Promise<T>,
-  { attempts = 3, baseDelayMs = 500, sleep = (ms: number) => new Promise((r) => setTimeout(r, ms)) } = {},
+  { attempts = 3, baseDelayMs = 500, sleep = (ms: number) => new Promise((r) => setTimeout(r, ms)), jitter = () => 0.5 + Math.random() * 0.5 } = {},
 ): Promise<ProviderProbe> {
   let last: unknown;
   for (let i = 1; i <= attempts; i++) {
@@ -73,7 +73,9 @@ export async function probeProvider<T>(
     } catch (err) {
       if (!isProviderUnavailable(err)) throw err; // genuine failure -> RED, immediately
       last = err;
-      if (i < attempts) await sleep(baseDelayMs * 2 ** (i - 1));
+      // Exponential backoff scaled by jitter in [0.5, 1): a fixed schedule makes every
+      // concurrent retrier re-collide on the same tick — the thundering herd a 429 already is.
+      if (i < attempts) await sleep(baseDelayMs * 2 ** (i - 1) * jitter());
     }
   }
   return { present: false, error: last instanceof Error ? last.message : String(last), attempts };
