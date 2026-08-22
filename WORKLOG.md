@@ -1,5 +1,35 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — F5 ACHIEVED: the first green db-invariants run in this repository's history
+
+**Run [`32562471249`](https://github.com/thomascfoley-stack/ancient-roads/actions/runs/32562471249)
+@ `2012e03` — BOTH jobs SUCCESS.** The owner's criterion (ruled 2026-08-22T06:31:36Z, session
+`699cded5`, quoted in ADR-119): green with every suite truthfully accounted for, not zero
+failing tests. Measured on the run, verbatim:
+
+```
+Cache restored from key: bible-assets-f7dfe89bc5578afb
+bible assets already complete: 22590 files (cache hit or operator tree)
+ Test Files  148 passed | 4 skipped (152)
+db-invariants skip ceiling: 0; secret-caused fully-skipped files: 0
+skip ceiling OK
+db-invariants receipt: executed=1043 passed=1032 failed=0 skipped=11
+```
+
+The 4 skipped files are all DECLARED (2 operator-local corpora, 1 gitignored commentaries
+corpus, 1 withheld-credential Neon Auth) and all printed by kind in the run summary. The warm
+asset path is a cache restore in ~0.2s — far inside the order's ~30s bar; the CI corpus-assets
+order's definition of done was met two runs earlier and holds here.
+
+**The onion, in order, each layer only visible after the previous one fell (all 2026-08-22):**
+migration 020's replay validation → the blob secret + the stale pipeline test → the bible-assets
+ENOENT → the store rate-limiting CI + the cache that never saved on failing jobs → the
+skip-manifest writer race + the invariants-only path regex → the check-name/title mismatch + the
+single-record reader blind spot → the second manifest reader, single-sourced. Every layer has
+its own entry below with verbatim evidence, and NONE of them failed twice for the same reason.
+
+F5 marked ACHIEVED on the Lane F board (MASTER.md) with the ruling citation.
+
 ## 2026-08-22 — "skip ceiling OK" printed for the FIRST TIME — and a second manifest reader I never swept for died one step later. Single-sourced
 
 **Run `32561891829` was the closest yet, and everything built tonight WORKED on it, verbatim:**
