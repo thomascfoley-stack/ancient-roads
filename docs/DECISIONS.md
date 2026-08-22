@@ -1907,7 +1907,7 @@ proposed n≈100 proper-noun labelling slice; that work is cancelled, not deferr
 > HIT@2 is the honest metric whatever its bar turns out to be.**
 >
 > **RULED 2026-08-21 — see [ADR-118](#adr-118--the-proper-noun-hit2-bar-85-on-the-point-estimate-at-n20-owner-2026-08-21):
-> 85% on the POINT ESTIMATE at n=20 fresh cases (17/20 is the exact rung; n=19 has none), CI floor
+> **90%** on the POINT ESTIMATE at n=20 fresh cases (**18/20** is the exact rung; n=19 has none), CI floor
 > reported but not gated. This note is no longer open — read ADR-118 for the semantics argument,
 > which turned out to be the real decision.**
 
@@ -1969,7 +1969,44 @@ are already quarantined. It stays on the list. The browser-side render filter
 (`isMustNotServeAuthor`) is likewise unchanged: delivery is now gated mechanically; the render
 filter is the second line, not the hole.
 
-## ADR-118 — The proper-noun HIT@2 bar: 85% on the POINT ESTIMATE at n=20 (owner, 2026-08-21)
+## ADR-118 — The proper-noun HIT@2 bar: 90% on the POINT ESTIMATE at n=20 (owner, 2026-08-21; bar AMENDED 2026-08-22)
+
+> **⚠️ AMENDED 2026-08-22 — THE BAR IS 90%, NOT 85%.** Owner ruling, in chat, in their own words:
+> *"90% confirmed - 18/20. Lowering later is my call, made deliberately, not a reaction to a red
+> run - put that in the ADR. ADR-119 stands."* Recorded with its wording per the standing rule
+> ADR-119's dispute produced: an authorization carries the owner's verbatim words or it is an
+> unverified claim.
+>
+> **Pass requires 18/20.** `18/20 = 90.0%` exactly — the bar written here is still the bar
+> enforced, which is the whole reason n=20 was chosen. n=19 has neither an 85% nor a 90% rung.
+>
+> **The load-bearing half of this ruling is the second sentence, and it binds every future
+> session: _lowering later is the owner's call, made deliberately, not a reaction to a red run._**
+> A red run is not licence to soften this bar. If the gate reddens, the remedies are re-running
+> with more cases, or an explicit owner amendment — never a quiet adjustment of the number to fit
+> the observation. That is tuning the gate to the run, and it is the circularity this whole ADR
+> chain (ADR-103, ADR-116, ADR-117's cancelled slice) exists to prevent.
+>
+> **Power at the amended bar (k ≥ 18, n = 20), because the owner ruled with it in hand:**
+>
+> | true accuracy | P(fail the gate) |
+> |---|---|
+> | 75% | 90.9% |
+> | 80% | 79.4% |
+> | 85% | 59.5% |
+> | **90% — a system exactly at the bar** | **32.3%** |
+> | 95% | 7.6% |
+>
+> **A system sitting exactly on the bar fails about one run in three**, and the owner ruled
+> knowing it: *"I understand a system exactly at 90% fails ~1 in 3 by luck."* That is the price of
+> n=20, accepted rather than overlooked — and it is exactly why the no-softening sentence above
+> had to be ruled at the same moment, since the first red will look like evidence the bar is wrong
+> when it is only evidence that n is small.
+>
+> **Everything below stands except the number.** The semantics argument (point estimate, not CI
+> lower bound), the derivation of n=20, the freshness requirement and the rejected alternatives are
+> unchanged. Read "85%" below as superseded by **90%**, and "17/20" as superseded by **18/20**.
+
 
 **Closes the one thing [ADR-116](#adr-116--gated-beta-scope-the-proper-noun-metric-and-the-teachers-availability-owner-2026-08-21) deliberately left open.** ADR-116 changed the proper-noun gate's
 metric from HIT@1 to HIT@2 and then refused to set the bar, because the **70%** value had been

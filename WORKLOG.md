@@ -1,5 +1,47 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — The bar is 90% (ADR-118 amended); ADR-119 stands, sourced by a peer session
+
+**Owner, in their own words:** *"90% confirmed - 18/20. Lowering later is my call, made
+deliberately, not a reaction to a red run - put that in the ADR. ADR-119 stands. Push the
+provenance correction and run the F5 candidate."*
+
+**ADR-118 amended: the proper-noun HIT@2 bar is 90%, pass = 18/20.** `18/20 = 90.0%` exactly, so
+the bar written is still the bar enforced — which is the entire reason n=20 was chosen; n=19 has
+neither an 85% nor a 90% rung. Everything else in that ADR is unchanged: point-estimate semantics,
+the n=20 derivation, freshness, the rejected alternatives.
+
+**The second sentence is the load-bearing half and is recorded as binding.** A red run is not
+licence to soften the bar; the remedies are more cases or an explicit owner amendment. That had to
+be ruled in the same breath as the number, because at n=20 **a system sitting exactly on the bar
+fails ~1 in 3 runs** (32.3%) — so the first red will look like evidence the bar is wrong when it is
+only evidence that n is small. The owner ruled with that table in hand and said so.
+
+**ADR-119 needed no work from me — a peer session got there first and did it better.** It landed a
+ruling of record with the owner's verbatim text, a UTC timestamp and the originating session id
+(`4298d0b`), and kept my dispute record intact beneath it as history. The standing rule it
+produced is the right one and I am adopting it here: **an authorization claim carries the owner's
+verbatim words, a timestamp, and where they were said, or it is an unverified claim.** My
+provenance correction (`a95b992`) is in history; the ADR now shows both how it was wrongly
+recorded and how it was properly settled.
+
+**`BLOB_READ_WRITE_TOKEN` is now in Actions secrets** (`4298d0b`), so `blob-round-trip` should
+EXECUTE rather than throw on the next run — the first time that suite's `@vercel/blob` network hop
+is exercised in CI.
+
+### NOT DONE / UNVERIFIED
+
+- **F5 is not closed.** The candidate is the next completed run on current content. Three prior
+  candidates died to per-ref `cancel-in-progress` (`8ad9398`, `256701e` cancelled; `4ce6462`
+  superseded), which is the cost of several sessions sharing one ref.
+- **The 20 fresh proper-noun cases still do not exist.** ADR-118 is now a 90% bar with nothing
+  measured against it. Minting them is a held-out authoring slice: disjoint from pilot/v2/v3/v4,
+  frozen and hashed before any number exists. The v4 ten are burned for this purpose.
+- **`256701e`'s `audit` job failed** at `pnpm run audit` (step 6) — a failure that did not occur on
+  `8ad9398`, so it belongs to that commit's content and is not from this lane.
+- 125 is on dev, not production, and must precede any deploy carrying `7b2eae6`.
+
+
 ## 2026-08-22 — The skip-ceiling ruling is now REAL and SOURCED; ADR-119 resolved
 
 **The owner ruled, in their own words, 2026-08-22T06:31:36Z, in chat (session
