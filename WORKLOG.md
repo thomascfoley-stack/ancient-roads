@@ -1,5 +1,56 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — blob-round-trip's first real execution: 020 verified PASS, and the one red is a two-layer find (stale test + missing embed key). CI env decision OWNER-PENDING
+
+**Run `32557649616` (sha 93e92d5) — the first db-invariants run to reach a verdict on migration
+020, and it PASSED the replay** (the job reached the test phase; the prior run died AT 020).
+Verbatim:
+
+```
+ Test Files  1 failed | 143 passed | 8 skipped (152)
+      Tests  1 failed | 958 passed | 84 skipped (1043)
+ FAIL  test/user-corpus/blob-round-trip.test.ts > runs the WHOLE pipeline with real storage
+AssertionError: expected 'queued' to be 'chunking'
+```
+
+**The one red is `blob-round-trip` on its FIRST EVER execution** (ADR-119 item 1 — the secret now
+exists). Diagnosed by probe on dev against the live store, not by reading tea leaves; the drain
+stores its own error:
+
+```
+DRAIN RESULT: {"processed":1,"outcomes":{"queued":1},"reaped":0}
+ROW: [{"status":"queued","attempts":1,"parse_error":"DEEPINFRA_API_KEY is not set"}]
+```
+
+and with the key present the same pipeline runs clean end-to-end:
+
+```
+DRAIN RESULT: {"processed":1,"outcomes":{"ready":1},"reaped":0}
+ROW: [{"status":"ready","attempts":1,"parse_error":null}]
+```
+
+Two layers, both fixed or surfaced: (1) **the test was stale** — written pre-Slice-1 ("steps 3
+and 4 do not exist yet"), asserting `'chunking'`/not-`'ready'`; one drain pass now legitimately
+ends `'ready'`. Expectation updated to the current contract WITH the measurements cited in the
+test (4/4 green locally with full env). (2) **CI's db-invariants env lacks `DEEPINFRA_API_KEY`**
+— the drain's embed stage is real, so the suite cannot complete without it. The secret exists in
+Actions; wiring it into the step is a ONE-LINE change **deliberately NOT made: owner decision
+pending**, because the key un-skips every key-gated suite in that job (notably
+section-vector-pairing → ~100 real embed calls per CI run against the ephemeral branch).
+Mitigations already exist (429s announce a declared provider skip via probeProvider — the
+ceiling's vocabulary covers it; spend is fractions of a cent), but what a green run includes is
+the owner's call, per the ADR-119 precedent.
+
+**Also flagged: the ADR-118 amendment's source line is incomplete** — verbatim words present,
+but "in chat" with no timestamp and no session id. Awaiting the owner's confirmation; not
+unwound, not treated as settled.
+
+### NOT DONE / UNVERIFIED
+- The workflow env change (one line) — awaiting the owner's exact words.
+- The updated test is committed locally, NOT pushed — one push carries test + workflow change
+  after the ruling, so `cancel-in-progress` kills nothing mid-verdict.
+- /word/H430 behind the gate — still the owner's click.
+
 ## 2026-08-22 — The bar is 90% (ADR-118 amended); ADR-119 stands, sourced by a peer session
 
 **Owner, in their own words:** *"90% confirmed - 18/20. Lowering later is my call, made

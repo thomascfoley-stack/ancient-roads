@@ -130,7 +130,7 @@ describe.skipIf(!enabled)('@vercel/blob against the live store', () => {
     await expect(getUserDocument(pathname)).rejects.toThrow();
   }, 60_000);
 
-  it('runs the WHOLE pipeline with real storage: upload -> blob -> drain -> parse -> chunking', async () => {
+  it('runs the WHOLE pipeline with real storage: upload -> blob -> drain -> parse -> chunk -> embed -> ready', async () => {
     await cleanup();
     const bytes = docxBytes('The plowman plows for sowing and opens and harrows his ground.');
     const sum = await checksum(bytes);
@@ -143,13 +143,21 @@ describe.skipIf(!enabled)('@vercel/blob against the live store', () => {
       sql`UPDATE user_documents SET blob_url = ${pathname} WHERE user_id = ${USER} AND id = ${doc.id}`,
     ]);
 
-    // The drain fetches from the real store, parses, and writes status. No substitution anywhere.
+    // The drain fetches from the real store, parses, chunks, embeds, and writes status. No
+    // substitution anywhere — which is also why this suite now REQUIRES DEEPINFRA_API_KEY:
+    // the embed stage is real. EXPECTATION UPDATED 2026-08-22: this test predated Slice 1 and
+    // asserted `'chunking'` with the comment "steps 3 and 4 do not exist yet" — they exist, and
+    // one drain pass runs to 'ready'. Measured before changing (quality-slice rule 0), on the
+    // dev DB against the live store, 2026-08-22: without the key the drain requeues
+    // (status 'queued', parse_error "DEEPINFRA_API_KEY is not set", processed still 1 — the
+    // suite's first-ever CI execution surfaced exactly this); with the key one pass ends
+    // {"processed":1,"outcomes":{"ready":1}} and the row is status='ready', parse_error NULL.
     const result = await drain(USER, 1);
     expect(result.processed).toBe(1);
 
     const after = await getDocument(USER, doc.id);
-    expect(after?.status).toBe('chunking'); // parsed, not indexed — steps 3 and 4 do not exist yet
-    expect(after?.status).not.toBe('ready');
+    expect(after?.status).toBe('ready'); // the whole pipeline, not a prefix of it
+    expect(after?.parseError ?? null).toBeNull();
     expect(after?.extractableChars ?? 0).toBeGreaterThan(0);
   }, 60_000);
 
