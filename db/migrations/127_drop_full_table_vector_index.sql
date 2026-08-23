@@ -1,0 +1,33 @@
+-- ============================================================
+-- 127: drop idx_embeddings_vector — the full-table HNSW, consumerless at last
+-- ============================================================
+-- WHY NOW. The ~8 GB (prod; 4.8 GB dev, pg_relation_size 2026-08-22) full-table HNSW survived
+-- every partial-index migration because ONE shipped query shape still needed it:
+-- related-voices.ts carried no `source_type` conjunct, so its sweeps implied none of the five
+-- served partial indexes (WORKLOG 2026-08-21: "that broken query is its only shipped consumer").
+-- W-RELVOICE fixed the module: each sweep now conjuncts a routing.ts lane type and plans a
+-- served partial index (or an exact small-pool scan for hymn/poetry) — EXPLAIN pair committed at
+-- docs/evidence/swarm-2026-08-22/W-RELVOICE/ (red-*.json before, green-*.json after). After this
+-- drop, every remaining vector consumer is partial-index-backed or deliberately exact
+-- (suggested-readings.ts runs with enable_indexscan=off BY DESIGN — it does not want the graph).
+--
+-- ORDERING (ADR-025 zero-window): apply this ONLY after the conjunct fix is live. Dev state
+-- 2026-08-22: fix committed (06da89e) → EXPLAIN green on dev (pair committed) → **this drop NOT
+-- YET APPLIED anywhere** — idx_embeddings_vector confirmed PRESENT on dev (pg_indexes) and no
+-- 127 row in schema_migrations; an earlier revision of this header claimed the dev drop in past
+-- tense, which was false (caught by the R1 recovery check). Apply on dev via
+-- db/apply-migration-concurrent.mjs, then re-exercise the caller green. Prod order is the same,
+-- owner-applied: deploy the bundle first, confirm the panel, then drop. If the old bundle were
+-- still live at drop time its unfiltered sweep would not error — it would seq scan, slower but
+-- correct — so even a misordered apply degrades, it does not break.
+--
+-- CONCURRENTLY: run via db/apply-migration-concurrent.mjs. DROP INDEX CONCURRENTLY cannot run
+-- inside a txn block. Run as neondb_owner. Prod apply needs the owner's go, per occasion
+-- (AGENTS.md bylaw 7).
+--
+-- Rollback: rebuild it — CREATE INDEX CONCURRENTLY idx_embeddings_vector
+--   ON embeddings USING hnsw (embedding vector_cosine_ops);  (hours at this size; the reason
+--   this drop waited for proof, not hope).
+-- ============================================================
+
+DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_vector;

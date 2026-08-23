@@ -19,20 +19,42 @@
 // score, not a citation, and the UI must never let the two read the same — the product reports
 // what others said, and "related" is a weaker claim than "on this passage".
 //
-// ── WHY THREE QUERIES, AND NOT ONE ──────────────────────────────────────────────────────────────
+// ── WHY SIX SWEEPS, AND NOT ONE ───────────────────────────────────────────────────────────────
 // A single nearest-neighbour sweep returns prose almost exclusively: prose is 303,148 of the
 // 398,113 served rows, and hymns and poetry (11k combined, shorter and more figurative) never
 // reach the top. Measured — a global top-12 was 8/12 Spurgeon and contained no hymn or poetry at
 // all. Since the ASK is hymns and poetry alongside the commentators, each register is retrieved on
 // its own budget.
 //
+// Every sweep carries a `source_type` conjunct IMPORTED from routing.ts (never re-typed), because
+// the conjunct is what lets the planner prove query ⇒ partial-index predicate. Without one this
+// module was the full-table `idx_embeddings_vector`'s ONLY shipped consumer — the unfiltered
+// sweep rode the ~8 GB graph, and the register-filtered sweeps (a metadata register says nothing
+// provable about source_type) SEQ SCANNED (red-{general,hymn,poetry}.json,
+// docs/evidence/swarm-2026-08-22/W-RELVOICE/). Prose is split per LANE — exegetical, sermon,
+// theology, historian — because no single partial index covers the prose union and the planner
+// cannot merge KNN walks across the lane indexes (probed: the union conjunct still planned the
+// full-table index). Each lane sweep implies its own partial HNSW (044/114); hymn/poetry imply
+// idx_embeddings_served_song_verse and plan exact small-pool scans. Served lexicon / topical_index
+// / devotional rows (23,657 / 13,082 / 6,589 on dev, measured) are no longer eligible — the
+// register wall names no lane for them (routing.ts), so the panel was the only surface still
+// admitting them. With every sweep off the full-table graph, migration 127 drops it.
+//
 // The register filter is applied as `metadata->>'register' = $` for hymn and poetry only. Writing
 // it as `COALESCE(metadata->>'register','prose') = 'prose'` for the third is not indexable and
-// took **84 seconds** against production; the unfiltered sweep is index-backed, returns the same
-// prose, and takes ~400ms. All three run in parallel: 1.24s end to end, measured.
+// took **84 seconds** against production; the per-lane type conjuncts are what the partial
+// indexes are predicated on, and register/source_type are 1:1 for hymn/poetry (0 mismatches,
+// dev-measured). All six run in one parallel batch.
 
 import { runAsUser } from '@/lib/db';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from '@/lib/forbidden-provenance.mjs';
+import {
+  EXEGETICAL_TYPE_SQL,
+  HISTORIAN_TYPE_SQL,
+  SERMON_TYPE_SQL,
+  SONG_VERSE_TYPE_SQL,
+  THEOLOGY_TYPE_SQL,
+} from '@/lib/teacher/routing';
 import { EMBEDDING_DB_SLUG, corpusRecordedModel, isJoinable } from './model';
 import type { CorpusPredicate } from './tradition-gap';
 
@@ -60,7 +82,7 @@ const PER_REGISTER = 6;
 /** Inner sweep before de-duplication by author+work. */
 const SWEEP = 300;
 
-// hnsw.ef_search for the three sweeps, set transaction-locally in the SAME runAsUser batch
+// hnsw.ef_search for the six sweeps, set transaction-locally in the SAME runAsUser batch
 // (runAsUser wraps its queries in one sql.transaction; `set_config(…, true)` anywhere else is a
 // no-op on the stateless driver — routing.ts:311-315, the one shipped precedent). At the default
 // ef_search=40 an HNSW scan returns AT MOST 40 candidates, so a LIMIT ${SWEEP} sweep was starving
@@ -126,7 +148,9 @@ export async function relatedVoices(
   // The provenance belt (D9): the same leg servability.ts / studies.ts / research.ts apply.
   // `served` does NOT subsume it — ADR-044's served-but-forbidden rows are live exposure — and a
   // voice surfaced from a forbidden aggregator is an attribution the product may not make.
-  const sweep = (registerFilter: string): string => `
+  // `scope` is the lane's source_type conjunct, IMPORTED from routing.ts verbatim (the header
+  // explains why the conjunct is the whole ballgame for the planner).
+  const sweep = (scope: string): string => `
     WITH near AS (
       SELECT e.metadata->>'author'    AS author,
              e.metadata->>'work'      AS work,
@@ -140,7 +164,7 @@ export async function relatedVoices(
                 SELECT 1 FROM unnest($2::text[]) d
                 WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d || '%'))
          AND ${predicate}
-         ${registerFilter}
+         ${scope}
        ORDER BY e.embedding <=> $1::vector
        LIMIT ${SWEEP}
     )
@@ -148,13 +172,19 @@ export async function relatedVoices(
       FROM near ORDER BY author, work, sim DESC`;
 
   const domains = [...FORBIDDEN_PROVENANCE_DOMAINS];
-  const [, general, hymn, poetry] = await runAsUser(userId, (sql) => [
-    // Transaction-local, so it governs exactly the three sweeps below and cannot leak into any
+  const [, exegetical, sermon, theology, historian, hymn, poetry] = await runAsUser(userId, (sql) => [
+    // Transaction-local, so it governs exactly the six sweeps below and cannot leak into any
     // other query on the pooled connection. Value rationale at SWEEP_EF_SEARCH.
     sql`SELECT set_config('hnsw.ef_search', ${String(SWEEP_EF_SEARCH)}, true)`,
-    sql.query(sweep(''), [centroid, domains]),
-    sql.query(sweep(`AND e.metadata->>'register' = 'hymn'`), [centroid, domains]),
-    sql.query(sweep(`AND e.metadata->>'register' = 'poetry'`), [centroid, domains]),
+    // The prose panel, one sweep per lane: no partial index covers the prose union (header).
+    sql.query(sweep(`AND ${EXEGETICAL_TYPE_SQL}`), [centroid, domains]),
+    sql.query(sweep(`AND ${SERMON_TYPE_SQL}`), [centroid, domains]),
+    sql.query(sweep(`AND ${THEOLOGY_TYPE_SQL}`), [centroid, domains]),
+    sql.query(sweep(`AND ${HISTORIAN_TYPE_SQL}`), [centroid, domains]),
+    // Hymn and poetry keep their register filters (the label is the register) AND gain the
+    // song/verse type conjunct that implies the partial index.
+    sql.query(sweep(`AND e.metadata->>'register' = 'hymn' AND ${SONG_VERSE_TYPE_SQL}`), [centroid, domains]),
+    sql.query(sweep(`AND e.metadata->>'register' = 'poetry' AND ${SONG_VERSE_TYPE_SQL}`), [centroid, domains]),
   ]);
 
   const take = (rows: unknown, register: RelatedVoice['register']): RelatedVoice[] =>
@@ -167,14 +197,16 @@ export async function relatedVoices(
         similarity: Number(r.sim),
         origin: 'corpus' as const,
       }))
-      // The unfiltered sweep can return a hymn or a poem; let it be counted as what it is rather
-      // than relabelled by which query happened to find it.
+      // A prose-lane row can carry a register label of its own (sermon, historian); it is still
+      // prose for this panel, so only the hymn/poetry sweeps' labels are honoured as-is.
       .filter((v) => (register === 'prose' ? v.register === 'prose' : v.register === register))
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, PER_REGISTER);
 
   const seen = new Set<string>();
-  const voices = [...take(general, 'prose'), ...take(hymn, 'hymn'), ...take(poetry, 'poetry')].filter((v) => {
+  // The four lane sweeps are ONE prose pool: merged, then capped by similarity like before.
+  const prose = [...exegetical, ...sermon, ...theology, ...historian] as unknown[];
+  const voices = [...take(prose, 'prose'), ...take(hymn, 'hymn'), ...take(poetry, 'poetry')].filter((v) => {
     const key = `${v.author}|${v.work}`;
     if (seen.has(key)) return false;
     seen.add(key);
