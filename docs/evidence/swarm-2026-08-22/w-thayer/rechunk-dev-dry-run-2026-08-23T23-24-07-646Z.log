@@ -1,0 +1,8 @@
+W-THAYER re-chunk oversized thayers-lexicon sections → D1(b) bare body, leading ≤1800 chars
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: DRY-RUN · model: BAAI/bge-large-en-v1.5 (stored slug 'bge-large-en-v1.5')
+evidence log: /private/tmp/ap-wave7/docs/evidence/swarm-2026-08-22/w-thayer/rechunk-dev-dry-run-2026-08-23T23-24-07-646Z.log
+
+oversized sections (body > 1800 chars) on thayers-lexicon: 484 (max body 34598 chars; lacking 'bge-large-en-v1.5' vector: 0)
+estimated spend: ~217,800 tokens (~$0.0022 at $0.01/M)
+
+DRY-RUN — nothing written. Re-run with --apply to re-chunk + re-embed.
