@@ -60,6 +60,36 @@ whole render, cold.
   ("fix history first, make plan later for the search history tab on the side").
 
 
+### Deployed — `b85fcc2` live on `ancientpaths.app`
+
+`dpl_cTCHG2fELa58JPb8KQ3QJnJ9S2Bi`, 2026-08-23T04:42Z, alias verified by deployment-id match
+([receipt](docs/evidence/deploys/deploy-b85fcc2-2026-08-23T04-37-00Z.txt)). Deployed from a detached
+worktree at the committed sha, not from the main tree — which still carries another session's staged
+deletion and would have blocked the clean-tree gate. `b85fcc2` CONTAINS `d5cfa04` / `abe5252` /
+`9dce273` / `b5c1b94` by ancestry, so nothing live regressed; both peer sessions confirmed they held
+no deploy before it ran.
+
+**Verified against production, not against the build log.** The site is gated, but `/gate` is public
+and `_next/` is outside the middleware matcher, so the shipped stylesheet can be read directly:
+`https://ancientpaths.app/_next/static/immutable/chunks/0x9133iryvvm6.css` carries
+`@keyframes progress-travel{0%{transform:translate(-100%)}to{transform:translate(300%)}}`,
+`.progress-travel{animation:progress-travel 1.5s var(--ease-gentle) infinite}` and the reduced-motion
+rule `{opacity:.6;width:100%;animation:none;transform:none}`. The fix is in the bytes the browser
+gets, which is a different claim from "the build succeeded".
+
+**Still to read off production, by someone with the gate password:** whether the first History click
+is actually faster (the prefetch is prod-only and unmeasured), and what a real cold `/api/history/search`
+now costs — the 3.4s→0.95s numbers are one local process against dev.
+
+**A correction I owe the record.** In taking the deploy I told both peer sessions that the staged
+deletion of `scripts/ci-fetch-bible-kjv.mjs` must be preserved because deleting it would undo the F5
+CI bible-assets fetch. That is INVERTED, and both sessions independently measured it: `audit.yml`
+calls `scripts/ci-fetch-bible-assets.mjs` (plural, all 18 translations, `ad0f1f7`) and references
+`ci-fetch-bible-kjv.mjs` nowhere. The kjv script was the first slice (`8c8b895`) and was superseded
+under a new name; the staged deletion is the delete half of a rename that was never committed. It is
+still not this session's index to commit, and it is left alone — but not on the false premise, which
+is exactly the kind of hazard note this repo has watched outlive its subject.
+
 ### Same day, second half — the search itself: 3.4s → 0.95s, same answers
 
 **Measured first.** `searchHistory()` (`web/src/lib/history-search-db.ts`) ran as six awaits in a
