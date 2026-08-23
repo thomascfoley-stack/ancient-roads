@@ -58,8 +58,9 @@ read against dev's mutation state before being treated as signal.**
 | W-SCANRE | 2 | IN-FLIGHT — ADR-gated (adversarial set ≥30 + pre-reg) | `swarm/w-scanre-false-floor` (launching) |
 | W-SEC1 | 5 | NOT-STARTED — next batch (A5 slot) | — |
 | W-SIXWORKS | 6 | NOT-STARTED — enumeration only; next batch (A5 slot) | — |
-| W-STRONGS | 1c | IN-FLIGHT — lane position 4 (G2316 truncated glosses) | `swarm/w-strongs-gloss-fix` (launching) |
-| W-REGDURABLE · W-RELVOICE-finish · W-ANCHORBACKFILL · W-OWNERSHIPCOL · W-DEVROW | 1c/4 | NOT-STARTED — writer lane positions 5–9, sequential | — |
+| W-STRONGS | 1c | **MOOT-WITH-FINDING** — truncation is in the UPSTREAM 2007 XML, not the adapter (whole-corpus diff: 14,197/14,197 entries, 0 mismatches; check red-proofed); Strong's is a gitignored static asset, no DB work exists. Packet decision: derivation+def composition is a UX/display-semantics call | `swarm/w-strongs-gloss-fix` @ fdf9701 |
+| W-REGDURABLE | 1c | IN-FLIGHT — lane position 5 (register flip durability) | `swarm/w-regdurable-flips` (launching) |
+| W-RELVOICE-finish · W-ANCHORBACKFILL · W-OWNERSHIPCOL · W-DEVROW | 1b/4 | NOT-STARTED — writer lane positions 6–9, sequential | — |
 | W-BOARDHYGIENE | 6 | NOT-STARTED — runs last among docs (orchestrator) | — |
 
 ## Conventions
