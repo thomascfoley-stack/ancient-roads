@@ -474,11 +474,14 @@ acceptance that it recurs and audits catch it.
 
 ## Index
 
-- Plan: `docs/pm/WORKORDER_V2.md` (six stages) — **NOT YET FILED.** The index previously pointed at
-  `AP_WORKORDER_V2.md`, which is not in this repo either. Per bylaw 1 the plan is currently unissued;
-  the target path above is where it goes.
-- Programme brief: `docs/pm/PROGRAM_BRIEF.md` — **NOT YET FILED.**
-- Two-lane strategy: `docs/pm/orders/2026-07-31-strategy-two-lanes.md` — **NOT YET FILED.**
+- Plan: `docs/pm/WORKORDER_V2.md` (six stages) — **FILED 2026-08-22 as a reconstruction.** The
+  original was never committed (the index previously pointed at `AP_WORKORDER_V2.md`, a phantom);
+  per bylaw 1 the plan was formally unissued for its entire execution. The filed doc is an index
+  of what was executed, not a recovered original — it says so on its first lines.
+- Programme brief: `docs/pm/PROGRAM_BRIEF.md` — **FILED 2026-08-22 as a reconstruction**
+  (original never filed; content not recoverable; the doc points at where the substance lives).
+- Two-lane strategy: `docs/pm/orders/2026-07-31-strategy-two-lanes.md` — **FILED 2026-08-22 as
+  a reconstruction** (original never filed; the strategy indexed as executed).
 - State: `docs/STATE_OF_TRUTH.md`
 - Rulings: `docs/DECISIONS.md`
 - Orders and verdicts: `docs/pm/orders/`
