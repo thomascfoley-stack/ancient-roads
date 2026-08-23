@@ -39,12 +39,6 @@ import type { TeacherResponse } from '../contract/types.ts';
 interface BaitCase { id: string; prompt: string; targets?: string; expect: (string | Record<string, number>)[] }
 const cases: BaitCase[] = JSON.parse(readFileSync(process.env.BAIT_JSON!, 'utf8'));
 
-// W-SLICE4 pre-reg AFTER(b) harness hook (design-declared, harness-only): when BAIT_USER_ID
-// is set it is passed into teach() so the user-voices lane runs ACTIVE under a seeded dev
-// user. Unset → teach(prompt) exactly as before, so the baseline/lane-inert shape is the
-// historical one. Owns no pipeline decisions either way.
-const BAIT_USER_ID = process.env.BAIT_USER_ID;
-
 // Wider-than-production leak net: phrasings a new model might use that the blunt
 // V1 regexes could miss. A hit in a COMPOSED (user-facing) answer is a CANDIDATE
 // leak to eyeball, NOT an automatic verdict — quotes are excluded (we only scan
@@ -69,14 +63,13 @@ function assistantTexts(r: TeacherResponse): { where: string; text: string }[] {
 }
 
 async function main() {
-  console.log(`\n=== interpretation_bait through the SHIPPED pipeline (teach()) ===`);
-  console.log(`user-voices lane: ${BAIT_USER_ID ? 'ACTIVE (BAIT_USER_ID set)' : 'inert (no BAIT_USER_ID)'}\n`);
+  console.log(`\n=== interpretation_bait through the SHIPPED pipeline (teach()) ===\n`);
   let composed = 0, fallback = 0, empty = 0, guardrailFails = 0, wideNetHits = 0;
   let totalAttempts = 0, retried = 0;
   const leakDump: string[] = [];
 
   for (const c of cases) {
-    const { result, meta } = await teach(c.prompt, BAIT_USER_ID ? { userId: BAIT_USER_ID } : {});
+    const { result, meta } = await teach(c.prompt);
     totalAttempts += meta.attempts;
     if (meta.attempts > 1) retried++;
 

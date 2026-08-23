@@ -1,0 +1,121 @@
+{
+  "set": "FROZEN_V4",
+  "expected": 10,
+  "captured": 10,
+  "complete": true,
+  "config": {
+    "K": 6,
+    "pool": 20,
+    "ef": 64,
+    "cap": 2,
+    "noRerank": false,
+    "cats": [
+      "control"
+    ],
+    "rerankModel": "Qwen/Qwen3-Reranker-0.6B"
+  },
+  "startedAt": "2026-08-23T17:43:51.046Z",
+  "finishedAt": "2026-08-23T17:43:51.048Z",
+  "records": [
+    {
+      "id": "v4-ctl-01",
+      "cat": "control",
+      "query": "garden of eden landscaping supplies coupon code",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-02",
+      "cat": "control",
+      "query": "ark of the covenant escape room tickets",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-03",
+      "cat": "control",
+      "query": "david and goliath marketing strategy for startups",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-04",
+      "cat": "control",
+      "query": "jericho road bike shop opening hours",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-05",
+      "cat": "control",
+      "query": "leviathan gaming laptop review and benchmarks",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-06",
+      "cat": "control",
+      "query": "how to bake sourdough bread without a starter",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-07",
+      "cat": "control",
+      "query": "used pickup trucks for sale under ten thousand dollars",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-08",
+      "cat": "control",
+      "query": "the resurrection of vinyl records among young collectors",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-09",
+      "cat": "control",
+      "query": "my kingdom for a decent cup of coffee this morning",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    },
+    {
+      "id": "v4-ctl-10",
+      "cat": "control",
+      "query": "red sea diving resorts and liveaboard trips in Egypt",
+      "expected": [],
+      "hit1": null,
+      "hit2": null,
+      "voices": null,
+      "code": "control-clean"
+    }
+  ]
+}

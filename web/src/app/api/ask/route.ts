@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const startedAt = Date.now();
   try {
-    const { result, meta } = await teach(question, { userId: user.id });
+    const { result, meta } = await teach(question);
     const latencyMs = Date.now() - startedAt;
     logAskOutcome(result.kind, latencyMs, meta);
     // Same durable write as the stream route (migration 116) — off the request path,

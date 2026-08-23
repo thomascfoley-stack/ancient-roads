@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const { result, meta } = await teach(question, { onEvent: write, lanes, userId: user.id });
+        const { result, meta } = await teach(question, { onEvent: write, lanes });
         const latencyMs = Date.now() - startedAt;
         logAskOutcome(result.kind, latencyMs, meta);
         // One durable row per completed ask (migration 116, Phase-D substrate). Off the
