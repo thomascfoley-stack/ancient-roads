@@ -1,0 +1,21 @@
+=== leg 1: hash-pin test GREEN at freeze (control) ===
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  10:40:16
+   Duration  269ms (transform 38ms, setup 0ms, collect 31ms, tests 3ms, environment 0ms, prepare 44ms)
+
+
+=== leg 2: seed a one-byte defect into the frozen pn20 set -> must go RED ===
+ ❯ test/heldout-frozen-hash.test.ts (3 tests | 1 failed) 8ms
+   × held-out discipline — the frozen v3 eval set may not drift > FROZEN_PN20 content-hash matches the pin (never tune the frozen set to failures) 5ms
+ FAIL  test/heldout-frozen-hash.test.ts > held-out discipline — the frozen v3 eval set may not drift > FROZEN_PN20 content-hash matches the pin (never tune the frozen set to failures)
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+
+=== leg 3: revert -> GREEN again ===
+0c753637556fe7c0d0ced7121171a59df25fa3b02b5a10c9b46460dcaf622a6d  web/src/scripts/heldout-pn20-queries.mts
+      Tests  3 passed (3)
+   Start at  10:40:18
+   Duration  489ms (transform 26ms, setup 0ms, collect 24ms, tests 2ms, environment 0ms, prepare 104ms)
+

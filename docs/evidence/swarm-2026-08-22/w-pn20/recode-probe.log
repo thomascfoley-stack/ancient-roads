@@ -1,0 +1,195 @@
+
+===== pn18  Q: "Diotrephes who loveth to have the preeminence"  label: 3 John 1 (verseId 64001001..64001999) =====
+  scanReferences → (none)
+  resolveIntent  → inject: 0 range(s), floor: 0 range(s)
+  base-pool size at ef=64: n=5 (LIMIT 20)
+  base-pool size at ef=200: n=20 (LIMIT 20)
+  base-pool size at ef=1000: n=20 (LIMIT 20)
+  base pool (commentary+father, served, top-20 vector) (n=5):
+      Ps 89:15         Calvin, John                 calvin-calcom10
+      Ps 37:1          Calvin, John                 calvin-calcom09
+      Matt 20:17       John Chrysostom              chrysostom-homilies
+      Acts 5:17        John Chrysostom              chrysostom-homilies
+      Matt 20:17       John Chrysostom              chrysostom-homilies
+  injection: SKIPPED (no scanned references — routing cannot drop anything here)
+  post-rerank order (n=5):
+      Ps 89:15         Calvin, John                 calvin-calcom10
+      Ps 37:1          Calvin, John                 calvin-calcom09
+      Matt 20:17       John Chrysostom              chrysostom-homilies
+      Acts 5:17        John Chrysostom              chrysostom-homilies
+      Matt 20:17       John Chrysostom              chrysostom-homilies
+  backfill chapters (top-3): Ps 89, Ps 37, Matt 20
+  FINAL top-K voices (n=6):
+      Ps 89:15         Calvin, John                 calvin-calcom10
+      Ps 89:1          Augustine of Hippo           
+      Ps 37:1          Calvin, John                 calvin-calcom09
+      Ps 37:12         Augustine of Hippo           augustine-homilies
+      Matt 20:17       John Chrysostom              chrysostom-homilies
+      Matt 20:21       Albert Barnes                
+  served rows on 3 John 1 by type/author:
+    commentary   Adam Clarke                    14
+    commentary   Albert Barnes                  13
+    commentary   John Gill                      13
+    commentary   John Wesley                    10
+    commentary   Matthew Henry                  4
+    devotional   Charles Spurgeon               2
+    devotional   Jonathan Bagster               1
+    sermon       Charles Haddon Spurgeon        34
+    topical_index OpenBible.info                 11
+    topical_index Orville J. Nave                1
+  served rows mentioning "Diotrephes" (anywhere / on-label):
+    Albert Barnes                  commentary   total=10  on-label=6
+    John Gill                      commentary   total=9  on-label=4
+    Adam Clarke                    commentary   total=6  on-label=3
+    John Wesley                    commentary   total=2  on-label=2
+    Orville J. Nave                topical_index total=4  on-label=1
+    Matthew Henry                  commentary   total=1  on-label=1
+    Charles Haddon Spurgeon        sermon       total=14  on-label=0
+    John Owen                      theology     total=13  on-label=0
+    R. A. Torrey                   topical_index total=3  on-label=0
+    Jonathan Edwards               sermon       total=3  on-label=0
+    Alexander Maclaren             sermon       total=2  on-label=0
+    Smith, William                 lexicon      total=1  on-label=0
+
+===== pn16  Q: "Stephanas and his household, the firstfruits of Achaia"  label: 1 Corinthians 16 (verseId 46016001..46016999) =====
+  scanReferences → (none)
+  resolveIntent  → inject: 0 range(s), floor: 0 range(s)
+  base-pool size at ef=64: n=8 (LIMIT 20)
+  base-pool size at ef=200: n=20 (LIMIT 20)
+  base-pool size at ef=1000: n=20 (LIMIT 20)
+  base pool (commentary+father, served, top-20 vector) (n=8):
+      Ezra 4:6         C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Dan 11:7         Adam Clarke                  adam-clarke
+      Ezek 27:1        C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Dan 5:28         Calvin, John                 calvin-calcom24
+      Ezek 27:1        C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Dan 5:28         Calvin, John                 calvin-calcom24
+      Gen 2:10         C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Nah 3:18         C.F. Keil & Franz Delitzsch  keil-delitzsch
+  injection: SKIPPED (no scanned references — routing cannot drop anything here)
+  post-rerank order (n=8):
+      Dan 11:7         Adam Clarke                  adam-clarke
+      Ezra 4:6         C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Ezek 27:1        C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Dan 5:28         Calvin, John                 calvin-calcom24
+      Dan 5:28         Calvin, John                 calvin-calcom24
+      Gen 2:10         C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Ezek 27:1        C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Nah 3:18         C.F. Keil & Franz Delitzsch  keil-delitzsch
+  backfill chapters (top-3): Dan 11, Ezra 4, Ezek 27
+  FINAL top-K voices (n=6):
+      Dan 11:7         Adam Clarke                  adam-clarke
+      Dan 11:20        C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Ezra 4:6         C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Ezra 4:5         Adam Clarke                  adam-clarke
+      Ezek 27:1        C.F. Keil & Franz Delitzsch  keil-delitzsch
+      Ezek 27:10       Adam Clarke                  adam-clarke
+  served rows on 1 Corinthians 16 by type/author:
+    commentary   Adam Clarke                    24
+    commentary   Albert Barnes                  23
+    commentary   John Gill                      20
+    commentary   John Wesley                    18
+    commentary   Jamieson, Robert               17
+    commentary   Matthew Henry                  5
+    sermon       Jonathan Edwards               79
+    sermon       Alexander Maclaren             25
+    topical_index OpenBible.info                 6
+    topical_index Orville J. Nave                3
+  served rows mentioning "Stephanas" (anywhere / on-label):
+    Albert Barnes                  commentary   total=5  on-label=3
+    Adam Clarke                    commentary   total=9  on-label=2
+    John Gill                      commentary   total=3  on-label=2
+    Jamieson, Robert               commentary   total=5  on-label=1
+    John Wesley                    commentary   total=2  on-label=1
+    John Chrysostom                father       total=4  on-label=0
+    Charles Haddon Spurgeon        sermon       total=4  on-label=0
+    Easton, Matthew George         lexicon      total=4  on-label=0
+    Smith, William                 lexicon      total=3  on-label=0
+    Charles Hodge                  theology     total=1  on-label=0
+    Augustine of Hippo             father       total=1  on-label=0
+    John Owen                      theology     total=1  on-label=0
+
+===== pn13  Q: "Joseph of Arimathaea who begged the body of Jesus"  label: Luke 23 (verseId 42023001..42023999) =====
+  scanReferences → (none)
+  resolveIntent  → inject: 0 range(s), floor: 0 range(s)
+  base-pool size at ef=64: n=17 (LIMIT 20)
+  base-pool size at ef=200: n=20 (LIMIT 20)
+  base-pool size at ef=1000: n=20 (LIMIT 20)
+  base pool (commentary+father, served, top-20 vector) (n=17):
+      Matt 27:57       Augustine of Hippo           augustine-homilies
+      Matt 27:57       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+    * Luke 23:50       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      John 19:38       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      John 19:38       John Wesley                  wesley-crosswire
+      John 19:38       Matthew Henry                matthew-henry
+      Matt 27:57       Augustine of Hippo           augustine-homilies
+      Matt 27:57       Augustine of Hippo           augustine-homilies
+      Mark 15:42       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      Matt 27:57       John Gill                    john-gill
+      John 15:27       Augustine of Hippo           augustine-homilies
+      John 19:38       John Gill                    john-gill
+      Gen 47:28        C.F. Keil & Franz Delitzsch  keil-delitzsch
+      John 19:38       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      Mark 15:42       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      Heb 11:22        Adam Clarke                  adam-clarke
+    * Luke 23:50       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+  injection: SKIPPED (no scanned references — routing cannot drop anything here)
+  post-rerank order (n=17):
+      Matt 27:57       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      Matt 27:57       Augustine of Hippo           augustine-homilies
+      Matt 27:57       Augustine of Hippo           augustine-homilies
+      Mark 15:42       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      John 15:27       Augustine of Hippo           augustine-homilies
+      Matt 27:57       Augustine of Hippo           augustine-homilies
+    * Luke 23:50       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      John 19:38       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      Matt 27:57       John Gill                    john-gill
+      John 19:38       John Wesley                  wesley-crosswire
+      John 19:38       Matthew Henry                matthew-henry
+      John 19:38       John Gill                    john-gill
+      Mark 15:42       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+    * Luke 23:50       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      John 19:38       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      Heb 11:22        Adam Clarke                  adam-clarke
+      Gen 47:28        C.F. Keil & Franz Delitzsch  keil-delitzsch
+  backfill chapters (top-3): Matt 27
+  FINAL top-K voices (n=6):
+      Matt 27:57       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      Matt 27:57       Albert Barnes                
+      Mark 15:42       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      John 15:27       Augustine of Hippo           augustine-homilies
+    * Luke 23:50       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+      John 19:38       Thomas Aquinas (comp.), trans. J.H. Newman catena-aurea
+  served rows on Luke 23 by type/author:
+    commentary   John Gill                      49
+    commentary   Albert Barnes                  42
+    commentary   Adam Clarke                    33
+    commentary   John Wesley                    20
+    commentary   Jamieson, Robert               7
+    commentary   Matthew Henry                  6
+    confession   Philip Schaff                  12
+    devotional   J.C. Ryle                      30
+    devotional   Charles Spurgeon               8
+    father       Thomas Aquinas (comp.), trans. J.H. Newman 59
+    father       Schaff, Philip                 3
+    hymn         John Newton & William Cowper   4
+    hymn         Watts, Isaac                   1
+    sermon       Charles Haddon Spurgeon        449
+    sermon       John Flavel                    177
+    sermon       Alexander Maclaren             64
+    theology     Charles Hodge                  2
+    topical_index OpenBible.info                 4
+    topical_index Orville J. Nave                2
+    topical_index R. A. Torrey                   2
+  served rows mentioning "Arimathaea" (anywhere / on-label):
+    Charles Haddon Spurgeon        sermon       total=35  on-label=0
+    Orville J. Nave                topical_index total=8  on-label=0
+    R. A. Torrey                   topical_index total=3  on-label=0
+    Smith, William                 lexicon      total=3  on-label=0
+    Thomas Aquinas (comp.), trans. J.H. Newman father       total=3  on-label=0
+    Thomas Watson                  sermon       total=2  on-label=0
+    C.F. Keil & Franz Delitzsch    commentary   total=2  on-label=0
+    John Gill                      commentary   total=2  on-label=0
+    Albert Barnes                  commentary   total=2  on-label=0
+
+DONE — read-only probe, no writes.
