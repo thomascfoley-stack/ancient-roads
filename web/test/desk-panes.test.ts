@@ -1,7 +1,7 @@
 // The desk's pane state comes from a USER-EDITABLE URL, so the parser is a trust boundary and it
-// is tested like one. The cap especially: three panes is a layout constraint enforced in the
-// parser, because `?p=` repeated ten times must be truncated before it reaches the layout rather
-// than by whatever CSS happens to do with ten columns.
+// is tested like one. The ceiling especially: sixteen panes (the 4x4 grid) is a layout constraint
+// enforced in the parser, because `?p=` repeated a hundred times must be truncated before it
+// reaches the layout rather than by whatever CSS happens to do with a hundred grid cells.
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -61,17 +61,20 @@ describe('the parser refuses malformed panes rather than guessing', () => {
   }
 });
 
-describe('the three-pane cap is enforced in the parser', () => {
+describe('the pane ceiling is enforced in the parser', () => {
   it('never returns more than MAX_PANES', () => {
-    const many = ['work:a', 'work:b', 'work:c', 'work:d', 'work:e'];
+    const many = Array.from({ length: 20 }, (_, i) => `work:w${i}`);
     expect(decodeDesk(many)).toHaveLength(MAX_PANES);
-    expect(decodeDesk(many).map(encodePane)).toEqual(['work:a', 'work:b', 'work:c']);
+    expect(decodeDesk(many).map(encodePane)).toEqual(many.slice(0, MAX_PANES));
   });
 
-  it('dedupes BEFORE truncating, so a,a,b,c still fills three distinct panes', () => {
-    // Truncating first would yield [a, b] from a,a,b,c and waste a slot on a duplicate.
-    const panes = decodeDesk(['work:a,work:a,work:b,work:c']);
-    expect(panes.map(encodePane)).toEqual(['work:a', 'work:b', 'work:c']);
+  it('dedupes BEFORE truncating, so a duplicate never wastes a slot', () => {
+    // 18 entries, 17 distinct: truncating first would yield 15 panes (a,a,w0..w13 deduped),
+    // so this case distinguishes the order the two steps run in.
+    const values = ['work:a,work:a', ...Array.from({ length: 16 }, (_, i) => `work:w${i}`)];
+    const panes = decodeDesk(values);
+    expect(panes).toHaveLength(MAX_PANES);
+    expect(panes.map(encodePane)).toEqual(['work:a', ...Array.from({ length: 15 }, (_, i) => `work:w${i}`)]);
   });
 
   it('drops malformed entries without dropping the valid ones around them', () => {
@@ -92,15 +95,17 @@ describe('adding and removing panes', () => {
     d = withPane(d, scripture('john', 3));
     d = withPane(d, work('calvin-institutes'));
     d = withPane(d, work('spurgeon-sermons'));
-    expect(d).toHaveLength(3);
+    d = withPane(d, work('olney-hymns'));
+    expect(d).toHaveLength(4);
   });
 
   it('at the cap it evicts the OLDEST, keeping what the reader just asked for', () => {
-    const full = [scripture('john', 3), work('a'), work('b')];
-    const next = withPane(full, work('c'));
-    expect(next.map(encodePane)).toEqual(['work:a', 'work:b', 'work:c']);
+    const full: Pane[] = [scripture('john', 3), ...Array.from({ length: 15 }, (_, i) => work(`w${i}`))];
+    const next = withPane(full, work('z'));
+    expect(next).toHaveLength(MAX_PANES);
     // the newly requested pane is present; the first one opened is the one that left
-    expect(next.map(encodePane)).toContain('work:c');
+    expect(next.map(encodePane)).toContain('work:z');
+    expect(next.map(encodePane)).not.toContain('scripture:john/3');
   });
 
   it('adding an already-open pane is a no-op, not a reshuffle', () => {
