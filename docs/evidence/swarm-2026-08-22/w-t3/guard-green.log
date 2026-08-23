@@ -1,0 +1,8 @@
+ ✓ test/invariants/t1-t3-first-run.test.ts (6 tests) 2ms
+ ✓ test/invariants/tab-bar-reserved-once.test.ts (4 tests) 47ms
+
+ Test Files  2 passed (2)
+      Tests  10 passed (10)
+   Start at  18:51:28
+   Duration  233ms (transform 32ms, setup 0ms, collect 29ms, tests 49ms, environment 0ms, prepare 79ms)
+
