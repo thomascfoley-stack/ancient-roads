@@ -40,6 +40,23 @@ rests on the ingest tooling's own digest. Dev DB carries mutations prod does not
 section-vector unification (08-22 close-out). The 21 unlaunched workstreams remain PENDING.
 Nothing was deployed; prod untouched throughout.
 
+**RECOVERY EXECUTED (same day, same order).** R1: `idx_embeddings_vector` PRESENT on dev — the
+drop was never applied; migration 127's false past-tense header corrected, 127 + schema.sql
+committed (`71ef715`); ledger (top=126) and pg_indexes agree with the file. R2: CSRF work
+committed (`f1d36b7`) — 16 handlers floored + 1 HELD, derived invariant, 3 red-proofs; SEC-5
+filed in SECURITY.md. R3: six dirty worktrees swept, all ten branches pushed
+(`git ls-remote --heads origin 'swarm/*'` = 10). R4/R6: status board rewritten
+(`docs/pm/swarm-2026-08-22/STATUS.md`), the three self-certified items marked DONE-UNVERIFIED.
+R5: "no accuracy gate is currently outstanding" corrected where readers meet it (CLAUDE.md §2,
+STATE_OF_TRUTH §1, ADR-118 row). A1–A4 filed as §12A of the closeout order. **W-PN20 label
+re-code (`46d8b9c`): count UNCHANGED (17/20, no mis-scored cases); all three misses
+retrieval-side — gold content present-and-served on dev in all three; `e033023` exonerated (zero
+references scanned, dedupe never runs); measured contributor is ef=64 base-pool starvation (5/20
+and 8/20 rows vs a correct fill at ef=1000). Gate stays OPEN; remedy is the owner's call.**
+Correction to this entry's NOT DONE list: the `idx_embeddings_vector` drop was NOT in fact
+applied to dev (R1 measured it present) — dev's drift is the relabel/unification + the partial
+npnf201 ingest only.
+
 ## 2026-08-22 — Session close-out: two detached DB jobs run to completion unattended; the handoff
 
 **Owner closed the session at 41 min. Both jobs are detached (nohup) and survive it.** State at

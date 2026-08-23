@@ -1,0 +1,55 @@
+# SWARM STATUS — autonomous swarm closeout 2026-08-22 (rewritten by recovery R4/R6, 2026-08-22)
+
+This board replaces the stale "SWARM HALTED AT WAVE 0" seed. The halt was dispositioned by
+W-BASEFIX (VERIFIED). The run was then killed by a provider billing-quota 403 mid-Wave-1;
+recovery order: `docs/pm/orders/2026-08-22-swarm-recovery-amendment.md`. **The 21 unlaunched
+items are NOT resumed** — that decision is the owner's, after the W-PN20 label checks.
+
+## CI-coupling note (R3)
+
+All ten `swarm/*` branches are now pushed to origin. `db-invariants` cuts its ephemeral Neon
+branch from **dev**, which carries mutations prod does not: the `register='prose'→'lexicon'`
+relabel + section-vector unification (08-22 close-out), a **partial schaff-npnf201 ingest**
+(staged, 588 units / 141 anchored / 1,948 embedded), and migration 127 **authored but NOT
+applied** (`idx_embeddings_vector` still present on dev, per R1). **Reds on these branches are
+read against dev's mutation state before being treated as signal.**
+
+## Baseline (W-PRE, 2026-08-22T17:11Z)
+
+| key | value |
+|---|---|
+| HEAD at baseline | 7633f3b (branch fix/q1-signed-out-state) |
+| origin/main (build base) | 9dce273ef09dffb03bc547cead0431f48fb71ffe |
+| baseline audit | was RED (thayers guard) → dispositioned by W-BASEFIX, VERIFIED |
+| env hosts | ep-tiny-hat only; no odd-fog/CUTOVER_ in either env file (silent checks) |
+| dev DB at baseline | 203 sources; 129 published / 70 staged / 3 quarantined / 1 ingesting |
+| §5.2 relabel (dev) | LANDED — 0 register='prose' rows among the 16 lexicon works |
+| §5.2 pairing suite (dev) | PASS (98/129 works probed) |
+| §5.1 per-run test users | CONFIRMED |
+| R1 migration 127 | authored + committed (71ef715), NOT applied anywhere; header corrected |
+
+## Item board
+
+| W-id | Wave | Status | Branch / evidence |
+|---|---|---|---|
+| W-PRE | 0 | DONE | baseline recorded; halt fired and dispositioned |
+| W-BASEFIX | 0-fix | **VERIFIED** | `swarm/w-basefix-thayers-guard` @ 156c5ff; verdict `verdicts/w-basefix.md` |
+| W-DRAIN | 1b | **DONE-UNVERIFIED** (R6: self-certified, Wave 7 never ran) | `swarm/W-DRAIN-drain-failure-semantics` @ 5190014 |
+| W-HISTSCOPE | 1b | **DONE-UNVERIFIED** (R6) — fix was ALREADY-DONE at base (`4baefe5`); finding filed | `swarm/W-HISTSCOPE-history-scope-db` @ 0765d38; `FINDING-historians-lane.md` |
+| W-VEC429 | 1b | **DONE-UNVERIFIED** (R6) — retry existed (`f462114`); jitter added | `swarm/W-VEC429-provider-429-retry` @ f352512 |
+| W-PN20 | 1a | **RESULT-FILED — GATE OPEN: HIT@2 17/20 = 85% vs 18/20 bar**. Labels RE-CODED (`46d8b9c`): count unchanged (no mis-scored cases); all 3 misses retrieval-side (0 no-content, 0 coverage, 0 routing-regression; `e033023` exonerated); ef=64 base-pool starvation (5/20 and 8/20 rows) flagged as cheapest lever — remedy is the owner's decision | `swarm/w-pn20-proper-noun` @ 46d8b9c; `docs/evidence/swarm-2026-08-22/w-pn20/` (RESULT.md, LABEL-RECODE.md) |
+| W-SEC-CSRF | 1b | FIX-COMMITTED-UNVERIFIED (red: 18 unguarded handlers; 16 floored + 1 HELD; SEC-5) | `swarm/W-SEC-CSRF-csrf-floor` @ f1d36b7 |
+| W-RELVOICE | 1b | IN-PROGRESS — conjunct fix committed; migration 127 authored NOT applied; index drop + dev re-exercise outstanding | `swarm/W-RELVOICE-related-voices-source-type` @ 71ef715 |
+| W-ADRV4RERUN | 1a | IN-PROGRESS — pre-reg + ADR-024 anchor-check rebuild committed; run did not complete; results provisional (A2) | `swarm/w-adrv4rerun` @ 0abbd5b |
+| W-EUSEBIUS | 1c | IN-PROGRESS — schaff-npnf201 STAGED on dev (digest committed); annotate pass + npnf202/203 scope widening outstanding; Phase 4 = owner packet | `swarm/w-eusebius-npnf201` @ 6334963 |
+| W-DOCRESTATE | 1b | IN-PROGRESS (deviation from the recovery order's NOT-STARTED: the sweep found substantial committed work) — guard written with red/red-proof/green logs; audit NOT verified green | `swarm/W-DOCRESTATE-doc-restatement-guard` @ c476a8c |
+| W-SIXWORKS · W-HISTBACKLOG · W-THAYER · W-STRONGS · W-REGDURABLE · W-ANN · W-SCANRE · W-UX1 · W-L2TOGGLE · W-T3 · W-UX3 · W-SLICE4 · W-ANCHORBACKFILL · W-OWNERSHIPCOL · W-DEVROW · W-SEC1 · W-FILE3DOCS · W-BOARDHYGIENE · W-SEC-CURSOR · W-SEC-CCEL · W-UX2VERIFY | — | **NOT-STARTED (21) — resume is the owner's decision after the W-PN20 label checks** | — |
+
+## Conventions
+
+- Statuses: DONE-UNVERIFIED = work complete + audit-green claimed by the author only (§2.3:
+  not done until independently verified). VERIFIED = independent verdict on file.
+- Per-item files: `items/<w-id>.md`; verdicts: `verdicts/`. (A3: items write their own files
+  on completion; the orchestrator aggregates but is not the only writer.)
+- This board lives in the repo at `docs/pm/swarm-2026-08-22/STATUS.md`; the scratch original is
+  `/tmp/swarm-status-seed/STATUS.md`.

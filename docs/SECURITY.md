@@ -97,6 +97,25 @@ Recorded because it is the strongest argument for THE_LOOP §4 in this file:
 
 Neither was visible by reading. Both were found by seeding a bug and watching.
 
+## SEC-5 — CSRF Content-Type floor: 18 mutating API handlers unguarded (2026-08-22)
+
+**Found** by the closeout swarm's W-SEC-CSRF (filed deferred from the 2026-08-21 security
+entry): a derived enumeration of `web/src/app/api/**/route.ts` found **18 mutating handlers
+with no Content-Type floor** — cookie-authenticated routes that would parse a simple
+`text/plain`/`form` POST, the classic CSRF precondition. RED log:
+`docs/evidence/swarm-2026-08-22/w-sec-csrf/` (branch `swarm/W-SEC-CSRF-csrf-floor`).
+
+**Fix committed, UNVERIFIED** (Wave 7 never ran; §2.3 of the closeout order): one shared guard
+`web/src/lib/csrf-floor.ts` applied to 16 handlers (mutating methods must present the parsed
+Content-Type, else 415/400 per `docs/API_ERRORS.md`); the invariant
+`web/test/invariants/csrf-content-type-floor.test.ts` derives its route list by glob — not
+hand-typed — and carries a HELD registry for heterogeneous routes (1 at enumeration) that must
+still derive as candidates, so the registry cannot silently rot. Green log + three red-proofs
+(route unguarded / guard no-op / derived-glob) committed beside the RED.
+
+**Also carried from the same deferred entry, NOT scheduled:** no global daily ceiling on the
+history limiter. It is recorded here so it is not lost; remedy is a later slice.
+
 ## GHSA-g38m — RULED 2026-08-08: closed by verification, both sign-in methods kept
 
 **Owner ruling.** Email/password **and** Google both stay. `Verify at Sign-up` goes **ON**, which

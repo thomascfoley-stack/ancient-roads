@@ -1,0 +1,11 @@
+=== VERIFIER RED-PROOF Part A: shipped CLI refuses with evidence absent ===
+date: 2026-08-22T17:25:16Z
+commit: 4b4a1902669b8561cd06a3a549956c00047580f1
+exit status: 2
+serve:false  1 standing ruling(s) (HEAD 1, tree 1)
+STOP: thayers-lexicon may not be published without source verification.
+  Required: docs/evidence/thayers-source-verification.md — the record of a checksum/shingle-diff of the TARGET
+  database's copy against the CC0 source edition, containing the sha256 value(s) compared.
+  The file does not exist.
+evidence restored: yes
+       0

@@ -1,0 +1,12 @@
+=== VERIFIER RED-PROOF Part B: repaired test goes RED with evidence seeded absent ===
+date: 2026-08-22T17:25:25Z
+vitest exit status: 1 (expect nonzero = RED)
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > adjudicates the REAL production census — the positive control 566ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 961ms
+   × thayers evidence gate > the SHIPPED CLI obeys the same gate in both directions (subprocess, no DB) 51ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/publish-flip-toolchain.test.ts > thayers evidence gate > the SHIPPED CLI obeys the same gate in both directions (subprocess, no DB)
+AssertionError: expected 'serve:false  1 standing ruling(s) (HE…' not to match /may not be published without source v…/
+      Tests  1 failed | 38 passed (39)
+evidence restored: yes
+       2

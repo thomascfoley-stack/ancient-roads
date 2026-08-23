@@ -36,7 +36,12 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
 > ruled (2026-08-21: metric moved to HIT@2 because the shipped composer draws from 5
 > candidates, so a HIT@1 miss is still shown to the reader; the July HIT@1 60 closed at
 > **70 / HIT@2 100** on 2026-08-02, [evidence](evidence/eval-v4-post-a8-2026-08-02.md); no
-> accuracy gate is currently outstanding). The table above is a **v3-era snapshot kept for
+> accuracy gate is currently outstanding). **CORRECTION (2026-08-22): an accuracy gate IS now
+> outstanding** — the ADR-118 fresh n=20 set was minted and measured by the closeout swarm:
+> HIT@2 **17/20 = 85% against the 18/20 bar — gate OPEN**. Labels are being re-coded before any
+> recount (both wrong-passage misses returned 0 voices — a no-content shape with a different
+> remedy); see ADR-118's 2026-08-22 status note and
+> `docs/pm/orders/2026-08-22-swarm-recovery-amendment.md`. The table above is a **v3-era snapshot kept for
 > history** — do not read a current status off it, and do not restate the ruling here.
 
 - **Topical HIT@2 is 70, and 70 is NOT an improvement.** The earlier 75 was a 5-doc-pool artifact (the reranker

@@ -954,6 +954,33 @@ it requires the owner to trust prose — each row cites its evidence file.
 
 ---
 
+## 12A. Amendments (2026-08-22, recovery order `2026-08-22-swarm-recovery-amendment.md`)
+
+These bind every future resume of this order. They exist because the first run taught them.
+
+- **A1 — Provider spend ceiling: $25 per workstream, $75 swarm total.** Each workstream
+  RECORDS its actual spend on completion in its `items/<W-id>.md` (DeepInfra units × the
+  account rate, or the console reading), so the next ceiling is measured rather than guessed.
+  Grounding: embeddings are near-free and measured (21,930 sections ≈ $0.19, WORKLOG:5459; the
+  1,948-embedding Eusebius write ≈ 1.7¢). No full compose→verify eval run has ever had its
+  cost recorded in this repo — that is why this was blank. A workstream that would exceed $25
+  stops, records partial results, and marks BLOCKED-budget; the swarm stops at $75.
+- **A2 — The writer lane (1c) holds until the measurement lane (1a) completes.** Exception:
+  1a results may be declared provisional in their RESULT docs and re-run at Wave 7 against a
+  settled DB. The served-pool snapshot mitigation (§6 W-PN20/W-ADRV4RERUN) held this run only
+  because Eusebius STAGED rather than SERVED — taxonomy luck, not design.
+- **A3 — Status is written PER ITEM, not at session end.** Each item writes its own
+  `docs/pm/swarm-2026-08-22/items/<W-id>.md` on completion (and on any terminal state); the
+  orchestrator aggregates STATUS.md but is not the only writer. §2.9 made durable records the
+  orchestrator's sole job, so a dead orchestrator left "HALTED AT WAVE 0" standing over ten
+  finished workstreams.
+- **A4 — Migration numbers are claimed by an empty committed stub at item start** (header
+  comment only: number, title, owning W-id), pushed with the branch's first commit. 127 sat
+  unclaimed in git for the whole run while being applied to dev; under A4 the number is
+  claimed in git before any database sees it.
+
+---
+
 ## 13. Approval record
 
 This order does not launch until two independent reviewer agents (fresh contexts, read-only)

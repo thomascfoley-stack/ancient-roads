@@ -2011,6 +2011,29 @@ filter is the second line, not the hole.
 > **Everything below stands except the number.** The semantics argument (point estimate, not CI
 > lower bound), the derivation of n=20, the freshness requirement and the rejected alternatives are
 > unchanged. Read "85%" below as superseded by **90%**, and "17/20" as superseded by **18/20**.
+>
+> **STATUS 2026-08-22 — THE GATE HAS FIRED; IT IS OPEN.** The fresh n=20 set (FROZEN_PN20, minted
+> per the pre-registration at `docs/evidence/swarm-2026-08-22/w-pn20/PRE-REG.md`) measured
+> **HIT@2 17/20 = 85% — BELOW the 18/20 bar** (`docs/evidence/swarm-2026-08-22/w-pn20/RESULT.md`,
+> branch `swarm/w-pn20-proper-noun`). Per this ADR's own power table, 17/20 at a true 90% happens
+> ~1 run in 3, and the Wilson CI [64.0%, 94.8%] straddles the bar — so this red does NOT prove the
+> system is below 90%, and the bar is NOT renegotiated (the no-softening sentence above is
+> exactly this moment). Disposition per
+> `docs/pm/orders/2026-08-22-swarm-recovery-amendment.md`: **labels are re-coded before any
+> recount** — both wrong-passage misses (pn20-18 Diotrephes/3 John 1, pn20-16 Stephanas/1 Cor 16)
+> returned **0 voices**, which under the failure taxonomy is a no-content/coverage shape with a
+> different remedy than a ranking defect; pn20-18 is checked first against `e033023`'s
+> 1/2/3-John overlap-dedupe fix (a routing-side regression would produce exactly this shape).
+>
+> **LABEL RE-CODE DONE 2026-08-22** (`docs/evidence/swarm-2026-08-22/w-pn20/LABEL-RECODE.md`,
+> commit `46d8b9c`): the count is UNCHANGED — 17/20 both ways, no case was mis-scored. All three
+> misses are retrieval-side: the gold content is present-and-served on dev in all three cases
+> (pn20-13's assumed coverage gap refuted — five authors anchor Luke 23:50-56), `e033023` is
+> exonerated (the three queries scan zero references; the dedupe never executes), and the
+> concrete measured contributor is **ef=64 base-pool starvation** — the shipped pool returned 5
+> and 8 rows of a LIMIT-20 pool on the two 0-voice queries, filling correctly at ef=1000. The
+> gate stays OPEN; the remedy (and any re-run) is the owner's decision, per the no-softening
+> sentence above.
 
 
 **Closes the one thing [ADR-116](#adr-116--gated-beta-scope-the-proper-noun-metric-and-the-teachers-availability-owner-2026-08-21) deliberately left open.** ADR-116 changed the proper-noun gate's
