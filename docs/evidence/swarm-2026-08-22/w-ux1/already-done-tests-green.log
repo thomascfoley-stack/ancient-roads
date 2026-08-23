@@ -1,0 +1,8 @@
+ ✓ test/components/desk-empty-cta-adds-scripture.test.tsx (2 tests) 92ms
+ ✓ test/components/desk-nav-and-session-note.test.tsx (7 tests) 137ms
+
+ Test Files  2 passed (2)
+      Tests  9 passed (9)
+   Start at  18:58:26
+   Duration  988ms (transform 182ms, setup 0ms, collect 412ms, tests 228ms, environment 893ms, prepare 92ms)
+
