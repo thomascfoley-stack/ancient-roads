@@ -711,18 +711,19 @@ store.
 
 ### W-T3 — Lane C T3 (device-bound; expect ALREADY-DONE + NOT RUN)
 
-**Context.** MASTER.md C6: "T3 is DEVICE-only". The spec is `docs/UX_REMEDIATION.md` (there
-is no separate ROADMAP file); its line ~201 already marks T3 "CODE COMPLETE, DEVICE OPEN"
-with a regression guard.
+**Context.** MASTER.md C6: "T3 is DEVICE-only". The spec is `docs/UX_REMEDIATION.md`, with
+sequencing in `docs/pm/UX_REMEDIATION_ROADMAP.md` (both exist — an earlier revision of this
+brief claimed the ROADMAP file did not exist and ordered a "dead pointer" fix; that premise was
+FALSE, corrected 2026-08-22 after two workstreams measured the file present at base `9dce273`.
+**Do not "correct" the MASTER.md pointer — it is live.**) `UX_REMEDIATION.md` line ~201 marks
+T3 "CODE COMPLETE, DEVICE OPEN" with a regression guard.
 
 **Procedure:** read the T3 block in `docs/UX_REMEDIATION.md` in full. Verify the code-complete
 claim: the regression guard exists and runs in `npm run audit`. If it does, the item is
 ALREADY-DONE (code) + NOT RUN (device leg) — record both, no changes. If the guard is
 missing, implement exactly what the block specifies and red-proof it. Do not reinterpret T3
-into something bigger to make it "more done". **Housekeeping (§2.9 discovered falsehood):**
-MASTER.md (~line 127) points at a nonexistent `UX_REMEDIATION_ROADMAP.md` — correct that
-pointer to `docs/UX_REMEDIATION.md` where readers meet it, and note the fix in the status
-file.
+into something bigger to make it "more done". (No housekeeping: the MASTER.md ROADMAP pointer
+is live — see the context note above.)
 
 ### W-UX3 — Desk layout model (sub-design gated; core = grid + virtualization)
 
