@@ -35,7 +35,7 @@ the viewport and every pane keeps its own scroll region (the desk's core contrac
 already has the idiom: `work-reader.tsx`'s render window (WINDOW_BEHIND/WINDOW_AHEAD around
 the active section, spacer divs sized from measured heights) over the scroller-agnostic,
 already-tested `useWorkSectionPages` hook (`web/src/lib/use-work-sections.ts`, invariants in
-`test/invariants/work-reader-paging.test.tsx`). `WorkPaneView` adopts `useWorkSectionPages`
+`web/test/invariants/work-reader-paging.test.tsx`). `WorkPaneView` adopts `useWorkSectionPages`
 (replacing its bespoke `loadFrom`/`loadMore`/`seq` machinery, gaining keyset prepend for
 upward scroll) and renders a bounded window — BEHIND 8 / AHEAD 16 (≈24 mounted sections per
 pane; panes are smaller cells than the reader, so a smaller window than the reader's 40) —
@@ -52,7 +52,7 @@ change. If the verifier prefers extraction, that is the one open design decision
 - `web/src/app/desk/page.tsx` — panes row → grid; cap-notice and empty-state copy.
 - `web/src/components/desk-pane.tsx` — `WorkPaneView` on `useWorkSectionPages` + bounded window; `PaneFrame` exposes its scroll container.
 - `web/src/components/sidebar.tsx:1273` — one comment references `MAX_PANES` = 3 (icon glyph unchanged).
-- Tests: `web/test/desk-panes.test.ts`, `web/test/desk-cap-overflow.test.ts` (new ceiling + `deskGridShape` cases); `web/test/components/desk-cap-notice.test.tsx`, `desk-empty-cta-adds-scripture.test.tsx` (copy); **new** `web/test/components/desk-pane-windowed.test.tsx` (bounded DOM); `desk-stacked-pane-position.test.tsx` re-run to prove mobile unchanged.
+- Tests: `web/test/desk-panes.test.ts`, `web/test/desk-cap-overflow.test.ts` (new ceiling + `deskGridShape` cases); `web/test/components/desk-cap-notice.test.tsx`, `desk-empty-cta-adds-scripture.test.tsx` (copy); **new** `web/test/components/desk-pane-windowed.test.tsx` (bounded DOM); `web/test/components/desk-pane-continuous-read.test.tsx` (pinned behaviors RE-EXPRESSED against the windowed mechanism, not deleted — verdict condition 1); `desk-stacked-pane-position.test.tsx` re-run to prove mobile unchanged.
 - Evidence: `docs/evidence/swarm-2026-08-22/w-ux3/` — red transcripts.
 
 ## Explicitly NOT built

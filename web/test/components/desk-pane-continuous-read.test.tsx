@@ -160,12 +160,14 @@ describe('the desk work pane reads continuously', () => {
     failMore = true;
     tailTops(); // near the tail, so the prefetch branch WOULD keep firing if unguarded
     render(<DeskPane pane={{ kind: 'work', slug: SLUG }} onClose={() => {}} onReplace={() => {}} />);
-    await waitFor(() => expect(screen.getByText('Body of section 1.')).toBeTruthy());
+    // The active section at the tail position is s20 — anchoring on s1 would race the window,
+    // which legitimately unmounts s1 the moment the reader is this far down.
+    await waitFor(() => expect(screen.getByText('Body of section 20.')).toBeTruthy());
 
     // The attach-time window evaluation fires the first (failing) prefetch by itself.
     await waitFor(() => expect(screen.getByText(/could not load more/i)).toBeTruthy());
     // The already-read sections are STILL mounted — a load-more failure is not a pane failure.
-    expect(screen.getByText('Body of section 1.')).toBeTruthy();
+    expect(screen.getByText('Body of section 20.')).toBeTruthy();
 
     // The storm test: many scroll frames against a tail position must NOT re-fire while errored.
     const afterError = moreCount();

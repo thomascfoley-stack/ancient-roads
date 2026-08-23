@@ -80,7 +80,9 @@ describe('decodeDeskReport counts the panes the cap refused', () => {
   });
 
   it('separates the two reasons in one URL: 1 refused, the rest merely malformed or duplicate', () => {
-    const r = decodeDeskReport(['work:w0', 'nonsense', 'work:w1', 'work:w0', ...works(15, 2), 'work:zz']);
+    // 17 distinct valid panes (w0..w16) → w16 alone is refused; 'nonsense' is malformed and the
+    // repeated w0 is a duplicate, and neither of those is a loss.
+    const r = decodeDeskReport(['work:w0', 'nonsense', 'work:w1', 'work:w0', ...works(15, 2)]);
     expect(r.panes.map(encodePane)).toEqual(works(16));
     expect(r.overflow).toBe(1);
   });

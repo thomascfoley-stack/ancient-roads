@@ -1270,7 +1270,9 @@ function AskIcon() {
   );
 }
 
-/** A pane divided into three columns — what the Desk IS (`MAX_PANES` = 3, side by side).
+/** A pane divided into three columns — what the Desk LOOKS like. The desk itself outgrew the
+ *  three-pane row (UX-3: a grid of up to 4x4, `MAX_PANES` = 16); the glyph stays, because three
+ *  columns is still what panes read as at icon size and a 4x4 waffle would read as a calendar.
  *
  *  Drawn rather than reused, for the reason CATALOG_ICON's comment gives one screen up: five
  *  identical speech bubbles taught the eye that these glyphs carry nothing. BookStackIcon (the
