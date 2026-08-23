@@ -5,6 +5,8 @@
 // checker exists to catch and watch it catch them; the green leg runs the REAL frozen set
 // against the REAL in-repo KJV and asserts the check is non-vacuous.
 import { describe, expect, it } from 'vitest';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { checkAnchors, kjvChapterText } from '../web/src/scripts/check-heldout-v4-anchors.mjs';
 import { FROZEN_V4 } from '../web/src/scripts/heldout-v4-queries.mjs';
 
@@ -51,8 +53,14 @@ describe('held-out v4 label anchor-check — red-proof', () => {
   });
 });
 
+// web/public/bible is gitignored; in CI the root vitest leg can run before (or without) the
+// F5 bible-assets fetch. Absent assets are an honest NOT RUN, never a red — the same posture
+// as the loud-skip taxonomy in web/test (a missing artifact is not a failed property). The
+// red-proof legs above use a fake corpus and run everywhere regardless.
+const KJV_PRESENT = existsSync(path.resolve(__dirname, '../web/public/bible/kjv/rom/12.json'));
+
 describe('held-out v4 label anchor-check — the frozen set against the real KJV', () => {
-  it('GREEN: every v4 doctrinal anchor verifies against web/public/bible/kjv', () => {
+  it.skipIf(!KJV_PRESENT)('GREEN: every v4 doctrinal anchor verifies against web/public/bible/kjv', () => {
     const r = checkAnchors(FROZEN_V4, kjvChapterText);
     // Non-vacuity: if the parser ever stops seeing anchors, this fails instead of passing at 0/0.
     expect(r.queries).toBe(45); // 25 epistle + 20 topical
