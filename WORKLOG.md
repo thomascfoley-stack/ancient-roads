@@ -1,5 +1,45 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — Swarm closeout: launched, quota-killed mid-Wave-1, recovery order filed (R1–R6 + A1–A4)
+
+**What ran.** The approved order `docs/pm/orders/2026-08-22-autonomous-swarm-closeout.md` (v4,
+two-reviewer approved, commit `7633f3b`) launched: Wave 0 (W-PRE) established the build base
+(`origin/main` = `9dce273`) and HALTED on a real baseline red — `test/publish-flip-toolchain.test.ts:473`
+asserted `docs/evidence/thayers-source-verification.md` absent while `abe5252` had legitimately
+committed it. W-BASEFIX repaired the guard hermetically (both directions through the shipped CLI;
+`swarm/w-basefix-thayers-guard` @ `4b4a190`) and an independent verifier re-executed the red-proof
+and a green full audit — the day's only VERIFIED item. Wave 1 then launched: W-DRAIN (both
+drain-failure-semantics defects fixed, `5190014`), W-HISTSCOPE (defect ALREADY-DONE at base via
+`4baefe5`; filed the 50-of-81 out-of-scope historians entity finding + corrected MASTER.md F4),
+W-VEC429 (retry existed at `f462114`; added the missing jitter, `f352512`), W-PN20 (**HIT@2
+17/20 = 85%, BELOW the ADR-118 18/20 bar** — per-case table in RESULT.md, `8b088c6`),
+W-SEC-CSRF (red filed: 18 unguarded mutating handlers; fix written but left uncommitted),
+W-RELVOICE (conjunct fix committed `06da89e`; migration 127 + schema.sql left untracked),
+W-EUSEBIUS (schaff-npnf201 STAGED on dev: 588 units / 141 anchored / 1,948 embedded; digest
+untracked), W-ADRV4RERUN (pre-reg + rebuilt ADR-024 anchor-check committed; run artifacts
+uncommitted). The provider then 403'd the billing quota mid-wave; the remaining 1b items and
+Waves 2–8 never launched; Wave 7 verification never ran.
+
+**Recovery.** Owner-issued recovery order filed at
+`docs/pm/orders/2026-08-22-swarm-recovery-amendment.md`: R1 dev-schema-drift resolution
+(migration 127 vs `pg_indexes` + ledger), R2 commit the CSRF work, R3 sweep six dirty worktrees
++ push all ten branches, R4 rewrite the status board, R5 surface the ADR-118 gate failure and
+the CSRF red where readers meet them, R6 mark the three self-certified items UNVERIFIED,
+amendments A1–A4 into the order doc (spend ceilings + recorded actuals; writer-lane holds for
+the measurement lane; per-item status durability; migration numbers claimed by committed stub).
+W-PN20 disposition: **open gate, labels to be re-coded before any recount** — both wrong-passage
+misses report 0 voices (no-content shape, different remedy than ranking); pn20-18 (3 John) is
+checked first against `e033023`'s overlap-dedupe fix. The 21 unlaunched items stay UNRESUMED —
+that decision is the owner's after the label checks.
+
+**NOT DONE / UNVERIFIED:** W-DRAIN, W-HISTSCOPE, W-VEC429 are self-certified only (§2.3 — Wave 7
+never ran). W-ADRV4RERUN's full run did not complete; its pre-reg and anchor-check rebuild are
+committed, its run artifacts were swept unverified. The 1,948-embedding schaff-npnf201 dev write
+rests on the ingest tooling's own digest. Dev DB carries mutations prod does not: dropped
+`idx_embeddings_vector` (pending R1 confirmation), partial schaff-npnf201 ingest, relabel +
+section-vector unification (08-22 close-out). The 21 unlaunched workstreams remain PENDING.
+Nothing was deployed; prod untouched throughout.
+
 ## 2026-08-22 — Session close-out: two detached DB jobs run to completion unattended; the handoff
 
 **Owner closed the session at 41 min. Both jobs are detached (nohup) and survive it.** State at
