@@ -16,12 +16,18 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const searchCommentaries = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/commentary-search', () => ({ searchCommentaries }));
+const sectionsMocks = vi.hoisted(() => ({ getWorkSectionsPage: vi.fn() }));
+vi.mock('@/lib/work', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/work')>()),
+  getWorkSectionsPage: sectionsMocks.getWorkSectionsPage,
+}));
 // The throttle needs a database and is not what these cases are about, so it is a pass-through
 // here. That it is WIRED IN AT ALL is asserted below, from source, so mocking it cannot hide its
 // removal.
 vi.mock('@/lib/public-read-limit', () => ({ publicReadThrottle: async () => null }));
 
 import { GET as commentariesGET } from '@/app/api/search/commentaries/route';
+import { GET as sectionsGET } from '@/app/api/work/[slug]/sections/route';
 import { clientIp } from '@/lib/client-ip';
 import { WORK_TOC_MAX } from '@/lib/work';
 
@@ -76,6 +82,40 @@ describe('/api/search/commentaries validates every number — H9', () => {
     const body = (await res.json()) as { error?: { code?: string; message?: string } };
     expect(body.error?.code).toBe('INTERNAL');
     expect(JSON.stringify(body)).not.toMatch(/ep-odd-fog|password/);
+  });
+});
+
+describe('/api/work/[slug]/sections bounds the keyset cursor — W-SEC-CURSOR', () => {
+  // `ordinal` is a Postgres INT (db/migrations/006_sources_sections.sql). `Number('1e21')`
+  // passes Number.isInteger and reached SQL as `ordinal > '1e+21'` -> 22P02 -> the handler
+  // threw and Next 500'd (red-live.log, live dev DB).
+  // SEED: drop the `after > INT4_MAX` clause from the route -> RED (the mock answers 200).
+  const callSections = (qs: string) =>
+    sectionsGET(
+      new Request(`https://x.test/api/work/matthew-henry/sections?${qs}`) as never,
+      { params: Promise.resolve({ slug: 'matthew-henry' }) },
+    );
+
+  beforeEach(() => {
+    sectionsMocks.getWorkSectionsPage.mockReset();
+    sectionsMocks.getWorkSectionsPage.mockResolvedValue({ sections: [], nextAfter: null });
+  });
+
+  it('refuses an after beyond the INT ordinal range instead of 500ing', async () => {
+    for (const qs of ['after=1e21', 'after=2147483648', 'after=Infinity']) {
+      const res = await callSections(qs);
+      expect(res.status, qs).toBe(400);
+    }
+    expect(sectionsMocks.getWorkSectionsPage).not.toHaveBeenCalled();
+  });
+
+  it('still accepts a valid cursor — the positive control', async () => {
+    const res = await callSections('after=2147483647');
+    expect(res.status).toBe(200);
+    expect(sectionsMocks.getWorkSectionsPage).toHaveBeenCalledWith('matthew-henry', {
+      after: 2147483647,
+      limit: expect.any(Number),
+    });
   });
 });
 

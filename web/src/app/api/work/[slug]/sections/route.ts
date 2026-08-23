@@ -16,7 +16,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   const afterParam = sp.get('after');
   const after = afterParam === null ? 0 : Number(afterParam);
-  if (!Number.isInteger(after) || after < 0) {
+  // `ordinal` is a Postgres INT: `after=1e21` passes Number.isInteger and used to reach SQL
+  // as `ordinal > '1e+21'` -> 22P02 -> 500 (W-SEC-CURSOR). Bound the cursor to the int4 range.
+  if (!Number.isInteger(after) || after < 0 || after > 2_147_483_647) {
     return apiError('INVALID_REQUEST', { message: '`after` must be a non-negative integer ordinal.' });
   }
 

@@ -1,0 +1,36 @@
+ ❯ test/w-sec-cursor-red.tmp.test.ts (1 test | 1 failed) 842ms
+   × W-SEC-CURSOR red repro (live dev DB) > after=1e21 841ms
+     → expected false to be true // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/w-sec-cursor-red.tmp.test.ts > W-SEC-CURSOR red repro (live dev DB) > after=1e21
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/w-sec-cursor-red.tmp.test.ts:31:44
+     29|     console.log('OUTCOME:', outcome);
+     30|     // The assertion the fix must make true:
+     31|     expect(outcome.startsWith('HTTP 400')).toBe(true);
+       |                                            ^
+     32|   }, 30000);
+     33| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  18:40:46
+   Duration  1.14s (transform 70ms, setup 0ms, collect 101ms, tests 842ms, environment 0ms, prepare 57ms)
+
+published slug under test: matthew-henry
+OUTCOME: HANDLER THREW (Next would 500): NeonDbError code=22P02 msg=invalid input syntax for type integer: "1e+21"
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     29|     console.log('OUTCOME:', outcome);
+ Test Files  1 failed (1)
+      Tests  1 failed (1)

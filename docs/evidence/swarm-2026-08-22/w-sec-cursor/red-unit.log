@@ -1,0 +1,15 @@
+ ❯ test/invariants/api-hardening.test.ts:107:30
+    105|     for (const qs of ['after=1e21', 'after=2147483648', 'after=Infinit…
+    106|       const res = await callSections(qs);
+    107|       expect(res.status, qs).toBe(400);
+       |                              ^
+    108|     }
+    109|     expect(sectionsMocks.getWorkSectionsPage).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 15 passed (16)
+   Start at  18:41:39
+   Duration  625ms (transform 127ms, setup 0ms, collect 188ms, tests 39ms, environment 0ms, prepare 179ms)
+
