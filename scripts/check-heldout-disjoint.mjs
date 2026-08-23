@@ -8,8 +8,8 @@
 // disjointness claim is exactly the circularity the freeze is supposed to prevent.
 //
 // SCOPE, stated honestly: this verifies DISJOINTNESS of the query sets ONLY. It does NOT verify
-// the label anchors (the "200/200 anchor checks against the in-repo KJV"). That script still does
-// not exist, so THAT claim remains NOT REPRODUCIBLE from this repo.
+// the label anchors — that is `web/src/scripts/check-heldout-v4-anchors.mts` (committed
+// 2026-08-22 under W-ADRV4RERUN, closing the reproducibility gap this comment used to record).
 //
 // Exit 0 = disjoint (prints the counts). Exit 1 = overlap found (prints the offending queries).
 
@@ -88,5 +88,5 @@ console.log(`\n  LABEL overlap (reported, not enforced): v4 has ${l4.size} disti
 console.log(`  ${sharedLabels.length} appear in BOTH (${pct}% of v4's labels).`);
 console.log('  So "disjoint" is true of the QUERIES and only partly true of the GROUND TRUTH — a fix tuned');
 console.log('  on v3 can still lift v4 wherever the labels coincide. State it that way, not as full independence.');
-console.log('  NOTE: this does NOT verify label anchors — the ADR-024 anchor-check script was never');
-console.log('  committed, so the "200/200 anchor checks" claim remains NOT reproducible from this repo.');
+console.log('  NOTE: this does NOT verify label anchors — that check is');
+console.log('  web/src/scripts/check-heldout-v4-anchors.mts (committed 2026-08-22). Run both.');

@@ -136,11 +136,12 @@ number existed.
   165, and **47 appear in both — 26% of v4's labels.** So a fix tuned on v3 can still
   lift v4 wherever the labels coincide. v4 is a fresh *set of questions*, not a fully
   independent *sample of the corpus*. Read the v4 numbers with that in mind.
-- **Label anchors: NOT reproducible.** The claim below of "200/200 anchor checks"
-  against the in-repo KJV rests on a script ADR-024 called for that **was never
-  committed** (see the TODO further down this same file). Until it exists, treat the
-  anchor verification as **UNVERIFIED** — the disjointness checker deliberately does
-  not pretend to cover it.
+- **Label anchors: reproducible since 2026-08-22.** The ADR-024 anchor-check script this
+  bullet used to flag as never-committed now exists:
+  `web/src/scripts/check-heldout-v4-anchors.mts` (red-proofed by
+  `test/heldout-v4-anchor-check.test.ts`), rebuilt under W-ADRV4RERUN. It measures
+  **124 anchors / 0 failures** — so the historical "200/200" mint-time count below is NOT
+  reproduced (the rebuilt checker finds 124); treat 124 as the reproducible number.
 
 **v4 labeling discipline (fixes the v3 RELABEL circularity flagged by A6):** every
 label derives from the query's own scripture reference or quoted wording — never from
@@ -189,5 +190,6 @@ owner's.
   book — the omission was not disclosed at mint time.
 - **v4.1 checklist (any of these lands only as a re-freeze with a new pinned hash,
   never an in-place edit of the frozen query file):** scope the disjointness claim
-  honestly; add SoS/rare-book sampling; commit the label anchor-check script; add a
+  honestly; add SoS/rare-book sampling; ~~commit the label anchor-check script~~ (DONE
+  2026-08-22, `web/src/scripts/check-heldout-v4-anchors.mts`); add a
   runtime hash assert on the query file; add a RELABEL guard rejecting v3-only keys.
