@@ -1,0 +1,13 @@
+[1280px] measurement: {"found":true,"top":292,"bottom":308,"left":462.109375,"right":781.59375,"height":16,"lines":1,"display":"block","visibility":"visible","innerWidth":1280,"docScrollWidth":1280,"firstRowTop":317}
+[1280px] explainer present in DOM: PASS
+[1280px] explainer visible (non-zero box, not hidden): PASS
+[1280px] explainer fully within viewport width: PASS
+[1280px] no horizontal page overflow: PASS
+[1280px] explainer above first work row: PASS
+[390px] measurement: {"found":true,"top":356,"bottom":372,"left":20,"right":339.484375,"height":16,"lines":1,"display":"block","visibility":"visible","innerWidth":390,"docScrollWidth":390,"firstRowTop":381}
+[390px] explainer present in DOM: PASS
+[390px] explainer visible (non-zero box, not hidden): PASS
+[390px] explainer fully within viewport width: PASS
+[390px] no horizontal page overflow: PASS
+[390px] explainer above first work row: PASS
+UX2-VERIFY: ALL PASS

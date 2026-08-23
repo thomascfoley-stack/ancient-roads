@@ -1,0 +1,11 @@
+# Baseline red proof — the one failing vitest leg is red at pristine base 9dce273
+# (none of this branch's files present).
+#
+# git worktree add --detach /tmp/swarm-ux2-basecheck 9dce273ef09dffb03bc547cead0431f48fb71ffe
+# cd /tmp/swarm-ux2-basecheck && npx vitest run test/publish-flip-toolchain.test.ts -t "SHIPPED CLI"
+#
+# Result: 1 failed | 38 skipped — test/publish-flip-toolchain.test.ts:473:67
+#   expect(fs.existsSync(path.join(ROOT, THAYERS_EVIDENCE_PATH))).toBe(false)
+#   THAYERS_EVIDENCE_PATH = docs/evidence/thayers-source-verification.md  (scripts/lib/publish-flip-guard.mjs:170)
+#   -> the file IS tracked at base, committed in abe5252 ("Thayer's verified ... relabel + unification launched")
+# Worktree removed after the run. Ownership: swarm/w-basefix-thayers-guard (156c5ff) already exists.

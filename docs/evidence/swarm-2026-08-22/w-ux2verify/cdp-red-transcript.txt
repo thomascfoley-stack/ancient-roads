@@ -1,0 +1,5 @@
+[1280px] measurement: {"found":false}
+[1280px] explainer present in DOM: FAIL
+[390px] measurement: {"found":false}
+[390px] explainer present in DOM: FAIL
+UX2-VERIFY: 2 FAILURES
