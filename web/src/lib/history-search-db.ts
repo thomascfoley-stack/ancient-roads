@@ -21,7 +21,7 @@ export interface HistoryResponse {
   results: { work: WorkRef; periodSpan: [number, number] | null; sections: HistoryResult[] }[];
   coverage: { works: number; sections: number };
 }
-interface WorkRef { slug: string; title: string; author: string }
+interface WorkRef { slug: string; title: string; author: string; edition: string | null }
 
 // Entity vocabulary + coverage are DERIVED (never typed) and cached 60s — the invalidation point
 // is a serve flip, and 60s bounds the staleness window (§5 amendment: the 9-vs-10 class).
@@ -82,7 +82,7 @@ interface Row {
   // the concordance's one job: open the book THERE.
   id: number; source_id: number; ordinal: number; heading: string; body: string;
   period_start_year: number | null; period_end_year: number | null;
-  slug: string; title: string; author: string;
+  slug: string; title: string; author: string; edition: string | null;
   cosine?: number; fts?: number; entity?: boolean;
 }
 // Exported so the SQL half of the deep-link contract is testable without a DB. The CRITICAL
@@ -90,8 +90,12 @@ interface Row {
 // test can't fail for a regression here: if this reverts to `s.unit_ordinal`, `row.ordinal` is
 // undefined at runtime and a mapper unit test that builds the row by hand never sees it. The
 // invariant test asserts this string selects `s.ordinal` and not `s.unit_ordinal`.
+// `edition` is the source record's own provenance (`sources.provenance->>'edition'`, the
+// ADR-008/010 registry) — carried so a copied citation names THIS work's edition instead of a
+// hardcoded provenance literal (W-SEC-CCEL). Same two-place rule: asserted from this string.
 export const ROW_COLS = `s.id, s.source_id, s.ordinal, s.heading, s.body,
-  s.period_start_year, s.period_end_year, src.slug, src.title, src.author`;
+  s.period_start_year, s.period_end_year, src.slug, src.title, src.author,
+  src.provenance ->> 'edition' AS edition`;
 
 /** Row → result mapper, exported so the ordinal contract (the deep link the reader can resolve)
  *  is unit-testable without a DB — see history-row-to-result.test.ts. `needle` windows the
@@ -256,7 +260,7 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
   const groups = new Map<string, { work: WorkRef; sections: (typeof scored)[number][] }>();
   for (const x of scored) {
     const g = groups.get(x.row.slug) ?? {
-      work: { slug: x.row.slug, title: x.row.title, author: x.row.author }, sections: [],
+      work: { slug: x.row.slug, title: x.row.title, author: x.row.author, edition: x.row.edition }, sections: [],
     };
     g.sections.push(x);
     groups.set(x.row.slug, g);

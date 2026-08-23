@@ -15,8 +15,8 @@ const SECTION = {
 };
 const BASE: HistoryPayload = {
   interpretation: { entities: [{ slug: 'herod', label: 'Herod' }], period: null },
-  closest: { ...SECTION, work: { slug: 'josephus-whiston', title: 'Works', author: 'Josephus' } },
-  results: [{ work: { slug: 'josephus-whiston', title: 'Works', author: 'Josephus' }, periodSpan: [1, 100], sections: [SECTION] }],
+  closest: { ...SECTION, work: { slug: 'josephus-whiston', title: 'Works', author: 'Josephus', edition: null } },
+  results: [{ work: { slug: 'josephus-whiston', title: 'Works', author: 'Josephus', edition: null }, periodSpan: [1, 100], sections: [SECTION] }],
   coverage: { works: 1, sections: 4112 },
 };
 

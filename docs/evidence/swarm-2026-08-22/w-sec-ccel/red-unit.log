@@ -1,0 +1,14 @@
+     70|     await vi.waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+     71|     const copied = writeText.mock.calls[0][0] as string;
+     72|     expect(copied).toBe('An Author, A Work, Book VI — Chapter 4');
+       |                    ^
+     73|   });
+     74| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  18:45:17
+   Duration  1.02s (transform 92ms, setup 0ms, collect 268ms, tests 115ms, environment 393ms, prepare 39ms)
+
