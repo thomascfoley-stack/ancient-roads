@@ -979,6 +979,15 @@ These bind every future resume of this order. They exist because the first run t
   comment only: number, title, owning W-id), pushed with the branch's first commit. 127 sat
   unclaimed in git for the whole run while being applied to dev; under A4 the number is
   claimed in git before any database sees it.
+- **A5 — Swarm concurrency cap: 3 agents in flight, never more.** Measured 2026-08-22: a
+  batch of 6 moved the provider's 5-hour meter 75% → 100% in 27 minutes and 403'd
+  mid-flight, killing 3 of 6 agents' partial work. Weekly consumption is identical at any
+  batch size — only the burst rate differs, and the burst is what destroys work. Evidence:
+  session usage was FLAT (16.5M in / 115k out) across that same 27 minutes, so the plan
+  meter is counting subagent work the session line never reports. Cap is 3.
+- **A6 — MASTER.md preamble tax.** MASTER.md (70KB) auto-loads into every session AND every
+  subagent via CLAUDE.md's import, costing ~18k tokens per agent boot before any work.
+  Narrative history moves to `docs/pm/MASTER_HISTORY.md`; the board stays in MASTER.md.
 
 ---
 
