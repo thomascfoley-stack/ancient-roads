@@ -1,0 +1,5 @@
+     → invalid input syntax for type integer: "1e+21"
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/invariants/work-reader.test.ts > Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: malformed params are a 400, never a 500
+NeonDbError: invalid input syntax for type integer: "1e+21"
+      Tests  1 failed | 1745 skipped (1746)
