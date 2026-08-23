@@ -501,7 +501,23 @@ const ORDINAL_BOOK_SCAN_RE =
 // parseRef (whole-string typeahead), this scans candidate spans anywhere in the
 // text and keeps only those that parse to a valid reference (high precision).
 // Used to route a query to the passage it names; never guesses.
-export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedRef[] {
+/** A scanned reference plus the source facts a caller needs to judge its confidence. */
+export interface ScannedSpan {
+  ref: ResolvedRef;
+  /** Offsets of the matched text in the ORIGINAL string, so a caller can strip it. */
+  start: number;
+  end: number;
+  /** The book word exactly as matched, lowercased ("mark", "james", "corinthians"). */
+  bookWord: string;
+  /** Did the match carry an explicit ordinal ("1 John", "first Kings")? */
+  hasOrdinal: boolean;
+}
+
+// Scan with the source facts retained. `scanReferences` is this function with the facts
+// dropped, so the two can never disagree about WHAT was found — only about how much the
+// caller is told. Callers that need to judge confidence (resolveIntent's ambiguous-book-word
+// gate) use this; everyone else keeps the simpler signature.
+export function scanReferenceSpans(text: string, opts: ParseOptions = {}): ScannedSpan[] {
   // Candidates carry their SOURCE SPANS so overlaps can be resolved. Without positions,
   // display-dedupe let the ordinal pass's correct "1 John 4:8" coexist with SCAN_RE's wrong
   // "John 4:8" from the SAME characters — different displays, one slice of text — and the
@@ -509,20 +525,20 @@ export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedR
   // verification, 2026-08-21). Where two VALID candidates overlap in the source, the longer
   // span wins (ties: the earlier start); non-overlapping candidates are all kept, which is
   // what protects "Ephesians 2:8-9 and 1 Peter 5:7".
-  const candidates: { ref: ResolvedRef; start: number; end: number }[] = [];
-  const consider = (span: string, start: number, end: number) => {
+  const candidates: { ref: ResolvedRef; start: number; end: number; bookWord: string; hasOrdinal: boolean }[] = [];
+  const consider = (span: string, start: number, end: number, bookWord: string, hasOrdinal: boolean) => {
     const outcome = parseRef(span, opts);
-    if (outcome.ok) candidates.push({ ref: outcome.ref, start, end });
+    if (outcome.ok) candidates.push({ ref: outcome.ref, start, end, bookWord: bookWord.toLowerCase(), hasOrdinal });
   };
   for (const m of text.matchAll(SCAN_RE)) {
-    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
+    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[2]!, Boolean(m[1]));
   }
   for (const m of text.matchAll(ORDINAL_BOOK_SCAN_RE)) {
-    consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
+    consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[2]!, true);
   }
   if (MULTIWORD_SCAN_RE) {
     for (const m of text.matchAll(MULTIWORD_SCAN_RE)) {
-      consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
+      consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[1]!, false);
     }
   }
   const keep = candidates.filter((c) =>
@@ -532,12 +548,16 @@ export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedR
         (o.end - o.start === c.end - c.start && (o.start < c.start || (o.start === c.start && candidates.indexOf(o) < candidates.indexOf(c))))),
     ));
   keep.sort((a, b) => a.start - b.start);
-  const out: ResolvedRef[] = [];
+  const out: ScannedSpan[] = [];
   const seen = new Set<string>();
-  for (const { ref } of keep) {
-    if (seen.has(ref.display)) continue;
-    seen.add(ref.display);
-    out.push(ref);
+  for (const c of keep) {
+    if (seen.has(c.ref.display)) continue;
+    seen.add(c.ref.display);
+    out.push(c);
   }
   return out;
+}
+
+export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedRef[] {
+  return scanReferenceSpans(text, opts).map((s) => s.ref);
 }
