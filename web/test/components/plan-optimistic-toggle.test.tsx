@@ -33,10 +33,6 @@ const OPEN_UNREAD = {
   plan: { id: ID, title: 'Gospels' },
   days: [{ day_index: 1, day_date: '2099-01-01', verse_start: 43001001, verse_end: 43001010, completed_at: null }],
 };
-const OPEN_READ = {
-  ...OPEN_UNREAD,
-  days: [{ ...OPEN_UNREAD.days[0], completed_at: '2099-01-01T00:00:00.000Z' }],
-};
 
 const ok = (body: unknown) => ({ ok: true, status: 200, json: async () => body }) as unknown as Response;
 
@@ -54,7 +50,7 @@ function stubFetchDeferred(post: { resolve: (res: Response) => void }) {
 
 describe('plan mark-as-read — optimistic toggle (L2 step 2)', () => {
   it('paints the tick BEFORE the write resolves, then keeps it on success', async () => {
-    const post = { resolve: (_: Response) => {} };
+    const post = { resolve: () => {} };
     stubFetchDeferred(post);
     render(<PlansClient initialPlanId={ID} />);
     const btn = await screen.findByRole('button', { name: 'Mark day 1 read' });
@@ -71,7 +67,7 @@ describe('plan mark-as-read — optimistic toggle (L2 step 2)', () => {
   });
 
   it('rolls the paint BACK and names the failure when the write fails', async () => {
-    const post = { resolve: (_: Response) => {} };
+    const post = { resolve: () => {} };
     stubFetchDeferred(post);
     render(<PlansClient initialPlanId={ID} />);
     const btn = await screen.findByRole('button', { name: 'Mark day 1 read' });
