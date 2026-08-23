@@ -172,6 +172,23 @@ Rationale and the rejected options (OAuth-only; accept-the-risk) are in
 
 ## SEC-1 — better-auth 1.4.18 vulnerabilities via `@neondatabase/auth` beta
 
+> **IN-TREE EXPOSURE CLOSED BY VERSION, 2026-08-23 (W-SEC1, swarm order 2026-08-22 §9).**
+> Neon shipped `@neondatabase/auth@0.5.0-beta` (+ `@neondatabase/auth-ui@0.3.0-beta`), which
+> depends on `better-auth@1.6.23` — the "unfixable while on the beta" premise below ("Why it's
+> unfixable today", verified 2026-07-08 and still true of `0.4.2-beta`) stopped being true the
+> day Neon published a release past it. The bump is implemented on branch
+> `swarm/w-sec1-dependency-truth`: lockfile now resolves `better-auth@1.6.23` only
+> (`pnpm why better-auth -r`), and `scripts/deps-audit.mjs` reports **zero un-ignored
+> high/critical advisories across 512 prod packages** — GHSA-g38m (patched ≥1.6.11) and
+> GHSA-qq9h (patched ≥1.6.22, ADR-038) no longer fire, so `scripts/audit.sh`'s `--expect-red`
+> is EMPTY (evidence + red-proof both directions:
+> `docs/evidence/swarm-2026-08-22/w-sec1/baseline-red.md`). Branch
+> `fix/sec1-better-auth-1-6-25` (pnpm-override approach) is moot — superseded by the upstream
+> release. **What this does NOT close:** the version of Neon's *hosted* better-auth server is
+> still unobservable from this repo, the `Verify at Sign-up` console attestation below still
+> needs periodic re-attestation, and the public-launch decision stays the owner's. The gate
+> this section names is code-state green; the ruling is not made here.
+>
 > **CLOSED 2026-08-05** by the direct cutover to self-hosted better-auth 1.6.26.
 > **Re-opening it was proposed 2026-08-07** (move back to Neon's rebuilt "Managed Better Auth").
 > Measured that day: `@neondatabase/auth@latest` is still `0.4.2-beta`, still pinning

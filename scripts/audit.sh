@@ -41,21 +41,20 @@ gate "unused — knip (files/exports/deps)" $PNPM exec knip
 # --expect-red is an EXPLICIT, REVIEWABLE enumeration (work-order v2 Stage 1.4): the observed
 # un-ignored red set must match it exactly — an extra advisory OR a disappearance both fail
 # this leg, so "the server got patched" and "the toggle got switched off" are build events,
-# not silence. Declared 2026-08-11 by owner ruling (docs/pm/RULINGS-2026-08-11.md §1):
-#   GHSA-g38m-r43w-p2q7 — better-auth account takeover via OAuth auto-link to an unverified
-#     pre-registered email. CLOSED by Verify at Sign-up (owner ruling 2026-08-08,
-#     docs/SECURITY.md top section) — but the closure is a Neon console toggle this repo
-#     cannot observe, so it is DECLARED here, not ignored. The A7 sec1-upload-gate keeps it
-#     out of pnpm.auditConfig.ignoreGhsas by design.
-#   GHSA-qq9h-g4jm-xgf3 — magic-link/email-OTP pre-account hijack. Accepted-red per ADR-038;
-#     the app ships email/password + Google only, and the hosted server's method config is
-#     unobservable from this repo, so it stays visible rather than ignored.
+# not silence. It is EMPTY as of 2026-08-23 (W-SEC1, swarm order 2026-08-22 §9): the bump to
+# @neondatabase/auth@0.5.0-beta moved the in-tree better-auth to 1.6.23, and the two ids
+# declared here since the 2026-08-11 owner ruling (docs/pm/RULINGS-2026-08-11.md §1) no longer
+# fire — GHSA-g38m-r43w-p2q7 (OAuth auto-link account takeover, patched >=1.6.11) and
+# GHSA-qq9h-g4jm-xgf3 (magic-link/email-OTP pre-account hijack, patched >=1.6.22, ADR-038) —
+# so the gate runs with no declared exceptions. The mechanism stays armed: declare any future
+# accepted-red id here, never silence it, and a disappearance from the declared set fails this
+# leg exactly like an addition (observed firing 2026-08-23 before this line was updated).
 # The six not-in-path better-auth advisories (provider-side plugins never enabled — grep
 # `web/src` 2026-08-11) live in pnpm.auditConfig.ignoreGhsas with their adjudications in
-# docs/SECURITY.md. Reality check 2026-08-11: production runs Neon Auth
-# (@neondatabase/auth@0.4.2-beta → Neon's HOSTED better-auth server); the only better-auth
-# in the tree is 1.4.18, transitive; 0.4.2-beta is the latest release that exists.
-gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs --expect-red GHSA-g38m-r43w-p2q7,GHSA-qq9h-g4jm-xgf3
+# docs/SECURITY.md. Reality check 2026-08-23: production runs Neon Auth
+# (@neondatabase/auth@0.5.0-beta → Neon's HOSTED better-auth server, whose version this repo
+# still cannot observe); the only better-auth in the tree is 1.6.23, transitive.
+gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
 gate "qa — Layer 1 invariants + regressions" $PNPM run qa
 gate "hygiene — no test residue in dev (post-suite)" node scripts/check-test-residue.mjs
