@@ -1,0 +1,175 @@
+# RED-PROOF: new tier-level tests vs PRE-FIX code (anchors corrected) — 2026-08-23T18:30:45Z
+$ npx vitest run test/reference-intent.test.ts
+
+ RUN  v2.1.9 /private/tmp/swarm-scanre
+
+ ❯ test/reference-intent.test.ts (22 tests | 6 failed) 9ms
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: she is 1 mark 5 points from winning 3ms
+     → expected [ …(2) ] to deeply equal []
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: i counted 3 james 2 marys and a paul 1ms
+     → expected [ { start: 59002001, end: 59002999 } ] to deeply equal []
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: she did a great job 10 out of 10 0ms
+     → expected [ { start: 18010001, end: 18010999 } ] to deeply equal []
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: the play has acts 3 and 4 merged into one 0ms
+     → expected [ { start: 44003001, end: 44003999 } ] to deeply equal []
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: the numbers 4 and 8 were drawn last night 0ms
+     → expected [ { start: 4004001, end: 4004999 } ] to deeply equal []
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: the chess endgame had 2 kings 4 pawns left 0ms
+     → expected [ { start: 12004001, end: 12004999 } ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: she is 1 mark 5 points from winning
+AssertionError: expected [ …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 23001999,
++     "start": 23001001,
++   },
++   Object {
++     "end": 41005999,
++     "start": 41005001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: i counted 3 james 2 marys and a paul
+AssertionError: expected [ { start: 59002001, end: 59002999 } ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 59002999,
++     "start": 59002001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: she did a great job 10 out of 10
+AssertionError: expected [ { start: 18010001, end: 18010999 } ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 18010999,
++     "start": 18010001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: the play has acts 3 and 4 merged into one
+AssertionError: expected [ { start: 44003001, end: 44003999 } ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 44003999,
++     "start": 44003001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: the numbers 4 and 8 were drawn last night
+AssertionError: expected [ { start: 4004001, end: 4004999 } ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 4004999,
++     "start": 4004001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: the chess endgame had 2 kings 4 pawns left
+AssertionError: expected [ { start: 12004001, end: 12004999 } ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 12004999,
++     "start": 12004001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 16 passed (22)
+   Start at  11:30:45
+   Duration  183ms (transform 32ms, setup 0ms, collect 33ms, tests 9ms, environment 0ms, prepare 31ms)
+
+exit=1
