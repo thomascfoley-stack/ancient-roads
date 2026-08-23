@@ -2,7 +2,10 @@
 
 **Workstream:** W-FILE3DOCS · **Branch:** `swarm/W-FILE3DOCS-programme-docs` · **Worktree:** `/tmp/swarm-W-FILE3DOCS` · **Base:** `origin/main` `9dce273`
 
-## Status: AUDIT-GREEN (pending Wave 7 verification)
+## Status: AUDIT-GREEN* (pending Wave 7 verification)
+
+*Green except the single pre-existing thayers-gate red leg owned by `swarm/w-basefix-thayers-guard` —
+expected per the closeout briefing; proven pre-existing and not this branch's (see Audit below).
 
 Transitions: CLAIMED 2026-08-23 → RED-PROVEN 2026-08-23 → FIXED 2026-08-23 → AUDIT-GREEN 2026-08-23.
 
@@ -39,9 +42,16 @@ also touches the board (Wave 8 conflict rule: merge the smaller first).
 
 ## Audit
 
-`npm run audit` in the worktree: see `audit-final.log` beside this item's evidence dir. Expected
-pre-existing red leg: `test/publish-flip-toolchain.test.ts` (thayers gate), owned and verified by
-`swarm/w-basefix-thayers-guard` — not mine, not touched.
+`npm run audit` in the worktree (`docs/evidence/swarm-2026-08-22/w-file3docs/audit-final.log`):
+**one red leg**, `tests + coverage — vitest`, on exactly the expected pre-existing failure —
+`test/publish-flip-toolchain.test.ts > thayers evidence gate > the SHIPPED CLI refuses at the same
+gate` (1 failed / 847 passed). Root cause: the gate asserts
+`docs/evidence/thayers-source-verification.md` is absent, and that file is **committed at base
+`9dce273`** — the leg fails at base, independent of this branch. Proof it is not mine:
+`not-mine-proof.txt` (branch diff is docs-only; the failing test file is byte-identical between
+base and HEAD). Owned and verified by `swarm/w-basefix-thayers-guard` per the closeout briefing;
+not fixed here, per instruction. All other audit legs green, including the deploy.sh gate harness
+(59/59) and Gate B license (fail-closed, manifest-checked).
 
 ## Spend (A1)
 
