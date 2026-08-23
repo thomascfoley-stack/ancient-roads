@@ -164,13 +164,16 @@ jobs:
       # the end. Pointing the OLD shared-branch job at `dev` would have mutated the working dev
       # database on every run.
       #
-      # THIS DOES NOT MAKE THE JOB GREEN, and nobody should read it that way. Two failures
-      # survive, both real and both filed: `history-scope-db` (dev carries 81 served anchored
-      # entities but only 31 are inside the shipped `vocab()` scope, so its probe draws an
-      # out-of-scope label ~62% of the time — a TRUE POSITIVE for the entity scope leak, not
-      # flake), and `neon-auth-live` (missing NEON_AUTH_* secrets — needs the secrets or
-      # conversion to the loud-skip helper so it reports NOT RUN honestly). What this change buys
-      # is that the remaining red MEANS something.
+      # THIS DOES NOT MAKE THE JOB GREEN, and nobody should read it that way. Of the two
+      # failures filed when this comment was written, `history-scope-db` is CLOSED — the red
+      # was the probe's own served-only join (no `sources` legs), not a product leak; fixed
+      # `4baefe5`, green on dev 2026-08-22 (W-HISTSCOPE). The served-vs-published drift it
+      # surfaced (50 of 81 served entities live only in staged historian works) is a
+      # historians-lane finding, not a test red —
+      # docs/evidence/swarm-2026-08-22/W-HISTSCOPE/FINDING-historians-lane.md. The other,
+      # `neon-auth-live` (missing NEON_AUTH_* secrets), was converted to the loud-skip helper
+      # (`b24bfe3`) and reports NOT RUN honestly. What this change buys is that any remaining
+      # red MEANS something.
       #
       # SAFETY. The endpoint id is created at runtime, so it can no longer be a reviewable
       # literal in this file. The load-bearing rail is unaffected: `isAuditAllowedHost`
