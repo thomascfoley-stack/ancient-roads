@@ -1,0 +1,82 @@
+host: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+
+== 1. register x served, corpus flat embeddings (user_id IS NULL) ==
+  register=hymn  served=true  n=6,887
+  register=lexicon  served=false  n=56,748
+  register=lexicon  served=true  n=23,657
+  register=poetry  served=false  n=360
+  register=poetry  served=true  n=4,085
+  register=prose  served=false  n=96,607
+  register=prose  served=true  n=296,297
+  register=(null)  served=false  n=58,577
+  register=(null)  served=true  n=59,258
+
+== 2. unserved sermon/theology rows by work status (join sources) ==
+
+== 3. unserved sermon/theology rows with NO matching source ==
+  (none)
+
+== 4. served sermon/theology rows already present (register x served, these registers only) ==
+
+== 5. staged npnf works (W-EUSEBIUS landed staged) and their register/row counts ==
+  schaff-npnf201  status=staged type=father rows=1948 served=0
+  schaff-npnf202  status=staged type=father rows=1870 served=0
+  schaff-npnf203  status=staged type=father rows=1403 served=0
+  schaff-npnf210  status=published type=father rows=2096 served=2096
+  schaff-npnf213  status=published type=father rows=418 served=418
+
+== 6. works in scope (sermon/theology, unserved rows, any status) ==
+
+
+
+== A. sources by source_type x status ==
+  commentary   published    26
+  commentary   quarantined  1
+  commentary   staged       7
+  confession   published    8
+  confession   quarantined  2
+  devotional   published    15
+  father       published    7
+  father       staged       4
+  historian    published    1
+  historian    staged       27
+  hymn         published    32
+  lexicon      published    15
+  lexicon      staged       1
+  poetry       published    13
+  poetry       staged       2
+  sermon       published    6
+  sermon       staged       5
+  theology     published    3
+  theology     staged       26
+  topical_index published    3
+  topical_index staged       1
+
+== B. distinct embedding registers by source_type ==
+  commentary   reg=prose      n=  106990 served=   48669
+  commentary   reg=(null)     n=  117835 served=   59258
+  confession   reg=prose      n=    7239 served=    6590
+  devotional   reg=prose      n=    6589 served=    6589
+  father       reg=prose      n=   30087 served=   23642
+  historian    reg=prose      n=    6492 served=    6492
+  hymn         reg=hymn       n=    6887 served=    6887
+  lexicon      reg=lexicon    n=   80405 served=   23657
+  poetry       reg=poetry     n=    4445 served=    4085
+  sermon       reg=prose      n=  172581 served=  162507
+  theology     reg=prose      n=   48001 served=   28726
+  topical_index reg=prose      n=   14925 served=   13082
+
+== C. sermon/theology SOURCE rows and their embedding registers (the 08-19 population, renamed?) ==
+  sermon    published    reg=prose      rows=  162507 served=  162507
+  sermon    staged       reg=prose      rows=   10074 served=       0
+  theology  published    reg=prose      rows=   28726 served=   28726
+  theology  staged       reg=prose      rows=   19275 served=       0
+
+== D. ALL distinct register values ever present (sanity: sermon/theology truly absent?) ==
+  hymn
+  lexicon
+  poetry
+  prose
+  (null)
