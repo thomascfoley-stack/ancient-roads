@@ -658,6 +658,14 @@ export function readingLabel(r: PlanReading): string {
 function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void> }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
+  // L2 step 2 — the optimistic overlay: day_index -> the completed_at the UI shows while the
+  // write is in flight. Derived views (doneCount, upNext, the list) read `days`, never
+  // `open.days` directly, so the flip is instant; the entry is dropped on reconcile (success)
+  // or on rollback (failure).
+  const [flips, setFlips] = useState<Record<number, string | null>>({});
+  const days = open.days.map((d) =>
+    d.day_index in flips ? { ...d, completed_at: flips[d.day_index] } : d,
+  );
   const [pane, setPane] = useState<PassageTarget | null>(null);
   const [catchUpDismissed, setCatchUpDismissed] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -687,10 +695,10 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
   }
 
   const today = todayLocalDate();
-  const doneCount = open.days.filter((d) => d.completed_at).length;
+  const doneCount = days.filter((d) => d.completed_at).length;
   // "Up next" answers the one question someone opening a plan actually has, which
   // the flat list made them scan for.
-  const upNext = open.days.find((d) => !d.completed_at);
+  const upNext = days.find((d) => !d.completed_at);
   // Behind = the next unread day's date has passed. One day behind is "due now" and the
   // card would nag; from two days the plan needs forgiving, not a badge. This is the
   // dossier's Sprint-1 retention piece: reading plans die silently without a catch-up.
@@ -719,22 +727,36 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
 
   const toggle = async (d: PlanDay) => {
     setBusyDay(d.day_index);
+    // L2 step 2 (optimistic): flip FIRST, ask the server second. The old order — await the
+    // POST, await the re-read, THEN move the tick — is what read as a dead tap on phones.
+    // busyDay still serializes taps on the same day, so two flips cannot race each other.
+    const optimistic = d.completed_at ? null : new Date().toISOString();
+    setFlips((f) => ({ ...f, [d.day_index]: optimistic }));
+    setWriteError(null);
+    const settle = () => setFlips((f) => {
+      const next = { ...f };
+      delete next[d.day_index];
+      return next;
+    });
     try {
-      // Was: await fetch(...) with no res.ok check and no catch, then onChanged()
-      // unconditionally. On a 401/500 the tick flipped, the re-read returned the unchanged
-      // row, and the checkbox silently reverted with no explanation.
       const res = await fetch(`/api/plans/${open.plan.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind: 'day', dayIndex: d.day_index, completed: !d.completed_at }),
       });
-      if (!res.ok) { setWriteError('That change could not be saved. Please try again.'); return; }
-      setWriteError(null);
-      // AWAITED so busyDay holds until the re-read lands — the checkbox no longer
-      // sits visually unchecked and re-enabled for the length of the refetch,
-      // which read as a dead tap on phones.
+      if (!res.ok) {
+        // ROLLBACK: the server kept the old value, so the overlay comes off and the row
+        // reverts — with the error line the pre-L2 version never showed.
+        settle();
+        setWriteError('That change could not be saved. Please try again.');
+        return;
+      }
+      // Reconcile against the server row, THEN lift the overlay — lifting it first would
+      // flash the stale pre-write value for the length of the re-read.
       await Promise.resolve(onChanged());
+      settle();
     } catch {
+      settle();
       setWriteError('That change could not be saved. Please try again.');
     } finally {
       setBusyDay(null);
@@ -795,7 +817,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           the design's no-gamification rule). */}
       <div className="mt-3">
         <div className="flex flex-wrap gap-[5px]" aria-hidden>
-          {open.days.map((d) => {
+          {days.map((d) => {
             const cell = d.completed_at
               ? 'bg-accent-600 dark:bg-accent-400'
               : d.day_date < today
@@ -871,7 +893,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
       {/* PRD §5 schedule list: hairlines between days, not tinted card rows. The up-next day
           keeps a quiet accent tint so the list still answers "where am I" at a glance. */}
       <ol className="border-b edge">
-        {open.days.map((d) => {
+        {days.map((d) => {
           const readings = readingsByDay.get(d.day_index);
           const isNext = upNext?.day_index === d.day_index;
           return (

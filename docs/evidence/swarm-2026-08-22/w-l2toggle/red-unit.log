@@ -1,0 +1,6 @@
+   × the day toggle is optimistic (L2 step 2) > flips the tick before the server answers, then keeps it once the write lands 1088ms
+     → Unable to find role="button" and name "Mark day 1 unread"
+   × the day toggle is optimistic (L2 step 2) > rolls the tick back and says so when the write fails 1022ms
+     → Unable to find role="button" and name "Mark day 1 unread"
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed (2)
