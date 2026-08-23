@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/session';
 import { isTeacherAllowed } from '@/lib/teacher-access';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent, type LaneFlags } from '@/lib/teacher/teach';
 import { randomUUID } from 'node:crypto';
@@ -70,6 +71,9 @@ export async function POST(req: NextRequest) {
           : 'RATE_LIMIT_MINUTE';
     return apiError(code, { retryAfterSec: rl.retryAfterSec });
   }
+
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let body: { question?: unknown; lanes?: unknown };
   try {

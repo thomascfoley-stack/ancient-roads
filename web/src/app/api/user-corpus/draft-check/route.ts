@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { checkCorpusSearchRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { DRAFT_MAX_CHARS, draftCheck } from '@/lib/user-corpus/draft-check';
 import { corpusPredicate } from '@/lib/user-corpus/tradition-gap';
 import { LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
@@ -24,6 +25,9 @@ export async function POST(req: NextRequest): Promise<Response> {
       retryAfterSec: limit.retryAfterSec,
     });
   }
+
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   const body = (await req.json().catch(() => null)) as { text?: unknown } | null;
   const text = typeof body?.text === 'string' ? body.text : '';
