@@ -1,0 +1,66 @@
+# W-HISTBACKLOG remainder enumeration — live dev DB (ep-tiny-hat) x ingest/sources.config.json
+# 2026-08-23T17:39:16Z — set difference, not prose counts
+# method: manifest source_type='historian' (29) + genre='history' (3) vs dev sources/sections/section_embeddings/history_embeddings
+
+edersheim-lifetimes | status=staged sec=4579 sec_emb=4579 hist_emb=4579 anchors=2825
+josephus-whiston | status=published sec=4112 sec_emb=4112 hist_emb=4112 anchors=4540
+schaff-person | status=staged sec=512 sec_emb=512 hist_emb=512 anchors=160
+schaff-hcc1 | status=staged sec=2159 sec_emb=2159 hist_emb=2159 anchors=1687
+schaff-hcc2 | status=staged sec=2082 sec_emb=2082 hist_emb=2082 anchors=1725
+schaff-hcc3 | status=staged sec=2325 sec_emb=2325 hist_emb=2325 anchors=2376
+schaff-hcc5 | status=staged sec=1725 sec_emb=1725 hist_emb=1725 anchors=1208
+schaff-hcc6 | status=staged sec=1861 sec_emb=1861 hist_emb=1861 anchors=987
+schaff-hcc4 | status=staged sec=1755 sec_emb=1755 hist_emb=1755 anchors=1232
+schaff-hcc7 | status=staged sec=1672 sec_emb=1672 hist_emb=1672 anchors=2966
+schaff-hcc8 | status=staged sec=2053 sec_emb=2053 hist_emb=2053 anchors=3151
+chesterton-historyengland | status=staged sec=399 sec_emb=399 hist_emb=399 anchors=148
+winkworth-tauler | status=staged sec=731 sec_emb=731 hist_emb=731 anchors=133
+bangs-history1 | status=staged sec=682 sec_emb=682 hist_emb=682 anchors=360
+bangs-history3 | status=staged sec=864 sec_emb=864 hist_emb=864 anchors=216
+bangs-history4 | status=staged sec=900 sec_emb=900 hist_emb=900 anchors=129
+bangs-history2 | status=staged sec=791 sec_emb=791 hist_emb=791 anchors=379
+bede-history | status=staged sec=912 sec_emb=912 hist_emb=912 anchors=949
+hort-ecclesia | status=staged sec=437 sec_emb=437 hist_emb=437 anchors=233
+rutherford-triumph | status=staged sec=813 sec_emb=813 hist_emb=813 anchors=236
+wuttke-ethics1 | status=staged sec=1135 sec_emb=1135 hist_emb=1135 anchors=96
+bacon-lw-history | status=staged sec=854 sec_emb=854 hist_emb=854 anchors=192
+baird-huguenots | status=staged sec=1213 sec_emb=1213 hist_emb=1213 anchors=420
+vanbraght-mirror | status=staged sec=7080 sec_emb=7080 hist_emb=7080 anchors=2147
+dickinson-musicchurch | status=staged sec=781 sec_emb=781 hist_emb=781 anchors=240
+miller-history | status=staged sec=1103 sec_emb=1103 hist_emb=1103 anchors=841
+robertson-history | status=staged sec=636 sec_emb=636 hist_emb=636 anchors=692
+young-j-christ | status=staged sec=409 sec_emb=409 hist_emb=409 anchors=79
+foxe-martyrs | ABSENT
+josephus/foxe on dev: [{"slug":"josephus-whiston","status":"published"}]
+
+## genre='history' fathers (W-EUSEBIUS arc, landed 2026-08-23):
+[
+ {
+  "slug": "schaff-npnf201",
+  "status": "staged",
+  "genre": "history",
+  "sections": "588",
+  "sec_emb": "588",
+  "hist_emb": "588"
+ },
+ {
+  "slug": "schaff-npnf202",
+  "status": "staged",
+  "genre": "history",
+  "sections": "495",
+  "sec_emb": "495",
+  "hist_emb": "495"
+ },
+ {
+  "slug": "schaff-npnf203",
+  "status": "staged",
+  "genre": "history",
+  "sections": "584",
+  "sec_emb": "584",
+  "hist_emb": "584"
+ }
+]
+
+## served/null-vector guard over historian slugs:
+[{"slug":"bacon-lw-history","status":"staged","served_hist":"854","total_hist":"854"},{"slug":"baird-huguenots","status":"staged","served_hist":"1213","total_hist":"1213"},{"slug":"bangs-history1","status":"staged","served_hist":"682","total_hist":"682"},{"slug":"bangs-history2","status":"staged","served_hist":"791","total_hist":"791"},{"slug":"bangs-history3","status":"staged","served_hist":"864","total_hist":"864"},{"slug":"bangs-history4","status":"staged","served_hist":"900","total_hist":"900"},{"slug":"bede-history","status":"staged","served_hist":"912","total_hist":"912"},{"slug":"chesterton-historyengland","status":"staged","served_hist":"399","total_hist":"399"},{"slug":"dickinson-musicchurch","status":"staged","served_hist":"781","total_hist":"781"},{"slug":"edersheim-lifetimes","status":"staged","served_hist":"4579","total_hist":"4579"},{"slug":"hort-ecclesia","status":"staged","served_hist":"437","total_hist":"437"},{"slug":"josephus-whiston","status":"published","served_hist":"4112","total_hist":"4112"},{"slug":"miller-history","status":"staged","served_hist":"1103","total_hist":"1103"},{"slug":"robertson-history","status":"staged","served_hist":"636","total_hist":"636"},{"slug":"rutherford-triumph","status":"staged","served_hist":"813","total_hist":"813"},{"slug":"schaff-hcc1","status":"staged","served_hist":"2159","total_hist":"2159"},{"slug":"schaff-hcc2","status":"staged","served_hist":"2082","total_hist":"2082"},{"slug":"schaff-hcc3","status":"staged","served_hist":"2325","total_hist":"2325"},{"slug":"schaff-hcc4","status":"staged","served_hist":"1755","total_hist":"1755"},{"slug":"schaff-hcc5","status":"staged","served_hist":"1725","total_hist":"1725"},{"slug":"schaff-hcc6","status":"staged","served_hist":"1861","total_hist":"1861"},{"slug":"schaff-hcc7","status":"staged","served_hist":"1672","total_hist":"1672"},{"slug":"schaff-hcc8","status":"staged","served_hist":"2053","total_hist":"2053"},{"slug":"schaff-person","status":"staged","served_hist":"512","total_hist":"512"},{"slug":"vanbraght-mirror","status":"staged","served_hist":"7080","total_hist":"7080"},{"slug":"winkworth-tauler","status":"staged","served_hist":"731","total_hist":"731"},{"slug":"wuttke-ethics1","status":"staged","served_hist":"1135","total_hist":"1135"},{"slug":"young-j-christ","status":"staged","served_hist":"409","total_hist":"409"}]
+null vectors: 0
