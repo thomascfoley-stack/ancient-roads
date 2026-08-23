@@ -54,5 +54,8 @@ reverted and verified) · **Wave:** 2 (ADR-gated retrieval)
 
 ## Audit
 
-- `npm run audit` in the worktree: see below (filled at completion). Known pre-existing red:
-  the thayers baseline (W-BASEFIX's item) — noted, not fixed.
+- `npm run audit` in the worktree (2026-08-23): every leg green EXCEPT the known pre-existing
+  `thayers evidence gate > the SHIPPED CLI refuses at the same gate` red in
+  `test/publish-flip-toolchain.test.ts` — W-BASEFIX's item, noted not fixed. 847/848 tests
+  pass; the single failure is definitionally pre-existing (my diff vs base touches none of the
+  files that test covers — 13 new infrastructure files only, behavior change reverted).
