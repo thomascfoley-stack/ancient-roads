@@ -1,0 +1,160 @@
+W-REGDURABLE RED-PROOF — batched idempotent register flip
+Throwaway local Postgres (postgresql@14, localhost:55433, db regflip, destroyed after the run).
+Script under test: scripts/register-flip-batched.mjs (dry-run default; --apply writes).
+Sections: S0 seed · S1 guard refusals · S2 dry-run · S3 interrupt/resume (the required
+red-proof) · S4 idempotent re-run · S5 predicate is load-bearing · S6 mid-statement rollback ·
+S7 preflight STOP.
+
+NOTE ON RUNS. Two attempts are NOT in this file, and why: (1) the first transcript exported
+DATABASE_URL but not DATABASE_URL_UNPOOLED; the repo's env idiom (.env.local fallback in
+localEnv) let dev's DATABASE_URL_UNPOOLED win, so its node runs hit DEV in 0-todo mode instead
+of the throwaway. Nothing was written to dev (every apply run reported "OK — 0 row(s)"; dev
+served count re-measured unchanged at 191,233/191,233). (2) The first local S3 attempt seeded
+only 500k filler rows, batches committed faster than the watcher could kill, and the
+"interrupted" run actually completed — no interruption, no proof. The S3 below is the valid
+one: 5M filler rows, SIGTERM landing mid-run after 3 committed batches, exit 143.
+
+##### PART 1 — seed, guard refusals, dry-run, preflight STOP #####
+================================================================
+S0. THROWAWAY SEED STATE (local)
+================================================================
+sermon-a|f|3
+sermon-a|t|1
+sermon-b|f|2
+sermon-staged|f|3
+theol-a|f|2
+total rows incl. filler: 500011
+
+================================================================
+S1. GUARD REFUSALS (must refuse BEFORE any connection)
+================================================================
+--- S1a: NEON_BRANCH unset/unknown — assertDevOnlyTarget called directly ---
+refused branch undefined -> STOP: NEON_BRANCH="(unset)" — export NEON_BRANCH=dev|test alongside DATABASE_URL to run the flip
+refused branch "prod" -> STOP: NEON_BRANCH="prod" — export NEON_BRANCH=dev|test alongside DATABASE_URL to run the flip
+refused branch "main" -> STOP: NEON_BRANCH="main" — export NEON_BRANCH=dev|test alongside DATABASE_URL to run the flip
+S1a OK: every non-dev/test branch refused
+exit=0
+--- S1b: NEON_BRANCH=dev but PROD-looking host (fake URL; guard must fire pre-connect) ---
+STOP: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech is not a dev endpoint. NEON_BRANCH said "dev", but the label alone is self-attested — the sermon/theology register flip requires the URL to point at ep-tiny-hat / ep-holy-rice-athhpp5z or localhost. A production URL with a stale NEON_BRANCH=dev must never pass.
+exit=2
+--- S1c: NEON_BRANCH=prod with local URL ---
+STOP: NEON_BRANCH="prod" — export NEON_BRANCH=dev|test alongside DATABASE_URL to run the sermon/theology register flip.
+exit=2
+
+================================================================
+S2. DRY RUN (default) against LOCAL — plan only, nothing written
+================================================================
+register-flip-batched — target localhost:55433 (credentials redacted)
+source_types  sermon, theology (published works only)
+batch size    2 row(s) per COMMIT
+mode          DRY RUN (pass --apply to write)
+preflight     3 published work(s): licences allowed, provenance clean, none vetoed
+excluded      1 non-published work(s) are NOT eligible and are NOT touched:
+                sermon-staged (staged)
+to serve      7 row(s)  (~4 commits, ~0 min at the measured 28 rows/sec)
+  would serve        3  sermon-a
+  would serve        2  theol-a
+  would serve        2  sermon-b
+
+DRY RUN — nothing was written. Re-run with --apply to flip.
+exit=0
+--- post-dry-run state (must be unchanged) ---
+sermon-a|f|3
+sermon-a|t|1
+sermon-b|f|2
+sermon-staged|f|3
+theol-a|f|2
+
+================================================================
+S7. PREFLIGHT STOP: a published work by a MUST_NOT_SERVE author
+================================================================
+UPDATE 1
+UPDATE 2
+register-flip-batched — target localhost:55433 (credentials redacted)
+source_types  sermon, theology (published works only)
+batch size    2 row(s) per COMMIT
+mode          APPLY
+
+STOP — preflight failed, nothing was written:
+  * MUST_NOT_SERVE author: theol-a ("Origen")
+exit=1
+theol-a unserved after STOP (must be 2 — nothing written): 2
+UPDATE 1
+
+RED-PROOF TRANSCRIPT (CORRECTED) COMPLETE
+
+##### PART 2 — interrupt/resume (THE red-proof), idempotent re-run, mid-statement rollback #####
+================================================================
+S3. INTERRUPT mid-run after batch 1, then RESUME — no double-application
+================================================================
+before: in-scope served=1 (expect 1, the pre-served row)
+/tmp/regdurable-redproof3.sh: line 18: 39855 Terminated: 15          node scripts/register-flip-batched.mjs --apply --batch=2 > /tmp/regflip-run1.log 2>&1
+run1 exit=143 (SIGTERM delivered after the 'batch    1' line appeared)
+--- run1 output up to the kill ---
+register-flip-batched — target localhost:55433 (credentials redacted)
+source_types  sermon, theology (published works only)
+batch size    2 row(s) per COMMIT
+mode          APPLY
+preflight     3 published work(s): licences allowed, provenance clean, none vetoed
+excluded      1 non-published work(s) are NOT eligible and are NOT touched:
+                sermon-staged (staged)
+to serve      7 row(s)  (~4 commits, ~0 min at the measured 28 rows/sec)
+  batch    1  +    2  total         2/7  28.6%  2000/s  eta 0m  (0.0s)
+  batch    2  +    2  total         4/7  57.1%  4000/s  eta 0m  (0.0s)
+  batch    3  +    2  total         6/7  85.7%  6000/s  eta 0m  (0.0s)
+MID-RUN ASSERTION: served=7, pre-served 1 + committed batches 6 = 7 -> PASS
+  (no partial batch: every committed batch is whole; the in-flight one left nothing)
+--- RESUME: same command again ---
+resume exit=0
+register-flip-batched — target localhost:55433 (credentials redacted)
+source_types  sermon, theology (published works only)
+batch size    2 row(s) per COMMIT
+mode          APPLY
+preflight     3 published work(s): licences allowed, provenance clean, none vetoed
+excluded      1 non-published work(s) are NOT eligible and are NOT touched:
+                sermon-staged (staged)
+to serve      1 row(s)  (~1 commits, ~0 min at the measured 28 rows/sec)
+  batch    1  +    1  total         1/1  100.0%  2/s  eta 0m  (0.4s)
+
+OK — 1 row(s) served across 3 work(s).
+Verified: 8/8 row(s) for these works now carry served=true.
+FINAL ASSERTION: served=8/8 -> PASS
+NO-DOUBLE-APPLICATION LEDGER: run1 wrote 6 + resume wrote 1 = 7; initial todo was 7 -> PASS (a double-applied row would make this >7)
+staged rows served (must be 0): 0
+
+================================================================
+S4. IDEMPOTENT RE-RUN after completion
+================================================================
+to serve      0 row(s)  (~0 commits, ~0 min at the measured 28 rows/sec)
+
+OK — 0 row(s) served across 3 work(s).
+Verified: 8/8 row(s) for these works now carry served=true.
+exit=0
+
+================================================================
+S6. MID-STATEMENT KILL ROLLS THE BATCH BACK (statement atomicity, 5M-row UPDATE)
+================================================================
+FATAL:  terminating connection due to administrator command
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+connection to server was lost
+big UPDATE exit=2 (terminated mid-statement)
+father rows served after mid-statement termination (must be 0): 0
+
+TRANSCRIPT COMPLETE
+
+##### PART 3 — the idempotence predicate is load-bearing (direct psql, throwaway) #####
+S5. THE PREDICATE IS LOAD-BEARING (red-proof the check):
+    same batch shape WITHOUT `served IS NOT TRUE` double-applies
+================================================================
+--- reset theol-a to unserved ---
+UPDATE 2
+--- WITHOUT predicate: run the same UPDATE twice, both rewrite rows (rowCount 2, then 2) ---
+UPDATE 2
+UPDATE 2
+--- WITH predicate (the tool): second run moves 0 rows ---
+UPDATE 0
+UPDATE 0
+
+================================================================
