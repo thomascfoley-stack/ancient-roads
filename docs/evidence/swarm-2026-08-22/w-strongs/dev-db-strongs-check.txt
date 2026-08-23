@@ -1,0 +1,21 @@
+target host assert: dev (ep-tiny-hat) OK
+
+
+sources matching strong*: 0
+lexicon sources: 16
+  {"slug":"bdb-lexicon","status":"published"}
+  {"slug":"easton-ebd2","status":"published"}
+  {"slug":"eastons-dictionary","status":"published"}
+  {"slug":"hitchcock-bible-names","status":"published"}
+  {"slug":"isbe","status":"published"}
+  {"slug":"naves-topical","status":"published"}
+  {"slug":"schaff-dictionarybible","status":"published"}
+  {"slug":"schaff-encyc01","status":"published"}
+  {"slug":"schaff-encyc02","status":"published"}
+  {"slug":"schaff-encyc09","status":"published"}
+  {"slug":"schaff-encyc13","status":"published"}
+  {"slug":"schaff-encyc13a","status":"published"}
+  {"slug":"smith-w-bibledict","status":"published"}
+  {"slug":"smiths-dictionary","status":"published"}
+  {"slug":"thayers-lexicon","status":"staged"}
+  {"slug":"wace-biodict","status":"published"}

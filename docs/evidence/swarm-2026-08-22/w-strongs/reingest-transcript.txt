@@ -1,0 +1,4 @@
+greek: 5523 entries -> web/public/lexicon/greek.json
+  sample G1615: {"lemma":"ἐκτελέω","translit":"ekteléō","pron":"","def":"to complete fully","derivation":"from G1537 (ἐκ) and G5055 (τελ
+hebrew: 8674 entries -> web/public/lexicon/hebrew.json
+  sample H1: {"lemma":"אָב","translit":"ʼâb","pron":"awb","def":"father, in a literal and immediate, or figurative and remote applica

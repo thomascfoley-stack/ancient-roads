@@ -1,0 +1,55 @@
+
+=== greek ===
+fetched source sha256: 7624ee738ae47e80f1a352223e28a26d011c9cd4898822cee52f47a010c04efd
+upstream entries: 5523 · served entries: 5523
+keys only upstream: 0 · only served: 0 · field mismatches: 0
+
+--- G2316 raw source bytes (openscriptures js) ---
+"G2316":{"lemma":"θεός","translit":"theós","kjv_def":"X exceeding, God, god(-ly, -ward)","strongs_def":" figuratively, a magistrate; by Hebraism, very","derivation":"of uncertain affinity; a deity, especially (with G3588 (ὁ)) the supreme Divinity;"}
+--- G2316 served (web/public/lexicon/greek.json) ---
+{
+ "lemma": "θεός",
+ "translit": "theós",
+ "pron": "",
+ "def": "figuratively, a magistrate; by Hebraism, very",
+ "derivation": "of uncertain affinity; a deity, especially (with G3588 (ὁ)) the supreme Divinity;",
+ "kjv": "X exceeding, God, god(-ly, -ward)"
+}
+
+--- seeded sample (seed 20260821, n=20) ---
+G1518 MATCH  def="pacificatory, i.e. (subjectively) peaceable"
+G1830 MATCH  def="to explore (figuratively)"
+G2261 MATCH  def="properly, affable, i.e. mild or kind"
+G2694 MATCH  def="to drag down, i.e. arrest judicially"
+G2903 MATCH  def="strongest, i.e. (in dignity) very honorable"
+G2907 MATCH  def="(butcher's) meat"
+G3312 MATCH  def="an apportioner (administrator)"
+G3462 MATCH  def="to apply (perfumed) unguent to"
+G3546 MATCH  def="what is reckoned as of value (after the Latin numisma), i.e. current coin"
+G3585 MATCH  def="wooden"
+G3925 MATCH  def="a throwing in beside (juxtaposition), i.e. (specially), battle-array, encampment or barracks (tower Antonia)"
+G4154 MATCH  def="to breathe hard, i.e. breeze"
+G4237 MATCH  def="a garden plot, i.e. (by implication, of regular beds) a row (repeated in plural by Hebraism, to indicate an arrangement)"
+G4510 MATCH  def="to soil, i.e. (intransitively) to become dirty (morally)"
+G4511 MATCH  def="a flux (of blood)"
+G5474 MATCH  def="burnished copper, an alloy of copper (or gold) and silver having a brilliant lustre"
+G686 MATCH  def="a particle denoting an inference more or less decisive (as follows)"
+G696 MATCH  def="silver (the metal, in the articles or coin)"
+G805 MATCH  def="to render secure"
+G861 MATCH  def="incorruptibility; genitive, unending existence; (figuratively) genuineness"
+sample result: 20/20 byte-identical to upstream
+
+=== hebrew ===
+fetched source sha256: 5ce6aeed551c709f49bcfa341cadf2f34bc7599b85d9de9e6ac2ecbf60fc3739
+upstream entries: 8674 · served entries: 8674
+keys only upstream: 0 · only served: 0 · field mismatches: 0
+
+--- seeded sample (seed 20260821, n=5) ---
+H50 MATCH  def="Abishua, the name of two Israelites"
+H5096 MATCH  def="Nahalal or Nahalol, a place in Palestine"
+H51 MATCH  def="Abishur, an Israelite"
+H6213 MATCH  def="to do or make, in the broadest sense and widest application"
+H7288 MATCH  def="Raddai, an Israelite"
+sample result: 5/5 byte-identical to upstream
+
+VERDICT: adapter is LOSSLESS — truncation is upstream-source
