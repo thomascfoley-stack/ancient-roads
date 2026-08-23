@@ -163,7 +163,7 @@ Full row histories incl. F4: `MASTER_HISTORY.md §lane-f`.
 | F1 | The CI parent predates the corpus | **CLOSED `13eed33`** — repointed to `dev`; trade recorded (green but drifting) |
 | F2 | Migration `011` could not be applied to any fresh branch | **CLOSED `c851c2c`** — the migration set could not replay from zero; proven by execution |
 | F3 | The gate executed ~45% of the time | **CLOSED `a55db09`** — repo-wide concurrency key starved it; re-keyed per-ref. Neon branch cap NOT READ |
-| F4 | Name what remains red, and who owns each | **OPEN** — `history-scope-db` true positive: fix committed on `swarm/W-HISTSCOPE-history-scope-db` (UNVERIFIED, unmerged); the 50-entity out-of-scope population is filed as a historians-lane finding |
+| F4 | Name what remains red, and who owns each | `history-scope-db` **CLOSED 2026-08-23** — W-HISTSCOPE merged into the closeout candidate, Wave-7 verified live (both directions green on dev, 27s real execution); the 50-entity out-of-scope population stays filed as a historians-lane finding (packet A9). `licensing`/`plan-tenancy`/`register-wall-surfaces` still UNCONFIRMED on the repointed parent |
 | F5 | ⚑ First green run | **ACHIEVED 2026-08-22** — run `32562471249` @ `2012e03`, BOTH jobs SUCCESS: the first green `db-invariants` in repo history, every suite truthfully accounted (ADR-119 criterion) |
 
 ## Queued — the `SCAN_RE` false-floor class (filed 2026-08-21, owner: not beta-blocking)
