@@ -1,0 +1,11 @@
+-- 128: asserted_ownership_at on user_documents (UPLOADER_DESIGN.md §1/§5/Q7; W-OWNERSHIPCOL).
+--
+-- The user asserts ownership at upload — one sentence in the UI, recorded here as a
+-- timestamp (design §5: "The user asserts ownership at upload (one sentence in the UI;
+-- recorded as asserted_ownership_at, Q7)"). NULLable by design: rows uploaded before this
+-- column shipped carry NULL, which reads as "no assertion recorded", not "asserted at
+-- epoch". Backfilling those rows would fabricate an assertion never made.
+--
+-- Dev + lane-b applied by the swarm (§1.2 suspension); PROD APPLICATION IS OWNER-GATED
+-- (packet B4). Rollback: ALTER TABLE user_documents DROP COLUMN asserted_ownership_at;
+ALTER TABLE user_documents ADD COLUMN IF NOT EXISTS asserted_ownership_at TIMESTAMPTZ;

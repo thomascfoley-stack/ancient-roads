@@ -684,6 +684,13 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
           <span className="mt-1 text-[13px] text-stone-500 dark:text-stone-400">
             PDF, Word, text or Markdown · up to {MAX_UPLOAD_MB} MB
           </span>
+          {/* The ownership assertion (UPLOADER_DESIGN.md §5/Q7) — one sentence, beside the ONLY
+              upload entry point, so uploading past it IS the assertion the server records as
+              asserted_ownership_at. If a second upload surface ever ships, it must carry this
+              sentence too or the recorded assertion becomes a fabrication. */}
+          <span className="mt-1 text-[12px] text-stone-400 dark:text-stone-500">
+            By uploading you affirm this is your own work, or content you have the right to store.
+          </span>
           <input
             ref={fileInput}
             id="my-works-file"
