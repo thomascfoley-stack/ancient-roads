@@ -17,8 +17,8 @@ export interface HistoryResultRow {
 }
 export interface HistoryPayload {
   interpretation: { entities: { slug: string; label: string }[]; period: { start: number; end: number } | null };
-  closest: (HistoryResultRow & { work: { slug: string; title: string; author: string } }) | null;
-  results: { work: { slug: string; title: string; author: string }; periodSpan: [number, number] | null; sections: HistoryResultRow[] }[];
+  closest: (HistoryResultRow & { work: { slug: string; title: string; author: string; provenanceHost?: string | null } }) | null;
+  results: { work: { slug: string; title: string; author: string; provenanceHost?: string | null }; periodSpan: [number, number] | null; sections: HistoryResultRow[] }[];
   coverage: { works: number; sections: number };
 }
 
@@ -67,13 +67,16 @@ export function HistoryResults({ data, query, threadId }: {
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
   }, [data.results]);
 
-  const cite = async (r: HistoryResultRow, work: { title: string; author: string }): Promise<void> => {
+  const cite = async (r: HistoryResultRow, work: { title: string; author: string; provenanceHost?: string | null }): Promise<void> => {
     // Only confirm a copy that happened. navigator.clipboard is undefined on a non-secure context
     // and rejects when the document is unfocused or permission is denied; flashing ✓ regardless is
     // a false confirmation on an attribution control — the wrong direction for this product
-    // (deep-audit client finding 7).
+    // (deep-audit client finding 7). The provenance tag is the work's own, derived server-side
+    // from sources.provenance->>'url' (the hardcoded "(CCEL)" was the deferred security finding —
+    // false for CrossWire-provenanced works like josephus-whiston); no tag beats an invented one.
     try {
-      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')} (CCEL)`);
+      const provenance = work.provenanceHost ? ` (${work.provenanceHost})` : '';
+      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')}${provenance}`);
       setCopied(r.sectionId);
       setTimeout(() => setCopied(null), 1500);
     } catch {

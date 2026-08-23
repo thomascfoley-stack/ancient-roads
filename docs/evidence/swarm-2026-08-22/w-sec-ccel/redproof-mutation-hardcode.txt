@@ -1,0 +1,49 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-SEC-CCEL/web
+
+ ❯ test/invariants/history-citation-provenance.test.tsx (2 tests | 2 failed) 76ms
+   × copy citation — the provenance tag is the work’s own, derived from the source record > a CrossWire-provenanced work cites CrossWire, never the old hardcoded CCEL 70ms
+     → expected 'Josephus, Works, Antiquities — Book 1…' to contain '(crosswire.org)'
+   × copy citation — the provenance tag is the work’s own, derived from the source record > a legacy payload with no provenanceHost (threads persisted before the field) gets NO tag — never an invented one 6ms
+     → expected 'Schaff, Philip, History of the Christ…' to be 'Schaff, Philip, History of the Christ…' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/history-citation-provenance.test.tsx > copy citation — the provenance tag is the work’s own, derived from the source record > a CrossWire-provenanced work cites CrossWire, never the old hardcoded CCEL
+AssertionError: expected 'Josephus, Works, Antiquities — Book 1…' to contain '(crosswire.org)'
+
+Expected: "(crosswire.org)"
+Received: "Josephus, Works, Antiquities — Book 15 — Ch. 1 (CCEL)"
+
+ ❯ test/invariants/history-citation-provenance.test.tsx:45:18
+     43|     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+     44|     const text = writeText.mock.calls[0][0];
+     45|     expect(text).toContain('(crosswire.org)');
+       |                  ^
+     46|     expect(text).not.toContain('(CCEL)');
+     47|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/invariants/history-citation-provenance.test.tsx > copy citation — the provenance tag is the work’s own, derived from the source record > a legacy payload with no provenanceHost (threads persisted before the field) gets NO tag — never an invented one
+AssertionError: expected 'Schaff, Philip, History of the Christ…' to be 'Schaff, Philip, History of the Christ…' // Object.is equality
+
+Expected: "Schaff, Philip, History of the Christian Church, Antiquities — Book 15 — Ch. 1"
+Received: "Schaff, Philip, History of the Christian Church, Antiquities — Book 15 — Ch. 1 (CCEL)"
+
+ ❯ test/invariants/history-citation-provenance.test.tsx:56:40
+     54|     fireEvent.click(screen.getByRole('button', { name: 'Copy citation'…
+     55|     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+     56|     expect(writeText.mock.calls[0][0]).toBe('Schaff, Philip, History o…
+       |                                        ^
+     57|   });
+     58| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  18:44:16
+   Duration  574ms (transform 29ms, setup 0ms, collect 72ms, tests 76ms, environment 249ms, prepare 30ms)
+

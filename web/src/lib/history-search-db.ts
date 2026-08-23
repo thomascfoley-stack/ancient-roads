@@ -21,7 +21,16 @@ export interface HistoryResponse {
   results: { work: WorkRef; periodSpan: [number, number] | null; sections: HistoryResult[] }[];
   coverage: { works: number; sections: number };
 }
-interface WorkRef { slug: string; title: string; author: string }
+interface WorkRef { slug: string; title: string; author: string; provenanceHost: string | null }
+
+/** The citation's provenance tag, DERIVED from the source record's own `provenance.url` — the
+ *  deep-audit finding was a hardcoded "(CCEL)" in history-results.tsx, false for every
+ *  non-CCEL work (josephus-whiston is CrossWire-provenanced). Fail closed: no parseable url,
+ *  no tag — never an invented one. */
+export function provenanceHostOf(url: string | null): string | null {
+  if (!url) return null;
+  try { return new URL(url).host.replace(/^www\./, ''); } catch { return null; }
+}
 
 // Entity vocabulary + coverage are DERIVED (never typed) and cached 60s — the invalidation point
 // is a serve flip, and 60s bounds the staleness window (§5 amendment: the 9-vs-10 class).
@@ -60,7 +69,7 @@ interface Row {
   // the concordance's one job: open the book THERE.
   id: number; source_id: number; ordinal: number; heading: string; body: string;
   period_start_year: number | null; period_end_year: number | null;
-  slug: string; title: string; author: string;
+  slug: string; title: string; author: string; provenance_url: string | null;
   cosine?: number; fts?: number; entity?: boolean;
 }
 // Exported so the SQL half of the deep-link contract is testable without a DB. The CRITICAL
@@ -69,7 +78,8 @@ interface Row {
 // undefined at runtime and a mapper unit test that builds the row by hand never sees it. The
 // invariant test asserts this string selects `s.ordinal` and not `s.unit_ordinal`.
 export const ROW_COLS = `s.id, s.source_id, s.ordinal, s.heading, s.body,
-  s.period_start_year, s.period_end_year, src.slug, src.title, src.author`;
+  s.period_start_year, s.period_end_year, src.slug, src.title, src.author,
+  src.provenance->>'url' AS provenance_url`;
 
 /** Row → result mapper, exported so the ordinal contract (the deep link the reader can resolve)
  *  is unit-testable without a DB — see history-row-to-result.test.ts. `needle` windows the
@@ -193,7 +203,7 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
   const groups = new Map<string, { work: WorkRef; sections: (typeof scored)[number][] }>();
   for (const x of scored) {
     const g = groups.get(x.row.slug) ?? {
-      work: { slug: x.row.slug, title: x.row.title, author: x.row.author }, sections: [],
+      work: { slug: x.row.slug, title: x.row.title, author: x.row.author, provenanceHost: provenanceHostOf(x.row.provenance_url) }, sections: [],
     };
     g.sections.push(x);
     groups.set(x.row.slug, g);

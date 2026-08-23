@@ -1,0 +1,52 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-SEC-CCEL/web
+
+ ❯ test/history-provenance-host.test.ts (3 tests | 2 failed) 4ms
+   × provenanceHostOf — host of the source record’s provenance url > derives the tag from real served-history provenance urls 3ms
+     → expected 'ccel.org' to be 'crosswire.org' // Object.is equality
+   × provenanceHostOf — host of the source record’s provenance url > fails closed: no url or an unparseable url yields NO tag, never an invented one 0ms
+     → expected 'ccel.org' to be null
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/history-provenance-host.test.ts > provenanceHostOf — host of the source record’s provenance url > derives the tag from real served-history provenance urls
+AssertionError: expected 'ccel.org' to be 'crosswire.org' // Object.is equality
+
+Expected: "crosswire.org"
+Received: "ccel.org"
+
+ ❯ test/history-provenance-host.test.ts:18:98
+     16|   it('derives the tag from real served-history provenance urls', () =>…
+     17|     expect(provenanceHostOf('https://www.ccel.org/ccel/schaff/hcc1')).…
+     18|     expect(provenanceHostOf('https://crosswire.org/sword/modules/ModIn…
+       |                                                                                                  ^
+     19|   });
+     20|   it('fails closed: no url or an unparseable url yields NO tag, never …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/history-provenance-host.test.ts > provenanceHostOf — host of the source record’s provenance url > fails closed: no url or an unparseable url yields NO tag, never an invented one
+AssertionError: expected 'ccel.org' to be null
+
+- Expected: 
+null
+
++ Received: 
+"ccel.org"
+
+ ❯ test/history-provenance-host.test.ts:22:43
+     20|   it('fails closed: no url or an unparseable url yields NO tag, never …
+     21|     expect(provenanceHostOf(null)).toBeNull();
+     22|     expect(provenanceHostOf('not a url')).toBeNull();
+       |                                           ^
+     23|   });
+     24| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 1 passed (3)
+   Start at  18:44:23
+   Duration  204ms (transform 29ms, setup 0ms, collect 32ms, tests 4ms, environment 0ms, prepare 35ms)
+

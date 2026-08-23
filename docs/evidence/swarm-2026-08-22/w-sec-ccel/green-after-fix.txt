@@ -1,0 +1,25 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-SEC-CCEL/web
+
+ ✓ test/history-search.test.ts (16 tests) 8ms
+ ✓ test/history-row-to-result.test.ts (5 tests) 7ms
+ ✓ test/history-provenance-host.test.ts (3 tests) 2ms
+stderr | test/history-search-route.test.ts > POST /api/history/search > 500 fail-closed when retrieval throws — including the excerpt gate
+history_search_failed excerpt is not a verbatim substring
+
+stderr | test/history-search-route.test.ts > POST /api/history/search > 200 passes the contract through untouched
+history_thread_persist_failed APP_DATABASE_URL or DATABASE_URL must be set
+
+ ✓ test/history-search-route.test.ts (5 tests) 75ms
+ ✓ test/components/history-context-bar-query.test.tsx (3 tests) 106ms
+ ✓ test/components/history-ask-autorun.test.tsx (2 tests) 143ms
+ ✓ test/components/history-filter-reset.test.tsx (1 test) 202ms
+ ✓ test/invariants/history-results.test.tsx (5 tests) 231ms
+ ✓ test/invariants/history-citation-provenance.test.tsx (2 tests) 214ms
+
+ Test Files  9 passed (9)
+      Tests  42 passed (42)
+   Start at  18:45:21
+   Duration  1.44s (transform 372ms, setup 0ms, collect 1.19s, tests 988ms, environment 3.65s, prepare 636ms)
+

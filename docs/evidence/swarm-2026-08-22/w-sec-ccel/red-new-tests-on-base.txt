@@ -1,0 +1,100 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-SEC-CCEL/web
+
+ ❯ test/history-provenance-host.test.ts (3 tests | 3 failed) 9ms
+   × provenanceHostOf — host of the source record’s provenance url > derives the tag from real served-history provenance urls 3ms
+     → provenanceHostOf is not a function
+   × provenanceHostOf — host of the source record’s provenance url > fails closed: no url or an unparseable url yields NO tag, never an invented one 0ms
+     → provenanceHostOf is not a function
+   × ROW_COLS — the SQL half of the provenance contract > selects the source record’s provenance url so the tag can be derived at all 4ms
+     → expected 's.id, s.source_id, s.ordinal, s.headi…' to contain 'src.provenance->>\'url\''
+ ❯ test/invariants/history-citation-provenance.test.tsx (2 tests | 2 failed) 219ms
+   × copy citation — the provenance tag is the work’s own, derived from the source record > a CrossWire-provenanced work cites CrossWire, never the old hardcoded CCEL 206ms
+     → expected 'Josephus, Works, Antiquities — Book 1…' to contain '(crosswire.org)'
+   × copy citation — the provenance tag is the work’s own, derived from the source record > a legacy payload with no provenanceHost (threads persisted before the field) gets NO tag — never an invented one 12ms
+     → expected 'Schaff, Philip, History of the Christ…' to be 'Schaff, Philip, History of the Christ…' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/history-provenance-host.test.ts > provenanceHostOf — host of the source record’s provenance url > derives the tag from real served-history provenance urls
+TypeError: provenanceHostOf is not a function
+ ❯ test/history-provenance-host.test.ts:17:12
+     15| describe('provenanceHostOf — host of the source record’s provenance ur…
+     16|   it('derives the tag from real served-history provenance urls', () =>…
+     17|     expect(provenanceHostOf('https://www.ccel.org/ccel/schaff/hcc1')).…
+       |            ^
+     18|     expect(provenanceHostOf('https://crosswire.org/sword/modules/ModIn…
+     19|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  test/history-provenance-host.test.ts > provenanceHostOf — host of the source record’s provenance url > fails closed: no url or an unparseable url yields NO tag, never an invented one
+TypeError: provenanceHostOf is not a function
+ ❯ test/history-provenance-host.test.ts:21:12
+     19|   });
+     20|   it('fails closed: no url or an unparseable url yields NO tag, never …
+     21|     expect(provenanceHostOf(null)).toBeNull();
+       |            ^
+     22|     expect(provenanceHostOf('not a url')).toBeNull();
+     23|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  test/history-provenance-host.test.ts > ROW_COLS — the SQL half of the provenance contract > selects the source record’s provenance url so the tag can be derived at all
+AssertionError: expected 's.id, s.source_id, s.ordinal, s.headi…' to contain 'src.provenance->>\'url\''
+
+- Expected
++ Received
+
+- src.provenance->>'url'
++ s.id, s.source_id, s.ordinal, s.heading, s.body,
++   s.period_start_year, s.period_end_year, src.slug, src.title, src.author
+
+ ❯ test/history-provenance-host.test.ts:28:22
+     26| describe('ROW_COLS — the SQL half of the provenance contract', () => {
+     27|   it('selects the source record’s provenance url so the tag can be der…
+     28|     expect(ROW_COLS).toContain(`src.provenance->>'url'`);
+       |                      ^
+     29|   });
+     30| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  test/invariants/history-citation-provenance.test.tsx > copy citation — the provenance tag is the work’s own, derived from the source record > a CrossWire-provenanced work cites CrossWire, never the old hardcoded CCEL
+AssertionError: expected 'Josephus, Works, Antiquities — Book 1…' to contain '(crosswire.org)'
+
+Expected: "(crosswire.org)"
+Received: "Josephus, Works, Antiquities — Book 15 — Ch. 1 (CCEL)"
+
+ ❯ test/invariants/history-citation-provenance.test.tsx:45:18
+     43|     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+     44|     const text = writeText.mock.calls[0][0];
+     45|     expect(text).toContain('(crosswire.org)');
+       |                  ^
+     46|     expect(text).not.toContain('(CCEL)');
+     47|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  test/invariants/history-citation-provenance.test.tsx > copy citation — the provenance tag is the work’s own, derived from the source record > a legacy payload with no provenanceHost (threads persisted before the field) gets NO tag — never an invented one
+AssertionError: expected 'Schaff, Philip, History of the Christ…' to be 'Schaff, Philip, History of the Christ…' // Object.is equality
+
+Expected: "Schaff, Philip, History of the Christian Church, Antiquities — Book 15 — Ch. 1"
+Received: "Schaff, Philip, History of the Christian Church, Antiquities — Book 15 — Ch. 1 (CCEL)"
+
+ ❯ test/invariants/history-citation-provenance.test.tsx:56:40
+     54|     fireEvent.click(screen.getByRole('button', { name: 'Copy citation'…
+     55|     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+     56|     expect(writeText.mock.calls[0][0]).toBe('Schaff, Philip, History o…
+       |                                        ^
+     57|   });
+     58| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+ Test Files  2 failed (2)
+      Tests  5 failed (5)
+   Start at  18:43:04
+   Duration  1.80s (transform 147ms, setup 0ms, collect 328ms, tests 228ms, environment 630ms, prepare 81ms)
+
