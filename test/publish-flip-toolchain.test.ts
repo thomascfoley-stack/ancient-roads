@@ -469,7 +469,7 @@ describe('thayers evidence gate', () => {
     expect(thayersEvidenceError(['thayers-lexicon'], { reverse: true, evidenceText: null })).toBeNull();
     expect(thayersEvidenceError(['bdb-lexicon'], { reverse: false, evidenceText: null })).toBeNull();
   });
-  it('the SHIPPED CLI obeys the same gate in both directions (subprocess, no DB)', () => {
+  it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)', () => {
     // 2026-08-22 (W-BASEFIX): this leg used to assert the repo LACKED the evidence file and
     // then watch the refusal. That precondition went stale when the 2026-08-22 verification
     // session committed the real evidence (abe5252: prod/dev thayers byte-identical, sha256
