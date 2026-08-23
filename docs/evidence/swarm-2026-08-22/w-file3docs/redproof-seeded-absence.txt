@@ -1,0 +1,8 @@
+=== STATE 1 (seeded defect: WORKORDER_V2.md moved away) ===
+ABSENT: docs/pm/WORKORDER_V2.md
+PRESENT: docs/pm/PROGRAM_BRIEF.md
+PRESENT: docs/pm/orders/2026-07-31-strategy-two-lanes.md
+=== STATE 2 (restored) ===
+PRESENT: docs/pm/WORKORDER_V2.md
+PRESENT: docs/pm/PROGRAM_BRIEF.md
+PRESENT: docs/pm/orders/2026-07-31-strategy-two-lanes.md
