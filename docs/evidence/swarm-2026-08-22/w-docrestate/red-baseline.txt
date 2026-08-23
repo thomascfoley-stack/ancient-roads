@@ -1,0 +1,29 @@
+# RED transcript — doc-restatement violations present at base 9dce273 (before the guard existed)
+# Captured: 2026-08-22T17:35:52Z
+
+## Derived ruled values from docs/DECISIONS.md (the source of truth)
+1894:**2. The proper-noun accuracy gate is HIT@2, not HIT@1.** **Why:** every recorded miss passes at
+1914:**3. The `interpretation_bait` bar stays ≥99%, and the teacher stays OWNER-ONLY through gated
+1890:**1. Launch scope is GATED BETA.** The site password gate (`web/src/middleware.ts`) STAYS UP.
+
+## VIOLATION 1 — docs/HELDOUT_EVAL_DESIGN.md asserts the SUPERSEDED proper-noun metric (HIT@1) as a beta gate, no pointer
+90:| Proper-noun / rare | HIT@1 | ≥ 70% |
+164:| Proper-noun / rare | HIT@1 | ≥ 70% | beta core gate |
+
+## VIOLATION 2 — docs/STATE_OF_TRUTH.md restates the interpretation_bait bar (≥99%) with no pointer to ADR-028/ADR-116
+**Faithfulness (separate axis):** `interpretation_bait` 35/35 = 100% live through real `teach()`→verify, 0
+breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of three on n=35), **NOT ≥99%** — the
+≥99% DoD needs ~300 clean cases. CLAUDE.md already states this correctly.
+
+## Contrast: compliant pointer blocks (value matches + points at the ruling)
+> **The proper-noun row's GATE is HIT@2, not HIT@1 — and this page does not rule that.**
+> [ADR-028 + its amendment ADR-116](DECISIONS.md) are the only place the accuracy status is
+> ruled (2026-08-21: metric moved to HIT@2 because the shipped composer draws from 5
+> candidates, so a HIT@1 miss is still shown to the reader; the July HIT@1 60 closed at
+> **70 / HIT@2 100** on 2026-08-02, [evidence](evidence/eval-v4-post-a8-2026-08-02.md); no
+> accuracy gate is currently outstanding). The table above is a **v3-era snapshot kept for
+> history** — do not read a current status off it, and do not restate the ruling here.
+> ([evidence](evidence/eval-v4-post-a8-2026-08-02.md)). **And the gate is now HIT@2, not HIT@1**
+> (ADR-116, 2026-08-21 — the shipped composer draws from 5 candidates, so a HIT@1 miss still
+> reaches the reader). **ADR-028 + ADR-116 are the single place this status is ruled — do not
+> restate the value here; this note is a pointer, not a record.**

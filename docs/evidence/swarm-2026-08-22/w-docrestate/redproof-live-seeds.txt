@@ -1,0 +1,39 @@
+## SEED 1 — CLAUDE.md: proper-noun gate assertion flipped HIT@2 -> HIT@1 (stale-value leg, real file)
+      Tests  14 passed (14)
+## restored CLAUDE.md
+
+## SEED 2 — docs/pm/MASTER.md: appended a block restating the bait bar with no pointer (carrying leg, real file)
+   × doc-restatement guard > docs/pm/MASTER.md points at the ruling instead of carrying values 13ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
++   "docs/pm/MASTER.md:487 restates a ruled value with no pointer to ADR-028/ADR-116 (DECISIONS.md) — only CLAUDE.md may carry ruled values; every other doc must point, not carry",
+      Tests  1 failed | 13 passed (14)
+## restored MASTER.md
+
+## CONTROL — restored tree is green again
+      Tests  14 passed (14)
+
+## SEED 1 (RE-RUN after closing the line-level-exemption hole) — CLAUDE.md: gate assertion flipped HIT@2 -> HIT@1
+## NOTE: first attempt of seed 1 PASSED (14/14) — the pointer on the same long line swallowed the contradiction. Rule tightened; this rerun must fire.
+   × doc-restatement guard > CLAUDE.md restatements match DECISIONS.md 5ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
++   "CLAUDE.md:25 asserts the proper-noun gate is HIT@1, but HIT@2 is ruled in DECISIONS.md (ADR-116)",
+      Tests  1 failed | 15 passed (16)
+## restored CLAUDE.md
+
+## SEED 3 — docs/STATE_OF_TRUTH.md: bait bar seeded to a wrong value (≥95%) on the (pointed) faithfulness block
+      Tests  16 passed (16)
+## restored STATE_OF_TRUTH.md
+
+## CONTROL — restored tree is green again
+      Tests  16 passed (16)
+
+## SEED 3 (RE-RUN) — CLAUDE.md line 24: bait bar seeded ≥99% -> ≥95% on a line that names interpretation_bait
+## NOTE: first seed-3 attempt targeted STATE_OF_TRUTH line 71, which never mentions "bait" (wrapped sentence) — the line-scoped bait leg cannot see it; block-level no-carrying rule covers that shape. Reseeded on a bait-mentioning line.
+   × doc-restatement guard > CLAUDE.md restatements match DECISIONS.md 4ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
++   "CLAUDE.md:24 states an interpretation_bait bar of ≥95%, but ≥99% is ruled in DECISIONS.md (ADR-116)",
+      Tests  1 failed | 15 passed (16)
+## restored CLAUDE.md
+
+## CONTROL — restored tree is green again
+      Tests  16 passed (16)

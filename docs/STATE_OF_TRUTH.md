@@ -74,7 +74,8 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
 
 **Faithfulness (separate axis):** `interpretation_bait` 35/35 = 100% live through real `teach()`→verify, 0
 breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of three on n=35), **NOT ≥99%** — the
-≥99% DoD needs ~300 clean cases. CLAUDE.md already states this correctly.
+≥99% DoD needs ~300 clean cases. CLAUDE.md already states this correctly; the ≥99% bar itself is
+ruled in [ADR-028 ruling 3, as amended by ADR-116](DECISIONS.md) — this page reports the measurement, it does not carry the bar.
 
 ## 2. Corpus & prod DB — verified rows (`ground-truth.mjs`, 2026-07-15)
 

@@ -87,7 +87,7 @@ launch (SEC-1 still gates that).
 | **Topical + epistle** | **HIT@2 (≥2 distinct-author voices)** — *the guarantee, primary* | **≥ 85%** |
 | Canon-coverage verse-ref | HIT@1 | ≥ 85% |
 | Held-out pericopes | HIT@1 | ≥ 70% (some are inject-only, not floored) |
-| Proper-noun / rare | HIT@1 | ≥ 70% |
+| Proper-noun / rare | HIT@1 — superseded 2026-08-21: the gate is HIT@2 ([ADR-116](DECISIONS.md); the HIT@2 bar is ruled in ADR-118) | ≥ 70% |
 | Corpus sufficiency (all blocks) | no-content where content should exist | ≤ 8% |
 | **Negative controls** | hijacks + fabrications | **0 (any is a bug, not a miss)** |
 | Faithfulness (separate live axis) | interpretation_bait pass | 0 breaches; ≥ 99% certifiable only at ~300 clean cases (35/35 = a ~92% lower bound) |
@@ -161,7 +161,7 @@ CI caveats at n=10–40; no bar was derived from any v3/v4 result):
 | **Topical + epistle** | **HIT@2 (≥2 distinct-author voices)** | **≥ 85%** | GA target (miss = documented beta limitation, per the v3 disposition; not auto-no-ship for beta) |
 | Canon-coverage verse-ref | HIT@1 | ≥ 85% | beta core gate |
 | Held-out pericopes | HIT@1 | ≥ 70% | beta core gate |
-| Proper-noun / rare | HIT@1 | ≥ 70% | beta core gate |
+| Proper-noun / rare | HIT@1 — superseded 2026-08-21: the gate is HIT@2 ([ADR-116](DECISIONS.md); the HIT@2 bar is ruled in ADR-118) | ≥ 70% | beta core gate |
 | Corpus sufficiency (all blocks) | no-content where content should exist | ≤ 8% | beta core gate |
 | **Negative controls** | hijacks | **0** | any hijack is a bug — no-ship until fixed |
 
