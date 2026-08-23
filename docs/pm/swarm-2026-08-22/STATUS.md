@@ -43,7 +43,23 @@ read against dev's mutation state before being treated as signal.**
 | W-ADRV4RERUN | 1a | **DONE-UNVERIFIED** — full re-run discharged: all gates clear EXCEPT ADR-118 (17/20, reproduced W-PN20 exactly — two independent runs, one number); controls 10/10, bait 0 breaches; spend <$1 (first recorded compose→verify cost) | `swarm/w-adrv4rerun` @ 02c9dd2 |
 | W-EUSEBIUS | 1c | **DONE-UNVERIFIED** — npnf201/202/203 STAGED on dev with parity (588/495/584 sections); annotate pass + resilient-embed root-cause fix + genre carriage + SCOPE widening shipped; history eval 20/20 pre-registered bars hold; audit 847/848 (only the known baseline red). **A5 probe numbers: ≈6.4¢ API, ~25 min DB writes.** Phase 4 = owner packet (prepared, 5 steps) | `swarm/w-eusebius-npnf201` @ e7f4585 |
 | W-DOCRESTATE | 1b | **DONE-UNVERIFIED** — guard verified correct + complete by the finish pass (16/16, red + red-proof re-executed, audit green modulo the baseline red); merge c476a8c + 1216773 | `swarm/W-DOCRESTATE-finish-docrestate` @ 1216773 |
-| W-SIXWORKS · W-HISTBACKLOG · W-THAYER · W-STRONGS · W-REGDURABLE · W-ANN · W-SCANRE · W-UX1 · W-L2TOGGLE · W-T3 · W-UX3 · W-SLICE4 · W-ANCHORBACKFILL · W-OWNERSHIPCOL · W-DEVROW · W-SEC1 · W-FILE3DOCS · W-BOARDHYGIENE · W-SEC-CURSOR · W-SEC-CCEL · W-UX2VERIFY | — | **NOT-STARTED (21) — resume is the owner's decision after the W-PN20 label checks** | — |
+| W-SEC-CURSOR | 1b | **DONE-UNVERIFIED** — adjudicated: canonical = cherry-pick `6983321` (int4 bound → 400; live red + red-proof) | `swarm/W-T3-cursor-ccel-ux` (cherry-pick); ADJUDICATION.md |
+| W-L2TOGGLE | 3 | **DONE-UNVERIFIED** — adjudicated: canonical = whole branch @ `9b0e12d` (was genuinely absent; C4's "shipped" disproven) | `swarm/W-L2TOGGLE-plan-toggle` @ 9b0e12d |
+| W-UX2VERIFY | 1b | **DONE-UNVERIFIED** — adjudicated: canonical = whole branch @ `01c45ad` (CDP harness, two widths, seeded red) | `swarm/W-UX2VERIFY-ux2-browser-verify` @ 01c45ad |
+| W-UX1 | 3 | **ALREADY-DONE** — gap closed at `5760eec` (2026-08-02); nothing merges | ADJUDICATION.md |
+| W-T3 | 3 | **ALREADY-DONE (code) + NOT RUN (device)** — guard exists + runs in audit; housekeeping MOOT (ROADMAP pointer is live; `bad9875`'s "fix" flagged do-not-merge) | ADJUDICATION.md |
+| W-SEC-CCEL | 1b | **HELD-FOR-OWNER** — four divergent remedies (host-from-url / edition / host+exports / delete-tag); policy question, not engineering | ADJUDICATION.md; owner packet |
+| W-FILE3DOCS | 6 | **DONE-UNVERIFIED** — all three programme docs filed as reconstructions; Stage 6 + originals stated unrecoverable, not invented | `swarm/W-FILE3DOCS-programme-docs` @ 9d8f404 |
+| W-HISTBACKLOG | 1c | **DONE-UNVERIFIED** — remainder enumerated live (32-work universe, 31 with parity): the ENTIRE remainder is `foxe-martyrs`, re-probed — no ThML edition exists; PARKED with candidate row; zero ingested, $0 | `swarm/w-histbacklog-historians` @ f7e92b2 |
+| W-UX3 | 3 | IN-FLIGHT — build phase (design APPROVE-WITH-CONDITIONS, 5) | `swarm/w-ux3-desk-grid` @ 104d43c |
+| W-SLICE4 | 3 | IN-FLIGHT — build phase (design APPROVE-WITH-CONDITIONS, 6) | `swarm/w-slice4-ask-integration` @ a256082 |
+| W-THAYER | 1c | IN-FLIGHT — lane position 3 (re-chunk + stale-row reconcile on dev) | `swarm/w-thayer-lexicon-repairs` (launching) |
+| W-ANN | 2 | NOT-STARTED — next batch (A5 slot) | — |
+| W-SCANRE | 2 | NOT-STARTED — next batch (A5 slot) | — |
+| W-SEC1 | 5 | NOT-STARTED — next batch (A5 slot) | — |
+| W-SIXWORKS | 6 | NOT-STARTED — enumeration only; next batch (A5 slot) | — |
+| W-STRONGS · W-REGDURABLE · W-RELVOICE-finish · W-ANCHORBACKFILL · W-OWNERSHIPCOL · W-DEVROW | 1c/4 | NOT-STARTED — writer lane positions 4–9, sequential | — |
+| W-BOARDHYGIENE | 6 | NOT-STARTED — runs last among docs (orchestrator) | — |
 
 ## Conventions
 
