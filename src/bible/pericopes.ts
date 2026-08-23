@@ -126,11 +126,6 @@ function findPericopes(norm: string): Array<{ alias: string; ranges: VerseRange[
   return out;
 }
 
-// All named-pericope ranges present in the text (inject-level; no corroboration).
-export function matchPericopes(text: string): VerseRange[] {
-  return findPericopes(normalize(text)).flatMap((p) => p.ranges);
-}
-
 // Does the query carry biblical context BEYOND the matched pericope phrases? Two
 // or more named passages already corroborate each other; otherwise a lexicon
 // token must survive after the matched aliases are removed.
