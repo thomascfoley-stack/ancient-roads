@@ -131,8 +131,11 @@ export async function createDocument(
   meta: { title: string; filename: string; byteSize: number; checksum: string; mimeType: string },
 ): Promise<UserDocument> {
   const [rows] = await runAsUser(userId, (sql) => [
-    sql`INSERT INTO user_documents (user_id, title, source_filename, byte_size, checksum, mime_type, status)
-        VALUES (${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued')
+    // asserted_ownership_at = now(): the upload UI shows the ownership sentence beside the
+    // only upload control (UPLOADER_DESIGN.md §5/Q7), so every document arriving here was
+    // uploaded past it. Pre-column rows stay NULL — "no assertion recorded", never backfilled.
+    sql`INSERT INTO user_documents (user_id, title, source_filename, byte_size, checksum, mime_type, status, asserted_ownership_at)
+        VALUES (${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued', now())
         RETURNING *`,
   ]);
   return toDocument((rows as Row[])[0]!);
