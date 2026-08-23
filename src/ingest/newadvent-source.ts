@@ -44,20 +44,3 @@ export const PATRISTIC_SAMPLE: PatristicWork[] = [
   { author: 'Augustine of Hippo', book: 62, work: 'Homilies on 1 John', edition: 'NPNF1-07 (Schaff, 1888)', urls: [...pages('17020', 1, 9), `${NEWADVENT}/170210.htm`] },
   { author: 'Origen of Alexandria', book: 43, work: 'Commentary on John', edition: 'ANF9 (Menzies, 1896)', urls: ['01', '02', '04', '05', '06', '10', '13', '19', '20', '28', '32'].map((n) => `${NEWADVENT}/1015${n}.htm`) },
 ];
-
-// Provenance a patristic repair records. The provenance IS the public-domain
-// ANF/NPNF (Schaff/Roberts-Donaldson) edition citation — NOT newadvent.org.
-// New Advent is only the verification-FETCH source (robots-permitted), recorded
-// separately under `verify_via`, never as the provenance.
-export function patristicProvenance(w: PatristicWork) {
-  const year = Number(w.edition.match(/\d{4}/)?.[0] ?? 0);
-  return {
-    url: `https://archive.org/search?query=${encodeURIComponent(w.edition)}`, // the PD edition on archive.org (permitted)
-    edition: `${w.author}, ${w.work} — ${w.edition}`,
-    year,
-    license: 'Public Domain',
-    citation: `${w.edition}; ${w.author}, ${w.work}`,
-    verify_via: { source: 'newadvent', note: 'robots.txt permits /fathers/; rate-limited + cached; verification only', pages: w.urls },
-    rebuild: { source: 'archive.org', edition: w.edition, note: 'PD ANF/NPNF volume — re-fetch full text from archive.org' },
-  };
-}
