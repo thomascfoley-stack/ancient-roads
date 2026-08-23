@@ -1,0 +1,10 @@
+probing 7 sections: #1508(34598) #1907(33103) #3477(27469) #1485(26052) #2500(1188) #100(501) #5000(78)
+#1508 len=34598 cos(stored, bare)=0.9549 (used 882ch) cos(stored, heading+body)=0.9381 (used 882ch)
+#1907 len=33103 cos(stored, bare)=0.9998 (used 1260ch) cos(stored, heading+body)=0.9698 (used 1260ch)
+#3477 len=27469 cos(stored, bare)=0.9994 (used 1260ch) cos(stored, heading+body)=0.9903 (used 1260ch)
+#1485 len=26052 cos(stored, bare)=0.9998 (used 882ch) cos(stored, heading+body)=0.9893 (used 882ch)
+#2500 len=1188 cos(stored, bare)=1.0000 (used 1188ch) cos(stored, heading+body)=0.9847 (used 1203ch)
+#100 len=501 cos(stored, bare)=1.0000 (used 501ch) cos(stored, heading+body)=0.9861 (used 515ch)
+#5000 len=78 cos(stored, bare)=1.0000 (used 78ch) cos(stored, heading+body)=0.9850 (used 90ch)
+#1508 (id=749787, len=34598) cos(stored, body[0:1227]) = 1.0000
+#1907 (id=750186, len=33103) cos(stored, body[0:1227]) = 1.0000

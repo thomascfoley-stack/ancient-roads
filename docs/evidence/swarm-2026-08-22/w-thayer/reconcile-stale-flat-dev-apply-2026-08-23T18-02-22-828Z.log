@@ -1,0 +1,16 @@
+W-THAYER stale flat-row reconcile — thayers-lexicon
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: APPLY
+evidence log: /private/tmp/swarm-thayer/docs/evidence/swarm-2026-08-22/w-thayer/reconcile-stale-flat-dev-apply-2026-08-23T18-02-22-828Z.log
+
+flat rows for thayers-lexicon: 7570 (0 served)
+stale (key to no live section): 2865 — chunked NNN.MM shape: 2865; chunk integer-part names a live section: 2865; served among stale: 0
+  e.g. lexicon:thayers-lexicon:1.1  "G1 Α"
+  e.g. lexicon:thayers-lexicon:1.2  "G1 Α"
+  e.g. lexicon:thayers-lexicon:1012.1  "G1014 βούλομαι"
+  e.g. lexicon:thayers-lexicon:1012.2  "G1014 βούλομαι"
+  e.g. lexicon:thayers-lexicon:1040.1  "G1042 γαββαθά"
+
+✓ backed up 2865 stale rows (with vectors) → /private/tmp/swarm-thayer/docs/evidence/swarm-2026-08-22/w-thayer/stale-flat-backup-dev-2026-08-23T18-02-22-828Z.jsonl
+✓ REMOVED 2865 stale flat rows on dev (txn verified: 0 stale remain; 4705 live-mapped rows untouched).
+  Restore: re-insert from /private/tmp/swarm-thayer/docs/evidence/swarm-2026-08-22/w-thayer/stale-flat-backup-dev-2026-08-23T18-02-22-828Z.jsonl; on dev the rows are also regenerable by re-copy from prod while prod holds them.
+  BANKED OWNER CALL — this dev execution STAGES the evidence; the prod replay (packet) is the owner's go, per occasion.
