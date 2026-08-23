@@ -1,0 +1,30 @@
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mJohn 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ test/components/plan-optimistic-toggle.test.tsx:80:18
+     78| 
+     79|     fireEvent.click(btn);
+     80|     await screen.findByRole('button', { name: 'Mark day 1 unread' });
+       |                  ^
+     81| 
+     82|     post.resolve({ ok: false, status: 500, json: async () => ({}) } as…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  18:55:25
+   Duration  2.66s (transform 74ms, setup 0ms, collect 130ms, tests 2.10s, environment 233ms, prepare 27ms)
+

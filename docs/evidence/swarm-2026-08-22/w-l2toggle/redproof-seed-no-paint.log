@@ -1,0 +1,4 @@
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/components/plan-optimistic-toggle.test.tsx > plan mark-as-read — optimistic toggle (L2 step 2) > paints the tick BEFORE the write resolves, then keeps it on success
+ FAIL  test/components/plan-optimistic-toggle.test.tsx > plan mark-as-read — optimistic toggle (L2 step 2) > rolls the paint BACK and names the failure when the write fails
+      Tests  2 failed (2)

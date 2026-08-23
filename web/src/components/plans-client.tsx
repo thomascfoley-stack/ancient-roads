@@ -140,6 +140,15 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
     if (initialPlanId) void openPlan(initialPlanId);
   }, [initialPlanId, openPlan]);
 
+  // L2 step 2 (MASTER.md C3): the optimistic half of the mark-as-read toggle. PlanDetail paints
+  // the tick through this BEFORE its POST resolves; a failed write patches the old value back.
+  const patchDay = useCallback((dayIndex: number, completedAt: string | null) => {
+    setOpen((cur) => cur === null ? cur : {
+      ...cur,
+      days: cur.days.map((d) => (d.day_index === dayIndex ? { ...d, completed_at: completedAt } : d)),
+    });
+  }, []);
+
   return (
     <div className="w-full px-4 py-8 sm:px-6">
       {/* NO max-width here. It used to be `mx-auto max-w-3xl` on this wrapper, which also
@@ -183,6 +192,7 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
           open={open}
           onBack={() => { setOpen(null); router.push('/plans'); }}
           onChanged={() => openPlan(open.plan.id)}
+          onPatchDay={patchDay}
         />
       ) : initialPlanId ? null : (
         <div className="mx-auto max-w-3xl">
@@ -655,7 +665,7 @@ export function readingLabel(r: PlanReading): string {
 
 // ── the plan itself ──────────────────────────────────────────────────────────
 
-function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void> }) {
+function PlanDetail({ open, onBack, onChanged, onPatchDay }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void>; onPatchDay: (dayIndex: number, completedAt: string | null) => void }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [pane, setPane] = useState<PassageTarget | null>(null);
@@ -718,23 +728,30 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
   };
 
   const toggle = async (d: PlanDay) => {
+    // OPTIMISTIC (L2 step 2, MASTER.md C3): the tick paints BEFORE the write resolves — the
+    // awaited shape held the checkbox visually unchanged for the whole POST + re-read, which
+    // read as a dead tap on phones. A failed write ROLLS THE PAINT BACK and names the failure;
+    // the pre-2026-08-07 shape flipped unconditionally and let the re-read silently revert it.
+    const painting = d.completed_at === null;
+    onPatchDay(d.day_index, painting ? new Date().toISOString() : null);
     setBusyDay(d.day_index);
     try {
-      // Was: await fetch(...) with no res.ok check and no catch, then onChanged()
-      // unconditionally. On a 401/500 the tick flipped, the re-read returned the unchanged
-      // row, and the checkbox silently reverted with no explanation.
       const res = await fetch(`/api/plans/${open.plan.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'day', dayIndex: d.day_index, completed: !d.completed_at }),
+        body: JSON.stringify({ kind: 'day', dayIndex: d.day_index, completed: painting }),
       });
-      if (!res.ok) { setWriteError('That change could not be saved. Please try again.'); return; }
+      if (!res.ok) {
+        onPatchDay(d.day_index, d.completed_at);
+        setWriteError('That change could not be saved. Please try again.');
+        return;
+      }
       setWriteError(null);
-      // AWAITED so busyDay holds until the re-read lands — the checkbox no longer
-      // sits visually unchecked and re-enabled for the length of the refetch,
-      // which read as a dead tap on phones.
-      await Promise.resolve(onChanged());
+      // Re-sync from the server in the BACKGROUND, not awaited: the paint already shows the
+      // new state, so holding the control for the refetch is the dead-tap window this removes.
+      void onChanged();
     } catch {
+      onPatchDay(d.day_index, d.completed_at);
       setWriteError('That change could not be saved. Please try again.');
     } finally {
       setBusyDay(null);

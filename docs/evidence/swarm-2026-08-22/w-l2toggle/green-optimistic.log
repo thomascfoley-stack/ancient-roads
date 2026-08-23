@@ -1,0 +1,8 @@
+ ✓ test/components/plan-route-states.test.tsx (2 tests) 63ms
+ ✓ test/components/plan-optimistic-toggle.test.tsx (2 tests) 99ms
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  18:56:39
+   Duration  692ms (transform 114ms, setup 0ms, collect 339ms, tests 162ms, environment 513ms, prepare 72ms)
+
