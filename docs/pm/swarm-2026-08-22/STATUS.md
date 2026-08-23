@@ -53,12 +53,13 @@ read against dev's mutation state before being treated as signal.**
 | W-HISTBACKLOG | 1c | **DONE-UNVERIFIED** — remainder enumerated live (32-work universe, 31 with parity): the ENTIRE remainder is `foxe-martyrs`, re-probed — no ThML edition exists; PARKED with candidate row; zero ingested, $0 | `swarm/w-histbacklog-historians` @ f7e92b2 |
 | W-UX3 | 3 | IN-FLIGHT — build phase (design APPROVE-WITH-CONDITIONS, 5) | `swarm/w-ux3-desk-grid` @ 104d43c |
 | W-SLICE4 | 3 | IN-FLIGHT — build phase (design APPROVE-WITH-CONDITIONS, 6) | `swarm/w-slice4-ask-integration` @ a256082 |
-| W-THAYER | 1c | IN-FLIGHT — lane position 3 (re-chunk + stale-row reconcile on dev) | `swarm/w-thayer-lexicon-repairs` (launching) |
+| W-THAYER | 1c | **DONE-UNVERIFIED** — 484/484 oversized sections re-chunked to D1(b) + re-embedded; 2,865 stale flat rows backed up WITH VECTORS then deleted on dev (banked call STAGED, not discharged); all four verifications pass; spend <$0.01; prod replay in packet (B2). Filed: 5 pre-existing served-reconcile dev divergences on other lexicon works | `swarm/w-thayer-lexicon-repairs` @ 5edf712 |
 | W-ANN | 2 | NOT-STARTED — next batch (A5 slot) | — |
 | W-SCANRE | 2 | NOT-STARTED — next batch (A5 slot) | — |
 | W-SEC1 | 5 | NOT-STARTED — next batch (A5 slot) | — |
 | W-SIXWORKS | 6 | NOT-STARTED — enumeration only; next batch (A5 slot) | — |
-| W-STRONGS · W-REGDURABLE · W-RELVOICE-finish · W-ANCHORBACKFILL · W-OWNERSHIPCOL · W-DEVROW | 1c/4 | NOT-STARTED — writer lane positions 4–9, sequential | — |
+| W-STRONGS | 1c | IN-FLIGHT — lane position 4 (G2316 truncated glosses) | `swarm/w-strongs-gloss-fix` (launching) |
+| W-REGDURABLE · W-RELVOICE-finish · W-ANCHORBACKFILL · W-OWNERSHIPCOL · W-DEVROW | 1c/4 | NOT-STARTED — writer lane positions 5–9, sequential | — |
 | W-BOARDHYGIENE | 6 | NOT-STARTED — runs last among docs (orchestrator) | — |
 
 ## Conventions
