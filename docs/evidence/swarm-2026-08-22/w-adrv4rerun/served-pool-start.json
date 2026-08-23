@@ -1,0 +1,18 @@
+{
+  "host": "ep-tiny-hat-atdgpisx-pooler",
+  "takenAt": "2026-08-22T17:42:14.604Z",
+  "total": 390184,
+  "bySourceType": {
+    "commentary": 107927,
+    "confession": 6590,
+    "devotional": 6589,
+    "father": 23642,
+    "historian": 6492,
+    "hymn": 6887,
+    "lexicon": 23657,
+    "poetry": 4085,
+    "sermon": 162507,
+    "theology": 28726,
+    "topical_index": 13082
+  }
+}
