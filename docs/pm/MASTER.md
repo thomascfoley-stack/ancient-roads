@@ -122,9 +122,9 @@ The first pass should be the one where, if something breaks, you know what broke
 
 ## Lane C — UX remediation (opened 2026-08-07)
 
-A third lane, file-disjoint from A and B: client surfaces plus the plan data layer. Spec is
-[`docs/UX_REMEDIATION.md`](../UX_REMEDIATION.md) (19 blocks, 5 waves); sequencing and blockers in
-[`UX_REMEDIATION_ROADMAP.md`](UX_REMEDIATION_ROADMAP.md). **This lane had no row here until
+A third lane, file-disjoint from A and B: client surfaces plus the plan data layer. Spec,
+sequencing and blockers are all in [`docs/UX_REMEDIATION.md`](../UX_REMEDIATION.md) (19 blocks,
+5 waves) — there is no separate ROADMAP file (dead pointer corrected 2026-08-23). **This lane had no row here until
 2026-08-07, by which point it had already applied a migration to production** — caught by its own
 pre-deploy audit (finding 6), not by this board.
 

@@ -10,6 +10,7 @@
 // (flagged in the Phase 3 audit). Not repeating that here.
 
 import Link from 'next/link';
+import { DeskAddBible } from '@/components/desk-add-bible';
 import { count } from '@/lib/plural';
 import { CATALOGS, CATALOG_IDS, catalogTraditions } from '@/lib/catalog';
 import { libraryLabel } from '@/lib/library-nav';
@@ -62,6 +63,11 @@ export default async function LibraryHubPage({
   return (
     <div className="mx-auto w-full max-w-3xl px-5 pb-24 pt-8">
       <h1 className="mb-8 font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Library</h1>
+
+      {/* UX-1: arrived from the desk's "+", the picker also offers Scripture — otherwise the
+          Bible could not be added to a desk from here at all (works only). Absent without
+          ?desk=, so an ordinary library visit is unchanged. */}
+      {desk && <DeskAddBible desk={desk} />}
 
       {mine && mine.reading.length > 0 && (
         <section className="mb-9">

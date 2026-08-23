@@ -73,7 +73,12 @@ export function HistoryResults({ data, query, threadId }: {
     // a false confirmation on an attribution control — the wrong direction for this product
     // (deep-audit client finding 7).
     try {
-      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')} (CCEL)`);
+      // Attribution is exactly what the source record supports: author, title, heading path.
+      // A hardcoded " (CCEL)" asserted a host provenance that is FALSE for non-CCEL works
+      // (josephus-whiston is CrossWire — W-SEC-CCEL, evidence under
+      // docs/evidence/swarm-2026-08-22/w-sec-ccel/) and violates GO_LIVE A5 ("attribute to
+      // the author, never a host") — the same policy the reader's copy paths follow.
+      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')}`);
       setCopied(r.sectionId);
       setTimeout(() => setCopied(null), 1500);
     } catch {

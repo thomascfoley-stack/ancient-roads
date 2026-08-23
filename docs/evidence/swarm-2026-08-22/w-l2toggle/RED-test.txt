@@ -1,0 +1,16 @@
+
+ ❯ test/components/plan-day-toggle.test.tsx (3 tests | 1 failed) 556ms
+   × the day toggle is optimistic with rollback on error (L2 step 2) > paints the tick BEFORE the network answers — not after the re-fetch 491ms
+     → Unable to find role="button" and name "Mark day 1 unread"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+--
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/components/plan-day-toggle.test.tsx > the day toggle is optimistic with rollback on error (L2 step 2) > paints the tick BEFORE the network answers — not after the re-fetch
+TestingLibraryElementError: Unable to find role="button" and name "Mark day 1 unread"

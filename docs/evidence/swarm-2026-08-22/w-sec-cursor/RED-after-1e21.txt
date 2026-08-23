@@ -1,0 +1,7 @@
+# RED transcript — W-SEC-CURSOR — 2026-08-23T01:40:45Z
+# GET /api/work/calvin-institutes/sections?after=1e21 against dev DB (ep-tiny-hat) via dev server :3457
+--- request: after=1e21
+
+HTTP_STATUS=500
+--- control: after=5&limit=2 (valid request)
+{"sections":[{"id":117364,"ordinal":6,"unitOrdinal":3,"heading":"The Original Translator’s Preface.","verseStart":null,"verseEnd":null,"body":"Therefore, in the very beginning of the Queen’s Majesty’s most blessed reign, I translated it out of Latin into English for the commodity of the Church of Christ, at the special request of my dear friends of worthy memory, Reginald Wolfe and Edward Whitchurch, the one her Majesty’s printer for the Hebrew, Greek, and Latin tongues, the other her Highness’ printer of the books\nof Common Prayer. I performed my work in the house of my said friend

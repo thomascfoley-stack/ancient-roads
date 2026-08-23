@@ -1,0 +1,4 @@
+      Tests  1 failed | 5 passed (6)
+   Start at  18:47:25
+   Duration  6.50s (transform 351ms, setup 0ms, collect 997ms, tests 842ms, environment 3.49s, prepare 210ms)
+

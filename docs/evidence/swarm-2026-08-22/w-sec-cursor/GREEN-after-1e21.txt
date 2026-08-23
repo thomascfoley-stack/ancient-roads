@@ -1,0 +1,10 @@
+# GREEN transcript — W-SEC-CURSOR — 2026-08-23T01:42:08Z
+# Same route, dev server :3457 (hot-reloaded with the fix), dev DB ep-tiny-hat
+--- request: after=1e21
+{"error":{"code":"INVALID_REQUEST","message":"`after` must be a non-negative integer ordinal."}}
+HTTP_STATUS=400
+--- boundary: after=2147483647 (int4 max — must still serve)
+{"sections":[],"nextAfter":null}
+HTTP_STATUS=200
+--- control: after=5&limit=1
+HTTP_STATUS=200

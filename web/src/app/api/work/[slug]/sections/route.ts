@@ -16,7 +16,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   const afterParam = sp.get('after');
   const after = afterParam === null ? 0 : Number(afterParam);
-  if (!Number.isInteger(after) || after < 0) {
+  // sections.ordinal is INT: a cursor above the int4 range passes Number.isInteger (1e21 is
+  // an integer) and reaches SQL as "1e+21" — `invalid input syntax for type integer` → 500
+  // (W-SEC-CURSOR, 2026-08-22). Refuse it here with the same shape as the checks below.
+  if (!Number.isInteger(after) || after < 0 || after > 2147483647) {
     return apiError('INVALID_REQUEST', { message: '`after` must be a non-negative integer ordinal.' });
   }
 

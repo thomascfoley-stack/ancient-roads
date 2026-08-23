@@ -1,0 +1,9 @@
+     60|       within(container).getByRole('button', { name: 'Add a Bible chapt…
+       |                         ^
+     61|       'the desk picker has no Bible entry point — UX-1 is open',
+     62|     ).toBeTruthy();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/library-desk-add-bible.test.tsx > /library?desk=… offers the Bible beside the works (UX-1) > picking a book and chapter APPENDS a Scripture pane to the desk that was carried in
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Add a Bible chapter"

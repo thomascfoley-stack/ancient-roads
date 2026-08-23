@@ -24,6 +24,7 @@ import { VerseRef } from '@/components/verse-ref';
 import { DEFAULT_TRANSLATION } from '@/lib/bible';
 import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
 import { count } from '@/lib/plural';
+import { persistWrite } from '@/lib/persist-write';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 import { defaultPlanShape } from '@/lib/plan/defaults';
 import { refOf } from '@/lib/plan/day-ref';
@@ -183,6 +184,14 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
           open={open}
           onBack={() => { setOpen(null); router.push('/plans'); }}
           onChanged={() => openPlan(open.plan.id)}
+          onDayToggled={(dayIndex, completedAt) =>
+            setOpen((prev) =>
+              prev && ({
+                ...prev,
+                days: prev.days.map((d) => (d.day_index === dayIndex ? { ...d, completed_at: completedAt } : d)),
+              })
+            )
+          }
         />
       ) : initialPlanId ? null : (
         <div className="mx-auto max-w-3xl">
@@ -655,7 +664,14 @@ export function readingLabel(r: PlanReading): string {
 
 // ── the plan itself ──────────────────────────────────────────────────────────
 
-function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void> }) {
+function PlanDetail({ open, onBack, onChanged, onDayToggled }: {
+  open: OpenPlan;
+  onBack: () => void;
+  onChanged: () => void | Promise<void>;
+  /** Paint (or roll back) one day's completed_at in the parent's plan state — the optimistic
+   *  half of the toggle; the parent owns `open`, so the paint must live there. */
+  onDayToggled: (dayIndex: number, completedAt: string | null) => void;
+}) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [pane, setPane] = useState<PassageTarget | null>(null);
@@ -718,25 +734,37 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
   };
 
   const toggle = async (d: PlanDay) => {
+    if (busyDay === d.day_index) return;
     setBusyDay(d.day_index);
+    // OPTIMISTIC (L2 step 2): paint the tick first, then persist — a tap on a phone on low
+    // signal (this app's core use context, CLAUDE.md) no longer waits on the POST plus a full
+    // re-fetch before anything moves. The write itself goes through persistWrite (L1's retry
+    // policy), and a failed write ROLLS THE DAY BACK to what it was and surfaces the standard
+    // error — the optimistic-rollback contract the annotation writes keep
+    // (use-annotation-writes.ts). Only null/non-null is ever rendered, so the painted
+    // timestamp need not be the server's; the trailing re-read converges on the real row.
+    const prior = d.completed_at;
+    onDayToggled(d.day_index, prior ? null : new Date().toISOString());
     try {
-      // Was: await fetch(...) with no res.ok check and no catch, then onChanged()
-      // unconditionally. On a 401/500 the tick flipped, the re-read returned the unchanged
-      // row, and the checkbox silently reverted with no explanation.
-      const res = await fetch(`/api/plans/${open.plan.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'day', dayIndex: d.day_index, completed: !d.completed_at }),
-      });
-      if (!res.ok) { setWriteError('That change could not be saved. Please try again.'); return; }
+      const ok = await persistWrite(() =>
+        fetch(`/api/plans/${open.plan.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kind: 'day', dayIndex: d.day_index, completed: !prior }),
+        }),
+      );
+      if (!ok) {
+        onDayToggled(d.day_index, prior);
+        setWriteError('That change could not be saved. Please try again.');
+        return;
+      }
       setWriteError(null);
-      // AWAITED so busyDay holds until the re-read lands — the checkbox no longer
-      // sits visually unchecked and re-enabled for the length of the refetch,
-      // which read as a dead tap on phones.
-      await Promise.resolve(onChanged());
-    } catch {
-      setWriteError('That change could not be saved. Please try again.');
+      // Unawaited on purpose: the optimistic paint IS the current truth; the re-read only
+      // adopts the server's own completed_at clock (and anything another tab changed).
+      void onChanged();
     } finally {
+      // busyDay holds only until the write settles — a same-day double-tap cannot race two
+      // POSTs, but the reader is never waiting on the re-fetch to tap a DIFFERENT day.
       setBusyDay(null);
     }
   };

@@ -3,7 +3,7 @@
 // the fixed labels (HISTORY_RETRIEVAL_DESIGN §5 stage 2). Red-proof is by MUTATION of the
 // component's framing string (see commit).
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HistoryResults, type HistoryPayload } from '@/components/history-results';
 
 afterEach(cleanup);
@@ -59,5 +59,20 @@ describe('HistoryResults', () => {
       query="q" threadId={null}
     />);
     expect(screen.getByText(/Nothing in the 33 served history items matches this\./)).toBeTruthy();
+  });
+
+  it('the copied citation derives from the source record — author, title, heading; never a hardcoded host (W-SEC-CCEL)', () => {
+    // The button appended a hardcoded " (CCEL)" to every citation while the served shelf is
+    // not all CCEL (josephus-whiston is CrossWire on dev — evidence under
+    // docs/evidence/swarm-2026-08-22/w-sec-ccel/). GO_LIVE A5: attribute to the author,
+    // never a host. RED-PROOF: restore ` (CCEL)` in cite() -> the not.toMatch below goes RED.
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<HistoryResults data={BASE} query="q" threadId={null} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy citation' }));
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = writeText.mock.calls[0]![0] as string;
+    expect(copied).toBe('Josephus, Works, Antiquities — Book 15 — Ch. 1');
+    expect(copied).not.toMatch(/CCEL|ccel\.org|crosswire/i);
   });
 });

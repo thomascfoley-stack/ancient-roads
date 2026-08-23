@@ -1,0 +1,9 @@
+AssertionError: expected 'Josephus, Works, Antiquities — Book 1…' to be 'Josephus, Works, Antiquities — Book 1…' // Object.is equality
+
+Expected: "Josephus, Works, Antiquities — Book 15 — Ch. 1"
+Received: "Josephus, Works, Antiquities — Book 15 — Ch. 1 (CCEL)"
+
+ ❯ test/invariants/history-results.test.tsx:75:20
+     73|     expect(writeText).toHaveBeenCalledTimes(1);
+     74|     const copied = writeText.mock.calls[0]![0] as string;
+     75|     expect(copied).toBe('Josephus, Works, Antiquities — Book 15 — Ch. …
