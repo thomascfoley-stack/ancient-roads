@@ -1,0 +1,8 @@
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: walking nextAfter to the end reconstructs the whole work; the cursor ends null 1783ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: malformed params are a 400, never a 500 1395ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  18:42:04
+   Duration  7.69s (transform 48ms, setup 0ms, collect 57ms, tests 7.45s, environment 0ms, prepare 38ms)
+

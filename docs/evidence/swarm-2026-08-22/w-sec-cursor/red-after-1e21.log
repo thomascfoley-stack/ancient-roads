@@ -1,0 +1,40 @@
+ ↓ test/components/word-articles.test.tsx (2 tests | 2 skipped)
+ ↓ test/invariants/settings-cross-links.test.tsx (3 tests | 3 skipped)
+ ↓ test/invariants/history-results.test.tsx (5 tests | 5 skipped)
+ ↓ test/components/study-entrance.test.tsx (4 tests | 4 skipped)
+ ↓ test/invariants/omnibox-verse-anchor.test.tsx (4 tests | 4 skipped)
+ ↓ test/components/history-ask-autorun.test.tsx (2 tests | 2 skipped)
+ ↓ test/components/my-works-draft-check.test.tsx (3 tests | 3 skipped)
+ ↓ test/components/work-section-landing.test.tsx (3 tests | 3 skipped)
+ ↓ test/components/my-works-remove.test.tsx (2 tests | 2 skipped)
+ ↓ test/components/sign-out-arming.test.tsx (2 tests | 2 skipped)
+ ↓ test/components/ask-history-invite.test.tsx (2 tests | 2 skipped)
+ ↓ test/components/suggested-readings-load-failure.test.tsx (4 tests | 4 skipped)
+ ↓ test/components/word-links.test.tsx (2 tests | 2 skipped)
+ ↓ test/components/plan-route-states.test.tsx (2 tests | 2 skipped)
+ ↓ test/components/reader-hint-gesture.test.tsx (2 tests | 2 skipped)
+ ↓ test/components/search-groups-works-rows.test.tsx (3 tests | 3 skipped)
+ ↓ test/components/history-context-bar-query.test.tsx (3 tests | 3 skipped)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/work-reader.test.ts > Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: malformed params are a 400, never a 500
+NeonDbError: invalid input syntax for type integer: "1e+21"
+ ❯ dr.execute ../node_modules/.pnpm/@neondatabase+serverless@1.1.0/node_modules/@neondatabase/serverless/index.mjs:1298:10
+    1296| $,{arrayMode:vo,fullResults:xo,types:Ot.types})})}else{let M=I??{},$=M…
+    1297| oe;return os(ee,{arrayMode:$,fullResults:me,types:M.types})}}else{let{…
+    1298| json(),$=new be(M.message);for(let me of Bu)$[me]=M[me]??void 0;throw …
+       |          ^
+    1299| `Server error (HTTP status ${ee}): ${M}`)}}}return a(Y,"execute"),D}a(…
+    1300| this.execute=e;this.queryData=t;this.opts=n}then(e,t){return this.exec…
+ ❯ Module.getWorkSectionsPage src/lib/work.ts:302:17
+ ❯ Module.GET src/app/api/work/[slug]/sections/route.ts:29:16
+ ❯ test/invariants/work-reader.test.ts:249:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 271 skipped (272)
+      Tests  1 failed | 1745 skipped (1746)
+   Start at  18:41:25
+   Duration  23.67s (transform 6.74s, setup 0ms, collect 43.83s, tests 1.24s, environment 106.11s, prepare 18.20s)
+
