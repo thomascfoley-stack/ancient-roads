@@ -185,11 +185,11 @@ the thing it guards is not a second opinion.*
 
 ## Index
 
-- Plan: `docs/pm/WORKORDER_V2.md` (six stages) — **NOT YET FILED.** The index previously pointed at
+- Plan: `docs/pm/WORKORDER_V2.md` (six stages) — **FILED 2026-08-22 as a reconstruction (W-FILE3DOCS).** The index previously pointed at
   `AP_WORKORDER_V2.md`, which is not in this repo either. Per bylaw 1 the plan is currently unissued;
   the target path above is where it goes.
-- Programme brief: `docs/pm/PROGRAM_BRIEF.md` — **NOT YET FILED.**
-- Two-lane strategy: `docs/pm/orders/2026-07-31-strategy-two-lanes.md` — **NOT YET FILED.**
+- Programme brief: `docs/pm/PROGRAM_BRIEF.md` — **FILED 2026-08-22 as a reconstruction.**
+- Two-lane strategy: `docs/pm/orders/2026-07-31-strategy-two-lanes.md` — **FILED 2026-08-22 as a reconstruction.**
 - Board history (long-form narrative moved out under A6, 2026-08-23): `docs/pm/MASTER_HISTORY.md`
 - State: `docs/STATE_OF_TRUTH.md`
 - Rulings: `docs/DECISIONS.md`
