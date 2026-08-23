@@ -49,6 +49,23 @@ async function vocab(): Promise<{ slug: string; label: string }[]> {
   return rows;
 }
 
+/** Coverage — the footer's "Searched N items · M sections". Its own function since 2026-08-22 so
+ *  it can run alongside the searching instead of after it: it depends on nothing in the query, and
+ *  on a cold instance (the cache is per-instance, 60s) it was a whole extra round trip the reader
+ *  waited through before seeing anything. Same cache, same TTL, same numbers. */
+async function refreshCoverage(sql: ReturnType<typeof getDb>): Promise<{ works: number; sections: number }> {
+  if (coverageCache && Date.now() - coverageCache.at < TTL_MS) return coverageCache;
+  const cov = (await sql.query(
+    `SELECT count(DISTINCT src.id)::int AS works, count(*)::int AS sections
+       FROM history_embeddings he
+       JOIN sections s ON s.id = he.section_id
+       JOIN sources src ON src.id = s.source_id
+      WHERE ${SCOPE}`,
+  )) as { works: number; sections: number }[];
+  coverageCache = { at: Date.now(), works: cov[0]?.works ?? 0, sections: cov[0]?.sections ?? 0 };
+  return coverageCache;
+}
+
 interface Row {
   // `ordinal` is `sections.ordinal`, NOT `unit_ordinal`. The deep link this row becomes is
   // `/work/{slug}#s{ordinal}`, and the reader resolves that hash by keyset over
@@ -93,7 +110,6 @@ export function rowToResult(
 
 export async function searchHistory(query: string): Promise<HistoryResponse> {
   const sql = getDb();
-  const entities = matchEntities(query, await vocab());
   const period = parsePeriod(query);
   const byId = new Map<number, Row>();
   const fold = (rows: Row[], mark: (r: Row) => void): void => {
@@ -104,44 +120,66 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     }
   };
 
-  if (entities.length) {
-    fold((await sql.query(
-      `SELECT DISTINCT ${ROW_COLS} FROM section_history_anchors a
-         JOIN sections s ON s.id = a.section_id
-         JOIN history_embeddings he ON he.section_id = s.id
-         JOIN sources src ON src.id = s.source_id
-        WHERE a.entity_slug = ANY($1) AND ${SCOPE} LIMIT 100`,
-      [entities.map((e) => e.slug)],
-    )) as Row[], (r) => { r.entity = true; });
-  }
-  if (period) {
-    fold((await sql.query(
+  // CONCURRENT, NOT REORDERED (2026-08-22). This ran as six awaits in a row — vocab, entity,
+  // period, embed, KNN, FTS, coverage — so the reader waited for their SUM while only three of
+  // them depend on anything: the entity query needs `vocab()` to know what to look for, and the
+  // KNN needs the embedding. Everything else was queued behind work it does not use. Measured
+  // against dev before the change: 3.39s / 1.33s / 1.82s / 2.17s / 2.22s on five real queries.
+  //
+  // FOLD ORDER IS LOAD-BEARING and is NOT changed by this. `fold` keeps the FIRST row object seen
+  // for an id and only marks it, so a row already folded from the entity query silently discards
+  // the `cosine` the KNN carried for it (the batch backfill below is what puts it back) and a row
+  // folded from the KNN discards the `fts` the text query carried. Fold in a different order and
+  // different rows carry different evidence into `scoreSection` — a ranking change wearing a
+  // refactor's clothes. So the queries START together and are FOLDED in exactly the old sequence:
+  // entity, period, vector, fts.
+  const entityP = vocab().then(async (v) => {
+    const entities = matchEntities(query, v);
+    if (!entities.length) return { entities, rows: [] as Row[] };
+    return {
+      entities,
+      rows: (await sql.query(
+        `SELECT DISTINCT ${ROW_COLS} FROM section_history_anchors a
+           JOIN sections s ON s.id = a.section_id
+           JOIN history_embeddings he ON he.section_id = s.id
+           JOIN sources src ON src.id = s.source_id
+          WHERE a.entity_slug = ANY($1) AND ${SCOPE} LIMIT 100`,
+        [entities.map((e) => e.slug)],
+      )) as Row[],
+    };
+  });
+
+  const periodP: Promise<Row[]> = period
+    ? sql.query(
       `SELECT ${ROW_COLS} FROM sections s
          JOIN history_embeddings he ON he.section_id = s.id
          JOIN sources src ON src.id = s.source_id
         WHERE s.period_start_year IS NOT NULL AND s.period_start_year <= $2
           AND coalesce(s.period_end_year, s.period_start_year) >= $1 AND ${SCOPE} LIMIT 100`,
       [period.start, period.end],
-    )) as Row[], () => { /* period overlap recomputed below from row columns */ });
-  }
-  const vec = await embedQuery(query);
+    ).then((r) => r as Row[])
+    : Promise.resolve([]);
+
   // ef_search rides the SAME transaction as the KNN — on the stateless HTTP driver a set_config
   // in its own call binds nothing (routing.ts:311-315). At the default 40 this lane STARVED
   // through the partial index (measured 2026-08-21: three of four real probes returned empty
   // top-3), which is what left FTS-found rows with no cosine for the floor below.
-  const [, vecRows] = await sql.transaction([
-    sql`SELECT set_config('hnsw.ef_search', '120', true)`,
-    sql.query(
-      `SELECT ${ROW_COLS}, 1 - (he.embedding <=> $1::vector) AS cosine
-         FROM history_embeddings he
-         JOIN sections s ON s.id = he.section_id
-         JOIN sources src ON src.id = s.source_id
-        WHERE ${SCOPE} ORDER BY he.embedding <=> $1::vector LIMIT 50`,
-      [JSON.stringify(vec)],
-    ),
-  ]);
-  fold(vecRows as Row[], () => { /* cosine carried on the row */ });
-  fold((await sql.query(
+  const knnP = embedQuery(query).then(async (vec) => {
+    const [, vecRows] = await sql.transaction([
+      sql`SELECT set_config('hnsw.ef_search', '120', true)`,
+      sql.query(
+        `SELECT ${ROW_COLS}, 1 - (he.embedding <=> $1::vector) AS cosine
+           FROM history_embeddings he
+           JOIN sections s ON s.id = he.section_id
+           JOIN sources src ON src.id = s.source_id
+          WHERE ${SCOPE} ORDER BY he.embedding <=> $1::vector LIMIT 50`,
+        [JSON.stringify(vec)],
+      ),
+    ]);
+    return { vec, rows: vecRows as Row[] };
+  });
+
+  const ftsP = sql.query(
     `SELECT ${ROW_COLS}, ts_rank(s.tsv, plainto_tsquery('english', $1)) AS fts
        FROM sections s
        JOIN history_embeddings he ON he.section_id = s.id
@@ -149,7 +187,21 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
       WHERE s.tsv @@ plainto_tsquery('english', $1) AND ${SCOPE}
       ORDER BY fts DESC LIMIT 50`,
     [query],
-  )) as Row[], () => { /* fts carried on the row */ });
+  ).then((r) => r as Row[]);
+
+  // Coverage is awaited in the SAME Promise.all rather than separately: a rejection there while
+  // another leg has already rejected would otherwise be an unhandled rejection, which in a
+  // serverless runtime is a process-level warning nobody reads.
+  const [entityHit, periodRows, knn, ftsRows, coverage] = await Promise.all([
+    entityP, periodP, knnP, ftsP, refreshCoverage(sql),
+  ]);
+  const { entities } = entityHit;
+  const vec = knn.vec;
+
+  fold(entityHit.rows, (r) => { r.entity = true; });
+  fold(periodRows, () => { /* period overlap recomputed below from row columns */ });
+  fold(knn.rows, () => { /* cosine carried on the row */ });
+  fold(ftsRows, () => { /* fts carried on the row */ });
 
   // The floor must judge EVERY text candidate on semantics, including FTS-found rows outside
   // the KNN top-50 — "the church at Ephesus" earns its hero on cosine even when 'Ephesus' is
@@ -199,17 +251,6 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     groups.set(x.row.slug, g);
   }
 
-  if (!coverageCache || Date.now() - coverageCache.at >= TTL_MS) {
-    const cov = (await sql.query(
-      `SELECT count(DISTINCT src.id)::int AS works, count(*)::int AS sections
-         FROM history_embeddings he
-         JOIN sections s ON s.id = he.section_id
-         JOIN sources src ON src.id = s.source_id
-        WHERE ${SCOPE}`,
-    )) as { works: number; sections: number }[];
-    coverageCache = { at: Date.now(), works: cov[0]?.works ?? 0, sections: cov[0]?.sections ?? 0 };
-  }
-
   return {
     interpretation: { entities, period },
     closest: scored[0] ? { ...toResult(scored[0]), work: groups.get(scored[0].row.slug)!.work } : null,
@@ -222,6 +263,6 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
       })(),
       sections: g.sections.map(toResult),
     })),
-    coverage: { works: coverageCache.works, sections: coverageCache.sections },
+    coverage: { works: coverage.works, sections: coverage.sections },
   };
 }

@@ -54,15 +54,45 @@ whole render, cold.
 * The `prefers-reduced-motion` fallback is asserted against the CSS rule, not observed — the browser
   pane has no reduced-motion emulation. The invariant test fails if the rule is dropped or stops
   saying `animation: none`.
-* **The search itself was not made faster, and it is the bigger number.** `searchHistory()`
-  (`web/src/lib/history-search-db.ts`) runs fully SERIAL: `vocab()` → entity query → period query →
-  `embedQuery` (DeepInfra) → KNN in a transaction → FTS → cosine backfill → coverage. Four of those
-  are independent of each other and could run concurrently with the fold order preserved (fold order
-  is load-bearing: the first row seen for an id wins, so later `fts`/`cosine` on a duplicate is
-  dropped by design). Not attempted here — it is a retrieval-path change and wants its own slice
-  under `quality-slice`, with the accuracy diagnostic recorded.
+* The sidebar "Research history" collapse — deferred by the owner ("fix history first, make plan
+  later for the search history tab on the side"). Not started, not designed.
 * Nothing about the sidebar "Research history" section — the owner deferred that to a plan
   ("fix history first, make plan later for the search history tab on the side").
+
+
+### Same day, second half — the search itself: 3.4s → 0.95s, same answers
+
+**Measured first.** `searchHistory()` (`web/src/lib/history-search-db.ts`) ran as six awaits in a
+row — `vocab()` → entity query → period query → `embedQuery` (DeepInfra) → KNN in a transaction →
+FTS → cosine backfill → coverage — so the reader waited for their SUM while only two of them depend
+on another's result. Against the dev branch, five real queries: **3390 / 1332 / 1816 / 2172 /
+2219 ms**.
+
+**Changed:** every independent leg is now ISSUED before any is awaited, in one `Promise.all`
+(coverage included in the same `all`, so a rejection there cannot become an unhandled rejection
+behind another leg's failure). Nothing was reordered, no SQL changed, no parameter changed.
+
+**Re-measured, same five queries, same branch: 948 / 383 / 541 / 496 / 440 ms** — 3.5×–4.9×.
+
+**Why this is not a retrieval change, proven rather than argued.** The five payloads were captured
+before and after and compared as whole JSON documents: **all five deep-equal** — same works, same
+sections, same order, same excerpts, same coverage. `fold()` keeps the FIRST row object seen for a
+section id and only marks it, so fold order decides which evidence a duplicate row carries into
+`scoreSection` (an entity-folded row has no cosine and gets the batch backfill's; a KNN-folded row
+keeps the KNN's and is never backfilled). Firing the queries together makes their COMPLETION order
+arbitrary, so the fold sequence is now pinned explicitly — entity, period, vector, fts, exactly as
+before — and `web/test/history-search-concurrency.test.ts` guards both properties without a DB.
+
+**Red-proofs executed, not asserted.** Swapping the two `fold()` lines reddens the fold-order case.
+Moving the FTS query's construction below `await knnP` (the shape this replaced) reddens the
+concurrency case. A third seed — awaiting the four promises one at a time — stayed GREEN, and the
+test's comment was corrected to say so: the concurrency comes from constructing the queries before
+awaiting any of them, so sequential awaits over already-issued promises are still concurrent. The
+first draft of that comment claimed the seed would go red. Running it is what caught that.
+
+**Still not measured on production.** These numbers are one local process against the dev branch.
+A cold Lambda pays its own start, and prod's corpus is larger; the SHAPE of the win (the sum
+becomes the max) holds either way, but the seconds do not transfer. Re-measure after the deploy.
 
 ## 2026-08-22 — Swarm closeout: launched, quota-killed mid-Wave-1, recovery order filed (R1–R6 + A1–A4)
 
