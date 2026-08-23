@@ -1,0 +1,24 @@
+=== digest schaff-npnf201 ===
+digest schaff-npnf201 @ ep-tiny-hat-atdgpisx [staged]
+  sections        588   headed 588/588   vectors 588/588
+  anchors         704 (48 distinct entities)  = 1.20/section  (josephus baseline 1.10)
+  period-dated    0/588 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     Chapter(589) Eusebius(512) Christ(381) Saviour(299) Church(277) Lord(271) Divine(197) Christians(180) Father(176) Christian(133) Word(133) John(124) Jews(123) Jesus(115) Such(114) Roman(112) Council(108) History(102) Licinius(102) Paul(100)
+  no flags
+=== digest schaff-npnf202 ===
+digest schaff-npnf202 @ ep-tiny-hat-atdgpisx [staged]
+  sections        495   headed 495/495   vectors 495/495
+  anchors         1302 (36 distinct entities)  = 2.63/section  (josephus baseline 1.10)
+  period-dated    0/495 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     Chapter(495) John(330) Father(324) Church(283) Eusebius(251) Christians(245) Synod(240) Christ(234) Constantius(227) Emperor(193) Julian(178) Valens(159) Roman(155) Theophilus(154) Paul(144) Theodosius(143) Divine(142) Christian(128) Romans(127) Such(124)
+  no flags
+=== digest schaff-npnf203 ===
+digest schaff-npnf203 @ ep-tiny-hat-atdgpisx [staged]
+  sections        584   headed 584/584   vectors 584/584
+  anchors         816 (38 distinct entities)  = 1.40/section  (josephus baseline 1.10)
+  period-dated    0/584 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     Chapter(388) Father(278) Christ(278) Lord(232) Holy(190) Eusebius(159) What(127) Church(125) Greek(115) Scriptures(100) Latin(99) Paul(89) Constantius(84) Against(79) Spirit(79) John(79) Arian(76) Apostle(70) Emperor(66) Christians(66)
+  no flags
