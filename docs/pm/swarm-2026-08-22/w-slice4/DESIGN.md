@@ -1,7 +1,8 @@
 # W-SLICE4 — /ask integration of the user corpus — sub-design
 
-Sub-design gate artifact (order §8 preamble). DESIGN PHASE ONLY — no product code until an
-independent verifier approves this design.
+Sub-design gate artifact (order §8 preamble). Design verdict: **APPROVE-WITH-CONDITIONS**
+(`docs/pm/swarm-2026-08-22/verdicts/w-slice4-design.md`); all six conditions folded in below
+(amendment committed before any measurement, §2.4).
 
 ## Problem
 
@@ -42,10 +43,15 @@ documents have no adjudicated tradition (migration 100 has no tradition column �
 data, not a fiction), so their tradition is always the absent marker (`unknown`), which the
 verifier's `NOT_A_TRADITION` set (v1.ts:332) already drops from BOTH the available and the
 used side. `RetrievalContext.traditions` continues to list corpus-voice traditions only.
-`sectionIds` appending user sections is inert: `requiredVoices = min(3, len)` is already
-saturated by the five corpus voices. The USED side is already origin-filtered
-(`corpusVoiceBlocks`, v1.ts:293-339). Both directions of the caveat close with zero verifier
-changes.
+**`sectionIds` stays corpus-only too** (verdict condition 1 — the earlier draft claimed
+appending user ids was "inert" because `min(3, len)` is saturated by five corpus voices; that
+holds only when ≥3 corpus voices exist. With 1–2 corpus voices — sparse retrieval;
+RETRIEVE_K=6 does not guarantee 5 — appending 3 user ids would raise `requiredVoices` from
+`min(3, 1|2)` to 3, a bar only corpus-origin sections can clear (v1.ts:339-340), turning
+previously-passable sparse answers into guaranteed `diversity_voices` rejections). The floor
+is judged against corpus availability anyway, so user ids are never appended. The USED side
+is already origin-filtered (`corpusVoiceBlocks`, v1.ts:293-339). Both directions of the
+caveat close with zero verifier changes.
 
 ## Why H4 (origin-blind verifier) is preserved
 
@@ -78,9 +84,25 @@ H4 check applies to them automatically.
   origin and the verifier resolves quotes/attribution against the real user text.
 - Client (`ask-client.tsx`): `origin: 'user_library'` voice cards render labelled "From your
   library — <doc title>" (§7(a): labelled as theirs, never as an attributed historical
-  voice). Label + neutral styling only; no new surface.
+  voice). Label + neutral styling only; no new surface. **Tombstone bypass (verdict
+  condition 5):** `resolveVoiceSourceId` (save-to-study.tsx:141-161) matches voice quotes
+  against the CORPUS retrieval payload, so user voices resolve to null and ask-client.tsx's
+  withdrawal path would tombstone them (attribution-only, quote stripped) whenever the
+  withdrawal set is non-empty. Withdrawals are a corpus-row concept: origin `user_library`
+  cards SKIP the withdrawal/tombstone path. Recorded already-acceptable behavior:
+  `workHref(undefined)` → null → the card renders unwrapped; `eraOf(undefined)` → Modern
+  neutral; the save-to-study affordance auto-suppresses on null sourceId (fail-closed, fine).
 - RLS end-to-end: retrieval runs inside `runAsUser` (existing), so Postgres RLS binds and the
   asking user's id is the only scope; nothing user-origin is written to shared tables.
+
+**What "From your library" does and doesn't mean (verdict condition 6).** The card surfaces
+up to K=3 top-ranked passages from a brute-force cosine scan over the user's own chunks — no
+ANN, so no recall collapse (search.ts:76-81). **Absence of a user voice carries NO meaning:**
+top-3 ranking can miss relevant passages (cf. the 70% chapter-level stated-text recall at the
+shipped K=3, STATE_OF_TRUTH §5), so "no card" never means "you haven't written on this." And
+a user voice can never appear alone: corpus-empty queries still return "No relevant sources
+found" (teach.ts:211-213), unchanged. The label is a citation convenience, not a claim about
+the user's library.
 
 ## Exact file list (implementation phase)
 
@@ -88,7 +110,12 @@ H4 check applies to them automatically.
 - `web/src/lib/teacher/teach.ts` — `opts.userId`, lane wiring, prompt append, attributions.
 - `web/src/lib/teacher/corpus.ts` — `user_library:` namespace in `buildCorpusLookup`.
 - `web/src/app/api/ask/route.ts`, `web/src/app/api/ask/stream/route.ts` — pass `user.id`.
-- `web/src/components/ask-client.tsx` — labelled rendering of user-origin voice cards.
+- `web/src/components/ask-client.tsx` — labelled user-origin voice cards + tombstone bypass.
+- `web/src/scripts/bait-run.mts` — harness-only change (verdict condition 4): optional
+  `BAIT_USER_ID` env passes a userId into `teach()` so the pre-reg's AFTER(b) lane-active run
+  exists; unset → `teach(prompt)` exactly as today. No pipeline decisions added.
+- `scripts/served-pool-snapshot.mjs` — measurement tooling, ported verbatim from
+  `swarm/w-adrv4rerun` @ 0abbd5b (verdict condition 3), committed before any measurement.
 - Tests (below); pre-reg (below). No migrations, no config flags, no env vars, no deps.
 
 ## Explicitly NOT built
@@ -100,10 +127,17 @@ argues X" framing beyond the labelled voice card; serving user content as a publ
 
 ## Test plan
 
-1. **Two-account RLS** (`web/test/ask-user-voices-rls.test.ts`, dev-DB idiom of
-   `user-corpus/search.test.ts` / `rls-two-account-REDPROOF.log`): seed users A and B with
-   documents; A's /ask retrieval never returns B's sections. Red-proof: run with the
-   `user_id` predicate removed → B's rows leak → green leg goes red → restore.
+1. **Two-account RLS** (`web/test/ask-user-voices-rls.test.ts`, dev-DB idiom of the
+   two-account leg in `web/test/user-corpus/search.test.ts`): seed users A and B with
+   documents; A's /ask retrieval never returns B's sections. Red-proof (verdict condition 2 —
+   the earlier "remove the `user_id` predicate → leak" leg CANNOT go red: under migration
+   122's FORCE RLS + the NOBYPASSRLS runtime shape, RLS still binds with the predicate
+   removed): the red leg weakens BOTH bindings — seed the wiring defect (the lane called
+   with user B's id on user A's ask, i.e. run outside the correct `runAsUser` scope) → B's
+   rows surface → green leg goes red → restore. The SQL-binding red for FORCE RLS itself is
+   already watched and logged at
+   `docs/evidence/uploader-deep-dive-2026-08-20/migration-12x-redproof.log` (table owner
+   without the GUC sees all rows BEFORE, policy-bound AFTER) — reused, not rebuilt.
 2. **Additive-not-load-bearing** (`web/test/ask-additive-not-load-bearing.test.ts`): seed an
    answer resting solely on user voices through the SHIPPED compose→normalize→verify path;
    the verifier must reject it (`diversity_*` / `passages_grounded`). Red-proof: launder the

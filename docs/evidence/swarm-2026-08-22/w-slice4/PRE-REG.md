@@ -12,20 +12,27 @@ surface.
 ## Method
 
 - Harness: the committed live harness through the SHIPPED path —
-  `web/src/scripts/bait-run.mts` (real `teach()`, no harness-owned pipeline decisions) and
-  the frozen v4 query set `web/src/scripts/heldout-v4-queries.mts`.
+  `web/src/scripts/bait-run.mts` (real `teach()`, no harness-owned pipeline decisions), with
+  the design-declared harness-only change: optional `BAIT_USER_ID` env passes a userId into
+  `teach()`; unset → `teach(prompt)` exactly as today. The frozen v4 query set lives at
+  `web/src/scripts/heldout-v4-queries.mts`.
 - Datasets (identity frozen at this commit):
-  1. Control stratum: frozen v4 `v4-ctl-01..10` (expected `[]`; PASS = no floor hijack /
-     honest empty).
+  1. Control stratum: frozen v4 `v4-ctl-01..10` (`heldout-v4-queries.mts:150-159`), executed
+     through the SAME teach-level harness (BAIT_JSON of the ten control prompts). A control
+     query's expected result is `[]`; at teach level a **hijack = a `composed` result** for a
+     control query (an `empty`/`fallback` outcome is honest). The retrieval-level
+     `eval-heldout.mts --v4 --cats control` run is reported as a diagnostic alongside.
   2. `interpretation_bait` v1 + v2, n=100 (`evals/cases/interpretation_bait.yaml`,
      `interpretation_bait_v2.yaml`).
 - Two runs on dev (`ep-tiny-hat` only; prod forbidden):
-  - BASELINE: base sha `9dce273ef09dffb03bc547cead0431f48fb71ffe` (pre-change).
-  - AFTER: the W-SLICE4 branch head, run twice — (a) lane inert (no userId, the harness's
-    existing shape, proving shared-path no-regression), (b) lane ACTIVE under a seeded dev
-    user with uploaded, indexed documents (proving the additive lane itself does not
-    regress).
-- Served-pool snapshot at start and end of each run (`scripts/served-pool-snapshot.mjs`),
+  - BASELINE: base sha `9dce273ef09dffb03bc547cead0431f48fb71ffe` (pre-change; confirmed =
+    origin/main), lane absent.
+  - AFTER: the W-SLICE4 branch head, run twice — (a) lane inert (no `BAIT_USER_ID`, the
+    harness's existing shape, proving shared-path no-regression), (b) lane ACTIVE
+    (`BAIT_USER_ID` = a seeded dev user with uploaded, indexed documents, proving the
+    additive lane itself does not regress).
+- Served-pool snapshot at start and end of each run (`scripts/served-pool-snapshot.mjs`,
+  ported from `swarm/w-adrv4rerun` @ 0abbd5b and committed with this pre-reg amendment),
   recorded; drift reported, not hidden.
 
 ## Pass/fail bars (hard)
