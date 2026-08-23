@@ -124,7 +124,7 @@ describe.skipIf(!enabled)('a document goes in and comes out searchable', () => {
     ]);
 
     const result = await drain(USER, 1);
-    expect(result.processed).toBe(1);
+    expect(result.completed).toBe(1);
 
     const after = await getDocument(USER, doc.id);
     // THE ASSERTION THIS WHOLE SLICE HAS BEEN WORKING TOWARD.
