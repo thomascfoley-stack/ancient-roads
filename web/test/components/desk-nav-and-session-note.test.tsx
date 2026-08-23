@@ -138,7 +138,7 @@ describe('A080 — the Desk states that its state is session-only', () => {
   });
 
   it('a full desk carries BOTH lines, and they say different things', () => {
-    renderDesk('p=work:a&p=work:b&p=work:c');
+    renderDesk(Array.from({ length: 16 }, (_, i) => `p=work:w${i}`).join('&'));
     const cap = screen.getByRole('status');
     expect(cap.textContent, 'the cap notice is about right now').toMatch(/full/i);
     const note = screen.getByText(/not saved to your account/i);
