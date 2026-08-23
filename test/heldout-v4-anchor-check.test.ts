@@ -5,7 +5,7 @@
 // checker exists to catch and watch it catch them; the green leg runs the REAL frozen set
 // against the REAL in-repo KJV and asserts the check is non-vacuous.
 import { describe, expect, it } from 'vitest';
-import { checkAnchors, kjvChapterText } from '../web/src/scripts/check-heldout-v4-anchors.mts';
+import { checkAnchors, kjvChapterText } from '../web/src/scripts/check-heldout-v4-anchors.mjs';
 import { FROZEN_V4 } from '../web/src/scripts/heldout-v4-queries.mjs';
 
 // Rom 12:13 KJV, verbatim (the real verse text the genuine anchor below matches).
