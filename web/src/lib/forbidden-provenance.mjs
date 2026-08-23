@@ -39,6 +39,9 @@ function provenanceHost(url) {
     return null;
   }
 }
+// Exported (2026-08-22, W-SEC-CCEL): the history citation derives its provenance label from
+// the source record instead of a hardcoded ` (CCEL)` — one parser, never re-typed.
+export { provenanceHost };
 
 // Returns the forbidden aggregator domain a provenance URL belongs to, else null.
 // Matches the domain and any subdomain (www.biblehub.com), not naive substrings.

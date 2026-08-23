@@ -13,10 +13,13 @@ const SECTION = {
   period: [1, 100] as [number, number], excerpt: 'Herod rebuilt the temple with great cost.',
   matched: ['entity' as const],
 };
+// josephus-whiston is the one served history work whose provenance is NOT ccel.org (CrossWire
+// SWORD) — the fixture that makes a hardcoded `(CCEL)` citation visibly false.
+const JOSEPHUS = { slug: 'josephus-whiston', title: 'Works', author: 'Josephus', provenanceHost: 'crosswire.org' as string | null };
 const BASE: HistoryPayload = {
   interpretation: { entities: [{ slug: 'herod', label: 'Herod' }], period: null },
-  closest: { ...SECTION, work: { slug: 'josephus-whiston', title: 'Works', author: 'Josephus' } },
-  results: [{ work: { slug: 'josephus-whiston', title: 'Works', author: 'Josephus' }, periodSpan: [1, 100], sections: [SECTION] }],
+  closest: { ...SECTION, work: JOSEPHUS },
+  results: [{ work: JOSEPHUS, periodSpan: [1, 100], sections: [SECTION] }],
   coverage: { works: 1, sections: 4112 },
 };
 
@@ -59,5 +62,20 @@ describe('HistoryResults', () => {
       query="q" threadId={null}
     />);
     expect(screen.getByText(/Nothing in the 33 served history items matches this\./)).toBeTruthy();
+  });
+
+  it('the copied citation carries the work\'s OWN provenance host, never a hardcoded one', async () => {
+    // The shipped component appended ` (CCEL)` to EVERY citation — false for josephus-whiston,
+    // whose record is CrossWire (WORKLOG 2026-08-21 deferred security finding, W-SEC-CCEL).
+    // SEED: restore the hardcoded ` (CCEL)` suffix -> this goes RED.
+    const written: string[] = [];
+    Object.assign(navigator, {
+      clipboard: { writeText: (t: string) => { written.push(t); return Promise.resolve(); } },
+    });
+    render(<HistoryResults data={BASE} query="q" threadId={null} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy citation' }));
+    await screen.findByText('✓');
+    expect(written).toHaveLength(1);
+    expect(written[0]).toBe('Josephus, Works, Antiquities — Book 15 — Ch. 1 (crosswire.org)');
   });
 });

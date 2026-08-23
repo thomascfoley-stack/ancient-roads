@@ -1,0 +1,25 @@
+     → expected 'Josephus, Works, Antiquities — Book 1…' to be 'Josephus, Works, Antiquities — Book 1…' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/history-results.test.tsx > HistoryResults > the copied citation carries the work's OWN provenance host, never a hardcoded one
+AssertionError: expected 'Josephus, Works, Antiquities — Book 1…' to be 'Josephus, Works, Antiquities — Book 1…' // Object.is equality
+
+Expected: "Josephus, Works, Antiquities — Book 15 — Ch. 1 (crosswire.org)"
+Received: "Josephus, Works, Antiquities — Book 15 — Ch. 1 (CCEL)"
+
+ ❯ test/invariants/history-results.test.tsx:79:24
+     77|     await screen.findByText('✓');
+     78|     expect(written).toHaveLength(1);
+     79|     expect(written[0]).toBe('Josephus, Works, Antiquities — Book 15 — …
+       |                        ^
+     80|   });
+     81| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+   Start at  18:47:44
+   Duration  5.34s (transform 331ms, setup 0ms, collect 815ms, tests 1.63s, environment 1.61s, prepare 531ms)
+

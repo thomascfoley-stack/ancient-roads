@@ -175,7 +175,9 @@ Top to bottom:
    `/work/[slug]?section=[ordinal]&hl=[sectionId]&from=[threadId]`. Enter activates.
 4. **ResultsList** grouped by work: group header (title, author, N matched, period span) + ≤3
    section rows. "Show all N" → client-side reveal, `aria-expanded`, no fetch. Row = same deep
-   link. Per-row cite icon → clipboard "Author, Title, Heading path (CCEL)" + toast. Match-reason
+   link. Per-row cite icon → clipboard "Author, Title, Heading path (provenance host)" + toast
+   (the host is derived from the work's own `sources.provenance` record — W-SEC-CCEL, 2026-08-22;
+   the hardcoded `(CCEL)` was false for josephus-whiston, CrossWire). Match-reason
    glyphs (entity/period/text) with tooltip on desktop, tap-popover on mobile.
 5. **TimelineRail**: desktop right rail, century buckets with counts; click bucket = same
    client-side period filter as the chips. Mobile: horizontal chip strip in its own

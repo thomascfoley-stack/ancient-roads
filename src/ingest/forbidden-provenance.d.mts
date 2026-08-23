@@ -4,3 +4,6 @@ export declare const FORBIDDEN_PROVENANCE_DOMAINS: readonly string[];
 
 /** The forbidden aggregator domain a provenance URL belongs to, else null. */
 export declare function forbiddenProvenanceDomain(url: unknown): string | null;
+
+/** The lowercased hostname of a provenance URL, else null when unparseable. */
+export declare function provenanceHost(url: string): string | null;
