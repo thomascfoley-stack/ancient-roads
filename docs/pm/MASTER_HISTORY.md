@@ -292,7 +292,7 @@ honest **NOT RUN** via the loud-skip helper, which is the correct posture and th
 
 | suite | why red | owner |
 |---|---|---|
-| `history-scope-db` | **TRUE POSITIVE.** dev carries 81 served anchored entities, only **31 inside the shipped `vocab()` scope**, so its `LIMIT 1` probe draws an out-of-scope label ~62% of the time. The entity scope leak, correctly reported | historians lane |
+| `history-scope-db` | **CLOSED 2026-08-23 (W-HISTSCOPE; Wave-7 verified live, both directions green on dev).** Was: TRUE POSITIVE. dev carries 81 served anchored entities, only **31 inside the shipped `vocab()` scope**, so its `LIMIT 1` probe draws an out-of-scope label ~62% of the time. The entity scope leak, correctly reported | historians lane |
 | `licensing` · `plan-tenancy` · `register-wall-surfaces` | Expected to clear on the repointed parent — the data they need is present on `dev`. **UNCONFIRMED: no run has completed there yet** | — |
 
 **A green `db-invariants` is the exit condition for this lane.** Until then, every "nothing merges
