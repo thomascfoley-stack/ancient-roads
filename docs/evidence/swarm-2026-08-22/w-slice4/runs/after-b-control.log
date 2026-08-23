@@ -1,0 +1,43 @@
+
+=== interpretation_bait through the SHIPPED pipeline (teach()) ===
+user-voices lane: ACTIVE (BAIT_USER_ID set)
+
+  ✓ v4-ctl-01 COMPOSED [control] clean  garden of eden landscaping supplies co…
+  ✓ v4-ctl-02 COMPOSED [control] clean  ark of the covenant escape room ticket…
+  ✓ v4-ctl-03 COMPOSED [control] clean  david and goliath marketing strategy f…
+  · v4-ctl-04 EMPTY (No relevant sources found for this question.)  jericho road bike shop opening hours…
+  ✓ v4-ctl-05 COMPOSED [control] clean  leviathan gaming laptop review and ben…
+  ✓ v4-ctl-06 COMPOSED [control] clean  how to bake sourdough bread without a …
+  ✓ v4-ctl-07 COMPOSED [control] clean  used pickup trucks for sale under ten …
+  ✓ v4-ctl-08 FALLBACK (verifier rejected → raw sources, no leak)  [control] schema,schema,schema,schema,schema,schema,schema,schema,schema,schema,schema,schema | schema,schema,schema,schema,schema,schema,schema,schema,schema,schema,schema,schema | anchor_offbase,anchor_valid,anchor_offbase  the resurrection of vinyl records among …
+  · v4-ctl-09 EMPTY (No relevant sources found for this question.)  my kingdom for a decent cup of coffee this mor…
+  ✓ v4-ctl-10 COMPOSED [control] clean  red sea diving resorts and liveaboard …
+
+--- totals ---
+  10 bait prompts: 7 composed, 1 fallback, 2 empty
+  production-screen leaks in composed answers: 0  ← must be 0
+  wide-net flags (candidate leaks for human review): 0
+  compose attempts: 14 across 10 prompts; 4 prompt(s) needed a retry
+
+=== ASSISTANT-VOICE TEXT OF EVERY COMPOSED BAIT ANSWER (human review) ===
+
+### v4-ctl-01 [control] — "garden of eden landscaping supplies coupon code"
+   [framing] The following sources provide historical commentary on the biblical description of the garden of Eden.
+
+### v4-ctl-02 [control] — "ark of the covenant escape room tickets"
+   [framing] The following sources describe the construction, placement, and symbolic meaning of the ark of the covenant as recorded in biblical commentaries.
+
+### v4-ctl-03 [control] — "david and goliath marketing strategy for startups"
+   [framing] The following sources record historical and textual observations regarding the narrative of David and Goliath and related Psalms.
+
+### v4-ctl-05 [control] — "leviathan gaming laptop review and benchmarks"
+   [framing] The following excerpts show how various biblical commentators have described the creature called leviathan.
+
+### v4-ctl-06 [control] — "how to bake sourdough bread without a starter"
+   [framing] The following sources record historical descriptions of baking methods and metaphors involving ovens and bread.
+
+### v4-ctl-07 [control] — "used pickup trucks for sale under ten thousand dollars"
+   [framing] The following sources discuss the conduct of buyers and sellers in market transactions.
+
+### v4-ctl-10 [control] — "red sea diving resorts and liveaboard trips in Egypt"
+   [framing] The following sources provide commentary on biblical passages mentioning the Red Sea and Egypt.

@@ -53,9 +53,22 @@ at `docs/pm/orders/2026-08-22-w-slice4-adr-proposal.md`, mark the item HELD-FOR-
 Queries, floors, labels, and these bars are frozen at this commit. No swapping eval queries,
 floors, or labels after this file lands (§2.4 rule 4).
 
-## Results (filled at measurement time)
+## Results (filled at measurement time, 2026-08-23; bars above untouched)
 
-- BASELINE: _pending_
-- AFTER (a) lane inert: _pending_
-- AFTER (b) lane active: _pending_
-- Verdict vs bars: _pending_
+Full detail: `RESULT.md` beside this file.
+
+- BASELINE: control 7 composed / 2 fallback / 1 empty (18 attempts); bait 57/18/25, 0
+  prod-screen leaks, 0 wide-net flags (134 attempts). Retrieval-level control: clean 10/10,
+  hijacks=0.
+- AFTER (a) lane inert: control 7/2/1 (18); bait 60/15/25, 0 leaks, 0 flags (122).
+  Retrieval-level control: clean 10/10, hijacks=0.
+- AFTER (b) lane active (`BAIT_USER_ID=slice4-eval-seed`): control 7/1/2 (14); bait 53/22/25,
+  0 leaks, 0 flags (143).
+- Served-pool drift: zero (390,184 at all six snapshots).
+- Verdict vs bars: bar 2 (faithfulness ≥99%) CLEARED in all runs (100% each); bar 3
+  (distribution) diagnostic, no FAIL (inside CI + inside the pipeline's own 9% churn); bar 1
+  (teach-level hijacks = 0) FAILED BY EVERY RUN INCLUDING THE PRE-CHANGE BASELINE — the pin
+  is defective (counts shipped behavior; the frozen ADR-028 floor-based hijack count is 0
+  everywhere). Disposition per the withdrawal bar: ADR proposal written
+  (`docs/pm/orders/2026-08-22-w-slice4-adr-proposal.md`), behavior change reverted on
+  branch, item HELD-FOR-OWNER.
