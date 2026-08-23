@@ -1,0 +1,18 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-SEC-CSRF/web
+
+stderr | test/history-search-route.test.ts > POST /api/history/search > 500 fail-closed when retrieval throws — including the excerpt gate
+history_search_failed excerpt is not a verbatim substring
+
+ ✓ test/history-search-route.test.ts (5 tests) 5ms
+stderr | test/history-search-route.test.ts > POST /api/history/search > 200 passes the contract through untouched
+history_thread_persist_failed APP_DATABASE_URL or DATABASE_URL must be set
+
+ ✓ test/invariants/csrf-content-type-floor.test.ts (28 tests) 5ms
+
+ Test Files  2 passed (2)
+      Tests  33 passed (33)
+   Start at  10:43:56
+   Duration  226ms (transform 55ms, setup 0ms, collect 129ms, tests 9ms, environment 0ms, prepare 79ms)
+

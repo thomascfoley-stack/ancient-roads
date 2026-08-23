@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { getMessages, addMessage } from '@/lib/chat';
 
 // 2026-08-17 pre-deploy audit (attack lens) #6: `content` had no length cap and `sources` was
@@ -43,6 +44,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
+    const csrfFloor = requireJsonContentType(req);
+    if (csrfFloor) return csrfFloor;
     const body = (await req.json()) as {
       channelId?: unknown;
       chatId?: unknown;
