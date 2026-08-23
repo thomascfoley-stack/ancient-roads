@@ -38,6 +38,7 @@ export interface RegisterWork {
   license: string;
   attribution?: string; // CC-BY carry-through
   paraphrase?: boolean; // metrical psalters / Watts Imitated — never rendered as Scripture
+  genre?: string; // manifest genre (e.g. 'history') — persisted to sources.provenance
   url: string;
   edition: string;
   publish: boolean; // owner-authorized clean tier → 'published' sources row; else 'staged'
@@ -226,7 +227,9 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
        ON CONFLICT (slug) DO UPDATE SET provenance=EXCLUDED.provenance, status=EXCLUDED.status`,
       [work.slug, work.title, work.author, work.authorDied ?? null, work.year, work.sourceType,
         work.tradition, work.era, work.license,
-        JSON.stringify({ url: work.url, edition: work.edition, year: work.year, retrieved_at: new Date().toISOString().slice(0, 10), attribution: work.attribution, register: work.register }),
+        // genre rides per-work from the manifest (the ruled history-scope mechanism — data
+        // per work, never a slug list in code); absent for works that declare none.
+        JSON.stringify({ url: work.url, edition: work.edition, year: work.year, retrieved_at: new Date().toISOString().slice(0, 10), attribution: work.attribution, register: work.register, ...(work.genre ? { genre: work.genre } : {}) }),
         'ingesting'],
     );
 

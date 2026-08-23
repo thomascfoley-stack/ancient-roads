@@ -62,6 +62,36 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
   return json.data.map((d) => d.embedding);
 }
 
+// A token-limit 400 is a PER-TEXT defect (dense prose tokenizes above the len/3 estimate —
+// the Bede class), never a reason to fail the work: fall back to per-text embedding with the
+// register-writer's own rule (embedOne: shorten THIS text 0.8x per attempt, floor 100 chars;
+// the window is REPRESENTATION ONLY — the stored body is untouched). Anything else rethrows.
+const TOKEN_LIMIT_RE = /context length|maximum input length|input tokens/i;
+async function embedOneWindowed(text: string): Promise<number[]> {
+  let len = text.length;
+  for (;;) {
+    try {
+      return (await embedBatch([text.slice(0, len)]))[0]!;
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (!/^embed 400:/.test(msg) || !TOKEN_LIMIT_RE.test(msg)) throw e;
+      len = Math.floor(len * 0.8);
+      if (len < 100) throw new Error(`could not embed a ${text.length}-char section within the token budget`);
+    }
+  }
+}
+async function embedBatchResilient(texts: string[]): Promise<number[][]> {
+  try {
+    return await embedBatch(texts);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (!/^embed 400:/.test(msg) || !TOKEN_LIMIT_RE.test(msg)) throw e;
+    const out: number[][] = [];
+    for (const t of texts) out.push(await embedOneWindowed(t));
+    return out;
+  }
+}
+
 const db = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await db.connect();
 try {
@@ -113,7 +143,7 @@ try {
   const byId = new Map(secs.map((s) => [s.id, s.body]));
   for (let i = 0; i < noVec.length; i += 48) {
     const batch = noVec.slice(i, i + 48);
-    const vecs = await embedBatch(batch.map((r) => (byId.get(r.id) ?? '').slice(0, EMBED_WINDOW)));
+    const vecs = await embedBatchResilient(batch.map((r) => (byId.get(r.id) ?? '').slice(0, EMBED_WINDOW)));
     const vals: string[] = []; const params: unknown[] = [];
     batch.forEach((r, j) => { vals.push(`($${j * 3 + 1},$${j * 3 + 2},$${j * 3 + 3}::vector)`);
       params.push(r.id, MODEL_SLUG, JSON.stringify(vecs[j])); });

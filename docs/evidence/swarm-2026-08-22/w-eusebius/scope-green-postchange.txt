@@ -1,0 +1,20 @@
+{
+ "entities": [
+  {
+   "slug": "constantine",
+   "label": "Constantine"
+  }
+ ],
+ "closest": "schaff-npnf201",
+ "groups": [
+  {
+   "work": "schaff-npnf201",
+   "sections": 102
+  }
+ ],
+ "npnf201Returned": true,
+ "coverage": {
+  "works": 2,
+  "sections": 4700
+ }
+}

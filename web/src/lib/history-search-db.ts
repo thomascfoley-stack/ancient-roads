@@ -30,8 +30,13 @@ let coverageCache: { at: number; works: number; sections: number } | null = null
 const TTL_MS = 60_000;
 
 /** Scope predicate, applied at READ time even though writes enforce it too: a quarantined work
- *  must stop serving instantly even if its vectors still carry served=true. Fail closed. */
-const SCOPE = `he.served AND src.status = 'published' AND src.source_type = 'historian'`;
+ *  must stop serving instantly even if its vectors still carry served=true. Fail closed.
+ *  2026-08-23: widened per the ruled Phase-0 mechanism (2026-08-20-historian-ingestion-plan):
+ *  genre-history works (the NPNF Fathers) join the lane by the per-work DATUM
+ *  sources.provenance.genre — written at register ingest from the manifest entry, never a slug
+ *  list in code. Lane membership stays write-gated (only the historian/annotate pipeline writes
+ *  history_embeddings) and status-gated (staged serves nothing). */
+const SCOPE = `he.served AND src.status = 'published' AND (src.source_type = 'historian' OR src.provenance->>'genre' = 'history')`;
 
 async function vocab(): Promise<{ slug: string; label: string }[]> {
   if (vocabCache && Date.now() - vocabCache.at < TTL_MS) return vocabCache.vocab;
