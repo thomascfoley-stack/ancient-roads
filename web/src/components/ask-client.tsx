@@ -11,7 +11,9 @@ import { SaveToStudy, resolveVoiceSourceId } from '@/components/save-to-study';
 import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
-interface Attribution { author: string; work: string; slug?: string; tradition: string; year?: number }
+// `origin` is optional for backward compatibility with answers stored before Slice 4; an
+// absent origin renders exactly as before (a corpus voice).
+interface Attribution { author: string; work: string; slug?: string; tradition: string; year?: number; origin?: 'corpus' | 'user_library' }
 type Block =
   | { type: 'framing'; text: string }
   | { type: 'voice'; attribution: Attribution; quote: string; summary?: string; anchors?: { start: number; end: number }[] }
@@ -888,6 +890,30 @@ function Answer({ result, onRetry, busy, contextTitle, withdrawnIds, askOutcomeI
       {show('commentary') && <div className="space-y-6">
         {voices.map((v, i) => {
           const era = eraOf(v.attribution.year);
+          // Slice 4 (SERMON_SEARCH_DESIGN §7(a)): a user-library voice is labelled as THEIRS
+          // (doc title), never rendered as an attributed historical voice — no era rail, no
+          // tradition, no desk link, no save affordance (it has no corpus source_id; the
+          // save path auto-suppresses on null anyway). It also SKIPS the withdrawal/tombstone
+          // path entirely: withdrawals are corpus-row concepts, and resolveVoiceSourceId
+          // matches against the corpus retrieval payload, so a user voice would otherwise
+          // tombstone (quote stripped) on any stored thread with known withdrawals.
+          if (v.attribution.origin === 'user_library') {
+            return (
+              <div key={i}>
+                <div aria-hidden="true" className="edge mb-6 border-t" />
+                <figure
+                  className="animate-fade-in border-l-[3px] border-l-stone-300 pl-5 dark:border-l-stone-600"
+                  style={{ animationDelay: `${(i + 1) * 60}ms`, animationFillMode: 'backwards' }}
+                >
+                  <blockquote className="max-w-[62ch] break-words font-serif text-[17px] leading-[1.75] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
+                  <figcaption className="small-caps mt-2.5 font-serif text-sm tracking-[0.05em] text-stone-500 dark:text-stone-400">
+                    From your library — <span className="font-semibold text-stone-800 dark:text-stone-200">{v.attribution.work}</span>
+                  </figcaption>
+                  {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
+                </figure>
+              </div>
+            );
+          }
           // §4.4: withdrawn ROW → attribution stays, quote goes. A voice is tombstoned when
           // the retrieval row it was composed from is no longer served (per-row check).
           //

@@ -2,6 +2,7 @@ import { decodeVerseId } from '@bible/verse-id';
 import { webVerseCounts } from '@bible/verse-counts';
 import type { CorpusLookup } from '@/verifier/types';
 import type { RetrievedChunk } from './retrieve';
+import type { UserVoice } from './user-voices';
 
 // Builds the verifier's CorpusLookup from a retrieval set. Sections are the
 // retrieved chunks, indexed 1..N (the section_id the composer is told to cite),
@@ -11,7 +12,14 @@ import type { RetrievedChunk } from './retrieve';
 // verseExists is REAL (unlike the CLI stub): a passage verse must fall within
 // the WEB versification's verse count for its book/chapter. This restores the
 // verifier's passage_exists guard on the teacher path.
-export function buildCorpusLookup(retrieval: RetrievedChunk[]): CorpusLookup {
+//
+// User-library sections (Slice 4) are indexed N+1..N+M — the ids teach.ts's
+// formatUserLibrarySources assigns — and keyed under the `user_library:` namespace, so
+// normalize-contract stamps their true origin and the verifier's H4 trust boundary
+// (additive-only) applies to them automatically. Their `source` carries author 'You' /
+// tradition 'unknown' to match the sectionAttributions teach.ts builds; 'unknown' is in
+// the verifier's NOT_A_TRADITION set, so a user voice can never count as a tradition.
+export function buildCorpusLookup(retrieval: RetrievedChunk[], userVoices: UserVoice[] = []): CorpusLookup {
   const sections = new Map(
     retrieval.map((r, i) => {
       const id = i + 1;
@@ -35,8 +43,25 @@ export function buildCorpusLookup(retrieval: RetrievedChunk[]): CorpusLookup {
     }),
   );
 
+  const userSections = new Map(
+    userVoices.map((v, j) => {
+      const id = retrieval.length + j + 1;
+      return [
+        `user_library:${id}`,
+        {
+          id,
+          body: v.text,
+          origin: 'user_library' as const,
+          source: { id, author: 'You', title: v.title, tradition: 'unknown' },
+          ...(v.verses ? { verses: { start: v.verses.start, end: v.verses.end } } : {}),
+        },
+      ];
+    }),
+  );
+
   return {
     async getSection(sectionId, origin) {
+      if (origin === 'user_library') return userSections.get(`user_library:${sectionId}`) ?? null;
       return sections.get(`${origin}:${sectionId}`) ?? null;
     },
     async getSource(sourceId) {
