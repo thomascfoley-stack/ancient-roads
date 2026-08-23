@@ -112,7 +112,7 @@ Full rows: `MASTER_HISTORY.md §queued-a8`.
 
 | # | Item | Status |
 |---|---|---|
-| UX-1 | Bible reachable on the desk | Row corrected 2026-08-02: the pane model already holds Scripture (`kind:'scripture'`) — it is a **picker gap**, not a design decision. The closeout swarm found the gap closed at `5760eec` (2026-08-02); verification pending at Wave 8 |
+| UX-1 | Bible reachable on the desk | **CLOSED — ALREADY-DONE at base.** The pane model holds Scripture (`kind:'scripture'`) and the picker gap was closed 2026-08-02 at `5760eec` (BookPicker pick mode + desk add-rail book button + "Open the Bible" empty state). Verified by two independent workstreams + the orchestrator (adjudication: `docs/pm/swarm-2026-08-22/ADJUDICATION.md`) |
 | UX-2 | The `+` affordance is unexplained | **ADDRESSED 2026-08-07** (`e196e4b`, one visible line above the work list); **browser-verified 2026-08-22** on `swarm/W-UX2VERIFY-ux2-browser-verify` (merge pending) |
 | UX-4 | Results cannot be opened; searches do not persist | **SHIPPED 2026-08-16/17** — Research History closed this; deployed `e59213d`. Remaining polish filed (P2 rail refresh, P3 thread header) |
 | UX-3 | Desk layout model | Grid, no 3-pane cap, drag-resize, collapsible chrome. **In build 2026-08-22** on `swarm/w-ux3-desk-grid` — sub-design APPROVE-WITH-CONDITIONS (core = grid + virtualization + cap 3→16; drag-resize/chrome are stretch). The standing caveat: the cap is doing performance work — `spurgeon-sermons` (118,371 sections) makes this a virtualisation problem before a layout one |
