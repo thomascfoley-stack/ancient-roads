@@ -1,0 +1,15 @@
+floor=0.6
+query | groups | sections | text_matched | min_text_cosine | verdict
+"the fall of Jerusalem in 70 AD" | 1 | 149 | 49 | 0.675 | ok
+"the destruction of the second temple" | 1 | 50 | 50 | 0.668 | ok
+"the siege of Masada" | 1 | 65 | 35 | 0.627 | ok
+"the martyrdom of early Christians under Nero" | 1 | 90 | 40 | 0.659 | ok
+"the conversion of Constantine" | 1 | 50 | 50 | 0.635 | ok
+"the council of Nicaea and the Arian controversy" | 1 | 50 | 50 | 0.640 | ok
+"the edict of Milan" | 1 | 50 | 50 | 0.636 | ok
+"monasticism in the Egyptian desert" | 1 | 50 | 50 | 0.609 | ok
+"the sack of Rome by the Visigoths" | 1 | 150 | 50 | 0.649 | ok
+"Augustine of Hippo and his conversion" | 1 | 24 | 24 | 0.601 | ok
+"the persecution of Christians under Diocletian" | 1 | 50 | 50 | 0.660 | ok
+"the siege of Jerusalem by Titus" | 1 | 148 | 48 | 0.719 | ok
+E2E PASS: all probes recover; every text-matched section is at/above the floor

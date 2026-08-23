@@ -165,13 +165,19 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     ).then((r) => r as Row[])
     : Promise.resolve([]);
 
-  // ef_search rides the SAME transaction as the KNN — on the stateless HTTP driver a set_config
+  // Both GUCs ride the SAME transaction as the KNN — on the stateless HTTP driver a set_config
   // in its own call binds nothing (routing.ts:311-315). At the default 40 this lane STARVED
   // through the partial index (measured 2026-08-21: three of four real probes returned empty
   // top-3), which is what left FTS-found rows with no cosine for the floor below.
   const knnP = embedQuery(query).then(async (vec) => {
-    const [, vecRows] = await sql.transaction([
+    const [, , vecRows] = await sql.transaction([
       sql`SELECT set_config('hnsw.ef_search', '120', true)`,
+      // iterative_scan=relaxed_order (pgvector 0.8, measured on dev): the scan continues past
+      // the first ef_search candidates until LIMIT in-scope rows are found. Only 9.2% of the
+      // partial index survives the published+historian join, so a strict scan post-filters to
+      // ZERO for most text-only queries (W-ANN RED, docs/evidence/swarm-2026-08-22/w-ann/;
+      // owner ruled SHIP 2026-08-23 accepting the cold-start tail).
+      sql`SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)`,
       sql.query(
         `SELECT ${ROW_COLS}, 1 - (he.embedding <=> $1::vector) AS cosine
            FROM history_embeddings he
