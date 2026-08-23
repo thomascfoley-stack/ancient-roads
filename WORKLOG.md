@@ -1,5 +1,69 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — History search: the in-flight signal, and the tab that looked ignored
+
+**Owner report, two symptoms.** (1) "History search needs a loading bar because it seems like it's
+paused when it's loading for the first time." (2) "When clicking on History for the first time in a
+session it takes a long long time."
+
+**What was actually there.** A running history search rendered ONE grey sentence
+(`Searching the historians…`) and hid the example chips — so asking a question made the page
+*blanker* for the several seconds a search takes (five DB round trips plus an embedding call; the
+first of a session also pays a cold function and the two empty 60s caches, `vocab()` and coverage).
+The mode toggle was two plain `<Link>`s: `/ask` reads `searchParams`, so both modes are one DYNAMIC
+route, and a soft navigation to a dynamic route holds the current page on screen, unchanged, until
+the server render arrives. Nothing said the click landed. The App Router's default prefetch for a
+dynamic route also stops at the nearest `loading.js` — `/ask` has none — so the click paid for the
+whole render, cold.
+
+**Shipped.**
+* `web/src/app/globals.css` — `@keyframes progress-travel` + `.progress-travel`, PRD §5's bar (2px
+  vellum track, antique-gold fill, square ends, the pair `plans-client.tsx` already paints) made
+  indeterminate: the fill TRAVELS rather than growing, because there is no percentage to report and
+  inventing one is not something this product does. Its own `prefers-reduced-motion` rule is
+  load-bearing, not decoration — the blanket block at the foot of that file forces
+  `animation-iteration-count: 1` and a 0.01ms duration, which would snap this animation to its LAST
+  frame (translated past the right edge) and leave reduced-motion readers an INVISIBLE progress bar.
+  Pinned full-width and still instead.
+* `web/src/components/history-ask.tsx` — the bar, `role="progressbar"` with no `aria-valuenow`
+  (correct ARIA for indeterminate), above the existing `role="status"` line. The line changes once
+  at five seconds to "Still searching the historians…" and then stops. Deliberately NOT "the first
+  search of a session is slowest": true of a cold function, false of the third slow search in a row.
+* `web/src/components/mode-toggle.tsx` — now a client component. `useLinkStatus` renders the same
+  travelling bar under the tab that was clicked, and `prefetch` is set on the tab you are NOT on
+  (never the one you are — that is a round trip for a render that already happened).
+
+**Verified, in a real browser at 1280px and 390px.**
+* Mid-flight, measured off the live DOM: `animationName: progress-travel`, `duration: 1.5s`,
+  `iteration: infinite`, fill 245px in a 736px track (1/3), and four transform samples that MOVE —
+  `-245 → 658 → 203 → 736`. The class is not inert; the bar actually travels.
+* 390px: track 358px inside the 390px viewport, `document.scrollWidth === innerWidth === 390` — no
+  horizontal overflow. Screenshotted mid-flight in both widths.
+* The toggle's pending bar was watched appear DURING A REAL NAVIGATION, inside the clicked tab, by
+  temporarily adding a 4s sleep to `AskPage` (probe reverted, `git diff` clean): four samples of
+  `a .progress-travel` under "Voices" between ~200ms and ~800ms, gone once the page landed.
+* Exit tests written FIRST and watched red: `test/components/history-search-progress.test.tsx`
+  (4 of 5 red before the fix) and `test/components/mode-toggle-pending.test.tsx` (2 of 3 red).
+  Both green after. 67 component files / 268 tests green; `test/invariants` 112 passed / 15 skipped;
+  `tsc --noEmit` and eslint clean on the changed files.
+
+**NOT DONE / UNVERIFIED.**
+* **The prefetch is unproven.** Next only prefetches in production builds, so the local dev server
+  cannot show it working. What is verified is that the prop is set and on which tab; whether the
+  first History click is measurably faster has to be read off production after the next deploy.
+* The `prefers-reduced-motion` fallback is asserted against the CSS rule, not observed — the browser
+  pane has no reduced-motion emulation. The invariant test fails if the rule is dropped or stops
+  saying `animation: none`.
+* **The search itself was not made faster, and it is the bigger number.** `searchHistory()`
+  (`web/src/lib/history-search-db.ts`) runs fully SERIAL: `vocab()` → entity query → period query →
+  `embedQuery` (DeepInfra) → KNN in a transaction → FTS → cosine backfill → coverage. Four of those
+  are independent of each other and could run concurrently with the fold order preserved (fold order
+  is load-bearing: the first row seen for an id wins, so later `fts`/`cosine` on a duplicate is
+  dropped by design). Not attempted here — it is a retrieval-path change and wants its own slice
+  under `quality-slice`, with the accuracy diagnostic recorded.
+* Nothing about the sidebar "Research history" section — the owner deferred that to a plan
+  ("fix history first, make plan later for the search history tab on the side").
+
 ## 2026-08-22 — Swarm closeout: launched, quota-killed mid-Wave-1, recovery order filed (R1–R6 + A1–A4)
 
 **What ran.** The approved order `docs/pm/orders/2026-08-22-autonomous-swarm-closeout.md` (v4,

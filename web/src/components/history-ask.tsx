@@ -29,6 +29,17 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
   >({ kind: 'empty' });
   const searchNo = useRef(0);
 
+  // The wait says so ONCE, at five seconds, and then stops — a ticking counter would turn a slow
+  // search into a stopwatch the reader watches. Deliberately NOT "the first search of a session is
+  // the slowest": that is true of a cold function and false of the third slow search in a row, and
+  // this surface does not guess at things it has not measured.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!busy) { setSlow(false); return; }
+    const t = setTimeout(() => setSlow(true), 5_000);
+    return () => clearTimeout(t);
+  }, [busy]);
+
   const run = async (raw: string): Promise<void> => {
     const q = raw.trim();
     if (!q || busy) return;
@@ -103,11 +114,27 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
 
       {/* Busy is announced in EVERY state, not just the first search: a second search from a
           results screen used to change nothing but the button label while the old results sat
-          live underneath (deep-audit client findings 5 + 6). */}
+          live underneath (deep-audit client findings 5 + 6).
+
+          THE BAR, added 2026-08-22 from the owner's report that a running search "seems like it's
+          paused". One sentence in stone-500 was the entire signal, and the examples hide while
+          busy, so asking a question made the page BLANKER for the several seconds a search takes
+          (five DB round trips plus an embedding call; the first of a session also pays a cold
+          function and two empty 60s caches). Indeterminate on purpose — there is no percentage to
+          report, so `role="progressbar"` carries no aria-valuenow. */}
       {busy && (
-        <p role="status" aria-live="polite" className="mt-6 text-sm text-stone-500 dark:text-stone-400">
-          Searching the historians…
-        </p>
+        <div className="mt-6">
+          <div
+            role="progressbar"
+            aria-label="Searching the historians"
+            className="h-[2px] w-full overflow-hidden bg-stone-200 dark:bg-stone-800"
+          >
+            <div className="progress-travel h-full w-1/3 bg-accent-600 dark:bg-accent-400" />
+          </div>
+          <p role="status" aria-live="polite" className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+            {slow ? 'Still searching the historians…' : 'Searching the historians…'}
+          </p>
+        </div>
       )}
 
       {state.kind === 'empty' && !busy && (

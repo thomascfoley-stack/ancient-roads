@@ -362,6 +362,38 @@ html {
   animation: highlight-bloom 0.35s var(--ease-gentle);
 }
 
+/* INDETERMINATE PROGRESS — PRD §5's bar (2px vellum track, antique-gold fill, square ends, the
+ * same pair plans-client.tsx paints) for a wait with no percentage to report. A history search is
+ * one round trip of unknown length, so the fill TRAVELS instead of growing; inventing a number
+ * would be a lie about progress on a surface whose whole contract is not inventing things.
+ *
+ * This is motion rather than a fade, deliberately. The fade-only budget above governs page turns;
+ * a still line is precisely what "it looks like it's paused" means, which is the report this
+ * exists to answer.
+ *
+ * The reduced-motion rule is NOT decoration. The blanket block at the foot of this file forces
+ * animation-duration to 0.01ms and iteration-count to 1, so this animation would snap to its LAST
+ * frame and hold there — translated fully past the right edge — leaving readers who cannot be
+ * shown motion with an invisible progress bar. Pinned full-width and still instead: no motion,
+ * still a bar. */
+@keyframes progress-travel {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+.progress-travel {
+  animation: progress-travel 1.5s var(--ease-gentle) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-travel {
+    animation: none;
+    transform: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
 /* PRD §6 scrollbar: thin, transparent track, vellum thumb (night hairline in dark). */
 ::-webkit-scrollbar {
   width: 6px;
