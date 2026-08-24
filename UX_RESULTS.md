@@ -956,3 +956,31 @@ and toolbar rather than a clean reading layout.
 **Coverage note:** several IDs remain PARTIAL (network-throttle/offline/print-hardware/screen-reader
 checks the available tooling couldn't run) or correctly PENDING-SIGNIN (highlight/note persistence,
 sign-out/in behavior) — not guessed at.
+
+## Batch 40 — AS (Ask), live signed-in production testing, real account
+
+Direct signed-in testing on `ancientpaths.app`, tab-driven, real questions submitted and graded live.
+
+### F-097 · AS-022 · **P2** · Browser Back to a finished Ask thread shows a blank form instead of the answer
+Asked "what does 1 Corinthians 13 say about love" → real, correctly attributed answer (Barnes,
+Adam Clarke, etc., B10 confirmed). Clicked the citation link to `/read/1co/13#v1` — correctly landed
+on the right verse (AS-021 PASS). Pressed Back (`history.back()`) → URL correctly returned to the
+`/ask/[id]` thread, but the page rendered the **empty "Ask about a verse" form**, not the saved
+answer — the client-side SPA navigation doesn't restore/refetch the thread. A **hard reload of the
+same URL correctly shows the full answer** (confirms AS-033 separately, PASS), so the data isn't
+lost — only the client-side Back transition fails to restore it, leaving a confusing empty-looking
+page that reads as "your answer is gone" until the user thinks to refresh.
+
+**Confirmed PASS, live on production:** AS-002 (real question → real attributed answer), AS-008
+(every source names author + work + tradition), AS-009/010 (empty and whitespace-only submissions
+correctly prevented, no request fired), AS-013/014 (emoji, Greek, and a literal `<script>` tag all
+echo safely as inert text in the input, no execution), AS-016 (real Enter keydown submits, not just
+a synthetic form-request), AS-017/018 (loading state visible immediately, "Currently answering from
+the Gospels" — a specific, honest progress signal, not a bare spinner), AS-021 (citation click-through
+lands on the exact correct verse), AS-033 (`/ask/[id]` correctly reopens the full answer after a hard
+refresh). No first-person app-voice language observed in the answer text — product guarantee held
+(AS-007 spot-check, not the full 20-answer scan the plan specifies).
+
+**Also confirmed, not a new finding:** the generic "Bible" nav link (sidebar + bottom bar) points to
+a fixed `/read/mrk/16` default — unrelated to the answer being viewed, correctly not conflated with
+citation links in this pass (initial grep over-matched it, corrected before filing).
