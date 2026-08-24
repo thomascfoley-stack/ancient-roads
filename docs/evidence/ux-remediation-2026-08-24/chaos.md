@@ -1,0 +1,13 @@
+# Chaos/edge-case sweep — CH-008/013/014/021/022
+
+**Check 1 (CH-008/CH-014 — offline fetch on /search):** Inconclusive by design of the app, not a bug found. Submitting the search form does a full browser navigation to `/search?q=shepherd` (confirmed via `location.href`), not a client-side `fetch()` call. The navigation reloads the page, which resets `window.fetch` back to native before any request happens, so the injected "reject every fetch" patch never had a chance to run — results rendered normally (SSR). This means the fetch-based failure-injection technique cannot exercise this page's error path; CH-008/CH-014 would need either an in-page `fetch`-driven interaction (e.g. typeahead) or server-side fault injection (e.g. blocking the route/API at the network layer) to actually test the "backend fails" scenario here. No error state was observed because none could be triggered this way. Reload afterward confirmed the page is in a normal, working state (never left one).
+
+**Check 2 (CH-013 — slow API loading indicator):** Same root cause as Check 1 — form submit is a full-page navigation to `/search?q=grace`, so the artificial 4s `fetch` delay was bypassed (new page load resets `window.fetch`). Results were already rendered (SSR) within the check window, well under 4s. Could not observe whether an in-page loading/spinner state exists, because this navigation-based search doesn't go through a delayable client fetch. Same caveat as above: needs a different injection point (e.g. throttle at the network/devtools layer, or find an in-page async search interaction) to genuinely test this.
+
+**Check 3 (CH-021/CH-022 — waitlist email input, long string + XSS):** PASS on both counts.
+- 500-char string of "A" was accepted into the email input; `input.value.length` confirmed 500 (no client-side truncation blocking entry).
+- `<script>window.__xssfired=1</script>` was set via a real `input` event (React-visible, not a raw `.value=` bypass). Result: `xssFired` check true (i.e. `window.__xssfired` stayed `undefined` — the script never executed) and `injectedAsMarkup` false (the literal string was not present as live markup in `document.body.innerHTML`). No XSS; input is being handled/escaped safely as inert text/value, not live HTML.
+
+## Summary
+- CH-021/CH-022: PASS, no defect.
+- CH-008/CH-013/CH-014: NOT MEANINGFULLY TESTED — the fetch-interception technique specified in the test plan doesn't apply to this page because `/search` submits via full-page navigation (SSR), not client-side `fetch`. Recommend re-running these three checks with a network-layer throttle/block (e.g. Chrome DevTools Protocol request interception) instead of a `window.fetch` monkey-patch, or targeting a different in-page async flow if one exists.

@@ -265,3 +265,28 @@ First chaos-resilience agent died mid-run: "API Error: Claude's response exceede
 token maximum" — no output file was written, nothing to salvage. Retried with a much tighter scope
 (3 checks instead of 6, explicit truncation rules to prevent large HTML/JSON dumps). Will merge on
 completion.
+
+## Batch 20 — chaos, retry (signed out, prod build) — final agent, all 10 now merged
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/chaos.md`.
+
+CH-021/022 ✅ **PASS.** 500-char string accepted with no client truncation; a real React-dispatched
+`<script>` input never executed and was never injected as live markup. No XSS on the waitlist field.
+
+**CH-008/013/014 — NOT MEANINGFULLY TESTED, correctly reported as such rather than faked.** `/search`
+submits via a full browser navigation to `?q=...` (SSR), not a client-side `fetch()` — so a
+`window.fetch` monkey-patch resets before any request happens and can't inject a failure here.
+**Architectural side-finding:** this confirms `/search` is server-rendered per query, which also
+explains why LD's agent couldn't force a loading window on it earlier (no client fetch to delay).
+Genuine offline/slow-network testing of this route needs network-layer interception (DevTools
+Protocol) or a different async surface (Ask, History search — both confirmed client-fetch-driven
+earlier this session) — queued, not run.
+
+---
+
+## FINAL TALLY — all 10 parallel agents merged (1 retry after a harness failure)
+
+23 findings filed this batch, ~90 distinct test IDs verified, both full generators run (66/66 books,
+22/129 works). One agent (chaos, first attempt) failed on an output-token limit with nothing to
+salvage; retried at a third of the scope and completed cleanly. Everything above is pushed with
+full evidence in `docs/evidence/ux-remediation-2026-08-24/` — one file per agent.
