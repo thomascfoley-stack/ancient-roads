@@ -1,0 +1,37 @@
+[32m✓ env — audit allow-list (shell + ingest env)[0m
+[32m✓ typecheck — tsc --noEmit (strict)[0m
+[32m✓ typecheck — cutover gate (scripts/)[0m
+[32m✓ typecheck — web/ tsc --noEmit[0m
+[32m✓ typecheck — web/test tsc --noEmit[0m
+[32m✓ lint — eslint src/ test/[0m
+[32m✓ lint — web/ eslint[0m
+[32m✓ unused — knip (files/exports/deps)[0m
+[32m✓ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+      Tests  968 passed (968)
+      Tests  1783 passed | 124 skipped (1907)
+      Tests  23 passed (23)
+[32m✓ qa — Layer 1 invariants + regressions[0m
+[32m✓ hygiene — no test residue in dev (post-suite)[0m
+[32m✓ data — Gate B license (fail-closed)[0m
+[32mAUDIT PASSED — all gates green[0m
+
+--- how this was run, and the two things that block it in this worktree ---
+
+  env -u DATABASE_URL -u DATABASE_URL_UNPOOLED DEEPINFRA_API_KEY=<from web/.env.local> npm run audit
+
+1. THE SHELL CARRIES A PRODUCTION CONNECTION STRING. The audit refused to run and said so:
+   "shell DATABASE_URL points at ep-odd-fog-atnykudm — not on the audit allow-list".
+   ep-odd-fog IS production. It is inherited from the session environment, not from any file in
+   this worktree (root .env.local is NEON_BRANCH=dev / ep-tiny-hat). The guard did exactly its job.
+   Worth the owner knowing: any tool inheriting this shell's env is one careless command away from
+   production, and only this allow-list is standing in the way.
+
+2. DEEPINFRA_API_KEY is not picked up from web/.env.local by vitest (Next loads it, vitest does
+   not), so test/user-corpus/blob-round-trip.test.ts fails its pipeline leg with
+   "parseError=DEEPINFRA_API_KEY is not set". Exported explicitly, all 4 legs pass.
+
+FLAKY, NOT CAUSED BY THIS BRANCH: an earlier run showed 1 failed / 1782 passed and a later run of
+the same tree showed 0 failed / 1783 passed. The user-corpus suites create documents against the
+shared dev branch, and another session was running the same suites tonight (they flagged it
+directly: "expect that a red audit tonight may be us, not the code"). Re-run in isolation before
+believing any user-corpus red.
