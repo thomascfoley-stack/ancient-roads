@@ -494,3 +494,55 @@ Settings apply instantly across pages/reloads with no signed-in dependency, no F
 **Unconfirmed side observation, not filed as a finding:** one agent reported `/read/jhn/1` direct nav
 intermittently rendering "John 3" instead of chapter 1 in this local build — flagged for a follow-up
 look, not independently reproduced, so kept out of the findings list per the plan's repro requirement.
+
+## Batch 26 — CO (Consistency/vocabulary), tracker-driven, code+curl pass (5 findings)
+
+Full detail: `/tmp/ap-uxsweep/agent-results/tracker_CO.txt`. Method: the shared browser session was
+contaminated by other concurrent agents (confirmed via `location.href` mismatches), so this pass used
+direct `curl -b gc.txt` fetches of server-rendered HTML plus source grep for the actual formatting call
+sites, rather than unreliable renders. Tally: 4 PASS, 9 PARTIAL, 5 FAIL.
+
+### F-045 · CO-002/CO-006 · **P2/B6** · The one `/ask` feature has four different names depending on chrome
+"Ask" (mobile nav), "Ancient Paths" (desktop sidebar), "Explore the paths" (page h1), "Voices" (mode
+tab) — and its own submit verb flips "Ask"→"Study" between modes (`ask-client.tsx:556` vs
+`history-ask.tsx:105-107`). Register-drift too: the verse-study tab says "Commentaries" while `/ask`'s
+filter for the identical register says "Commentary".
+
+### F-046 · CO-003/CO-008 · **P2/B6** · "Your stuff" has three route names, one verb, one internal state name — and the same icon marks four different destinations
+Saved / My books / My Works (`lib/library-nav.ts:30-32`) name the same concept three ways, plus verb
+"Bookmark" (`selection-popover.tsx`) and internal state name "shelf" (`work-header.tsx`). Compounding
+it: `BookStackIcon` renders for four different destinations (All items, Saved, My Works, All studies —
+`sidebar.tsx:370,408,432,743`) with no visual way to tell them apart.
+
+### F-047 · CO-004 · **P2/B6** · The same history feature has four names, the fourth on its own comparison surface
+"Research history" (sidebar heading), "research thread" (delete aria-label), "Research thread" (page
+title), and "Study history" (`history-ask.tsx:113` sr-only h1) — the fourth synonym appears on the
+exact surface most likely to be compared against the other three.
+
+### F-048 · CO-011/CO-012 · **P3** · Date-formatting drift: one surface uses short month, two files skip the shared locale constant entirely
+`ask-client.tsx:613` formats "Asked 24 Aug 2026" (short month) while `studies`/`search-groups`/
+`my-works`/`prayer-journal` all use "24 August 2026" (long month) via the same `DISPLAY_LOCALE`
+options. Separately, `app/library/word-study/page.tsx:137` and `work-toc.tsx:148/156/242/244` call
+bare `.toLocaleString()` with no locale arg — exactly the reader-runtime-drift anti-pattern
+`lib/locale.ts`'s own header comment warns against.
+
+### F-049 · CO-018 · **P3** · A non-destructive "Retry" button is styled in destructive red
+`app/read/[book]/[chapter]/page.tsx:654` styles a "Retry" button (after a failed write) in solid
+`bg-red-700` — the same color used everywhere else exclusively for delete/destructive actions,
+diluting red's meaning as "this is destructive" (CO-010's two real delete buttons both use it
+correctly, `text-red-700 dark:text-red-400` + two-step confirm).
+
+**Filed as PARTIAL, not findings (deliberate/low-severity):** CO-005 ("items" vs "Works"/"books") is
+intentional per-shelf hierarchy, not drift — no action. CO-007: sidebar collapse button lacks
+`aria-pressed`/`aria-expanded` that the equivalent mobile hamburger correctly has (minor a11y gap,
+folded into the AX section rather than double-filed here). CO-009: no shared Button/variant system
+exists — primary/secondary classes agree today by hand-copying, nothing enforces it going forward
+(tech-debt observation, not a user-visible bug). CO-014: `/desk`'s empty state teaches with two CTAs,
+`/search`'s zero-results just repeats "0 matches" six times with no next-action link — filed as a
+polish gap, not severe enough for its own F-number. CO-015/CO-017: marketing homepage intentionally
+uses a different visual register (shadows, rounded-full, arbitrary text sizes) than the in-app product
+— confirmed as a deliberate, consistent split, not random drift.
+
+**Also merged this batch:** 14 test IDs (CO-003, CO-005, EM-003/004/006/007/009/010/012/013/015/016,
+MOB-003/005) that the original tracker extraction script missed because they were packed two-per-line
+in `UX_TEST_PLAN.md` — now added, bringing the tracker to its true total of 918/918 IDs.
