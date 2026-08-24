@@ -377,7 +377,18 @@ export function AuthForm({ path }: { path: AuthMode }) {
           : 'Choose a new password';
 
   return (
-    <form onSubmit={submit} className="bg-paper px-6 pb-8 pt-4 dark:bg-stone-900">
+    // `method="post"` is NOT decoration, and it is not about how this form normally works — the
+    // submit handler intercepts and this attribute never comes into play on a hydrated page.
+    // It is the floor for when JS has NOT taken over: a <form> with no method defaults to GET, so
+    // an un-intercepted submit sends every field to the URL — `?email=…&password=…` — into the
+    // address bar, browser history, the server access log and the Referer of the next request.
+    // That is not hypothetical here: measured on 2026-08-24, the Suspense boundary wrapping this
+    // component does not hydrate on /auth/sign-up or /auth/sign-in (181 of 234 nodes on the page
+    // hydrate; this form and its inputs do not), in a PRODUCTION build as well as in dev — so the
+    // very first submit did exactly that. With POST the fields travel in the body instead.
+    // This attribute treats the symptom, deliberately: it removes the credential exposure without
+    // pretending to fix the hydration failure, which is filed separately and is the real bug.
+    <form method="post" onSubmit={submit} className="bg-paper px-6 pb-8 pt-4 dark:bg-stone-900">
       <h2 className="sr-only">{heading}</h2>
 
       {error && (

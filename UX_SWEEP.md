@@ -4,6 +4,34 @@ Format: ID · lane · severity (P0 broken / P1 user-angry / P2 friction / P3 cos
 
 ---
 
+## 🔴 P0 — Claude-11 — sign-up/sign-in do not hydrate, and the form put the password in the URL
+
+Found while trying to browser-verify K-4/K-5. **Not from this branch** — reproduced with
+`auth-forms.tsx` reverted to `dec9484`, and in a local **production** build, not just dev.
+
+The `<Suspense>` boundary wrapping `AuthForm` never hydrates: on `/auth/sign-up`, 181 of the page's
+234 nodes hydrate (`main`, `nav`, `body`, links, shell buttons) while **the form and its inputs do
+not**. So `onSubmit` is never attached, the browser performs its default submit — and because the
+form carried no `method`, that default is a **GET**. The first attempt of the night produced:
+
+    /auth/sign-up?name=UX+Test+K45&email=uxtest%2Bk45a%40example.com&password=a-long-enough-password-2026
+
+Password in the address bar, browser history, server access log, and the next request's `Referer`.
+No account created. Controls, same browser and pane, back-to-back: `/read/jhn/3` hydrates, the
+`/gate` form hydrates, `/auth/sign-in` does not.
+
+**Fixed here: only the floor.** `method="post"` (red-proofed, `auth-form-method-floor.test.tsx`);
+re-verified in a rebuilt production build that an un-hydrated submit now leaves the URL clean. That
+removes the credential exposure for any cause of JS not running. **It does not make sign-up work.**
+
+**The hydration failure is untouched and is the real bug**, and it needs confirming against the
+DEPLOYED site — I could not reach it (behind `SITE_PASSWORD`). One page load and one line settles it:
+`!!Object.keys(document.querySelector('form')).find(k=>k.startsWith('__react'))` — `false` means it
+reproduces, and sign-up is broken in production. Full evidence, controls and caveats:
+`docs/evidence/ux-remediation-2026-08-24/auth-form-no-hydration.md`.
+
+---
+
 ## ⚠ READ FIRST — the findings record has a material error rate, mine most of all
 
 Four items in the ratified plan have now failed verification **at build time, by the person who
