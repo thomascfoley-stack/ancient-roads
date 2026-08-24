@@ -415,3 +415,38 @@ LB-015 ✅ "Save" on a work (`/work/calvin-institutes`) toggles `aria-pressed` +
   survives a full page refresh, unsave cleanly reverts. Cleaned up after verifying.
 NV-016 addendum: `/studies/[id]` also ships only the generic "My Studies · Ancient Paths" title, not
   the study's own name — same class as the reader/work/word findings already filed.
+
+## Batch 17 — reader deep pass: translations, interlinear, verse panel, canonical passages (parallel agent)
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/reader-deep.md`.
+
+**All clean:** RD-018-025 translation persistence (survives nav/refresh/Back, one consistent global
+setting) ✅. TR-010/011 (4 translations spot-checked, all visibly distinct, correct convention —
+ASV's "Jehovah" vs KJV's "LORD") ✅. IN-001-003/006-009 (interlinear correct language per testament,
+proper RTL for Hebrew with niqqud, no mojibake, word-tap opens the right Strong's entry) ✅. VS-001
+through VS-019 (panel, tabs, attribution, Strong's chips, signed-out Notes invite) ✅ — 17/17
+commentary count confirmed accurate by counting DOM entries, not trusted from the badge. CP-06/07/11
+(Ps 119, Jude, Esther 8:9) all clean.
+
+### F-026 · CP-03 · **P2** · A raw source-omission marker leaks to readers as `21[]`
+In BBE, Matthew 17:21 renders literally as `21[]` — the verse number followed by an empty bracket
+pair, nothing else. KJV shows the full verse (correct — BBE follows the critical text that omits it).
+**The omission itself is correct textual practice; showing the raw bracket marker is not.** A reader
+hits `21[]` mid-chapter and reads it as a rendering bug, not a footnote. Needs either hiding the
+verse number for a genuinely-omitted verse, or a real note like "[omitted in earliest manuscripts]".
+
+### F-027 · CP-04 · **P3** · Psalm 3's superscription is missing entirely
+KJV traditionally carries "A Psalm of David, when he fled from Absalom his son" — confirmed absent
+from both source and render (`innerText` contains neither "Absalom" nor "Psalm of David"). Likely a
+source-text gap, not a UI bug, but real content loss on a Psalm where the superscription carries
+real context.
+
+### F-028 · IN-004/005 · **P3** · Interlinear resets on nav/refresh; translation choice doesn't
+Both are internally *consistent* (interlinear always resets, translation never does), so neither
+individually fails the plan's "must be consistent" bar — but the two settings behave by two
+different models with nothing in-app explaining why. Worth a product call on whether they should
+match.
+
+**Method note, worth keeping:** reading `aria-pressed` synchronously right after `.click()` can catch
+a stale pre-commit value (React lag) and falsely read as "not wired" — an L1 false positive in the
+wrong direction. Re-read after a tick, or check the visible class/background change instead.
