@@ -17,6 +17,17 @@ export type ObsEvent =
   | 'gate_rate_limit_hit'
   | 'gate_locked'
   | 'ask_outcome'
+  // Sermon → commentary matching (owner directive 2026-08-24: "if they match sermon content to
+  // commentaries i should see those successes and failures and errors"). Emitted by the two
+  // matching routes — the anchor join (documents/[id]/voices) and the semantic sweep
+  // (documents/[id]/related).
+  //
+  // CARRIES NO DOCUMENT CONTENT, and that is the whole design of this event. The same directive
+  // says the sermon itself must stay private ("if someone types a sermon out i shouldn't see
+  // that"), so this logs the OPERATION and never the text: an opaque documentId, whether the
+  // match hit / came back empty / was still indexing / errored, and how many voices it found.
+  // Enough to answer "is the matching working", never enough to read what they wrote.
+  | 'match_outcome'
   | 'waitlist_signup'
   | 'error';
 

@@ -56,6 +56,38 @@ is not.
 `first_run_reached` · `question_asked{is_followup}` · `search_run{surface}` · `plan_started{scope}`
 — plus `$pageview`, which is what DAU, churn and attribution are actually computed from.
 
+## The four rules (owner directive, 2026-08-24)
+
+Stated by the owner in their own words, and each one is enforced somewhere rather than promised:
+
+| Rule | Where it holds |
+|---|---|
+| "if someone searches for ephesus I should be able to see that" | `search_outcomes` (migration 129) logs the query text of every search, owner-readable via `scripts/query-log.mts` |
+| "when someone enters something in their journal that should be blank to me" | `prayers` is RLS-scoped per user and **no code path logs its body** — not the routes, not analytics, not PostHog |
+| "if someone types a sermon out I shouldn't see that" | user documents never enter the ask log (`teach()` keeps `userVoices` out of `result.retrieval`, so `ask_outcomes` stores corpus references only), and no match event carries a title or a character of the text |
+| "if they match sermon content to commentaries I should see those successes and failures and errors" | `match_outcome` on all three matching surfaces — anchor (`documents/[id]/voices`), semantic (`documents/[id]/related`), and draft (`draft-check`) — each logging hit / empty / pending / error |
+
+`match_outcome` carries: `kind`, `outcome`, `voices`, an opaque `documentId`, timings, and for the
+draft check the *length* of the paste. It never carries the document's title or text.
+`web/test/match-outcome-telemetry.test.ts` pins both halves and red-proves them: seed a title into
+the event and the privacy test goes red; delete a `logEvent` and the outcome tests go red.
+
+**Why `empty` is logged separately from `error`.** A sermon that preaches a passage without
+quoting it anchors nothing and returns zero voices with nothing broken (see
+`related-voices.ts`'s header for the measured case). In a plain error rate that is invisible —
+it looks exactly like a success. It is the failure most worth watching.
+
+### Two honest limits
+
+- **The owner role can read anything.** RLS stops the *application*; it does not stop someone with
+  the owner connection string running SQL. Journal entries and sermon text sit in the database in
+  plain text because search requires it. "Blank to me" is true of every log, every dashboard and
+  every product surface — it is not disk encryption, and no code change can make it that.
+- **`my_works` searches log their query text**, like every other search surface. That is a search
+  (rule 1), but it is a search over a *private* library, so the text could be personal. Narrowing
+  that one surface to counts-only is a one-line change if the owner wants it; it is left logging
+  by default because rule 1 says searches are visible.
+
 ## What never leaves the browser
 
 - **The reader's question.** `$current_url` rides every event, and the question lives in the query

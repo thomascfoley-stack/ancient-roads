@@ -3,6 +3,7 @@ import { LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
 import { getDocument } from '@/lib/user-corpus/documents';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { corpusPredicate, traditionGap } from '@/lib/user-corpus/tradition-gap';
+import { logEvent } from '@/lib/observability';
 
 export const runtime = 'nodejs';
 
@@ -46,12 +47,40 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   // A document that has not finished indexing has no anchors yet, so the join would honestly
   // return nothing. Say which of the two it is rather than showing an empty shelf.
   if (doc.status !== 'ready') {
+    logEvent('match_outcome', { kind: 'anchor', documentId: id, userId: user.id, outcome: 'pending', voices: 0, ms: 0 });
     return NextResponse.json(
       { voices: [], authorCount: 0, rangesConsidered: 0, pending: true },
       { status: 200 },
     );
   }
 
-  const result = await traditionGap(user.id, id, PREDICATE);
-  return NextResponse.json({ ...result, pending: false });
+  // The matching operation is logged three ways — hit, empty, error — because "empty" is the
+  // interesting failure here and it is indistinguishable from "hit" in a plain error rate: a
+  // paraphrasing sermon anchors nothing and returns zero voices without anything going wrong
+  // (see related-voices.ts's header for the measured case). Content is never logged.
+  const t0 = Date.now();
+  try {
+    const result = await traditionGap(user.id, id, PREDICATE);
+    logEvent('match_outcome', {
+      kind: 'anchor',
+      documentId: id,
+      userId: user.id,
+      outcome: result.voices.length > 0 ? 'hit' : 'empty',
+      voices: result.voices.length,
+      authors: result.authorCount,
+      rangesConsidered: result.rangesConsidered,
+      ms: Date.now() - t0,
+    });
+    return NextResponse.json({ ...result, pending: false });
+  } catch (e) {
+    const message = (e as Error)?.message ?? String(e);
+    logEvent('match_outcome', {
+      kind: 'anchor', documentId: id, userId: user.id, outcome: 'error', voices: 0,
+      ms: Date.now() - t0, message,
+    });
+    console.error('[user-corpus] anchor match failed:', message);
+    // The envelope api-error.ts says every /api/* error uses, rather than Next's raw 500 —
+    // the same repair /api/search/commentaries got on 2026-08-02.
+    return NextResponse.json({ error: 'INTERNAL' }, { status: 500 });
+  }
 }

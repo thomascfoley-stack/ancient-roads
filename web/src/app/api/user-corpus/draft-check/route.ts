@@ -6,6 +6,7 @@ import { requireJsonContentType } from '@/lib/csrf-floor';
 import { DRAFT_MAX_CHARS, draftCheck } from '@/lib/user-corpus/draft-check';
 import { corpusPredicate } from '@/lib/user-corpus/tradition-gap';
 import { LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
+import { logEvent } from '@/lib/observability';
 
 // POST /api/user-corpus/draft-check — "have I preached this before?"
 // (docs/MY_WORKS_DRAFT_AND_METADATA_DESIGN.md §1). Anchor-only: NO embedding call anywhere on
@@ -43,11 +44,33 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
+  // Matching telemetry (owner directive 2026-08-24), and this route is the one where the rule
+  // has teeth: THE SERMON ARRIVES IN THE REQUEST BODY. `text` is in scope on this very line and
+  // is never passed to logEvent — only counts, and the number of characters read rather than any
+  // of them. `outcome` distinguishes a draft that anchored nothing (`empty`, the paraphrase case,
+  // not an error) from one that found voices.
+  const t0 = Date.now();
   try {
     const result = await draftCheck(user.id, text, PREDICATE);
+    logEvent('match_outcome', {
+      kind: 'draft',
+      userId: user.id,
+      outcome: result.gaps.voices.length > 0 ? 'hit' : 'empty',
+      voices: result.gaps.voices.length,
+      ranges: result.ranges.length,
+      overlaps: result.overlaps.length,
+      translation: result.detection.translation ?? 'undetected',
+      chars: text.length,
+      ms: Date.now() - t0,
+    });
     return NextResponse.json(result);
   } catch (e) {
-    console.error('[user-corpus] draft-check failed:', String((e as Error)?.message ?? e));
+    const message = String((e as Error)?.message ?? e);
+    logEvent('match_outcome', {
+      kind: 'draft', userId: user.id, outcome: 'error', voices: 0,
+      chars: text.length, ms: Date.now() - t0, message,
+    });
+    console.error('[user-corpus] draft-check failed:', message);
     return apiError('INTERNAL');
   }
 }
