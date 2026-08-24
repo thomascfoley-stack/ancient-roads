@@ -1037,3 +1037,59 @@ contrast Theme (ST-10) and Default Translation (TR-01) both work correctly and p
 two dead controls sitting next to two working ones on the same settings page — a user has no way to
 know their tap did nothing. No state was actually changed by this test (confirmed via localStorage), so
 nothing needed reverting.
+
+## LB — Library & works reader — verified live, signed-in, prod (continuing overnight sweep, 2026-08-24)
+
+Started `/library`: signed-in content confirmed (Continue Reading: "Short Papers on Church History" 1%,
+Yours: Saved/My books/Word study/My Works, category list). **Prod category counts are far larger than
+WK-00's dev-DB snapshot** (dev: 129 published works total, only 1 historian). Prod `/library` shows:
+Commentaries 143 · Sermons 105 · Hymns & Poetry 46 · Historians 28 · Devotionals 15 · Theology & Creeds
+37 (= 374 total). Flagging as a number worth re-measuring against prod DB directly rather than assumed
+stale — WK-00 explicitly queried dev (`ep-tiny-hat`), never claimed prod parity.
+`/library/historians`: confirms LB-02's documented divergent-search behavior exactly ("What do you want
+to study?" StudyEntrance box, no tradition filter chips beyond All/unassigned/anglican/jewish) — LB-02
+re-confirmed live, by design.
+Opened Edersheim's "The Life and Times of Jesus the Messiah" (`/work/edersheim-lifetimes`): attribution
+visible immediately under title ("ALFRED EDERSHEIM · ANGLICAN · MODERN · PUBLIC DOMAIN"). Scroll-position
+→ URL hash sync confirmed via direct DOM/JS check: scrolling the inner `<main>` container from `#s1` to
+`scrollTop=8000` updated the hash live to `#s15` (no page reload needed). Re-navigating to the bare
+`/work/edersheim-lifetimes` URL (fresh load) restored `#s15` and `scrollTop≈7768` (vs 7919.5 before) —
+**this is account-level "continue reading" position persistence, not just a URL-hash re-read**: no hash
+was passed in the URL and it still resumed mid-book. Matches the `/library` "Continue Reading" widget
+behavior seen at the top of this section. Back navigation returned cleanly to `/library/historians`
+(the actual referring page, not a generic "library list" — reads as correct: Back goes to wherever you
+came from). Reader PASS: renders + attribution + URL sync + position restore + Back, all confirmed live.
+
+**Mobile (390x844):** reloaded the same work at mobile width. No horizontal overflow
+(`document.documentElement.scrollWidth === clientWidth === 390`, confirmed via JS, not just eyeballed).
+Header condenses to Contents / title (truncated) / author (truncated) / Save / Aa; bottom tab bar
+Home/Bible/Ask/Library/Search/Menu. Reads cleanly, no overlap. PASS.
+
+**🔴 P3 finding (LB-title-encoding):** `/library/historians` lists "Tryal &amp; Triumph of Faith..."
+(Rutherford) with the ampersand **double-HTML-encoded** — confirmed via `outerHTML`/`textContent` on the
+live DOM: the node's actual text content is the literal string `Tryal &amp; Triumph of Faith`, not
+`Tryal & Triumph of Faith`. The stored title itself contains an HTML-escaped `&amp;` that the UI renders
+as plain text without decoding, so the browser shows the literal entity. Cosmetic, but visible on every
+mention of this work's title (library list, `title=` tooltip attribute too). Likely an ingestion-time
+double-escape on this one work's metadata — worth a grep of `sources.title` for other `&amp;`/`&lt;`/`&gt;`
+occurrences since this may not be isolated to one row.
+
+## RD-12/mobile — PASS; BS-03 UNVERIFIED (tooling limitation, not a filed bug); testing-environment note
+
+Mobile viewport (375×812) on the reader: clean layout, no horizontal overflow (`scrollWidth` ===
+`innerWidth`, both 375), bottom tab bar (Home/Bible/Ask/Library/Search/Menu) instead of the desktop
+sidebar. RD-12 PASS.
+The bottom bar's "Search passages" opens the reference omnibox (confirms the CO-00 finding: it's a
+go-to-passage tool, not content search, matching its own placeholder "Go to passage, e.g. John 3:16").
+Typed "Romans 8:28" and dispatched a synthetic Enter keydown → did NOT navigate.
+**NOT filed as a bug** — around this point the Browser pane stopped compositing client-side (the
+`computer` tool's OS-level click/type actions began timing out with "pane not displayed"; the user's
+own view of the panel appears to have gone away, expected at this hour). A synthetic `KeyboardEvent`
+dispatched via `document.dispatchEvent`/`el.dispatchEvent` is known to be unreliable against React's
+event system (unlike a real `.click()` call, which worked fine throughout tonight) — peer git-db
+flagged exactly this class of false-negative earlier. Marking BS-03 UNVERIFIED rather than reporting a
+possibly-false bug; needs a re-check with real input simulation (pane visible) before it counts either
+way.
+**From here forward:** relying on navigate + get_page_text + read_page + real `.click()` calls via
+javascript_tool, which all continue to work without needing active compositing. Anything that
+specifically needs simulated typing/Enter-to-submit is being marked UNVERIFIED rather than guessed at.
