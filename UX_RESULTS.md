@@ -1256,3 +1256,16 @@ A user who has bookmarked or noted nothing yet gets no indication those features
 the sections just aren't there, rather than teaching what they're for (contrast with the well-built
 empty states elsewhere: `/plans`, `/prayers`, `/library/uploads` all correctly show inviting empty-
 state copy).
+
+## Batch 56 — HM (Home), live signed-in production, real account with real history
+
+### F-107 · HM-002/003/007/012 · **P2** · Home shows no personalized activity at all for a real, active account
+Scrolled the entire signed-in `/home` page top to bottom. It renders **only** the Daily Light devotional
+and a multi-voice commentary on the day's verse — the exact same content structure a brand-new,
+zero-activity account would see. Confirmed absent: any continue-reading rail, any reading-plan card
+(this account has 2 plans actively in progress, one with real completed days), any recent-threads
+summary (5 real Ask threads exist), any highlights/studies summary (19 highlights, 3 studies exist).
+A returning user with substantial history gets no sense of "pick up where you left off" from the page
+whose whole job is to be the front door. Earlier signed-out testing already confirmed `/home` correctly
+*omits* account-gated content when there's no account (HM-005/006/011, appropriately) — this finding is
+that the omission continues even once there's plenty of real activity to show.
