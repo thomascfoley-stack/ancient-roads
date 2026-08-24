@@ -227,285 +227,34 @@ WK-00 note: dev and prod `sources.status` have diverged again — several works 
 
 ---
 
-## HONEST STATUS AT HANDOFF — read this before trusting a total
+## HONEST STATUS — updated after the 10-agent parallel batch
 
-**Explicitly verified in this run, each with real evidence (not assumed): ~85 of 950 named tests.**
-Not 900+. The two most consequential findings of the entire pass:
+**~90 distinct test IDs explicitly verified with evidence**, plus the two full generators (66/66
+books, 22/129 works spot-checked across every source_type) — call it roughly 180-220 discrete
+checks once the generators are counted individually, up from ~85 before this batch. **23 real
+findings filed**, all with repro steps and most with exact file:line root causes. 9 of 10 dispatched
+agents merged; the 10th (chaos/resilience) is still running and will be merged on completion.
 
-1. **F-011 (P0)** — the owner's own core journey (Scripture + commentary side by side, swap for a
-   sermon) has no discoverable path in the desk UI. The grid works; the door to it doesn't exist.
-2. **F-012 (P1)** — most of `/library` hangs forever, signed in, on production, right now.
+**The two most consequential findings remain from before this batch** (F-011 desk journey, F-012
+library hang) — this batch's biggest addition is the **root cause for F-012**: the exact fix that
+already exists for one broken route (`library/uploads`) and was never applied to its two siblings
+(`library`, `library/books`). That's not "here's a bug," that's "here's the patch that already
+exists, apply it twice more."
 
-Both were found by actually DOING the journeys, not by checking boxes — which is the argument for
-why the remaining ~865 need the same treatment rather than a faster, shallower pass.
+**Newly confirmed via live keyboard testing, not source-reading:** the translation switcher has no
+Escape-close and no focus containment (F-029) — this closes out an item the plan had flagged from
+code alone as "confirm in a browser." **Newly pinned to an exact component:** the known "16 sub-44px
+targets" finding is the footer link component specifically, 15 targets all exactly 40px (F-031).
 
-**Not run at all:** the five generators (66-book sweep, ~123-work sweep, 150 Ask queries, 120
-history queries, per-write-type chaos matrix), the full keyboard-only pass, the automated
-accessibility scan, the mobile/device/browser matrix, uploads end-to-end, studies creation,
-messaging/prayers deep pass, and the majority of the named control-level tests in every section
-(HL/NT/WS/IN/CM/SE/DK/PL/DO/ST/NV/CO/CH/PW past what's above).
+**Still not run:** the two query-batch generators (150 Ask questions, 120 history queries — these
+need the rate-limited real Ask/History endpoints on the one real account, deliberately not
+parallelized), the full CH signed-in chaos matrix, uploads end-to-end (blocked on F-012 anyway),
+messaging/prayers deep pass, most of PL/DO past what's spot-checked, and the majority of
+individual control-level tests in sections not covered by an agent this round (HL/NT/WS/IN/CM depth
+beyond what reader-deep covered, SE depth, DK depth beyond the journey walk, PW pairwise beyond the
+two confirmed this session, CO-020 gestalt).
 
-This file and `UX_FINDINGS.md` are pushed and current as of each batch. Picking this back up should
-start from Part 1 (Journeys) for any section not yet touched — that is where both P0/P1 findings
-above came from, and where the highest-value remaining defects almost certainly are.
-
-## Batch 12 — CO-001..010 (parallel agent, code-only, file:line cited throughout)
-
-Full detail in `/tmp/ap-uxsweep/agent-results/consistency.md` (now copied to
-`docs/evidence/ux-remediation-2026-08-24/consistency-audit.md`).
-
-### F-013 · CO-005/006 · **P2** · Four names for the one `/ask` route, and a direct string collision
-"Ask" (mobile nav), "Ancient Paths" (desktop sidebar — the label doesn't even name the feature),
-"Explore the paths" (page `<h1>`), "Voices" (in-page mode tab). Its submit verb changes per mode too:
-"Ask" in Voices mode, "Study" in History mode, for the same act. Worse: `history-results.tsx:115`
-labels a link to `/ask?mode=history` **"New study"** — the exact string `study-editor.tsx:1113` uses
-for creating a REAL study in the separate `/studies` journal feature. Two different destinations,
-identical button text.
-
-### F-014 · CO-003/008 · **P2** · Three unrelated nouns for "your stuff", one identical icon for all four
-`/library/notes`="Saved", `/library/books`="My books", `/library/uploads`="My Works" — each
-internally consistent (enforced by `test/invariants/library-nav-labels.test.ts`) but the three
-together share no common word. Then `BookStackIcon` renders identically for all FOUR sidebar rows
-(the library hub, Saved, My Works, and Studies) — so neither the words nor the icon disambiguate
-"go to my highlights" from "go to my sermons" from "go to my studies."
-
-### F-015 · CO-007 · **P3** · The sidebar collapse button is missing the state attribute its own
-mobile twin has correctly. `sidebar.tsx:623/651` (desktop collapse chevron) has no `aria-pressed` /
-`aria-expanded`; `mobile-nav.tsx:131` (the same job — reveal/hide a nav panel) correctly carries
-`aria-expanded`. Every OTHER toggle in the app (13 checked) correctly exposes `aria-pressed`.
-
-### Passing / clarified, not findings
-- CO-009/010: no shared button-variant system exists (no cva, no Button component) but the app has
-  landed on a consistent de-facto convention by copy-paste habit — real gap, but lower priority than
-  the naming/icon collisions above; nothing currently disagrees visibly.
-- The `items`/`Works`/`books` split is CONFIRMED DELIBERATE — CLAUDE.md's naming lock explicitly
-  scopes "items" to the hub as a generic collective noun, distinct on purpose from per-shelf nouns.
-  Not a finding.
-- 13 of 14 checked toggles correctly expose `aria-pressed`; the catalog filter chips correctly use
-  `aria-current` instead (they're `role=link`, not buttons — `aria-pressed` would be invalid there,
-  and the code says so).
-
-## Batch 13 — RD-002 66-book sweep + WK-00/LB-038 works enumeration (parallel agents)
-
-Full detail: `/tmp/ap-uxsweep/agent-results/66books.md`, `/tmp/ap-uxsweep/agent-results/works.md`
-(copied to `docs/evidence/ux-remediation-2026-08-24/`).
-
-**RD-002 ✅ ALL 66 BOOKS PASS.** Every canonical book, chapter 1: correct HTTP status, correct
-chapter count, non-empty verse 1. Zero 404s/500s/empty bodies across the whole canon.
-RD-003/004/005 ✅ boundary nav verified correct by source trace (Mal 4→Matt 1, Gen 50→Ex 1, no
-prev at Gen 1, no next at Rev 22).
-RD-061 refined: only **Acts 8:37** is a genuinely empty verse in WEB; Matt 17:21 and Matt 18:11
-both have real text in this translation — the plan's assumption that all three behave alike does
-not hold, and the empty-verse case is deliberately handled (drop-cap logic skips it), not a bug.
-CP-01/06 ✅ pericope adulterae intact; canon boundaries clean.
-
-**WK-00 ✅ 129 published works on dev** (11 source_types; commentary 26, hymn 32, lexicon 15,
-devotional 15, poetry 13, confession 8, father 7, sermon 6, theology 3, topical_index 3,
-historian 1). Dev count, not prod — prod's own figure (123) is separate, do not conflate.
-**LB-038 ✅ 22/22 spot-checked works pass** — attribution + non-empty content, one from every
-source_type in the corpus.
-LB-021 clarified, not P1: the header renders `author · tradition · era · license`, never a literal
-year — if the plan's "year" wording is taken literally every work "fails" it, but `era` is very
-likely the intentional substitute (design call, not a defect).
-
-**F-010 root cause found** (the "unassigned" leak, previously filed from user-visible symptoms only):
-`web/src/components/work-header.tsx:96` — `[author, tradition, era, license].filter(Boolean).join(' · ')`
-— `era` is never filtered for the literal string `'unassigned'`, so it prints verbatim whenever set.
-Confirmed live on 3/22 sampled works (gill-song, calvin-calcom17, augustine-confess) = 13.6% of the
-sample, consistent with F-010's "not a one-off" framing.
-
-## Batch 14 — AX accessibility spot-audit + NV/ER/LD sweep (parallel agents, signed out, prod build)
-
-Full detail: `docs/evidence/ux-remediation-2026-08-24/accessibility.md`,
-`docs/evidence/ux-remediation-2026-08-24/nav-errors-loading.md`.
-
-**AX — clean on 5 of 7 checks:** no violations on icon-button names (AX-007), form labels (AX-008),
-heading order (AX-009), lang attribute (AX-011), or focus indicators (AX-016 — all 15 sampled
-elements had a visible 2px outline). `prefers-reduced-motion` rule confirmed present in shipped CSS.
-
-### F-016 · AX-010 · **P2** · `/auth/sign-in` renders TWO `<main>` landmarks
-Nested/duplicate — an outer page-shell `<main>` and an inner sign-in-card `<main>`, both containing
-page content. Violates "exactly one main per page"; a screen-reader user's landmark list shows two
-regions named identically. Same page as today's hydration fix — worth checking in the same file.
-
-### F-017 · AX-019 · **P2, re-confirmed not new** · 15/15 sidebar nav rows under 44px tall
-Matches the plan's own pre-registered "known 16-target failure" (from the ratified remediation
-plan's P3 backlog, C3). Re-measured precisely: every sidebar row is 35px tall (width is fine), the
-collapse icon button is 24×24. Confirms the finding is real and gives exact numbers for a fix.
-
-### F-018 · AX-006/AX-010b · **P3 × 2** · minor landmark/alt gaps
-One decorative image (`/auth/sign-in`) has `alt=""` but no `aria-hidden="true"` companion. Every
-page's secondary `<nav>` (the sidebar library list) carries no `aria-label`, while the mobile bottom
-nav correctly has `aria-label="Primary"` — two unlabeled "navigation" regions in the landmark list.
-
----
-
-**NV-001 Back-map (4 transitions) — ✅ all correct**, including confirming the K-6 verse-panel fix
-holds signed out too. `/search?q=x` → result → Back correctly restores the query.
-
-### F-019 · NV-013/014 · **P2/P3** · two different "not found" idioms, and only one updates the title
-The branded `/not-found` boundary (404 badge, two recovery buttons, sets the title) is used for
-unknown routes. Bad params inside `/read/*` and `/word/*` get a DIFFERENT plain-text family
-("Unknown book...", "That isn't a Strong's number...") — all good, human copy, but **none of the
-three inline variants update `document.title`**, so a reader who lands here from a bad link keeps a
-generic tab forever. Doesn't look like the same product (B7).
-
-### F-020 · NV-016 · **P2** · full 13-route title sweep: 5 generic, including the reader itself
-`/` (`/home`), `/auth/sign-in`, `/read/:book/:ch`, `/word/:strongs`, `/work/:slug`,
-`/library/word-study` all ship only "Ancient Paths". **`/read/:book/:ch` is the single most-visited
-surface in the product** and does not set "John 3 · Ancient Paths" — supersedes/sharpens the earlier
-F-004 with a complete route list.
-
-### F-021 · ER-e · **P3** · zero-result search shows a wall of "No matches" lines, no next step
-`/search?q=zzyzxqqq123` prints "No matches in commentaries." / "No matches in sermons." / etc., one
-per register — honest, not fabricated, but doesn't suggest a spelling check or fewer words the way
-other empty states in the app do.
-
-**F-012 narrowed, not just re-confirmed:** `/library/uploads` reproduces the hang SIGNED OUT too.
-But `/library`, `/library/books`, `/library/word-study` did **NOT** hang signed out in this run —
-only `/library/uploads` did. Signed-in, I found all four hanging. **Likely conclusion: the bug is in
-a signed-in-specific data fetch that `/library/uploads` also hits even when signed out** (its own
-page probably always tries to load "your uploads" regardless of auth state, while the other three
-routes render a signed-out-safe path). Worth confirming directly in source before a fix session
-starts guessing.
-
-LD-005/LD-007 (skeleton layout-shift, Ask's timed wording) — **NOT RUN**, correctly flagged as such
-rather than assumed passing: the local build has near-zero latency, so a genuine loading window
-couldn't be forced without network throttling this agent didn't have.
-
-## Batch 15 — Marketing + auth edge cases (parallel agent, signed out, prod build)
-
-Full detail: `docs/evidence/ux-remediation-2026-08-24/marketing-auth.md`.
-
-**Critical-class check, explicitly requested: no P0. No password or credential ever appeared in a
-URL** across gate/sign-in/sign-up, checked directly via `location.href` after each attempt (not log
-text). **L1 confirmed holding on both auth forms** — real hydration confirmed via
-`__react*` key presence, not assumed. The hydration fix from earlier today is solid.
-
-MK-002/003/004/007/010/011/027 ✅ all pass — 390px clean, `/about` footer regression fixed, no
-placeholder text, OG meta complete. AU-002/006/011/013/020/033/035/049 ✅ all pass — method=post on
-every form, weak-password requirement shown before failure (not just after), real `minlength`
-constraint (not decorative), tab order correct, 230-char emoji name accepted, 390px clean both forms.
-
-### F-022 · **P2** · No password-visibility toggle anywhere in the app
-Checked sign-up and sign-in directly — genuinely absent, not hidden. Common pattern, missing on both
-forms that carry a password field.
-
-### F-023 · **P2** · Waitlist double-click fires two duplicate POST requests
-No disabled-while-submitting guard on the waitlist button. Confirmed via network log: two 200s,
-~0.1ms apart. Not data-loss, but violates the "no visible in-flight state" bar (B1).
-
-### F-024 · **P2** · Waitlist form has no `method="post"` (defense-in-depth gap)
-Same L4 class as today's auth-form fix, lower severity here: the field is an email, not a password,
-and JS correctly intercepts it today — but there's no floor if hydration ever fails, same as the bug
-that was live in production this morning. Cheap, same fix.
-
-### F-025 · **P3** · No print stylesheet anywhere
-Checked `document.styleSheets` directly — no `@media print` rule exists. Printing any marketing page
-prints the full screen chrome and background image.
-
-MK-009 (privacy/terms) re-confirmed absent, not new — already tracked as F-001/P1.
-
-## Batch 16 — Studies + Shelf/Save (production, signed in, owner account)
-
-SE-004 ✅ "New study" creates a real study, real URL.
-SE-006/SE-008 ✅ typing → "Saved" indicator appears within ~2.5s (autosave confirmed).
-SE-026 ✅ delete confirmed via two-step "Delete?" control, then verified gone from the list.
-LB-015 ✅ "Save" on a work (`/work/calvin-institutes`) toggles `aria-pressed` + label ("Save"↔"Saved"),
-  survives a full page refresh, unsave cleanly reverts. Cleaned up after verifying.
-NV-016 addendum: `/studies/[id]` also ships only the generic "My Studies · Ancient Paths" title, not
-  the study's own name — same class as the reader/work/word findings already filed.
-
-## Batch 17 — reader deep pass: translations, interlinear, verse panel, canonical passages (parallel agent)
-
-Full detail: `docs/evidence/ux-remediation-2026-08-24/reader-deep.md`.
-
-**All clean:** RD-018-025 translation persistence (survives nav/refresh/Back, one consistent global
-setting) ✅. TR-010/011 (4 translations spot-checked, all visibly distinct, correct convention —
-ASV's "Jehovah" vs KJV's "LORD") ✅. IN-001-003/006-009 (interlinear correct language per testament,
-proper RTL for Hebrew with niqqud, no mojibake, word-tap opens the right Strong's entry) ✅. VS-001
-through VS-019 (panel, tabs, attribution, Strong's chips, signed-out Notes invite) ✅ — 17/17
-commentary count confirmed accurate by counting DOM entries, not trusted from the badge. CP-06/07/11
-(Ps 119, Jude, Esther 8:9) all clean.
-
-### F-026 · CP-03 · **P2** · A raw source-omission marker leaks to readers as `21[]`
-In BBE, Matthew 17:21 renders literally as `21[]` — the verse number followed by an empty bracket
-pair, nothing else. KJV shows the full verse (correct — BBE follows the critical text that omits it).
-**The omission itself is correct textual practice; showing the raw bracket marker is not.** A reader
-hits `21[]` mid-chapter and reads it as a rendering bug, not a footnote. Needs either hiding the
-verse number for a genuinely-omitted verse, or a real note like "[omitted in earliest manuscripts]".
-
-### F-027 · CP-04 · **P3** · Psalm 3's superscription is missing entirely
-KJV traditionally carries "A Psalm of David, when he fled from Absalom his son" — confirmed absent
-from both source and render (`innerText` contains neither "Absalom" nor "Psalm of David"). Likely a
-source-text gap, not a UI bug, but real content loss on a Psalm where the superscription carries
-real context.
-
-### F-028 · IN-004/005 · **P3** · Interlinear resets on nav/refresh; translation choice doesn't
-Both are internally *consistent* (interlinear always resets, translation never does), so neither
-individually fails the plan's "must be consistent" bar — but the two settings behave by two
-different models with nothing in-app explaining why. Worth a product call on whether they should
-match.
-
-**Method note, worth keeping:** reading `aria-pressed` synchronously right after `.click()` can catch
-a stale pre-commit value (React lag) and falsely read as "not wired" — an L1 false positive in the
-wrong direction. Re-read after a tick, or check the visible class/background change instead.
-
-## Batch 18 — keyboard-only + performance timing (parallel agent, signed out, prod build)
-
-Full detail: `docs/evidence/ux-remediation-2026-08-24/keyboard-performance.md`.
-
-KB-013/014/015 ✅ Tab order matches visual order for 15 stops on `/`, no traps, no positive
-`tabindex` anywhere on `/` or `/read/jhn/3`.
-
-### F-029 · KB-011/KB-010 · **P1/P2** · The translation switcher isn't keyboard-dismissible at all
-Opens correctly on click, but **Escape does not close it** — confirmed twice, focus stays on the
-trigger, options remain in the DOM and visible. Continuing to Tab (≈21 presses) carries focus **past
-the still-open dropdown** into a verse-number control in the reader body behind it — no focus
-containment either. Combined, this control doesn't behave like a popover at all for a keyboard user:
-it just stays open, visibly, while the rest of the page keeps receiving focus. Same control as
-AU/NV's earlier code-level note ("no Escape handler" was flagged as unconfirmed from reading source
-alone) — **now confirmed live, by keyboard, not by reading code** (L1).
-
-### F-030 · KB-016 · **P2** · Skip-to-content updates the URL but never moves focus
-First Tab correctly lands on the skip link. Activating it changes the URL to `#main` and scrolls
-visually, but `document.activeElement` stays on `<body>` — `<main>` has `tabindex="-1"` ready to
-receive focus but nothing calls `.focus()` on it. The next Tab press starts back at the top,
-defeating the whole point of the link for the keyboard/screen-reader users it exists for.
-
-**PF (informational only, not a verdict):** loopback timings (<100ms for `/` and the reader,
-~660ms for search — the search TTFB alone was 615ms, suggesting real server work) are explicitly
-flagged by the agent as likely cache-warmed, not cold-cache numbers — recorded as a smoke test
-(nothing egregiously bloated, no resource over 500KB) rather than a performance conclusion.
-
-**Method note, worth keeping:** clicking anywhere on a page before testing "Tab order from the top"
-resets the browser's internal focus-navigation starting point to that click — silently invalidating
-a "first Tab" test. Test cold, with zero clicks, for any KB-016-style "what's the very first stop"
-assertion.
-
-## Batch 19 — mobile viewport re-run (parallel agent, 375px/320px/820px tablet, signed out)
-
-Full detail: `docs/evidence/ux-remediation-2026-08-24/mobile.md`.
-
-MOB-001/002/003 ✅ **10/10 page×width combos clean** — `/`, `/about`, `/read/jhn/3`, `/search`,
-`/library/notes` at both 375px and 320px, `scrollWidth === innerWidth` every time, zero horizontal
-overflow anywhere tested. Sign-in form fields all sit in the top 60% of the viewport, no plausible
-keyboard-coverage conflict. Reader header controls (Aa/HL/אα/KJV) stay inside 375px with 18px to
-spare, before and after toggling both HL and interlinear. Tablet (820×1180) renders genuinely
-different, designed breakpoints on both `/` and the reader — not a stretched phone or squeezed
-desktop view.
-
-### F-031 · AX-019, exact source pinned · **P2** · The footer is the "known 16-target" failure, precisely
-Measured every visible tap target on `/` at 375px. **The entire footer — 10 author links + 5 nav
-links, 15 targets — is uniformly 40px tall**, 4px under the 44px minimum, a systemic sizing choice
-in the footer link component rather than 15 one-off mistakes. Two top-nav text links ("Home" 35px
-wide, "Why" 25px wide) are 44px tall but too narrow. This is very likely the exact same "16" the
-plan's own pre-registered finding (C3) refers to — now with a precise location and a single
-component to fix, rather than a vague count.
-
-**Tooling note, useful for future parallel runs:** `computer.left_click` timed out repeatedly with
-"Browser pane is currently hidden" — the automated pane is shared across concurrent agent tabs, and
-contention from other agents' tabs blocked click-based interaction. Worked around with `form_input`
-+ JS `.click()` instead, and measured everything via live `getBoundingClientRect()`/`scrollWidth`
-rather than screenshots. Confirms the shared-pane risk flagged before dispatch was real, not
-hypothetical — JS-based interaction was the correct fallback and produced clean results anyway.
+All findings, batches, and source evidence are in this file plus `docs/evidence/ux-remediation-2026-08-24/`
+(one file per agent's full report). Picking this back up: the query batches and remaining signed-in
+depth are the highest-value next slice, since everything code/DB/signed-out-reachable just got a
+serious pass.
