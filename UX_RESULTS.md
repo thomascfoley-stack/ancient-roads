@@ -227,3 +227,39 @@ messaging/prayers deep pass, and the majority of the named control-level tests i
 This file and `UX_FINDINGS.md` are pushed and current as of each batch. Picking this back up should
 start from Part 1 (Journeys) for any section not yet touched — that is where both P0/P1 findings
 above came from, and where the highest-value remaining defects almost certainly are.
+
+## Batch 12 — CO-001..010 (parallel agent, code-only, file:line cited throughout)
+
+Full detail in `/tmp/ap-uxsweep/agent-results/consistency.md` (now copied to
+`docs/evidence/ux-remediation-2026-08-24/consistency-audit.md`).
+
+### F-013 · CO-005/006 · **P2** · Four names for the one `/ask` route, and a direct string collision
+"Ask" (mobile nav), "Ancient Paths" (desktop sidebar — the label doesn't even name the feature),
+"Explore the paths" (page `<h1>`), "Voices" (in-page mode tab). Its submit verb changes per mode too:
+"Ask" in Voices mode, "Study" in History mode, for the same act. Worse: `history-results.tsx:115`
+labels a link to `/ask?mode=history` **"New study"** — the exact string `study-editor.tsx:1113` uses
+for creating a REAL study in the separate `/studies` journal feature. Two different destinations,
+identical button text.
+
+### F-014 · CO-003/008 · **P2** · Three unrelated nouns for "your stuff", one identical icon for all four
+`/library/notes`="Saved", `/library/books`="My books", `/library/uploads`="My Works" — each
+internally consistent (enforced by `test/invariants/library-nav-labels.test.ts`) but the three
+together share no common word. Then `BookStackIcon` renders identically for all FOUR sidebar rows
+(the library hub, Saved, My Works, and Studies) — so neither the words nor the icon disambiguate
+"go to my highlights" from "go to my sermons" from "go to my studies."
+
+### F-015 · CO-007 · **P3** · The sidebar collapse button is missing the state attribute its own
+mobile twin has correctly. `sidebar.tsx:623/651` (desktop collapse chevron) has no `aria-pressed` /
+`aria-expanded`; `mobile-nav.tsx:131` (the same job — reveal/hide a nav panel) correctly carries
+`aria-expanded`. Every OTHER toggle in the app (13 checked) correctly exposes `aria-pressed`.
+
+### Passing / clarified, not findings
+- CO-009/010: no shared button-variant system exists (no cva, no Button component) but the app has
+  landed on a consistent de-facto convention by copy-paste habit — real gap, but lower priority than
+  the naming/icon collisions above; nothing currently disagrees visibly.
+- The `items`/`Works`/`books` split is CONFIRMED DELIBERATE — CLAUDE.md's naming lock explicitly
+  scopes "items" to the hub as a generic collective noun, distinct on purpose from per-shelf nouns.
+  Not a finding.
+- 13 of 14 checked toggles correctly expose `aria-pressed`; the catalog filter chips correctly use
+  `aria-current` instead (they're `role=link`, not buttons — `aria-pressed` would be invalid there,
+  and the code says so).
