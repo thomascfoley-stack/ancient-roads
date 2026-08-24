@@ -181,14 +181,35 @@ Session is confirmed valid (`get-session` 200 the whole time). This is a client-
 signal that loading state waits on never arrives, on every affected route except `/library/notes`.
 
 This makes Library — a primary nav item, and the home of the works readers actually study — mostly
-unusable right now. **Root-cause hint, from source only, not fixed (out of scope for this pass):**
-`web/src/app/library/loading.tsx` is the shared App Router loading boundary for `/library` and
-every route under it that has no loading.tsx of its own — `[catalog]`, `books`, `passages`,
-`uploads`, `word-study` all inherit it; `notes` has its own `page.tsx` and is the one that works.
-The loading.tsx's own comment: "/library is a server component with `dynamic = 'force-dynamic'`
-and two DB queries." So the index page (and whatever `books`/`uploads`/`word-study` each query) is
-where to look — most likely several independent slow/hanging queries converging on the same
-symptom, not one shared cause, since `notes` goes through the same layout tree and is fine.
+unusable right now. **ROOT CAUSE FOUND, from source, confirmed against git history — this bug was already diagnosed
+and fixed ONCE, for one sibling route, and the fix was never applied to the other two.**
+
+`web/src/app/library/uploads/page.tsx`'s own header comment describes this EXACT symptom, already
+lived through and fixed:
+> "It was briefly an async server component that resolved the session and the upload permission
+> before rendering... on a HARD load of this URL the browser kept showing that parent fallback
+> [`library/loading.tsx`] and never swapped in the resolved segment. Measured: still 'Loading the
+> library' 43s in... the suspension itself had to go."
+
+The fix (commit `1c63b79`, "Undo the server-rendered page: it hung every hard load") made
+`MyWorksPage` a plain synchronous component with client-side data fetching — confirmed via
+`git merge-base --is-ancestor` that this commit **is live** in the deployed `ffab67d`.
+
+**But `/library/page.tsx` (the index) and `/library/books/page.tsx` are STILL async server
+components calling `requireUser()`**, the identical shape the comment names as the cause:
+    web/src/app/library/page.tsx:3        "A SERVER component: it can call requireUser()..."
+    web/src/app/library/books/page.tsx:7  "A SERVER component, like the Library hub it sits under..."
+Both inherit the same shared `library/loading.tsx` Suspense fallback the fixed page used to.
+`word-study/page.tsx` is `'use client'` (a third, different architecture) — consistent with the
+parallel agent's finding that it did NOT hang signed out (no server-side await to strand) but DID
+hang for me signed in (client-side fetch of signed-in data can hang independently).
+
+**This means `/library/uploads` hanging on MY signed-in run tonight is either a second, separate
+regression in the already-fixed page, or (more likely, unconfirmed) something in `MyWorksClient`'s
+own signed-in data fetch — not the original bug, which is provably fixed in that file.** The index
+and `/books` are very likely still broken by the ORIGINAL, already-diagnosed cause and need the
+identical treatment `uploads` already got. Not fixed here (testing pass, not a build one) — but
+this is about as close to "here is the patch" as a finding gets without writing the patch.
 
 ## Batch 11 — quick hits (production, signed in)
 
