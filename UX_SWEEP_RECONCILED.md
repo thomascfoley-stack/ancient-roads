@@ -1,5 +1,7 @@
 # UX_SWEEP_RECONCILED.md — merged findings from three independent overnight runs
 
+**Remediation plan lives in `UX_REMEDIATION_PLAN.md`** (the Kimi plan, under three-way review). This doc stays frozen as the findings record.
+
 **Sources (all 2026-08-24, target `https://ancientpaths.app` prod, run in parallel with no shared
 files per DeepSeek's own header):**
 - **Claude** — `/tmp/ap-uxsweep/repo/UX_SWEEP.md` + `UX_TASKS.md` (isolated worktree, branch
@@ -11,9 +13,13 @@ files per DeepSeek's own header):**
   Caveat: ran signed-in sections against **local dev**, not prod (prod `SITE_PASSWORD` correctly
   withheld from the runner); its own `UX_TASKS.md` has an unrelated formatting bug (many result lines
   repeat their output string 5-6× — cosmetic, but sanity-check exact counts before quoting them).
-- **DeepSeek** — `deepseeks-findings.md` (main tree, untracked). 8 findings. Narrowest scope: MK
-  (marketing/waitlist) + COV (route reconciliation) only, signed-out, no test account. What it did
-  test, it tested precisely — its COV pass includes source-code verification, not just live probing.
+- **DeepSeek** — `deepseeks-findings.md` (main tree, untracked). **20 findings** (F01–F20) — see
+  correction note below; the earlier "8 findings" figure predates DeepSeek's signed-out app sweep.
+  Scope: MK (marketing/waitlist) + COV (route reconciliation) **plus a signed-out app sweep** — reader
+  (66-book sweep, chapter nav, invalid book/chapter), translations, interlinear (NT Greek + OT
+  Hebrew), word study, commentary attribution, and search (grouped results, zero-state). No test
+  account, so no signed-in surfaces. What it did test, it tested precisely — its COV pass includes
+  source-code verification, not just live probing.
 
 **This doc's method:** every finding below is tagged with which source(s) reported it. Where two
 sources conflicted, I checked live tonight (curl or a real browser session) rather than picking a side
@@ -29,8 +35,8 @@ by asking Kimi or DeepSeek to re-check their own work — per this repo's own au
 | Sev | Count | Items |
 |---|---|---|
 | **P1** | 6 | PostHog CSP blackout (3/3 confirmed) · No privacy policy (3/3 confirmed) · CCEL citation-stripping bug (Claude, root-caused) · Back exits reader from verse panel (Claude) · Sign-up gives zero feedback (Kimi) · Email verification invisible, blocks all signed-in testing (Kimi) |
-| **P2** | ~13 | see below, grouped by source |
-| **P3** | ~14 | see below, grouped by source |
+| **P2** | ~16 | see below, grouped by source (incl. DeepSeek `/studies` redirect, `/desk` empty-state, translation-not-in-URL) |
+| **P3** | ~17 | see below, grouped by source |
 | **Retracted** | 1 | `/dev/editor-preview` exposed in prod (Kimi's F23 — disproved live, see Resolved Disputes) |
 
 ---
@@ -208,6 +214,32 @@ flagged in advance.
     confirmation alongside Claude's COV-00 (which reached the same conclusion from source-reading, not
     live probing) and Kimi's COV-A/B (which got `/dev/editor-preview` wrong — see R1).
 
+24. **P2 — `/studies` hard-redirects to `/auth/sign-in`** while every other surface (`/prayers`,
+    `/plans`, `/settings`, `/desk`, `/library`) renders a signed-out state. Inconsistent — either the
+    editor genuinely requires auth (then the empty state should say so, not raw-redirect) or it should
+    render "sign in to create studies." (DeepSeek-F11; → plan L-4.)
+
+25. **P2 — `/desk` empty state has no add-affordance.** "Your desk is empty" with no "Open the Bible /
+    browse the library" CTA — the ledger's own DK-00/HM-01 standard requires an empty state that
+    teaches. (DeepSeek-F12; → plan L-5.)
+
+26. **P3 — Home headline is the single word "Evening"** with no context or Daily Office label.
+    (DeepSeek-F13; → plan P3.)
+
+27. **P2 — Translation choice is not carried in the URL.** Switching to KJV changes the text + button
+    label, but the URL stays `/read/jhn/3`, so a shared link won't reproduce "this verse in KJV."
+    (DeepSeek-F16; → plan L-6.)
+
+28. **P3 — Signed-out verse-selection popover shows Highlight/Save affordances** that are gated on
+    sign-in; whether a signed-out user gets a "sign in to save" explainer or a silent no-op is
+    unverified. Same "gated action must explain itself" pattern as Kimi-18. (DeepSeek-F20; → plan P3.)
+
+29. **Signed-out sweep passes (record, not bugs):** 66-book sweep 0/66 fails (DeepSeek-F14); interlinear
+    renders Greek NT + Hebrew OT correctly (F15); 20+ translations switch correctly with KJV John 3:16
+    verified (F16 partial); search grouped results + honest zero-state, "John 3:16" → 935 commentary
+    matches (F17); commentary works render author · tradition · PUBLIC DOMAIN (F18); word study renders
+    Greek with no mojibake (F19). These are the baseline "the core product works signed-out" evidence.
+
 ---
 
 ## A reconciliation insight, not a bug: why "/ask" behaved differently for each runner
@@ -249,3 +281,102 @@ before the next run assumes Ask is uniformly open or uniformly closed.
    confirmed P1.
 7. Everything else in the P2/P3 tables above, roughly in the order they'd naturally get picked up during
    a launch-week pass.
+
+---
+
+# ADDENDUM (Claude, after DeepSeek's review) — errata + late verifications
+
+The body above stays frozen as written. This addendum carries corrections rather than editing the
+record in place, per DeepSeek's proposal in the plan's review block.
+
+## E1 — My description of DeepSeek's scope was stale. DeepSeek is right; this is my error.
+
+The Sources block says "DeepSeek — 8 findings. Narrowest scope: MK + COV only." **Wrong.** DeepSeek has
+**20 findings (F01–F20)** and ran a full signed-out app sweep — 66-book reader, translations,
+interlinear, word study, commentary, search — which is where F09–F20 came from.
+
+**How it happened, since the mechanism matters more than the apology:** `deepseeks-findings.md` was 137
+lines (F01–F08) when I wrote v1 of this doc. It grew to 314 lines mid-review. I *did* catch this and
+wrote a corrected v2 — but the write failed on a concurrent-edit conflict (Kimi was adding the
+"frozen / see remediation plan" header at that moment), I pivoted to writing the plan review, and never
+re-applied the v2 corrections here. DeepSeek caught the resulting inconsistency: **the plan cited
+F11/F12/F13/F16 while this record didn't list them.** A plan ahead of its own findings record is exactly
+the drift this doc exists to prevent.
+
+## E2 — Additions to "UNIQUE TO DEEPSEEK" (were missing; the plan already acted on several)
+
+- **F09** — `/ask` renders "Not open yet" signed-out/unverified. Not a code bug; see the tier-gating
+  insight below. Blocks the AS/VO ledger sections regardless of cause.
+- **F11** — `/studies` hard-redirects to `/auth/sign-in` while every comparable surface renders a
+  signed-out state. **Independently confirmed live by me** (cleared session, kept gate → landed on
+  `/auth/sign-in`). Plan's L-4. Real.
+- **F12** — `/desk` empty state has no add-affordance. **Disproved — see E4.** Plan's L-5 must go.
+- **F13** — `/home`'s hero heading is the bare word "Evening" with no label. Real, P3, plan has it.
+- **F16** — translation choice isn't carried in the URL, so a link can't reproduce "this verse in KJV."
+  Real, P2, plan's L-6.
+
+## E3 — Correcting C1's mechanism (my error, inherited into the plan)
+
+C1 says the same-origin `/ingest` proxy "would otherwise have made this CSP-safe." **That design was
+deliberately removed** by owner ruling 2026-08-18 — `web/next.config.ts:32-38` records why: it traded a
+named CSP entry for a wildcard tunnel to a third party inside `'self'`, on our own domain, inside our
+gate, with our cookies on every beacon. Direct-dial with the host named in `connect-src` is the intended
+architecture, not a fallback.
+**The conclusion (total blackout) is unaffected** — it rests on zero requests to the *posthog hostname*
+plus `window.posthog === undefined`, both directly observed. But "zero `/ingest` requests" was never
+evidence: by design there should be none. That leg is withdrawn.
+**Follow-on P3:** `docs/ENVIRONMENT.md` still documents the `/ingest` rewrite as current — stale against
+an owner ruling. Added to the plan's P3 housekeeping.
+
+## E4 — R4 upgraded from "disproved" to definitive; DeepSeek's F12 is retracted
+
+DeepSeek's review defends L-5 and proposes the desk "offer the same *Open the Bible / browse the
+library* affordance" — **which is precisely what is already there.** That request is itself the
+strongest evidence its enumeration missed the controls.
+Re-verified tonight, signed-out (session cookies cleared, gate cookie kept), by enumerating every
+interactive element in `<main>` rather than reading page text:
+```
+{ signedOut: true, url: "https://ancientpaths.app/desk",
+  mainInteractive: [ {BUTTON, "Open the Bible", visible:true},
+                     {A, "Browse the library", href:"/library", visible:true} ] }
+```
+Two controls, both visible, both exactly the proposed fix. **F12/L-5 retracted — nothing to build.**
+
+## E5 — DeepSeek's F20 open question: answered from source, and the answer is good
+
+F20 flagged, honestly, that it could not tell whether the signed-out selection popover's Highlight/Save
+controls explain themselves or fail silently. DeepSeek confirmed the *gating* in source; the answer to
+its actual question is a few lines further on in the same file:
+- `selection-popover.tsx:257-270` — highlight swatches render only when `signedIn`; otherwise a
+  **"Sign in to highlight"** link renders in their place.
+- `:284-286` — Save-to-study renders `null` when signed out: **absent, not present-and-dead.**
+- `:280-283` carries the rule as a written standing convention: *"a control which appears to work and
+  silently does not is worse than an absent one."*
+Note this is a **different component** from the verse-number panel I verified live in R5 (which shows
+*"Sign in to highlight and save notes to your account →"*). Both entry points handle signed-out
+correctly, by two consistent variants of the same pattern.
+**F20 should close as verified-good, not enter P3 as a fix.** It stands as the house pattern that
+plan items L-4 and Kimi-18 should copy.
+
+## E6 — F09 / Ask, nuance recorded as DeepSeek asked
+
+DeepSeek requests the frozen record carry the tier-gating nuance so nobody re-files "ask is closed" as
+a fresh bug. Recorded: **`/ask` is not uniformly closed.** Signed-out and unverified-account runners
+(DeepSeek, Kimi) get "Not open yet"; the owner's verified session (Claude) got a fully working Ask that
+returned a real, correctly-attributed answer. Whether that tier gate is intentional for beta is an
+owner decision with no code attached either way.
+
+## E7 — U1 (interlinear desync): DeepSeek's offer to settle it is accepted
+
+DeepSeek offers to run the exact repro with environment logged, and is the right party: a third agent,
+not either finder (Kimi found it, I failed to reproduce it). That satisfies fixer≠verifier better than
+either of us re-running it. Standing evidence: Kimi 3 reproductions (environment unstated), Claude 2
+clean prod runs, DeepSeek's basic toggle clean but the chapter-nav scenario untested. **Handing U1 to
+DeepSeek; verdict goes here when it lands.**
+
+## E8 — Verifier rotation for the Claude-only P1s (agreeing with DeepSeek's flag)
+
+K-2 (CCEL ingestion) and K-6 (verse-panel Back) are my findings, so I should not verify their fixes.
+DeepSeek can't reach either (K-2 is ingest-source, K-6 needs a signed-in reader). **Kimi is the
+designated verifier for both**, or DeepSeek for K-2 once a fixture-level test exists that doesn't need
+DB access.
