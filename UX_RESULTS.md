@@ -546,3 +546,52 @@ uses a different visual register (shadows, rounded-full, arbitrary text sizes) t
 **Also merged this batch:** 14 test IDs (CO-003, CO-005, EM-003/004/006/007/009/010/012/013/015/016,
 MOB-003/005) that the original tracker extraction script missed because they were packed two-per-line
 in `UX_TEST_PLAN.md` — now added, bringing the tracker to its true total of 918/918 IDs.
+
+## Batch 27 — ST (Settings), ER (Error states), UP (Uploads), LD (Loading states), tracker-driven
+
+Full detail: `/tmp/ap-uxsweep/agent-results/tracker_{ST,ER,UP,LD}.txt`. Note: all four agents reported
+the shared local-prod browser pool being heavily contended by other concurrent agents in this same
+sweep, causing tabs to get hijacked mid-check — each worked around it via source-corroboration or
+re-verification rather than guessing, and flagged PARTIAL where a clean isolated read wasn't possible.
+
+### F-050 · ST-009/010 · **P2, suspect, needs clean re-test** · Text-size/column-width settings may not actually change the reader
+Clicking "Larger text" / "Wider column" writes new localStorage keys (`reader-size: 1.25rem`,
+`reader-measure: 96ch`), but one read of `/read/jhn/3` afterward showed a static Tailwind `max-w-3xl`
+class unrelated to the stored value — suggesting the setting may be written but not consumed. Flagged
+by the agent as suspect, not confirmed, due to browser contention; needs a clean isolated re-test
+before treating as certain.
+
+### F-051 · ER-013 · **P2** · No rate-limit on repeated wrong gate-password attempts
+8 rapid wrong-password submissions to `/api/gate` all returned the same "That wasn't it. Try again."
+with no lockout/backoff/CAPTCHA (small sample, n=8, but zero throttling observed at all).
+
+### F-052 · ER-021 · **P2/AX** · Errors are not announced to assistive tech
+`document.querySelectorAll('[role="alert"],[aria-live]')` returns zero matches on both the 404 page
+and the client error boundary — a screen-reader user gets no announcement that an error occurred.
+
+### F-053 · ER-020 · **P3** · Two different error UIs for what looks like the same underlying search failure
+A malformed query (`/search?q=%00%00`) sometimes produces a full error-boundary screen ("Something
+went wrong… Try again" + "Go home" + error reference) and sometimes an inline "This search failed"
+banner per catalog — inconsistent for what appears to be the same failure class.
+
+### F-054 · UP-017 · **P2** · No proactive "approaching quota" warning for uploads
+The only quota feedback is a reactive 403 once already over the 200-document/100MB limit
+(`web/src/lib/user-corpus/quota.ts`) — no warning as a user approaches the limit. The over-limit
+message itself is well-written (names the limit and remedy), just not proactive.
+
+### F-055 · LD-017/018 · **P2** · Three incompatible loading idioms coexist, and the pending-link affordance only covers one component
+`useLinkStatus`'s pending-state affordance exists on one component only, not on sidebar nav links
+(matches a caveat already in the test plan itself). Separately: one real skeleton component, one
+progress bar reused in two unrelated places, and roughly 13 bare "Loading…" text instances — per the
+code's own comment acknowledging the inconsistency.
+
+**Notable PASSes worth recording:** ER-007 (XSS payload in search round-trips as literal text, not
+executed), forced error copy across bad book/verse/chapter/work routes reads as human and on-brand
+with a working path forward (no raw vendor errors surfaced), LD-007 (Ask shows real staged progress +
+a measurement-derived 90s slow-notice, not a bare spinner), LD-022 (optimistic writes have visible
+rollback on failure), UP-001/002 (`/library/uploads` signed out correctly shows an inviting sign-in
+prompt, no dropzone before auth).
+
+**Not filed as confirmed findings — flagged for a clean re-test:** possible upload-page loading stall
+(1-3s on the outer Suspense fallback, 3 occurrences) that a code comment describes as previously fixed;
+could not isolate real regression vs. concurrent-session noise.

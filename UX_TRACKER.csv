@@ -257,30 +257,30 @@ x,CO-017 Type scale: no one-off sizes.,"PASS — in-app — every h1 checked is 
 ,"EM-016 Desk, no panes.",
 ,"EM-017 Each of the above: does it teach the next action, or just say ""nothing here""? (B1)",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"EM-018 Each: is the empty state visually designed, or an unstyled sentence? (B7)",
-,ER-001 Collect every error message the app can produce; grade each human vs robotic (B2).,
-,ER-002 Force each one rather than reading the code for it (L2).,
-,"ER-003 No raw vendor text reaches a user (e.g. ""Invalid or expired session token"").",SEE UX_RESULTS.md / evidence — needs status confirm
-,ER-004 No error code shown without a human sentence beside it.,SEE UX_RESULTS.md / evidence — needs status confirm
-,ER-005 No error blames the user for the app's fault.,
-,ER-006 Every error that can be retried offers a retry.,
-,ER-007 Every error preserves the user's input.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"ER-008 Network failure on each write path → honest, recoverable.",
-,"ER-009 500 from each API route → the UI degrades, never white-screens.",
-,ER-010 401 mid-session on each surface → routes to sign-in with the destination kept.,
-,"ER-011 403 (RLS refusal) → does NOT read as ""signed out"" (a real prior defect class).",
-,"ER-012 404 for each `[param]` route → human, branded.",
-,"ER-013 429 rate limit on ask, search, gate, upload → human, says when to retry.",
-,"ER-014 Corpus CDN blocked → every dependent surface degrades honestly (reader, commentary, word study).",
-,"ER-015 LLM provider error → ask surface explains, preserves the question.",
-,ER-016 Database unreachable → does the app say something true?,
-,ER-017 Malformed URL params on every parameterised route.,
-,"ER-018 An error toast/banner → dismissible, doesn't cover the control you need.",
-,ER-019 Two errors at once → they don't stack into an unreadable pile.,
-,ER-020 Error styling consistent everywhere (B7).,
-,"ER-021 `role=""alert""` on errors so they're announced.",
-,"ER-022 An error while offline → distinguishes ""you're offline"" from ""we broke"".",
-,ER-023 Session expiry during a long edit → work preserved or explicitly saved elsewhere (B4).,
-,"ER-024 After any error, is there always a path forward? Name any dead end.",
+x,ER-001 Collect every error message the app can produce; grade each human vs robotic (B2).,"PASS — sampled ~10 distinct error messages live (unknown book, bad Strong's ref, work-not-found, 404, bad chapter, search failure, gate wrong-password, error-boundary); all plain human sentences, none robotic."
+,ER-002 Force each one rather than reading the code for it (L2).,PARTIAL — forced a representative sample of routes/params live (not literally every message in the app; exhaustive enumeration not feasible in this pass).
+x,"ER-003 No raw vendor text reaches a user (e.g. ""Invalid or expired session token"").","PASS — no raw vendor/stack text seen in any forced error (no ""Invalid or expired session token""-style strings); error boundary showed only a numeric reference id, no internals."
+x,ER-004 No error code shown without a human sentence beside it.,"PASS — every error code shown (404, ""Something went wrong"") is paired with a human sentence beside it, never bare."
+x,ER-005 No error blames the user for the app's fault.,"PASS — messages are neutral/system-framed (""Unknown book"", ""That isn't a Strong's number"", ""This work isn't available"") not user-blaming."
+x,ER-006 Every error that can be retried offers a retry.,"PASS — the client error boundary (triggered via /search?q=%00%00) shows an explicit ""Try again"" button plus ""Go home""; confirmed in DOM."
+x,ER-007 Every error preserves the user's input.,"PASS — (for tested path) — search input value (incl. a <script> string) round-tripped from the URL and was rendered back into the textbox as literal text, not lost or executed."
+,"ER-008 Network failure on each write path → honest, recoverable.","PENDING-SIGNIN — all write paths (notes, highlights, prayers, uploads, plans) require the single real account; could not exercise network failure on a write without signing in."
+,"ER-009 500 from each API route → the UI degrades, never white-screens.","PARTIAL — tried malformed/oversized params and injection-like strings against page routes and /api/ask, /api/search; got 200/404/405 only, could not force a genuine 500 from outside; not verified either way."
+,ER-010 401 mid-session on each surface → routes to sign-in with the destination kept.,PENDING-SIGNIN — mid-session 401 requires an authenticated session to expire.
+,"ER-011 403 (RLS refusal) → does NOT read as ""signed out"" (a real prior defect class).",PENDING-SIGNIN — RLS/403 behavior requires an authenticated session with restricted rows.
+x,"ER-012 404 for each `[param]` route → human, branded.","PASS — 404s for /work/[slug], /word/[strongs], /library/[catalog], and out-of-range /read/[book]/[chapter] are all human, on-brand, with a path forward (not a bare framework 404)."
+,"ER-013 429 rate limit on ask, search, gate, upload → human, says when to retry.","FAIL — hit /api/gate with 8 rapid wrong passwords, no throttling/lockout message appeared, just the same ""That wasn't it. Try again."" each time (small sample, n=8, so treat as a lead not proof); /ask is behind the pre-signup gate (feature disabled) so not testable; search/upload rate limits not forc"
+,"ER-014 Corpus CDN blocked → every dependent surface degrades honestly (reader, commentary, word study).",NOT-APPLICABLE — no mechanism available in this black-box pass to block the corpus CDN and observe degradation.
+,"ER-015 LLM provider error → ask surface explains, preserves the question.","NOT-APPLICABLE — Ask surface is closed site-wide (""Not open yet"" pre-signup gate), so no LLM-provider-error UI exists to test yet."
+,ER-016 Database unreachable → does the app say something true?,NOT-APPLICABLE — no mechanism available to sever DB connectivity from outside the app in this pass.
+x,ER-017 Malformed URL params on every parameterised route.,"PASS — malformed URL params tried across every parameterised route tested (bad book, bad Strong's id, non-numeric/negative/huge chapter, bad catalog slug, SQL-like and null-byte query strings, XSS payload in q=) all rendered a graceful human message, no crash/white-screen."
+,"ER-018 An error toast/banner → dismissible, doesn't cover the control you need.","NOT-APPLICABLE — no toast/banner-over-control pattern was observed anywhere in this pass (errors render inline in the page body, not as floating toasts), so dismissibility/coverage can't be assessed."
+x,ER-019 Two errors at once → they don't stack into an unreadable pile.,"PASS — /search?q=%00%00 (one variant) rendered six stacked inline error banners, one per catalog section, all legible and non-overlapping."
+,ER-020 Error styling consistent everywhere (B7).,"PARTIAL — two different error presentations exist for the same class of failure: inline red ""This search failed..."" banners per section vs. a full-page ""Something went wrong"" boundary (both seen from the same query on different loads), so styling is consistent within each pattern but the two pattern"
+,"ER-021 `role=""alert""` on errors so they're announced.","FAIL — checked live DOM (getElementsByAttribute) on both the 404 page and the ""Something went wrong"" error boundary: zero elements with role=""alert"" or aria-live anywhere on either page."
+,"ER-022 An error while offline → distinguishes ""you're offline"" from ""we broke"".","PARTIAL — could not cleanly force a true network-offline condition in this environment (tab was shared with concurrent sessions, and a scripted navigator.onLine=false + offline event did not change already-rendered content); not verified either way."
+,ER-023 Session expiry during a long edit → work preserved or explicitly saved elsewhere (B4).,PENDING-SIGNIN — requires an authenticated long-lived edit session to expire mid-edit.
+x,"ER-024 After any error, is there always a path forward? Name any dead end.","PASS — every forced error page offered at least one live path forward (Browse the library / Open the Bible / Choose another chapter / Search the dictionary / Go home), plus the persistent sidebar nav; no dead end found."
 ,"HL-001 Enumerate colours, modes, gestures.",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"HL-002 Highlight a verse → paints instantly (optimistic), survives refresh.",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"HL-003 Highlight, navigate away, return → still there.",SEE UX_RESULTS.md / evidence — needs status confirm
@@ -439,28 +439,28 @@ x,CO-017 Type scale: no one-off sizes.,"PASS — in-app — every h1 checked is 
 ,LB-036 Library with the CDN blocked → honest degraded state.,
 ,LB-037 Print a work section → attribution included.,
 ,"LB-038 Per-work sweep: open EVERY published work; first section + one middle section render, attribution visible, refs clickable. *Expands to on...",SEE UX_RESULTS.md / evidence — needs status confirm
-,LD-001 The waiting standard is already written — just use it. <100ms instant acknowledgement · 100ms–1s skeleton in the final layout · 1–4s prog...,
-,"LD-002 Grade every async surface against it; deviations are findings, not preferences.",
-,"LD-003 Skeletons, not spinners, on the core surfaces (home, reader, ask, library, history).",SEE UX_RESULTS.md / evidence — needs status confirm
-,LD-004 No white void on first paint anywhere.,
-,LD-005 No layout shift when content replaces a skeleton (B5).,SEE UX_RESULTS.md / evidence — needs status confirm
-,LD-006 Nothing moves under a finger about to tap it.,
-,"LD-007 Ask: honest words at ~4s and ~10s, not one eternal spinner.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"LD-008 Upload: quantified progress, staged labels.",
-,LD-009 Search: input stays editable; keystrokes never eaten.,
-,"LD-010 Every submit/toggle pressed twice mid-load → idempotent, visibly disabled (B1).",
-,LD-011 Partial availability: throttle one API → that panel shows its own state; the page stays usable.,
-,LD-012 Missing content → says so and offers retry; never renders as if the content doesn't exist (B1).,
-,"LD-013 Navigating away mid-load and back → clean re-request or restored result, never stuck.",
-,"LD-014 Slow 3G first load of each core surface → progressive, usable.",
-,LD-015 Slow 3G: record time-to-first-meaningful-paint and time-to-usable per surface.,
-,"LD-016 Same on a fast connection — record both, compare against the standard.",
-,LD-017 Link navigation feedback: does a `<Link>` tap acknowledge within 100ms? (Most currently do not.),
-,LD-018 Loading treatments consistent in shape and colour across surfaces (B7).,
-,LD-019 Spinner/progress honours `prefers-reduced-motion`.,
-,LD-020 Long operation in a background tab → still completes; state correct on return.,
-,LD-021 A wait that finishes instantly → no flash of a skeleton (worse than none).,
-,LD-022 Optimistic UI that later fails → the reversal is visible and explained (B4).,
+,LD-001 The waiting standard is already written — just use it. <100ms instant acknowledgement · 100ms–1s skeleton in the final layout · 1–4s prog...,"NOT-APPLICABLE — this is the written waiting-time standard itself (rubric), not a checkable UI state; used as the yardstick for LD-003 through LD-022."
+,"LD-002 Grade every async surface against it; deviations are findings, not preferences.",NOT-APPLICABLE — meta-instruction to grade every async surface against LD-001; not itself observable.
+,"LD-003 Skeletons, not spinners, on the core surfaces (home, reader, ask, library, history).","PARTIAL — /library has a real shaped skeleton (web/src/app/library/loading.tsx); live-observed spinner-style ""Loading…"" text (not a skeleton) on /library/passages search results, and grep confirms ~13 other components (work-reader.tsx, desk-pane.tsx, sidebar.tsx, plans-client.tsx, notes/page.tsx, wo"
+x,LD-004 No white void on first paint anywhere.,"PASS — every page observed (home, library, commentaries listing, settings, gated Ask) painted its themed background immediately; no unstyled white flash seen live."
+,LD-005 No layout shift when content replaces a skeleton (B5).,"PARTIAL — the /library skeleton is deliberately shaped to the real layout to avoid shift (per its own code comment), but the ~13 bare ""Loading…"" one-liners elsewhere are single lines of text, not shaped placeholders, so those surfaces likely reflow when content lands; not fully confirmed live due to"
+,LD-006 Nothing moves under a finger about to tap it.,PARTIAL — not confirmed with real touch/slow-network timing (tooling had no reliable way to isolate this); no obvious late-relayout-under-tap pattern found in code review either.
+x,"LD-007 Ask: honest words at ~4s and ~10s, not one eternal spinner.","PASS — (code-verified) — web/src/components/ask-client.tsx streams live staged events (retrieving/composing/verifying/rejected/done), sets expectations up front (""usually takes 20–40 seconds""), and shows a derived SLOW_ANSWER_NOTICE_MS (90s, sourced from measured 58–104s latency) rather than one ete"
+,"LD-008 Upload: quantified progress, staged labels.",PARTIAL — web/src/components/my-works.tsx gives staged per-file labels (Waiting/Uploading…/Added/Already in your library/Refused) but no quantified (%/bytes) progress bar was found in code; upload itself is behind sign-in so the live control could not be exercised (PENDING-SIGNIN for the visual chec
+x,LD-009 Search: input stays editable; keystrokes never eaten.,"PASS — /library/passages search textbox has no `disabled` attribute at any load state (only the Search/Load-more buttons disable), confirmed both live (typed while a search was resolving, input stayed responsive) and in code (web/src/app/library/passages/page.tsx)."
+x,"LD-010 Every submit/toggle pressed twice mid-load → idempotent, visibly disabled (B1).","PASS — (code-verified) — Ask's `ask()` guards `if (!q || busy) return` and disables re-submit while busy; upload input is `disabled={busy}` in my-works.tsx — both are idempotent-guarded, not directly re-clicked live since both require sign-in."
+,LD-011 Partial availability: throttle one API → that panel shows its own state; the page stays usable.,PARTIAL — could not selectively throttle a single API endpoint with the tools available in this session; not verified either way.
+x,LD-012 Missing content → says so and offers retry; never renders as if the content doesn't exist (B1).,"PASS — (code-verified) — suggested-readings.tsx and my-works.tsx both end a failed load in a visible sentence with a ""Try again""/retry control (loadFailed/loadError state), matching the rule; code comments explicitly call out killing the old ""stuck on Loading… forever"" behavior (B021)."
+x,"LD-013 Navigating away mid-load and back → clean re-request or restored result, never stuck.","PASS — indirectly but genuinely confirmed: this session's shared/contended browser repeatedly interrupted in-flight navigations (another process re-navigated the tab mid-load, ~6 times), and every subsequent screenshot showed a cleanly resolved page, never a stuck/blank spinner state; Ask also attac"
+,"LD-014 Slow 3G first load of each core surface → progressive, usable.","PARTIAL — no network-throttling control was available in this browser toolset; only natural (fast, local) load speed could be observed, so a genuine slow-3G pass was not performed."
+,LD-015 Slow 3G: record time-to-first-meaningful-paint and time-to-usable per surface.,"PARTIAL — same limitation as LD-014; no throttled timing was recordable. Natural-speed loads of /library, /library/commentaries, /library/passages, /ask, /plans, /settings all painted in well under 1s locally, which says nothing about 3G behavior."
+,"LD-016 Same on a fast connection — record both, compare against the standard.","PARTIAL — fast-connection timings recorded (all core surfaces <1s locally), but there is nothing to compare them against since the slow-3G leg (LD-014/015) could not be run."
+,LD-017 Link navigation feedback: does a `<Link>` tap acknowledge within 100ms? (Most currently do not.),"FAIL — grep across web/src found `useLinkStatus` used only in mode-toggle.tsx for its own single link; the sidebar's Home/Bible/Ask/Desk/Reading plans/Library links and most in-content `<Link>`s have no pending-state affordance, so a tap gives no acknowledgement until the route resolves — matches th"
+,LD-018 Loading treatments consistent in shape and colour across surfaces (B7).,"FAIL — three different loading idioms coexist with no shared shape/colour: the /library skeleton (animate-pulse blocks), the `.progress-travel` bar (used only in mode-toggle.tsx and history-ask.tsx), and ~13 bare ""Loading…"" text lines elsewhere (passages, notes, plans, desk-pane, sidebar, work-reade"
+x,LD-019 Spinner/progress honours `prefers-reduced-motion`.,"PASS — (code-verified) — web/src/app/globals.css has a blanket `prefers-reduced-motion: reduce` rule collapsing all animation-duration/iteration-count, plus a specific fallback for `.progress-travel` that freezes it full-width-and-static instead of leaving it invisible mid-animation."
+,LD-020 Long operation in a background tab → still completes; state correct on return.,"PARTIAL — not directly tested (would need a long-running op plus a real tab-visibility switch); code shows ask-client.tsx's stream-reading loop has no visibilitychange-based pause, so it should keep running in a background tab, but this wasn't observed live."
+,LD-021 A wait that finishes instantly → no flash of a skeleton (worse than none).,"PARTIAL — no minimum-display-time/anti-flash guard was found for library/loading.tsx or any of the ""Loading…"" text states, so an instantly-resolved fetch could still flash a skeleton or the word ""Loading…"" for one frame; not conclusively observed live either way."
+x,LD-022 Optimistic UI that later fails → the reversal is visible and explained (B4).,"PASS — (code-verified) — web/src/lib/use-annotation-writes.ts implements optimistic paint + typed rollback + visible error message (""Couldn't save your highlight"" etc.) for every annotation write, retried via web/src/lib/persist-write.ts before finally rolling back and surfacing the failure."
 ,MK-001 Enumerate every control on all four pages; append anything this list misses.,
 ,"MK-002 `/` desktop cold load: complete render, no layout shift after settle (B5).",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"MK-003 `/` at 390px: no horizontal scroll, hero legible, every tap target ≥44px.",
@@ -781,30 +781,30 @@ x,"PL-019 Plans at 390px → tappable, legible.","PASS — at 390px the gate pag
 ,SR-026 Search with a very long query.,
 ,"SR-027 Keyboard-only: search, move through results, open one.",
 ,SR-028 Screen reader: result count announced; results are a navigable list.,
-,ST-001 Enumerate every setting present; append one test per setting.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"ST-002 Each setting takes effect immediately, or says when it will (B1).",
-,ST-003 Each setting persists across refresh.,
-,ST-004 Each setting persists across sign-out/in.,
-,ST-005 Each setting persists across devices (or is documented as per-device).,
-,ST-006 Theme: light/dark both readable on the core five surfaces.,
-,ST-007 Theme: system preference honoured by default.,
-,ST-008 Theme: choice persists; no flash of the wrong theme on load.,
-,ST-009 Text size: does it change anything? (Known suspect.),SEE UX_RESULTS.md / evidence — needs status confirm
-,ST-010 Column width: same.,
-,ST-011 Default translation setting → actually applied in the reader.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"ST-012 Any setting that does nothing → P2 finding, one per control (B3).",
-,ST-013 Form validation → inline and human.,
-,ST-014 Save/cancel semantics obvious; unsaved changes warned about (B4).,
-,ST-015 Change password (if present) → end-to-end; old password invalidated.,
-,ST-016 Data export/deletion controls (if present) → honest about what happens.,
-,"ST-017 If absent, file as a beta product decision — users will ask.",
-,ST-018 Settings cross-links → land where they say.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"ST-019 Two tabs: change in A → B reflects on next action, no corruption.",
-,ST-020 Settings at 390px → all controls reachable.,
-,ST-021 Keyboard-only pass through every control.,
-,ST-022 Screen reader: every control labelled; state announced.,
-,ST-023 Settings empty/default state comprehensible to a newcomer.,
-,"ST-024 Back from settings → previous context, not home.",
+x,ST-001 Enumerate every setting present; append one test per setting.,"PASS — enumerated on /settings (desktop): Reading Theme (Light/Dark), Text Size (Smaller/Medium/Larger), Column Width (Narrower/Wider), Default Translation (18-option list WEB..ANT), Account (""Email and password ->""), Your saved work (""highlights, notes and bookmarks ->"")."
+,"ST-002 Each setting takes effect immediately, or says when it will (B1).","PARTIAL — Theme click applies immediately (body bg flips to dark rgb(26,20,15), html gets class reader-dark); Text Size/Column Width clicks write new localStorage keys (reader-size, reader-measure) but visible effect on rendered reader text could not be confirmed cleanly (see ST-009/010)."
+,ST-003 Each setting persists across refresh.,PARTIAL — theme (reader-theme=dark) survived several full page navigations/reloads in-session; text size/column width persistence across a hard refresh not independently confirmed due to browser contention (see note below).
+,ST-004 Each setting persists across sign-out/in.,"PENDING-SIGNIN — cannot sign in/out on the shared real account; only signed-out, per-device (localStorage) behavior observable."
+x,ST-005 Each setting persists across devices (or is documented as per-device).,"PASS — (documented) — settings page states outright ""Saved on this device,"" i.e. explicitly documented as per-device, not synced; consistent with values living in localStorage with no observed settings API call."
+,ST-006 Theme: light/dark both readable on the core five surfaces.,"PARTIAL — dark theme verified readable (dark bg, light text, looked fine); light theme (the default) not independently re-screenshotted this pass to compare side by side."
+,ST-007 Theme: system preference honoured by default.,NOT — VERIFIED — did not test with a fresh/no-override profile against OS light/dark preference; out of reach given shared-session state already carrying a saved reader-theme.
+,ST-008 Theme: choice persists; no flash of the wrong theme on load.,"PARTIAL — no flash-of-wrong-theme observed across several loads once reader-theme was set in localStorage; true ""very first load"" flash not isolated."
+,ST-009 Text size: does it change anything? (Known suspect.),"PARTIAL/SUSPECT — clicking ""Larger text"" 3x updated localStorage reader-size to 1.25rem, but font-size on the settings page body/main stayed 16px, and one reading of the /read/jhn/3 container showed a static Tailwind max-w-3xl class rather than a size reflecting the stored value; evidence is suggest"
+,ST-010 Column width: same.,"PARTIAL/SUSPECT — clicking ""Wider column"" updated localStorage reader-measure to 96ch, but the observed /read/jhn/3 content container had a fixed 768px (max-w-3xl) width class not obviously driven by that value; same caveat as ST-009."
+,ST-011 Default translation setting → actually applied in the reader.,"PARTIAL — localStorage translation=kjv was present and is presumably what a fresh chapter opens in, but could not cleanly confirm the reader's displayed text matches the selected translation this pass (contention)."
+,"ST-012 Any setting that does nothing → P2 finding, one per control (B3).","FINDING — ST-009/ST-010 are candidates for ""setting that does nothing"" (P2 each) per B3; recommend a dedicated, uncontended re-test to confirm before filing formally."
+,ST-013 Form validation → inline and human.,"NOT-APPLICABLE — no free-text/form inputs on /settings; all controls are single-click buttons/links, nothing to validate."
+x,ST-014 Save/cancel semantics obvious; unsaved changes warned about (B4).,"PASS — no Save/Cancel controls exist; every control appears to auto-apply on click (writes localStorage immediately), so there is no unsaved-changes state to warn about."
+,ST-015 Change password (if present) → end-to-end; old password invalidated.,"PENDING-SIGNIN — ""Email and password ->"" link present but leads into account area; cannot exercise password change without signing in to the one real account."
+,ST-016 Data export/deletion controls (if present) → honest about what happens.,"PENDING-SIGNIN — no explicit data export/deletion control visible on /settings itself; ""Your saved work ->"" (highlights/notes/bookmarks) may lead to such controls but requires sign-in to confirm."
+,"ST-017 If absent, file as a beta product decision — users will ask.","NOT-APPLICABLE — meta-instruction (file as beta decision if absent); no true export/deletion control was found directly on /settings, so this should be filed as a beta product decision per the plan's own instruction."
+,ST-018 Settings cross-links → land where they say.,"PENDING-SIGNIN — ""Email and password"" and ""Your saved work"" cross-links could not be followed to confirm destination while signed out without risking the shared account."
+,"ST-019 Two tabs: change in A → B reflects on next action, no corruption.","NOT — VERIFIED — two-tab sync test requires two independently controlled tabs; the browser environment was shared with many concurrent agents constantly navigating the same tabs, making a controlled two-tab test infeasible this pass."
+,ST-020 Settings at 390px → all controls reachable.,"PARTIAL/PASS — at a ~375x812 mobile viewport, all settings buttons (Light/Dark, text size, column width, 18 translation buttons, nav) rendered as a reachable stacked list in the accessibility tree; no obvious cut-off controls observed."
+,ST-021 Keyboard-only pass through every control.,NOT — VERIFIED — keyboard-only tab-through not exercised this pass due to browser contention.
+,ST-022 Screen reader: every control labelled; state announced.,"PARTIAL — controls carry sensible accessible names (button labels read ""Light"", ""Dark"", ""Smaller text"", ""Larger text"", ""Narrower column"", ""Wider column"", plus each translation's full name e.g. ""King James Version""), which is a good sign for screen-reader labelling; live state-announcement (aria-pres"
+x,ST-023 Settings empty/default state comprehensible to a newcomer.,"PASS — each control group has a plain-English helper line (e.g. ""Applies everywhere, and is remembered on this device,"" ""Standard is the designed 66-character measure..."", ""The translation a chapter opens in. You can still switch while reading.""), reasonably comprehensible to a newcomer."
+,"ST-024 Back from settings → previous context, not home.",NOT — VERIFIED — did not test navigating to /settings from a specific context (e.g. mid-chapter) and pressing Back; not exercised this pass.
 ,TR-001 Enumerate every translation in the switcher; record the exact labels.,SEE UX_RESULTS.md / evidence — needs status confirm
 ,TR-002 Switch translation → text changes AND label changes AND the text matches the label.,SEE UX_RESULTS.md / evidence — needs status confirm
 ,"TR-003 Rapid A→B→A switching → final state consistent, no mismatch (race).",SEE UX_RESULTS.md / evidence — needs status confirm
@@ -829,38 +829,38 @@ x,"PL-019 Plans at 390px → tappable, legible.","PASS — at 390px the gate pag
 ,TR-022 Interlinear ON + switch translation → alignment survives or resets deliberately.,
 ,TR-023 Switch translation from the desk pane → does the reader agree?,
 ,TR-024 Any translation with restricted licensing → is the restriction respected and visible?,
-,"UP-001 Enumerate the upload surface, the queue states, and the personal library.",
-,"UP-002 Before uploading, is it clear what happens to the file and who can see it? (B2)",
-,UP-003 Upload a clean small .docx → succeeds; appears in the library.,
-,"UP-004 Progress is visible throughout and quantified (%, steps, or named stages) — never an indeterminate bar for a minute (B9).",
-,UP-005 Queue states are all distinguishable: queued / parsing / embedding / ready / failed.,
-,UP-006 A document reaches `ready` and is actually usable afterwards.,
-,UP-007 Suggested readings for a fresh document → do they ever arrive? (Known wedge class — verify.),
-,"UP-008 Upload a malformed .docx → graceful rejection naming the problem, not a retry-then-cryptic loop.",
-,UP-009 Upload a .exe renamed .docx → clear refusal.,
-,"UP-010 Upload a .png / .pdf / .txt → refused or supported, but stated up front.",
-,UP-011 Upload a 0-byte file → refused cleanly.,
-,"UP-012 Upload over the size limit → limit stated before the wait, not after.",
-,UP-013 Upload at exactly the limit → succeeds.,
-,"UP-014 Upload a duplicate (same bytes) → sane handling, explained.",
-,UP-015 Two uploads at once → both tracked correctly.,
-,UP-016 Ten uploads at once → queue is honest about position/ordering.,
-,UP-017 Approaching the document quota → warned before hitting it.,
-,UP-018 At the quota → clear message naming the limit and what to do.,
-,UP-019 At the byte quota → same standard.,
-,"UP-020 Refresh mid-upload → honest state on return: resumed, failed, or restartable — never a zombie.",
-,UP-021 Network cut mid-upload → same standard.,
-,UP-022 Close the tab mid-upload → state on return is honest.,
-,"UP-023 A document whose bytes never stored → fails with a reason, not silently skipped.",
-,UP-024 Delete an uploaded doc → confirmed (B8); gone from the library; quota released and visibly updated.,
-,UP-025 Delete during processing → handled.,
-,"UP-026 Uploaded doc cited in an ask answer → labelled as yours, distinguishable from the corpus.",
-,UP-027 Your document is never offered to another account (tenancy) — verify with two accounts.,
-,"UP-028 Library list with many docs → scannable, sortable, filterable per enumeration.",
-,UP-029 Library empty state → teaches what uploading is for.,
-,UP-030 `/library/uploads/[id]` → the document reads well; attribution says it's yours.,
-,UP-031 Mobile upload → file picker works; progress visible; backgrounding the app doesn't lose it.,
-,"UP-032 Keyboard-only: choose a file, upload, and delete.",
+,"UP-001 Enumerate the upload surface, the queue states, and the personal library.","PARTIAL — signed-out surface confirmed live (/library/uploads shows ""Sign in to bring your own sermons and papers into the library."" + Sign in CTA, no dropzone); full queue-state/library enumeration needs sign-in. Note: hard-loading /library/uploads repeatedly stalled on the outer ""Loading the libra"
+x,"UP-002 Before uploading, is it clear what happens to the file and who can see it? (B2)","PASS — before any file is picked, the drop zone states ""PDF, Word, text or Markdown · up to 25 MB"" and ""By uploading you affirm this is your own work, or content you have the right to store."" (web/src/components/my-works.tsx ~line 668-679), and the page header says ""Private to you."""
+,UP-003 Upload a clean small .docx → succeeds; appears in the library.,PENDING-SIGNIN — cannot upload without an account.
+,"UP-004 Progress is visible throughout and quantified (%, steps, or named stages) — never an indeterminate bar for a minute (B9).","PENDING-SIGNIN — code shows named per-file states (Waiting/Uploading…/Added/Already in your library/Refused) and named document stages (Waiting/Reading/Dividing/Indexing/Ready), never a bare indeterminate spinner (my-works.tsx STATUS/UPLOAD_STATE maps), but live progress during a real upload was not"
+x,UP-005 Queue states are all distinguishable: queued / parsing / embedding / ready / failed.,PASS — (code) / PENDING-SIGNIN (live) — STATUS map gives each of queued/parsing/chunking/embedding/ready/failed(+empty) its own label and color (my-works.tsx line ~65-73): Waiting/Reading/Dividing/Indexing/Ready/Needs attention/No text found.
+,UP-006 A document reaches `ready` and is actually usable afterwards.,PENDING-SIGNIN. — 
+,UP-007 Suggested readings for a fresh document → do they ever arrive? (Known wedge class — verify.),"PENDING-SIGNIN — code has a ""suggested reading"" chip (""Looks like: <ref> · <date>"", suggestedReference/suggestedDate from migration 124) but whether it reliably ""arrives"" needs a live upload."
+,"UP-008 Upload a malformed .docx → graceful rejection naming the problem, not a retry-then-cryptic loop.","PENDING-SIGNIN — code path exists for named parse failures surfaced verbatim (e.g. OCR-needed PDFs), not observed live."
+,UP-009 Upload a .exe renamed .docx → clear refusal.,"PENDING-SIGNIN — server sniffs by magic bytes not extension (sniff.ts), so a renamed .exe has no PDF/ZIP magic and is not textual → refused with ""That file is not a PDF, Word document, or text file...""; not exercised live since upload requires sign-in."
+,"UP-010 Upload a .png / .pdf / .txt → refused or supported, but stated up front.",PENDING-SIGNIN — .pdf/.txt are supported and stated up front in the dropzone caption; .png would fail the content sniff and be refused with the same message. Not exercised live.
+,UP-011 Upload a 0-byte file → refused cleanly.,"PENDING-SIGNIN — sniff.ts's looksTextual() returns false on a 0-length byte probe, falling through to the same clean ""not a PDF, Word document, or text file"" refusal; not exercised live."
+,"UP-012 Upload over the size limit → limit stated before the wait, not after.","PENDING-SIGNIN — clientRefusal() in my-works.tsx checks file.size against the 25MB cap client-side, before any network call, showing ""Larger than the 25 MB limit (X)"" immediately — matches ""limit stated before the wait."" Not exercised live (dropzone only reachable signed in)."
+,UP-013 Upload at exactly the limit → succeeds.,"PENDING-SIGNIN — server check is strict `>` MAX_UPLOAD_BYTES, so a file exactly at 25MB is accepted by code; not exercised live."
+,"UP-014 Upload a duplicate (same bytes) → sane handling, explained.","PENDING-SIGNIN — server dedupes by SHA-256 of raw bytes and returns 200 ""You have already uploaded this file."" (or a heal message if the prior upload's blob was lost); not exercised live."
+,UP-015 Two uploads at once → both tracked correctly.,PENDING-SIGNIN — bounded-concurrency (CONCURRENT_UPLOADS=3) worker pool with one status row per file; not exercised live.
+,UP-016 Ten uploads at once → queue is honest about position/ordering.,"PENDING-SIGNIN — same worker-pool code handles 10 files, one row each, in submission order; not exercised live."
+,UP-017 Approaching the document quota → warned before hitting it.,"FAIL — no code path shows any ""approaching quota"" indicator anywhere in my-works.tsx (no usage counter, no soft-warning threshold). The only quota feedback is the reactive 403 refusal once the limit is actually exceeded (lib/user-corpus/quota.ts). This is verifiable without signing in since the feat"
+,UP-018 At the quota → clear message naming the limit and what to do.,"PENDING-SIGNIN — (design confirmed by code) — quotaVerdict() message: ""You have reached the limit of 200 documents (you have N). Delete a document to upload another."" Not practical to actually reach 200 docs even with an account."
+,UP-019 At the byte quota → same standard.,"PENDING-SIGNIN — (design confirmed by code) — byte-quota message: ""This file would take you past the 100 MB storage limit (you have used X MB). Delete a document to free up space."" Not practical to reach live."
+,"UP-020 Refresh mid-upload → honest state on return: resumed, failed, or restartable — never a zombie.","PENDING-SIGNIN — no localStorage/beforeunload/resume logic found in my-works.tsx; a refresh mid-upload likely just loses client-side progress state with no explicit ""resumed/failed"" messaging, but this needs a live test to confirm rather than a zombie state."
+,UP-021 Network cut mid-upload → same standard.,"PENDING-SIGNIN — same as UP-020, not separately handled in code."
+,UP-022 Close the tab mid-upload → state on return is honest.,"PENDING-SIGNIN — same as UP-020, not separately handled in code."
+,"UP-023 A document whose bytes never stored → fails with a reason, not silently skipped.","PENDING-SIGNIN — (design confirmed by code) — a blob-store failure is explicitly handled (D11): the row is marked failed with ""The uploaded file was not stored… Please upload it again,"" and re-uploading heals it. Not exercised live."
+,UP-024 Delete an uploaded doc → confirmed (B8); gone from the library; quota released and visibly updated.,"PENDING-SIGNIN — (design confirmed by code) — delete requires two clicks (button reads ""Remove"" then arms to ""Remove?"", disarms on blur) before calling DELETE (B017), satisfying the ""confirmed"" requirement; list reloads after. Quota-released-and-visible was not observed live."
+,UP-025 Delete during processing → handled.,"PENDING-SIGNIN — the Remove control is not gated to any particular status in code, so deleting a queued/parsing/embedding doc should hit the same DELETE endpoint; not exercised live."
+,"UP-026 Uploaded doc cited in an ask answer → labelled as yours, distinguishable from the corpus.","NOT-APPLICABLE — /ask is currently gated off site-wide (""Not open yet... held back while we finish testing that it never speaks in its own voice""), confirmed live in the browser today, so citation labelling cannot be tested at all right now regardless of sign-in."
+,UP-027 Your document is never offered to another account (tenancy) — verify with two accounts.,PENDING-SIGNIN — requires two real accounts; explicitly out of scope (only one real account exists and must not be touched).
+,"UP-028 Library list with many docs → scannable, sortable, filterable per enumeration.","PARTIAL — code shows a full-text search box over ""My Works"" (query/hits) but no sort or filter controls on the document list itself found in my-works.tsx; ""scannable"" at scale not verified live (no test account with many docs)."
+,UP-029 Library empty state → teaches what uploading is for.,"PENDING-SIGNIN — code has an empty-state line: ""Nothing here yet. Add a sermon or a paper and it will be searchable alongside the library."" (reasonably teaches the purpose), but this only shows once signed in with zero docs; signed-out the page shows the sign-in gate instead, not the true empty stat"
+,UP-030 `/library/uploads/[id]` → the document reads well; attribution says it's yours.,"PENDING-SIGNIN — /library/uploads/[id] renders WorkBesideTradition(documentId), requires a ready document owned by the signed-in user."
+,UP-031 Mobile upload → file picker works; progress visible; backgrounding the app doesn't lose it.,PENDING-SIGNIN — could not get a clean isolated mobile screenshot of the signed-out shell (shared browser session was reclaimed by a concurrent test run before the resize could be captured); file-picker/backgrounding behavior needs a real signed-in mobile pass.
+,"UP-032 Keyboard-only: choose a file, upload, and delete.","PENDING-SIGNIN — the file input is visually hidden (sr-only) inside a <label>, which is keyboard-activatable by design, but this needs a live keyboard-only pass signed in to confirm focus order and activation actually work."
 ,"VS-001 Enumerate the panel: tabs, controls, close, header, per-row affordances.",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"VS-002 Open from a verse number → correct verse, correct reference shown.",
 ,"VS-003 Header reference matches the verse you tapped, in every translation.",
