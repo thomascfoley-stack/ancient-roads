@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-24T05:07:47Z
+sha:             86cb62913eba37cbeecf3359b8ebdc06a22a6de6
+branch:          fix/wave0-licensing
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-nqfts8bgn-home-network-hardening.vercel.app
+deployment_id:   dpl_9wKgchHpbtiUxkLCcKw7q7E2UH9s
+alias:           ancientpaths.app
+alias_serves:    dpl_9wKgchHpbtiUxkLCcKw7q7E2UH9s
+state:           live
