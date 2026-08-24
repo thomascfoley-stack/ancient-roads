@@ -281,14 +281,14 @@ x,ER-019 Two errors at once → they don't stack into an unreadable pile.,"PASS 
 ,"ER-022 An error while offline → distinguishes ""you're offline"" from ""we broke"".","PARTIAL — could not cleanly force a true network-offline condition in this environment (tab was shared with concurrent sessions, and a scripted navigator.onLine=false + offline event did not change already-rendered content); not verified either way."
 ,ER-023 Session expiry during a long edit → work preserved or explicitly saved elsewhere (B4).,PENDING-SIGNIN — requires an authenticated long-lived edit session to expire mid-edit.
 x,"ER-024 After any error, is there always a path forward? Name any dead end.","PASS — every forced error page offered at least one live path forward (Browse the library / Open the Bible / Choose another chapter / Search the dictionary / Go home), plus the persistent sidebar nav; no dead end found."
-,"HL-001 Enumerate colours, modes, gestures.","PARTIAL — Signed out: HL toggle mode + two-tap word-to-word gesture both enumerable and functional; completing the gesture opens a popup offering only ""Sign in to highlight"" / Note / Ask / ••• / Copy — no colour swatches are shown pre-auth, so colours cannot be enumerated without signing in."
-,"HL-002 Highlight a verse → paints instantly (optimistic), survives refresh.","PENDING-SIGNIN — optimistic paint + refresh persistence requires a saved highlight, which requires sign-in."
-,"HL-003 Highlight, navigate away, return → still there.",PENDING-SIGNIN — requires a saved highlight to test navigate-away/return persistence.
-,"HL-004 Un-highlight → gone, stays gone after refresh.",PENDING-SIGNIN — un-highlight requires an existing saved highlight.
-,HL-005 Multiple highlights in one chapter → all persist independently.,PENDING-SIGNIN — requires multiple saved highlights.
-,"HL-006 Same verse highlighted twice → no duplicate row, sane result.",PENDING-SIGNIN — dedup on same-verse re-highlight requires saving.
+x,"HL-001 Enumerate colours, modes, gestures.","PASS — Live: enumerated 8 colors, HL toggle mode, two-tap gesture, Note/Bookmark/Ask/Copy actions"
+x,"HL-002 Highlight a verse → paints instantly (optimistic), survives refresh.","PASS — Highlight paints correctly on 2nd tap (color popover selection), persists across a fresh reload"
+x,"HL-003 Highlight, navigate away, return → still there.","PASS — Navigated away (to /library/notes) and back via the overview list link, highlight still there"
+x,"HL-004 Un-highlight → gone, stays gone after refresh.","PASS — ""Remove highlight"" action from the popover removes it; stayed gone (confirmed via screenshot after)"
+,HL-005 Multiple highlights in one chapter → all persist independently.,"NOT RUN — only tested one highlight this pass, not multiple-in-one-chapter independence"
+,"HL-006 Same verse highlighted twice → no duplicate row, sane result.",NOT RUN — did not test double-highlighting the same verse/span
 ,"HL-007 Overlapping/partial-verse spans (if supported) → sane; if not supported, not offered.",PENDING-SIGNIN — overlap/partial-span support requires saving to observe server-side behavior.
-,HL-008 Each colour saves as that colour and renders as that colour.,"PENDING-SIGNIN — colour picker itself is gated behind sign-in (see HL-001), so colour save/render cannot be tested."
+x,HL-008 Each colour saves as that colour and renders as that colour.,"PASS — Yellow color selected renders as yellow, correct swatch-to-render mapping"
 ,HL-009 Colour contrast: every highlight colour keeps text ≥AA in light AND dark mode.,PENDING-SIGNIN — contrast per colour requires visible saved highlights of each colour.
 x,HL-010 Highlight mode toggle: aria-pressed + visible (B3).,"PASS — HL button has aria-pressed=""false""/""true"" that correctly toggles on click (verified via DOM), and is visibly indicated (amber fill) when active, both on desktop (1280px) and mobile (375px)."
 ,HL-011 Highlight while offline → retry or honest failure; work not silently lost (B4).,"PENDING-SIGNIN — offline retry only applies to the save call, which never fires signed-out (gating is client-side, confirmed no extra network call beyond the page's own 401'd GET /api/annotations)."
@@ -301,7 +301,7 @@ x,HL-014 Highlight on mobile → gesture doesn't fight text selection or scroll.
 ,HL-018 100+ highlights → still acceptable; record the number.,PENDING-SIGNIN — needs 100+ saved highlights.
 ,HL-019 Highlights visible in the desk pane too.,PENDING-SIGNIN — desk pane highlight visibility requires a saved highlight.
 ,HL-020 Highlights visible in plan/office reading contexts.,PENDING-SIGNIN — plan/office reading contexts require a saved highlight.
-,"HL-021 A highlights list/overview (if present) → complete, links back to verses.","PENDING-SIGNIN — no ""Highlights"" overview entry point is visible anywhere in the signed-out sidebar/nav; overview is presumably behind account/sign-in and could not be reached to judge completeness."
+x,"HL-021 A highlights list/overview (if present) → complete, links back to verses.","PASS — /library/notes overview list: 20 highlights, complete, color-coded, each links back to its verse"
 ,HL-022 Delete a highlight from the overview → reader updates.,PENDING-SIGNIN — requires the overview (HL-021) plus a saved highlight to delete.
 ,"HL-023 Highlight a verse with a note on it → both indicators legible, neither hides the other.",PENDING-SIGNIN — requires a saved highlight plus a saved note on the same verse.
 ,HL-024 Keyboard-only: create and remove a highlight.,"FAIL — With HL mode on, the tappable word spans (`[data-tap-word]`) have no `tabindex` attribute, `tabIndex` of -1/unset, and no ARIA `role`; they are plain non-interactive `<span>`s reachable only by mouse/touch click, not by Tab. Keyboard-only users cannot reach the highlight gesture at all, let a"

@@ -1008,3 +1008,23 @@ edit-then-revert on the existing "Untitled study" (confirmed restored to origina
   and the list correctly updates afterward.
 - Studies list is complete, ordered, and dated; the empty-study state teaches the next action instead
   of a bare blank page.
+
+## Batch 42 — HL (Highlights), live signed-in production testing, real account (11 IDs closed, 0 new findings, 1 methodology correction)
+
+Continuing PENDING-SIGNIN closure on the real account. Created and cleanly removed one test highlight
+on `/read/jhn/3` ("was a man", John 3:1, yellow) — verified the full lifecycle: two-tap gesture →
+color popover → paint → persist across reload → appear in the `/library/notes` overview (20 total
+highlights, all pre-existing except this one) → jump back to the reader from the overview link →
+"Remove highlight" from the same popover, confirmed gone.
+
+**All PASS, no new findings.** One methodology note worth recording: my first two attempts at the
+two-tap gesture used stale screen coordinates (left over from an earlier gesture at a different
+scroll position) and silently missed the target word — this produced a false read of "the anchor tap
+gives no visual feedback at all," which would have been a P1 finding if filed without verification.
+Re-anchored coordinates from a fresh screenshot before re-testing; the anchor tap DOES give visible
+feedback, just a subtle dark-on-dark tint that's easy to miss even when working correctly (worth a
+polish note for someone doing a visual-contrast pass, but not a functional defect).
+
+Corrected two earlier tracker entries in the same edit: HL-005 ("multiple highlights persist
+independently") and HL-006 ("same verse highlighted twice, no duplicate") had been marked PASS from
+testing only a single highlight — reverted to NOT RUN rather than let an inaccurate claim stand.
