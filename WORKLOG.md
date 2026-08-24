@@ -1,5 +1,50 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — The four visibility rules: what the owner may see, and what must stay theirs
+
+**Directive, verbatim.** "if someone searches for ephesus i should be able to see that. When
+someone enters something in their journal that should be blank to me. If someone types a sermon
+out i shouldn't see that but if they match sermon content to commentaries i should see those
+successes and failures and errors."
+
+**Checked against the code rather than assumed. Three of four already held; one did not.**
+
+1. **Searches visible — HELD** (`search_outcomes`, migration 129, earlier today).
+2. **Journal blank — HELD.** `prayers` is RLS-scoped and no code path logs `body`; the only
+   console output on those routes is an error string. Verified by reading every logging call on
+   the prayer routes.
+3. **Sermon text invisible — HELD, and it was worth checking.** The risk was `ask_outcomes`:
+   `refsOf` persists `metadata.work`, which for a user-library voice would be the reader's own
+   document TITLE. It does not happen — `teach.ts` binds `retrieval` to `retrieveCommentary(...)`
+   (corpus only) and keeps `userVoices` in a separate array that never reaches `TeacherResult`.
+   So the ask log stores corpus references only.
+4. **Matching successes/failures/errors — DID NOT HOLD. Built.** The three matching surfaces
+   emitted no structured telemetry at all: `documents/[id]/voices` (anchor), `documents/[id]/related`
+   (semantic), `draft-check` ("have I preached this before"). Two of them had no try/catch either,
+   so a DB fault surfaced as Next's raw 500 rather than the envelope — the same defect
+   `/api/search/commentaries` was repaired for on 2026-08-02.
+
+**Built.** `match_outcome` in the ObsEvent vocabulary, emitted by all three surfaces with four
+outcomes: `hit` / `empty` / `pending` / `error`. Carries kind, opaque documentId, counts, timings,
+and (draft only) the LENGTH of the paste. Never a title, never a character of the text.
+
+`empty` is deliberately its own outcome, not folded into success: a sermon that paraphrases rather
+than quoting anchors nothing and returns zero voices with nothing broken (measured — see
+`related-voices.ts`'s header), so it is invisible in an error rate while being the failure most
+worth watching.
+
+**Red-proved, both directions.** Seeding `title: doc.title` into the anchor event turns the privacy
+test red; seeding `draft: text` into the draft event turns it red; removing a `logEvent` turns the
+outcome tests red. 9 tests, `web/test/match-outcome-telemetry.test.ts`.
+
+**Two limits recorded honestly in `docs/ANALYTICS.md`, not papered over.**
+* The OWNER ROLE can read anything. RLS binds the application, not someone holding the owner
+  connection string. Journal and sermon text are plaintext in the database because search needs
+  them. "Blank to me" is true of every log, dashboard and product surface — it is not encryption.
+* `my_works` searches log their query text like every other surface. That is a search (rule 1) but
+  over a private library, so it could be personal. **Left logging by default; narrowing it to
+  counts-only is a one-line change and is the owner's call.**
+
 ## 2026-08-24 — Analytics: DAU, 7-day churn, and campaign attribution (owner directive)
 
 **Directive.** "Get me setup with posthog analytics in the best tracking plan usage for my app. I
