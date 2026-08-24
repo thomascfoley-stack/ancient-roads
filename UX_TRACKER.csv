@@ -526,32 +526,32 @@ x,LD-022 Optimistic UI that later fails → the reversal is visible and explaine
 ,"MSG-005 If live: send, receive, edit, delete — each confirmed and persistent.",
 ,"MSG-006 If live: does the vocabulary collide with ""thread""/""history""? (B6)",
 ,MSG-007 If scaffolding: file as dead surface to remove or finish before beta.,
-,NT-001 Enumerate every note affordance and entry point.,
-,NT-002 Save a note → indicator on the verse; survives refresh.,SEE UX_RESULTS.md / evidence — needs status confirm
-,NT-003 Edit a note → update persists.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"NT-004 Delete a note → gone, stays gone; confirmed first (B8).",
-,"NT-005 Note with emoji + 5,000 characters → intact after save/reload (truncation class).",
-,NT-006 Note with newlines/paragraphs → formatting survives.,
-,"NT-007 Note with markdown-looking text → rendered or escaped, consistently.",
-,"NT-008 Note with a script tag / HTML → escaped, never executed.",
-,NT-009 Empty note save → prevented or meaningful.,
-,NT-010 Whitespace-only note → same as empty.,
-,"NT-011 Navigate away mid-typing → warned, drafted, or documented loss — never silent (B4).",
-,NT-012 Refresh mid-typing → same standard.,
-,NT-013 Note editor on mobile → keyboard covers neither the text area nor the save button.,
-,NT-014 Note editor autosizes as you type; doesn't jump.,
-,NT-015 Save while offline → honest failure + retry; text preserved.,
-,"NT-016 Two tabs editing the same note → consistent outcome, no corruption.",
-,NT-017 Note on the same verse as a highlight → both coexist.,
-,"NT-018 Notes list (`/library/notes`) → complete, ordered sensibly, links back to the verse.",
-,"NT-019 Notes list → the link lands on the verse, not the top of the chapter.",
-,NT-020 Notes list empty state → teaches.,
-,"NT-021 Notes list with 100 notes → usable, searchable if offered.",
-,"NT-022 Long note in the list → truncated cleanly, full text reachable.",
-,"NT-023 Note timestamps → present, humane (""2 days ago"" or a real date, consistently).",
-,NT-024 Note on a verse in a work that later becomes unavailable → dangling reference handled.,
-,"NT-025 Keyboard-only: create, edit, delete a note.",
-,NT-026 Screen reader: note editor labelled; save state announced.,
+x,NT-001 Enumerate every note affordance and entry point.,"PASS — Entry points found: tap verse number opens panel with Commentaries/Word study/Notes tabs; ""Sign in to highlight and save notes to your account"" link at panel top; sidebar ""Saved"" link (/library/notes) lists notes/highlights/bookmarks. Signed-out Notes tab correctly shows ""Save notes to your a"
+,NT-002 Save a note → indicator on the verse; survives refresh.,PENDING-SIGNIN — cannot create/save a note without an account.
+,NT-003 Edit a note → update persists.,"PENDING-SIGNIN — edit requires an existing note, which requires sign-in."
+,"NT-004 Delete a note → gone, stays gone; confirmed first (B8).","PENDING-SIGNIN — delete requires an existing note, which requires sign-in."
+,"NT-005 Note with emoji + 5,000 characters → intact after save/reload (truncation class).","PENDING-SIGNIN — requires note editor, sign-in only."
+,NT-006 Note with newlines/paragraphs → formatting survives.,"PENDING-SIGNIN — requires note editor, sign-in only."
+,"NT-007 Note with markdown-looking text → rendered or escaped, consistently.","PENDING-SIGNIN — requires note editor, sign-in only."
+,"NT-008 Note with a script tag / HTML → escaped, never executed.","PENDING-SIGNIN — requires note editor, sign-in only."
+,NT-009 Empty note save → prevented or meaningful.,"PENDING-SIGNIN — requires note editor, sign-in only."
+,NT-010 Whitespace-only note → same as empty.,"PENDING-SIGNIN — requires note editor, sign-in only."
+,"NT-011 Navigate away mid-typing → warned, drafted, or documented loss — never silent (B4).","PENDING-SIGNIN — no textarea is rendered signed-out, so draft-loss behavior cannot be exercised."
+,NT-012 Refresh mid-typing → same standard.,PENDING-SIGNIN — same as NT-011.
+,NT-013 Note editor on mobile → keyboard covers neither the text area nor the save button.,PENDING-SIGNIN — no note editor available signed-out to test on a mobile viewport.
+,NT-014 Note editor autosizes as you type; doesn't jump.,PENDING-SIGNIN — no note editor available signed-out to test autosizing.
+,NT-015 Save while offline → honest failure + retry; text preserved.,PENDING-SIGNIN — requires an authenticated save attempt.
+,"NT-016 Two tabs editing the same note → consistent outcome, no corruption.",PENDING-SIGNIN — requires two authenticated sessions on the same note.
+,NT-017 Note on the same verse as a highlight → both coexist.,PENDING-SIGNIN — requires creating both a note and a highlight on one verse.
+,"NT-018 Notes list (`/library/notes`) → complete, ordered sensibly, links back to the verse.","PENDING-SIGNIN — /library/notes (""Saved"") signed-out shows only ""Sign in to see your highlights, notes and bookmarks."" with a Sign in button; no list content to judge completeness/ordering/linking."
+,"NT-019 Notes list → the link lands on the verse, not the top of the chapter.",PENDING-SIGNIN — no note list rows exist signed-out to test link target.
+,NT-020 Notes list empty state → teaches.,"PARTIAL — signed-out /library/notes shows explanatory copy (""Every verse you have highlighted, bookmarked, or written a note on, in one place. Tap any reference to jump back to it in the reader."") plus a Sign in CTA, which does teach; the true zero-notes-while-signed-in empty state is unverified (PE"
+,"NT-021 Notes list with 100 notes → usable, searchable if offered.",PENDING-SIGNIN — requires 100 saved notes on an account.
+,"NT-022 Long note in the list → truncated cleanly, full text reachable.",PENDING-SIGNIN — requires a long saved note in the list.
+,"NT-023 Note timestamps → present, humane (""2 days ago"" or a real date, consistently).",PENDING-SIGNIN — requires saved notes to inspect timestamp formatting.
+,NT-024 Note on a verse in a work that later becomes unavailable → dangling reference handled.,PENDING-SIGNIN — requires a saved note plus a corpus-availability change to observe.
+,"NT-025 Keyboard-only: create, edit, delete a note.",PENDING-SIGNIN — requires an authenticated note to create/edit/delete via keyboard.
+,NT-026 Screen reader: note editor labelled; save state announced.,"PENDING-SIGNIN — signed-out Notes tab has a labelled Sign in button (accessible name ""Sign in""), but save-state announcement can't be tested without an actual save action."
 ,"NV-001 Back-map — worth doing, and about 30 minutes: a table of every view-transition × what Back should do. Not for ceremony — Back is where th...",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"NV-002 Every header/nav control on every surface → labelled truthfully, goes where it says.",SEE UX_RESULTS.md / evidence — needs status confirm
 ,NV-003 Logo/home from every surface → one consistent destination.,
