@@ -201,3 +201,70 @@ vanishing from quoted historical sources in a *concordance product whose entire 
 attribution* (see CLAUDE.md's product guarantee). A user cannot verify a quote against a reference that
 was never rendered. Re-ingesting affected CCEL works with the one-line regex fix (keep the inner text,
 drop only the tags) looks cheap relative to the blast radius.
+
+## DO-anchor-missing — 🔴 P2 — Daily Office's "Read {verse} in full" link doesn't anchor to that verse
+
+**Narrative:** The Daily Office (`/home`) names a specific verse in its own CTA copy — "Read
+Ephesians 3:17 in full" — after quoting and discussing that exact verse. A reader clicks expecting
+to land on Ephesians 3:17. Instead they land at the top of the chapter and have to find verse 17
+themselves, in this case among 21 verses, but Psalm chapters or Matthew 26 could make the same gap
+much worse.
+**Repro:** Signed-in, prod: load `/home`, note today's Spurgeon lead reference (e.g. "Ephesians
+3:17"), click "Read {ref} in full", check `location.href`.
+**Expected:** Lands on the chapter scrolled/anchored to the specific verse, e.g.
+`/read/eph/3#v17` — the app already has this exact mechanism (`verseHref()` in
+`web/src/lib/verse-link.ts`, returning `/read/{slug}/{chapter}#v{verse}`) and uses it correctly
+elsewhere (confirmed live tonight: the Omnibox's reference-jump feature routes through it and
+correctly lands on, e.g., `/read/jhn/3#v16` with the target verse scrolled to the top of the
+viewport).
+**Actual:** Confirmed via `location.href` after the click: plain `/read/eph/3`, no `#v17` hash.
+The link is built in `web/src/components/today-view.tsx:307` as
+`href={`/read/${card.bookSlug}/${card.chapter}`}` — chapter-level only, verse number discarded even
+though `card.lead` (the same object the CTA's own label text pulls the verse number from) is right
+there in scope. A one-line fix (append `#v${card.lead.verseStart}` or reuse `verseHref`) would close
+the gap the same way the Omnibox already closes it.
+**Confidence:** single-agent, confirmed live via direct URL/hash observation and cross-checked
+against source for both the broken call site and the working sibling mechanism.
+
+## PostHog-CSP-blocked — 🔴 P1 (upgraded from P2 on follow-up) — production analytics totally dark app-wide (CSP violation)
+
+**Narrative:** Every page load in production throws console errors for PostHog's own scripts,
+blocked by the site's Content-Security-Policy. Nothing is user-visible — no broken UI, no crash —
+but this means the product likely has near-zero real analytics/exception-autocapture coverage in
+production right now, silently, which affects every other data-driven decision (including this
+sweep's own kind of QA work, if anyone were relying on PostHog session replay or error tracking to
+catch what manual sweeps miss).
+**Repro:** Signed-in or signed-out, prod: load any route, check console errors (e.g.
+`read_console_messages` with `onlyErrors: true`, or open DevTools).
+**Expected:** PostHog's exception-autocapture, config, and surveys scripts load and initialize
+without CSP violations (or, if intentionally disabled, are not attempted at all rather than
+attempted-and-blocked every page load).
+**Actual:** Confirmed 2026-08-23 tonight, repeated on multiple page loads (`/home` at both desktop
+and mobile viewport): 5 distinct PostHog script URLs blocked per page load —
+`us-assets.i.posthog.com/static/{version}/exception-autocapture.js`, `.../array/{key}/config.js`,
+`.../static/exception-autocapture.js?v=...`, `.../static/{version}/surveys.js`,
+`.../static/surveys.js?v=...` — each reporting: `Loading the script '...' violates the following
+Content Security Policy directive: "script-src 'self' 'unsafe-inline'"`. `script-src` has no
+allowance for `us-assets.i.posthog.com` (and no separate `script-src-elem`, so `script-src` is the
+fallback per the browser's own error text). This repeats identically on every navigation, not a
+one-time init issue.
+**Confidence:** single-agent, directly observed via `read_console_messages`, reproduced across two
+separate page loads.
+
+**Follow-up done, ambiguity resolved — this IS a total blackout, upgrading to P1.** Checked whether
+event-capture still works via the same-origin `/ingest` proxy docs/ENVIRONMENT.md describes (the design
+that's supposed to make PostHog CSP-safe): it does not. On a fresh `/home` load (signed-in, prod):
+`read_network_requests` shows **zero** requests to `/ingest` or any `posthog`-hostname URL, across 40
+total requests captured (every app API call — `/api/auth/get-session`, `/api/plans`, `/api/research`,
+`/api/studies` — fires normally; nothing PostHog-related fires at all). `window.posthog` is `undefined`
+in the page's JS context. `web/src/instrumentation-client.ts:45,102` confirms `posthog-js` is bundled
+via `import` (not loaded from the blocked CDN) and `posthog.init(key, {...})` is called with the real
+production key (the blocked `config.js` URL contains it: `phc_CXb2YmUC6AYQ5VzkpgrHc6vbC4vfdohnPE6MrC9hw
+rqG`) — so `init()` is reached and attempts its remote-config fetch, that fetch is what's CSP-blocked,
+and whatever happens next inside `init()` when that fetch fails means the SDK never proceeds to send
+even a single event, not through `/ingest`, not anywhere. **Practical effect: production PostHog
+analytics have been capturing nothing** — not DAU, not the `search_outcomes`/`ask_outcomes` telemetry
+MASTER.md describes at length, not error autocapture — for however long this CSP gap has existed
+(not dated tonight). `web/next.config.ts`'s CSP header needs `us-assets.i.posthog.com` added to
+`script-src` (or `script-src-elem`) to restore this. Given how much of this repo's own programme sheet
+leans on PostHog data being real, this is worth checking first thing, not filed-and-forgotten.
