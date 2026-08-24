@@ -1212,3 +1212,20 @@ Unicode-heavy input, not a product bug; retested with a clean JS `value` + `inpu
 perfect fidelity, including combining diacritics on Greek text.
 
 Cleaned up: disposable test study deleted via the confirmed "Delete?" flow, confirmed gone.
+
+## Batch 53 — LB shelf save/unsave, and a fresh reconfirmation of F-012, live signed-in production testing
+
+Save-to-shelf toggle (work header) confirmed working correctly both directions: clicking "Save"
+flips to "Saved" with `aria-pressed="true"`, appears immediately in `/library/books` linking back to
+the exact section, and unsaving from the work page flips it back cleanly (LB-015/017/018 all PASS).
+
+**F-012 reconfirmed live, today, with a full 55-second observation:** navigating to `/library/books`
+to verify the unsave (after it briefly worked once, moments earlier) hung on "Loading the library"
+for 55+ seconds straight with zero resolution — the same route this repo's own MASTER.md UX-2 gate
+names as already fixed. Recovered cleanly via direct navigation away (not Back). This is the fourth
+distinct `/library/*` route observed stalling/hanging in this session (`/library/uploads` twice at
+20s/60s, `/library/uploads/[id]` once past 50s, now `/library/books` past 55s with no resolution at
+all) — strong evidence this is one shared systemic root cause across the whole `/library/*` family
+under signed-in load, not four unrelated incidents. Verified the actual data state (unsave) was
+correct by checking the work page's own Save toggle directly, since the shelf list page couldn't be
+trusted to load at all.

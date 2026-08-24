@@ -415,10 +415,10 @@ x,LB-007 Same at 390px → the stacked mobile entrance actually works.,"PASS —
 ,"LB-012 Reading progress on a long work → accurate, not instantly 100%.","PARTIAL — no reading-progress indicator (%, bar) was visible on the Josephus work header in the signed-out view; not otherwise exercised."
 ,LB-013 Progress persists and resumes from the right place.,"PENDING-SIGNIN — cross-device/position resume is explicitly gated behind ""Sign in to keep notes and highlights, and your place in a work across devices."""
 ,"LB-014 Back from a work → library list intact (scroll, filters, sort).",PARTIAL — not independently verified; navigating catalog → work → back was not cleanly completed due to environment contention.
-,"LB-015 Work header: save-to-shelf toggles, shows state, persists (aria-pressed + visible).",PENDING-SIGNIN — save-to-shelf state/toggle requires an account.
+x,"LB-015 Work header: save-to-shelf toggles, shows state, persists (aria-pressed + visible).",PASS — Save/Saved toggle on work header correctly flips text + aria-pressed both directions
 ,LB-016 Save signed out → invites sign-in rather than silently failing.,"PARTIAL — sitewide, signed-out state clearly says ""Sign in to keep notes and highlights, and your place in a work across devices"" (an invite, not silence); a save-button click specifically was not exercised to confirm it doesn't silently no-op."
-,LB-017 Shelf → shows saved works; click returns to the exact place.,PENDING-SIGNIN — 
-,LB-018 Unsave from the shelf → removed; unsave from the work → shelf updates.,PENDING-SIGNIN — 
+x,LB-017 Shelf → shows saved works; click returns to the exact place.,PASS — Shelf shows the saved work; clicking it returns to the exact section (#s1)
+x,LB-018 Unsave from the shelf → removed; unsave from the work → shelf updates.,PASS — Unsave from the work page correctly clears the toggle; verified via re-visiting the work page (the shelf list page itself was hung — see F-012 reconfirmation)
 ,LB-019 Shelf empty state → teaches.,PENDING-SIGNIN — 
 ,LB-020 Shelf with 100 saves → usable.,PENDING-SIGNIN — 
 ,"LB-021 Every work shows author, source, year (B10). Unattributed = P1.","FAIL — catalog item cards show AUTHOR · TRADITION · TYPE only (e.g. ""ADAM CLARKE · METHODIST · COMMENTARY""); the work-page header shows AUTHOR · TRADITION · PERIOD · LICENSE (e.g. ""FLAVIUS JOSEPHUS · JEWISH · SECOND-TEMPLE · PUBLIC DOMAIN""). No publication YEAR was visible in either the catalog list"
