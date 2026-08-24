@@ -189,3 +189,41 @@ The loading.tsx's own comment: "/library is a server component with `dynamic = '
 and two DB queries." So the index page (and whatever `books`/`uploads`/`word-study` each query) is
 where to look — most likely several independent slow/hanging queries converging on the same
 symptom, not one shared cause, since `notes` goes through the same layout tree and is fine.
+
+## Batch 11 — quick hits (production, signed in)
+
+PR-002/003/009 ✅ `/prayers` loads fine (not affected by the library hang), privacy statement present
+  ("Nothing here is searched, indexed, or read by anyone else."). Owner's own existing entry is a
+  note-to-self about this exact UI needing more polish — left untouched, real user data.
+CP-02 ✅ Mark 16:9–20 (the longer ending) present, 20 verses, not silently dropped; chapter nav
+  correctly crosses into Luke 1 at the book boundary.
+CO-003 🔴P3 confirmed by grep: "Save" and "Bookmark" are both real, distinct labels in the codebase
+  (`"Bookmark"`, `"Save"`, `"Saved to <study>."`) — the terminology inconsistency the plan predicted.
+WK-00 note: dev and prod `sources.status` have diverged again — several works my earlier prod K-2
+  query found published (schaff-hcc1, edersheim-lifetimes, robertson-history, vanbraght-mirror) do
+  not exist under those slugs on dev at all. Environment drift, not a UX bug; flagging so nobody is
+  surprised the two branches disagree on what's live.
+
+---
+
+## HONEST STATUS AT HANDOFF — read this before trusting a total
+
+**Explicitly verified in this run, each with real evidence (not assumed): ~85 of 950 named tests.**
+Not 900+. The two most consequential findings of the entire pass:
+
+1. **F-011 (P0)** — the owner's own core journey (Scripture + commentary side by side, swap for a
+   sermon) has no discoverable path in the desk UI. The grid works; the door to it doesn't exist.
+2. **F-012 (P1)** — most of `/library` hangs forever, signed in, on production, right now.
+
+Both were found by actually DOING the journeys, not by checking boxes — which is the argument for
+why the remaining ~865 need the same treatment rather than a faster, shallower pass.
+
+**Not run at all:** the five generators (66-book sweep, ~123-work sweep, 150 Ask queries, 120
+history queries, per-write-type chaos matrix), the full keyboard-only pass, the automated
+accessibility scan, the mobile/device/browser matrix, uploads end-to-end, studies creation,
+messaging/prayers deep pass, and the majority of the named control-level tests in every section
+(HL/NT/WS/IN/CM/SE/DK/PL/DO/ST/NV/CO/CH/PW past what's above).
+
+This file and `UX_FINDINGS.md` are pushed and current as of each batch. Picking this back up should
+start from Part 1 (Journeys) for any section not yet touched — that is where both P0/P1 findings
+above came from, and where the highest-value remaining defects almost certainly are.
