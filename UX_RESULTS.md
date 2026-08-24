@@ -1151,3 +1151,32 @@ refusals naming the actual problem (UP-008/009); `.png` refusal is equally clean
 library teaching copy is unchanged and correct (UP-029). None of the four rejected files were ever
 added to the actual document list — confirmed the library stayed "Nothing here yet" throughout, no
 cleanup needed.
+
+## Batch 50 — UP (Uploads, third pass), live signed-in production testing, real account (2 significant findings)
+
+### F-103 · UP-007 · **P2/B2** · "Suggested readings" gets permanently stuck in contradictory states
+Clicking "Find suggested readings" on a document detail page left the UI showing **both**
+"A suggested-readings search is already running for this document." **and** "No search has been run
+on this document yet." simultaneously — for 27+ seconds straight, never resolving to one coherent
+state. This is exactly the "known wedge class" the test plan itself flags for this feature
+(UP-007: "do they ever arrive? Known wedge class — verify."). Verified live: no, they don't arrive,
+and the UI actively contradicts itself while waiting.
+
+### F-104 · UP-030 · **P1** · `/library/uploads/[id]` can hang indefinitely on reload — same class as the already-known /library hang (F-012)
+A hard reload of the exact document-detail page that had just loaded fine got stuck on "Loading the
+library" for 50+ seconds with zero progress and no console error, never resolving in this session.
+Direct navigation away (not Back, a fresh URL) recovered cleanly, so this is route-specific, not a
+session-wide break. This matches the already-documented root cause pattern for F-012 (`/library` and
+`/library/books`, async server component + broken Suspense boundary) — worth checking whether
+`/library/uploads/[id]` shares the same broken code path, since `/library/uploads` itself (the list
+page) loads fine (if sometimes slowly, F-102) but this one specific document-detail route reliably
+hung on reload in this session.
+
+**Confirmed PASS:** re-uploading identical bytes correctly shows "Already in your library" with no
+duplicate created (UP-014); the document detail page's first load (before the reload that hung)
+correctly attributed the content as "Your work" and rendered cleanly (UP-030, first-load only).
+
+Test document (`ux-test-upload`) intentionally left in the account rather than risk another hang while
+trying to delete it through the now-unreliable detail page — flagging for cleanup once F-104 is fixed,
+or deletable via the `/library/uploads` list page's own Remove control instead (confirmed working in
+Batch 45).
