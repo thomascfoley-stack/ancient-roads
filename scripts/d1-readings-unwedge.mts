@@ -80,6 +80,25 @@ async function main(): Promise<void> {
     return;
   }
 
+  // THE DENOMINATOR, printed always. A bare "0 wedged" is ambiguous in the way that matters: it
+  // reads as "the bug never bit" when it can equally mean "there are no documents here at all".
+  // That exact ambiguity showed up on the first production run (0 pending, where dev had 11), and
+  // a remediation script that cannot tell those apart is not finished.
+  const census = await db.query(
+    `SELECT count(*)::int AS documents,
+            count(*) FILTER (WHERE readings_status IS NOT NULL)::int AS with_status
+       FROM user_documents`);
+  const c = census.rows[0];
+  console.log(`\nuser_documents on this target: ${c.documents}  (${c.with_status} carry a readings_status)`);
+  if (c.documents === 0) {
+    console.log('  -> the table is EMPTY here. "0 wedged" below says nothing about whether the bug bites;');
+    console.log('     it says there is nothing to bite. Do not record it as evidence either way.');
+  }
+  const byStatus = await db.query(
+    `SELECT COALESCE(readings_status, '(null)') AS st, count(*)::int AS n
+       FROM user_documents GROUP BY 1 ORDER BY 2 DESC`);
+  for (const r of byStatus.rows) console.log(`  readings_status ${String(r.st).padEnd(8)} = ${r.n}`);
+
   const total = await db.query(`SELECT count(*)::int n FROM user_documents WHERE readings_status = 'pending'`);
   const wedged = await db.query(`SELECT count(*)::int n FROM user_documents WHERE ${WEDGED}`);
   console.log(`\npending rows:            ${total.rows[0].n}`);
