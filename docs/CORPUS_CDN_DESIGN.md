@@ -26,7 +26,7 @@ This grows monotonically, slows every deploy, and walks toward platform size cei
 `lib/bible.ts` (`fetch('/bible/{tr}/{slug}.json')`), `lib/original.ts`, the reader page,
 `today-view`, `work-beside-tradition`, the marketing verse panel.
 
-**Ingest WRITERS (write into these dirs):** `ingest-commentaries`, `merge-commentaries`,
+**Ingest WRITERS (write into these dirs):** `merge-commentaries`,
 `build-commentary-manifest`, `ingest-original`, `ingest-strongs`, `build-concordance`,
 `ingest-biblehub` — and **`quarantine-served-corpus.ts`, which EDITS static files to unserve
 content**. That last one is a licensing rail.

@@ -74,6 +74,9 @@ async function main() {
   let queue = manifest.filter((e) => {
     const acq = (e.provenance as Record<string, unknown> | undefined)?.['acquire'] as { adapter?: string } | undefined;
     if (!acq?.adapter) return false;
+    // D2: a quarantined work is never queued. The adapters also refuse at their mouths;
+    // this keeps it out of the attempt count and the breaker maths in the first place.
+    if (typeof e.quarantine === 'string' && (e.quarantine as string).trim()) return false;
     // Historians ride the sections write-contract (ingest-historian: period/
     // gazetteer/verbatim rules), NOT the register embeddings store — the
     // embeddings source_type CHECK rejects them by design.
