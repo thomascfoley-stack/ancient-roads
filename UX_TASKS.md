@@ -953,3 +953,63 @@ one live (double-tap in text) and one that looks interactive but is dead (tap th
 Confusing: a user who taps the verse number first (the documented, banner-advertised way in) has no
 working path to a word's full entry from that panel — they'd have to close it and go double-tap the
 word in the text instead, which isn't hinted anywhere in that panel.
+
+## TR-01/03, IN-01/03 — verified live, signed-in, prod — ALL PASS
+
+TR: switched WEB→KJV, text changed to genuine KJV wording ("Verily, verily, I say unto thee..."), label
+updated to match. Navigated to John 4 (new chapter) → KJV persisted. TR-01, TR-03 PASS. Reverted to WEB.
+IN: toggled Greek interlinear on John 4 (NT book) → renders correctly under every word (transliteration
++ gloss), "Greek interlinear" state badge visible, toggle button shows active state. IN-01, IN-03 PASS.
+Toggled back off. Both settings restored to original.
+
+## DK-00/01/06/09 — verified live, signed-in, prod — ALL PASS
+
+Empty state is a genuinely good teaching empty state, and clarifies desk state is URL-based, not
+account-saved ("This desk is not saved to your account. It lives in the page address — bookmark or
+share the link to keep it.") — meaning no cleanup discipline needed for desk testing (nothing persists
+to the account regardless). Opened Bible → book picker (all 66 books) → Genesis → chapter picker (50
+chapters) → Genesis 1 pane rendered cleanly with its own controls (+never, book icon, menu, close).
+Closed via its own X control → returned cleanly to empty state, no orphan panes. DK-01, DK-09 PASS.
+
+## PL-01 — verified live, signed-in, prod — PASS (both directions + persistence)
+
+"The Gospels in 8 weeks" plan (Day 0 of 40, untouched real plan): clicked "Mark as read" on Matthew 1–2
+→ progress updated instantly (1 of 40, days-behind counter decremented, "Up next" advanced to Matthew
+3–4). Clicked the checkmark to toggle back off → reverted instantly (0 of 40, Matthew 1–2 back to "up
+next"). Refreshed the plans list from scratch → confirmed "Day 0 of 40", exactly as found. PL-01 PASS
+both directions, with persistence confirmed, state fully restored.
+
+**🔴 P3 finding (NV-14):** the reading-plan detail page's tab title is malformed —
+"Reading plan · Ancient Paths · Ancient Paths" (the site suffix appears twice). Cosmetic but visible in
+every browser tab/history entry for this page.
+
+## AS-00/01/04/11 — verified live, signed-in, prod — PASS, with one content-rendering finding
+
+Used ONE query (the app's own suggested adversarial-benign prompt: "Is Jesus really God? Just tell me
+the answer.") — deliberately not spending further quota on this account tonight per the earlier scope
+decision; the AS-22..33 batches (300 queries) are explicitly NOT attempted here.
+AS-11 loading state is genuinely good: staged progress text ("Searching the commentaries" →
+"Composing a grounded answer" → "Verifying every quote is word-for-word"), input shows "Thinking…",
+Ask button disabled during load — meets the LT-00 standard for honest waiting.
+AS-01/AS-04: answer returned multiple attributed historical voices (Moule, Calvin, Schaff quoting
+Cassian) on the divinity of Christ, framed neutrally ("The following sources present distinct
+historical voices...") — no interpretive verdict in the app's own voice. The core "never interprets"
+guarantee held on this adversarial-benign prompt. Each citation has "Open on desk →" and "Save to
+study" affordances (not yet click-tested, to preserve quota).
+**🔴 P2/P3 finding:** two of the three quoted commentary excerpts contain empty, broken-looking
+parenthetical citations — e.g. "...incommunicable Name (compare with )" and "...trust and love
+( e.g. , )" — the verse reference that should fill those parens is missing/blank. Doesn't fabricate
+anything (the quote itself is presumably verbatim), but reads as visibly broken to a user. Worth a
+source-rendering check on the commentary ingestion/display path.
+
+## AU-13/23/24 — verified live, prod — PASS (mechanism confirmed, full round-trip needs SITE_PASSWORD)
+
+Cleared the injected session + gate cookies via JS, navigated to `/read/john/3` while signed-out →
+correctly redirected to the SEC-1 gate (not the sign-in page — gate takes priority, confirming AU-24's
+stacking order: gate first, then auth). Confirmed via `window.location.href`: landed on
+**`/gate?next=%2Fread%2Fjohn%2F3`** — the intended destination IS captured in the `?next=` param exactly
+as AU-23 requires. Could not complete the full loop (enter password → land on /read/john/3) — I don't
+have and am not asking for SITE_PASSWORD; that's a distinct decision from the auth cookie handoff.
+AU-13/23 mechanism PASS by direct observation; the "does typing the real password land you at `next`"
+final step is UNVERIFIED, flagged for whoever has SITE_PASSWORD to close in ~10 seconds.
+Restored session cookies afterward, confirmed `/home` renders signed-in correctly again.
