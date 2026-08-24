@@ -1043,3 +1043,18 @@ correctly across a panel close/reopen (via navigating away and back to the same 
 Greek unicode round-trip intact; Save is correctly disabled when the textarea is empty, preventing an
 accidental empty save (the actual removal path is the separate Delete button, which is the right
 design — just missing its confirmation step).
+
+## Batch 44 — PL (Reading Plans), live signed-in production testing, real account (0 new findings)
+
+Tested against a real in-progress plan ("The Gospels in 8 weeks", 2 real accounts of prior real
+reading). Confirmed the historic outage this exact feature suffered (`MASTER.md` gate C2/C3:
+"Mark as read" was `permission denied for table plan_days`, fixed by migration 106 2026-08-07) stays
+fixed live: clicking "Mark as read" instantly advanced progress (1/40 → 2/40), placed a checkmark on
+the correct day, advanced "Up next" to the following reading, and updated the days-behind count
+(20 → 19) — then toggling it back off correctly reverted all four, leaving no test data behind.
+
+**All PASS, no new findings.** The "N days behind" catch-up banner is a genuine polish highlight worth
+recording: "Life happened. Pick up where you left off — the remaining readings move forward with you,
+and nothing you read is lost," with two explicit choices (Resume from today / Keep the original
+dates) — honest, non-shaming copy that matches the plan's own B2 bar ("nothing lying") better than
+most surfaces tested this session.

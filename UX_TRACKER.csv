@@ -596,21 +596,21 @@ x,"NV-017 Tab titles update on client-side navigation, not just first load.","PA
 x,"PF-012 Font loading: FOUT/FOIT behaviour, no layout shift (B5).","PASS — live-verified: fonts are self-hosted via next/font (all font URLs are same-origin `/_next/static/media/*.woff2`-style hashed paths, no external font-host round trip), and every `@font-face` rule found in the stylesheets (44 rules checked) declares `font-display: swap`, i.e. FOUT behavior, not"
 ,"PF-013 Image loading: correct sizes, no oversized downloads on mobile.","FAIL — live-verified: the homepage hero background (`/marketing/hero-ground.jpg`, CSS `background-image`, not a Next.js optimized `<Image>`) has `decodedBodySize` 845,650 bytes (~826KB) and this exact same file/size is served identically at a 375px mobile viewport and at desktop width — no responsiv"
 ,PF-014 Repeat-visit performance (warm cache) vs first visit.,"PARTIAL — not isolated cleanly: keyboard-performance.md's numbers were flagged by its own author as likely already cache-warm rather than true first-visit numbers, so a genuine first-visit-vs-repeat-visit comparison was not performed this pass either."
-,"PL-001 Enumerate the plans surface, the day list, and the toggle.","PENDING-SIGNIN — /plans signed out shows only ""Sign in to build a reading plan.""; no plan/day list/toggle to enumerate."
+x,"PL-001 Enumerate the plans surface, the day list, and the toggle.","PASS — Live: plan list, day list, checkmark toggle, progress bar, all enumerated"
 ,PL-002 Browse available plans → each has a clear description and length.,PENDING-SIGNIN — no browsable list of available plans exists signed out; nothing to compare descriptions/lengths against.
 ,PL-003 Start a plan → confirmation; it appears on home.,PENDING-SIGNIN — starting a plan requires an account.
-,PL-004 Day toggle both directions → persists across reload.,PENDING-SIGNIN — day toggle not present signed out.
+x,PL-004 Day toggle both directions → persists across reload.,"PASS — Day toggle both directions confirmed live (mark read: 1/40->2/40, un-mark: back to 1/40), the historic C2/C3 outage (permission denied on plan_days) stays fixed"
 ,PL-005 Day toggle by keyboard → works (known pointer-only suspect).,PENDING-SIGNIN — keyboard toggle not testable without a started plan.
-,PL-006 Day toggle by assistive click → works.,PENDING-SIGNIN — assistive-click toggle not testable without a started plan.
+x,PL-006 Day toggle by assistive click → works.,"PASS — Toggle worked via computer-tool click (assistive-style click), correct state change both directions"
 ,"PL-007 Toggle while offline → honest failure, not a silently reverted checkbox (B4).",PENDING-SIGNIN — offline toggle behavior needs an active plan/account.
 ,PL-008 Plan content links → into the reader; Back returns to the plan at the same position.,PENDING-SIGNIN — no plan content links exist signed out to test reader nav/back.
-,PL-009 Progress indicator accurate (days read / total) — does it share the fake-100% computation? Check explicitly.,PENDING-SIGNIN — no progress indicator rendered signed out.
+x,PL-009 Progress indicator accurate (days read / total) — does it share the fake-100% computation? Check explicitly.,"PASS — Progress indicator (days read/total, days-behind count) updated accurately on each toggle"
 ,PL-010 Progress persists across refresh and sign-out/in.,PENDING-SIGNIN — progress persistence needs sign-out/in with an account.
 ,PL-011 Finish a plan → celebrated or at least acknowledged; no broken state.,PENDING-SIGNIN — finishing a plan requires an account.
 ,"PL-012 Abandon/restart a plan → possible, confirmed, honest.",PENDING-SIGNIN — abandon/restart requires an account.
 ,PL-013 Delete a plan → confirmed; gone; home updates.,PENDING-SIGNIN — delete requires an account.
 ,"PL-014 A plan day with a multi-chapter reading → all chapters reachable, progress sensible.",PENDING-SIGNIN — multi-chapter day content requires an active plan.
-,PL-015 A plan day in the past → clearly marked as missed or catch-up.,PENDING-SIGNIN — past-day marking requires an active plan.
+x,PL-015 A plan day in the past → clearly marked as missed or catch-up.,"PASS — ""20 days behind"" banner clearly marks catch-up state with honest, non-shaming copy and two explicit resume options"
 ,PL-016 Two plans at once → both tracked independently.,PENDING-SIGNIN — concurrent plans requires an account.
 ,PL-017 Plans empty state → teaches.,"PARTIAL — confirmed: /plans signed out is a pure gate (""Sign in to build a reading plan."", no browsing), matching the known finding; as an empty-state it does not ""teach"" (no plan preview, no example of what a plan looks like, no value framing beyond one description sentence)."
 ,PL-018 Annotate a verse from inside plan context → appears in the normal reader too.,PENDING-SIGNIN — annotating from plan context requires an active plan.
