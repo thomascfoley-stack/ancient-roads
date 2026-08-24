@@ -1239,3 +1239,88 @@ affirmation copy), Search, and a "Check a draft" tool ("Paste a draft to see whe
 it" — a sermon/draft-matching feature not previously noted anywhere in the ledger). Did not upload a
 file tonight — that would consume real Blob storage quota on the owner's account and needs either a
 prepared safe-to-discard fixture or a synthetic account, not attempted this pass.
+
+## Empty-parenthetical citation defect — ROOT CAUSE FOUND, ingestion-time, `src/ingest/adapter-ccel.ts`
+
+Investigated the empty-paren citation bug flagged repeatedly above (AS-01/AS-04, SE-00, WK-01). This
+is a **confirmed ingestion-time defect**, not a render-time one, isolated to one function in one
+adapter. No fix applied — diagnosis only, per instructions.
+
+**Root cause.** `src/ingest/adapter-ccel.ts`'s `thmlText()` (the CCEL ThML-to-plain-text stripper used
+by every CCEL-sourced work — Kempis, Calvin's Institutes, Schaff's Creeds, Jamieson-Fausset-Brown, etc.,
+per `ingest/sources.config.json`'s `"adapter": "ccel"` entries) contains:
+
+```
+src/ingest/adapter-ccel.ts:57-59
+    // scripRefs are marginal cross-reference ANNOTATIONS (already consumed by
+    // unitAnchor) — their display text ("Heb 12:24") is debris inside body text.
+    .replace(/<scripRef\b[^>]*>[\s\S]*?<\/scripRef>/gi, ' ')
+```
+
+This regex deletes an entire `<scripRef>...</scripRef>` element **including its inner display text**,
+collapsing it to a single space. The comment's premise — that scripRef content is always redundant
+annotation already captured by `unitAnchor()` — is true for **standalone footnote-style** scripRefs
+(e.g. a footnote paragraph that is only a citation) but **false for scripRefs embedded inline in
+running prose**, where the original print author typed literal parentheses/punctuation around the
+reference and the scripRef's own text IS the visible citation the reader is meant to see. Stripping the
+whole element removes the reference but leaves the author's hand-typed `(`, `)`, `;`, `,`, `e.g.` sitting
+around the now-empty space — exactly the reported artifact.
+
+**Confirmed against the live CCEL source**, not just inferred from the regex. Fetched the actual ThML
+XML the adapter fetches (`https://www.ccel.org/ccel/kempis/imitation.xml`, `.../jamieson/jfb.xml`):
+
+- `kempis/imitation.xml` line 275 (source for `/work/kempis-imitation`, matching the WK-01 finding
+  above verbatim):
+  ```
+  HE WHO follows Me, walks not in darkness,” says the Lord (<scripRef passage="John 8:12" ...
+  osisRef="Bible:John.8.12">John 8:12</scripRef>). By these words of Christ we are advised...
+  ```
+  Run through `thmlText()`'s scripRef strip, `(<scripRef...>John 8:12</scripRef>)` becomes `( )`,
+  producing exactly `says the Lord ( ). By these words of Christ...` — a byte-for-byte reproduction of
+  what WK-01 found live in the DOM (`innerHTML`: `says the Lord ( ). By these words...`).
+
+- `jamieson/jfb.xml` (source for `/work/jamieson-jfb`) is full of the multi-reference, semicolon/comma-
+  joined parenthetical form that produced "( = ; ; )" / "( , )" / "( )" in the Passion-narrative
+  excerpt, e.g.:
+  ```
+  (<scripRef passage="De 17:18" ...>De 17:18</scripRef>; <scripRef passage="De 27:3" ...>27:3</scripRef>...
+  ```
+  which strips to `( ; ...)` — the same shape as the reported "( , )" / "( ; ; )" artifacts (the exact
+  "=" variant wasn't isolated by string match in the time available, but the mechanism — parenthetical
+  groups of 2+ scripRefs joined by literal punctuation the author typed between them — is the same one
+  producing every example in the bug report).
+
+**This is the only adapter with this bug** — the codebase's other ThML/OSIS-adjacent adapters handle
+`<scripRef>` correctly (strip tags only, keep inner text):
+```
+src/ingest/sword-genbook.ts:31   .replace(/<scripRef[^>]*>/gi, ' ').replace(/<\/scripRef>/gi, ' ')
+src/ingest/sword-zverse.ts:69-70 .replace(/<(scripRef|reference|...)\b[^>]*>/gi, ' ') / closing tag same
+src/ingest/sword-ld.ts:21        // <ref>/<scripRef> INNER TEXT IS KEPT —
+```
+`adapter-ccel.ts` special-cases `scripRef` to delete tag-plus-content *before* its generic
+`.replace(/<[^>]+>/g, ' ')` catch-all (line 60) ever runs, which is what makes it diverge from the other
+three adapters and from its own catch-all's behavior on every other tag.
+
+**Ingestion-time vs. render-time — settled.** No render-time code touches this: grepped
+`web/src/lib` and `web/src/app` for any paren-stripping/citation-linking regex over section body text
+and found none (`web/src/lib/verse-link.ts` only builds hrefs for the reader's own verse handles, not
+for prose citations inside commentary/devotional body text). The DOM `innerHTML` check WK-01 already
+ran on `/work/kempis-imitation` confirms the empty parens are literally present in the stored/served
+`sections.body` text, matching what `thmlText()` would produce from the real CCEL source — not
+something the client trims or transforms at display time. Ask-answer excerpts (AS-01/AS-04) show the
+same pattern because Ask quotes verbatim from the same corpus rows.
+
+**Scope.** Affects every work ingested via `"adapter": "ccel"` in `ingest/sources.config.json` whose
+source ThML contains inline (non-footnote) `<scripRef>` elements — likely a meaningful slice of the
+commentary/devotional/theology register (Kempis, Calvin's Institutes, Schaff's Creeds, Jamieson-Fausset-
+Brown at minimum, confirmed above; not exhaustively enumerated here). A full-corpus grep for
+`\(\s*[=,;]*\s*\)`-shaped empty-paren remnants in `sections.body`, scoped to `source_adapter = 'ccel'`
+works, would size the blast radius precisely — not run here (read-only investigation, no DB access from
+this worktree).
+
+**Not fixed.** This section is diagnosis only, per the task. A fix would need to decide, per scripRef
+occurrence, whether it's inline-in-prose (keep the display text, matching the other three adapters'
+behavior) vs. a genuine stray/duplicate annotation — plausibly "always keep the inner text" is simply
+correct here too, since a footnote-only scripRef keeping its own text ("Eccles. 1:8.") is harmless,
+while every inline case currently breaks. That policy call and the resulting re-ingest are out of scope
+for this investigation.
