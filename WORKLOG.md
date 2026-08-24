@@ -272,7 +272,22 @@ whole render, cold.
   ("fix history first, make plan later for the search history tab on the side").
 
 
-### Deployed — `b85fcc2` live on `ancientpaths.app`
+### Deployed — `b85fcc2` live on `ancientpaths.app` — **SUPERSEDED, and the heading is why**
+
+> **Corrected 2026-08-23 by measurement, not by reading.** This heading was true at 04:42Z and is
+> not true now: the closeout deploy took the alias back, and live is `7747f10`. A peer session read
+> it off the Vercel alias API; I did not take that on trust, and the useful half is what the two
+> independent checks say. **Ancestry:** `7747f10` CONTAINS `b85fcc2` and `79eb765`. **The bytes on
+> production:** the gate page's stylesheet chunk changed hash and size (`0x9133iryvvm6`, 111,379 B →
+> `0empa05vts7yr`, 111,794 B — so a genuinely later build is serving) and the new chunk still
+> carries `progress-travel`. So the history fixes survived the alias move; nothing of this lane was
+> lost. Both checks matter: ancestry alone would not have caught a build that dropped the CSS, and
+> the CSS alone would not have proved the deploy was later.
+>
+> Leaving the heading and adding this rather than editing the heading in place: the entry below is
+> a true record of 04:42Z, and a live-sha line that rewrites itself is how this board has repeatedly
+> come to read a date-stamped claim as a measurement. Re-measure; do not read.
+
 
 `dpl_cTCHG2fELa58JPb8KQ3QJnJ9S2Bi`, 2026-08-23T04:42Z, alias verified by deployment-id match
 ([receipt](docs/evidence/deploys/deploy-b85fcc2-2026-08-23T04-37-00Z.txt)). Deployed from a detached
