@@ -1,5 +1,50 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — DEPLOY BLOCKED, and the "seat block" diagnosis was WRONG
+
+**Correction first, because it was repeated to the owner and acted on.** The blocked builds were
+reported (by a peer, then by me) as Vercel **seat / team-access verification**, and the owner was
+told to clear it in the dashboard. **That was wrong.** The actual `blockCode`, read from the
+deployment API, is **`COMMIT_AUTHOR_REQUIRED`** — nothing to do with seats, plans or billing.
+
+The proof is two deployments seventeen seconds apart:
+* `dpl_AZRGsMoEooNTzFR3VAhxVxZuDXUj` — sha `4e81e24`, author `foley@Foleys-MacBook-Air.local` → **BLOCKED**
+* `dpl_54gK8uL12734byBHu3dYepShpF5o` — sha `578b6a8`, author `thomascfoley@gmail.com` → **READY**
+
+Vercel refuses a commit whose author email it cannot tie to an account. The machine-local address
+is git's hostname default. Repo identity corrected to `thomascfoley@gmail.com`; commits from
+`207f786` on carry it, so the current tip `d7cff5f` would clear this gate. **Peer -90's commits
+(incl. `7747f10`, `b6ce97d`, main's tip) are all machine-local and will block** until they land
+fresh commits — noted for them, and they will not rewrite pushed history.
+
+Timeline (peer -90, and it matters): `7747f10` went READY at 00:13Z with the machine-local author,
+so enforcement switched on between 00:13Z and ~01:35Z — the window in which the Git integration
+was connected. Connecting Git appears to be what armed it. Git is now disconnected (`link: null`,
+verified), so this may already be inert; untested, because a second blocker landed first.
+
+**THE LIVE BLOCKER: `rootDirectory` is `"web"`, and it belongs to neither working session.**
+A THIRD session (PR #124, `feat/posthog-tracking-plan`) changed it from `./` to `web` so GitHub
+builds could find the Next app. `deploy.sh` runs every CLI call from `web/` (line 249, and
+`test/deploy-sh-gates.sh` asserts exactly that), so with `rootDirectory: "web"` Vercel resolves
+`web/web` and the build cannot succeed. **The two deploy strategies require opposite values.**
+
+Peer -90 confirms it is not theirs and has no git-deploy intention. Neither of us is flipping a
+shared setting a third session owns — that is the AGENTS.md failure mode, twice over.
+
+**OWNER DECISION REQUIRED — recommendation: revert `rootDirectory` to `./`.** Not merely because
+it restores the status quo, but because a git-triggered build **runs none of deploy.sh's gates**:
+the licensing ratchet, the corpus-identity/manifest check, the served-asset check, the
+verse-key-distribution and forbidden-provenance checks, the clean-tree gate. For a project whose
+stated existential risk is licensing, moving to a deploy path that skips the licensing ratchet is
+an ADR-level regression, not a convenience change. PR #124's previews can be built another way.
+
+**State:** everything is committed, pushed and green at `d7cff5f`
+(`fix/q1-signed-out-state`) — search_outcomes, analytics, matching telemetry, full audit passing.
+Migration 129 is live on prod. Only the publish remains. Deploy worktree `/tmp/ap-deploy` is
+staged at the tip and clean; the killed run's provisional receipt (`state: upload started,
+outcome unknown`) was DELETED rather than committed — its outcome is now known (BLOCKED, id
+above), and a receipt asserting "unknown" would be a worse record than none.
+
 ## 2026-08-24 — The four visibility rules: what the owner may see, and what must stay theirs
 
 **Directive, verbatim.** "if someone searches for ephesus i should be able to see that. When
