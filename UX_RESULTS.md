@@ -656,3 +656,32 @@ mode; needs a direct contrast-ratio confirmation pass, not just a computed-color
 **Notable PASSes:** alt text, icon-button accessible names, correct `lang` attributes including
 `lang="el"` on Greek interlinear text, accent-gold contrast, focus-visible outline ≥3:1 in both themes,
 `prefers-reduced-motion` honored globally including the history progress-bar specifically.
+
+## Batch 30 — DK (Desk), tracker-driven, signed-out
+
+Ties directly into F-011 (P0, the desk's core "read side by side" journey has no discoverable
+add-commentary control). This batch adds two more structural findings on the same feature:
+
+### F-062 · DK-004/005 · **P2** · Added panes never anchor to the scripture pane's current passage
+Adding a commentary/sermon/historian pane always opens that work at its own beginning, never at the
+scripture pane's current chapter/verse — confirmed as documented behavior
+(`docs/ASK_HISTORY_DESIGN.md`: "no ordinal, starts at the top"), but it undercuts the desk's own
+"read Scripture and commentary together" premise: a reader has to manually navigate the new pane to
+line it up.
+
+### F-063 · DK-006/007 · **P3** · No single-action "swap" — closing and re-adding is a full round trip
+Swapping one pane for another means close pane → navigate to library → add new pane, across a full
+page load each time, rather than one swap control.
+
+**Solid PASSes:** pane enumeration/controls, empty-desk onboarding, correct chapter loading, 3-pane
+layout, pane-cap refusal at 16 with a clear message, per-pane scroll containers, 390px/tablet
+responsive behavior, error isolation when a pane references a nonexistent work slug, predictable
+keyboard focus order, labelled ARIA regions per pane, deep-link reproducibility.
+
+**Not filed as new (already tracked):** DK-014 no drag-resize/reorder — consistent with
+`docs/pm/MASTER.md`'s note that this is a deferred UX-3 stretch item, not a regression.
+
+Environment caveat carried from the agent: shared browser-tab contention made several timing-sensitive
+multi-step checks (rapid pane switching, full keyboard add/close sequences, live highlight sync)
+unreliable to attribute cleanly — marked NOT VERIFIED rather than guessed at, left for a re-run in
+isolation.

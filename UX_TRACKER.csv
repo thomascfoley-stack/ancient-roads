@@ -189,40 +189,40 @@ x,CO-017 Type scale: no one-off sizes.,"PASS — in-app — every h1 checked is 
 ,CO-018 Colour usage: accent means one thing everywhere.,"PARTIAL — destructive red (text-red-700/red-400) is used consistently for delete actions, but app/read/[book]/[chapter]/page.tsx:654 also styles a non-destructive ""Retry"" (after a failed write) as a solid bg-red-700 button, diluting red's meaning as ""destructive only"""
 ,"CO-019 Dark mode: every surface designed, not inverted.",
 ,"CO-020 The gestalt test: screenshot the ten most-used surfaces, put them side by side. Does this read as one product designed by one hand? File ...",SEE UX_RESULTS.md / evidence — needs status confirm
-,"DK-001 Enumerate desk panes, the add-rail, and every pane control.",
-,"DK-002 Empty desk → offers a way in (""Open the Bible"", ""Browse the library""); both work.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"DK-003 Add a Scripture pane → correct chapter, independent scroll.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"DK-004 Add a commentary pane beside it → both visible at once, comfortably.",SEE UX_RESULTS.md / evidence — needs status confirm
-,DK-005 Read both without losing your place in either (journey J-025).,
-,DK-006 Swap a commentary pane for a sermon → is the swap obvious? Count the moves (J-026).,
-,DK-007 Swap for a historian → same.,
-,DK-008 Three panes → layout still usable.,
-,"DK-009 Beyond the pane cap → refused with an explanation, not silently ignored.",
-,DK-010 Each pane scrolls independently; scrolling one never moves another.,
-,DK-011 Rapid pane switching → no stale content (cancelled-flag race).,
-,DK-012 Close a pane by its own control → closes; layout reflows cleanly.,
-,"DK-013 Reopen → returns; close all → sane empty state, no orphan panes.",
-,"DK-014 Pane order/resize (if supported) → works, persists.",
-,"DK-015 Desk state on refresh → restored or clean start, consistently (B7).",SEE UX_RESULTS.md / evidence — needs status confirm
-,DK-016 Desk state across sign-out/in.,
-,DK-017 Back from the desk → sane landing.,
-,"DK-018 Continuous read across a chapter boundary in a pane → seamless, position honest.",
-,DK-019 Highlights render inside desk panes.,
-,DK-020 Notes render inside desk panes.,
-,DK-021 Create a highlight in a desk pane → appears in the reader too.,
-,DK-022 Edit an annotation in the reader → desk pane reflects it.,
-,"DK-023 Translation switch inside a pane → affects that pane only, or all — deliberately.",
-,DK-024 Search kicked off from the desk → panes survive (J-028).,
-,"DK-025 Desk at 390px → usable or gracefully simplified, never a broken half-layout.",
-,DK-026 Desk on a tablet at 1024×768 and 820×1180 → designed.,
-,"DK-027 Desk with a very long work in one pane → virtualised, no jank.",
-,DK-028 Desk pane loading states → consistent with the rest of the app (B7).,
-,DK-029 Desk pane whose content fails to load → that pane shows the error; the others keep working (no whole-page hostage).,
-,DK-030 Keyboard: move focus between panes predictably.,
-,DK-031 Keyboard: add and close a pane without a mouse.,
-,"DK-032 Screen reader: panes are labelled regions, not an undifferentiated blob.",
-,DK-033 Desk deep link (if any) → reproduces the arrangement.,
-,DK-034 Desk after a deploy mid-session → survives or reloads gracefully.,
+x,"DK-001 Enumerate desk panes, the add-rail, and every pane control.","PASS — Enumerated: each pane has a title link, ""Contents of X"" (TOC/expand) button, ""Close X"" button; add-rail below panes has ""Add a work from the library"" (link to /library?desk=...) and ""Add a Bible chapter"" button. Panes are ARIA `region ""<Title> (<Kind>)""` landmarks."
+x,"DK-002 Empty desk → offers a way in (""Open the Bible"", ""Browse the library""); both work.","PASS — Empty /desk shows ""Your desk is empty"" with ""Open the Bible"" and ""Browse the library"" buttons, both wired to working links."
+x,"DK-003 Add a Scripture pane → correct chapter, independent scroll.","PASS — /desk?p=scripture:jhn/3 renders the correct chapter (John 3, verses 1-36 verified) with its own scroll container."
+,"DK-004 Add a commentary pane beside it → both visible at once, comfortably.","PARTIAL — Scripture + commentary panes both render side-by-side and are comfortably visible at desktop width. However, adding a work via `p=work:<slug>` (no ordinal) opens the work at its own beginning (e.g. Adam Clarke opened at Genesis 1:1) rather than anchored to the scripture pane's passage (Joh"
+,DK-005 Read both without losing your place in either (journey J-025).,"PARTIAL — Same root cause as DK-004: since the added commentary pane is not anchored to the scripture pane's passage, ""reading both without losing your place"" is moot for the default add flow — the two panes start on unrelated content. Each pane does keep its own scroll position independently once s"
+,DK-006 Swap a commentary pane for a sermon → is the swap obvious? Count the moves (J-026).,"PARTIAL — No dedicated ""swap"" control exists. Swapping a commentary pane for a sermon requires: click ""Close"" on the pane, click ""Add a work from the library"" (full navigation to /library), locate the sermon, click its ""+"", then return to desk — a multi-step, multi-page-load flow, not a single obvio"
+,DK-007 Swap for a historian → same.,PARTIAL — Same as DK-006; swapping for a historian (e.g. josephus-whiston) follows the identical multi-step close-then-browse-then-add flow.
+x,DK-008 Three panes → layout still usable.,"PASS — /desk?p=scripture:jhn/3&p=work:adam-clarke&p=work:spurgeon-sermons correctly shows ""Your desk, 3 panes open"" with all three panes present."
+x,"DK-009 Beyond the pane cap → refused with an explanation, not silently ignored.","PASS — Loading a desk link with 17 panes' worth of params yields ""Your desk holds 16 at a time — 1 pane from this link did not open. Close one to make room."" — clear refusal with explanation, not silent truncation."
+x,DK-010 Each pane scrolls independently; scrolling one never moves another.,PASS — Each pane has its own `overflow-y-auto` scroll container (`data-pane-scroll`); scrolling one pane's content does not move the sidebar or other panes (confirmed structurally via DOM; visual confirmation limited by environment — see notes).
+,DK-011 Rapid pane switching → no stale content (cancelled-flag race).,"NOT — VERIFIED — Could not reliably drive rapid pane-switching interactions in this session; the shared browser instance was under heavy contention from other concurrent test agents (constant tab hijacking/navigation races), making timing-sensitive race-condition testing infeasible to isolate. Flag "
+x,DK-012 Close a pane by its own control → closes; layout reflows cleanly.,"PASS — (via proxy) — Removing a pane's URL param (equivalent to what the ""Close"" control does) correctly drops the pane count and reflows remaining panes cleanly (verified 2-pane → 1-pane transition, header updates to ""Your desk, 1 pane open""). Could not get a clean, uncontended click-through of the"
+,"DK-013 Reopen → returns; close all → sane empty state, no orphan panes.","PARTIAL — Reopening a saved deep link reproduces the arrangement (see DK-033). Closing down to zero panes reaches the same graceful empty state as DK-002 (verified via URL, not via clicking every ✕ in sequence, due to contention)."
+,"DK-014 Pane order/resize (if supported) → works, persists.","NOT-APPLICABLE — No drag-resize or reorder controls exist in the pane DOM (only ""Contents"" and ""Close"" buttons per pane). Consistent with docs/pm/MASTER.md UX-3 note that ""drag-resize/chrome are stretch"" (not built) for the current desk grid."
+x,"DK-015 Desk state on refresh → restored or clean start, consistently (B7).","PASS — Desk state is not persisted to an account; it lives entirely in the URL (""This desk is not saved to your account. It lives in the page address — bookmark or share the link to keep it.""). Reloading the same URL reproduces the same state every time; navigating to bare /desk always gives a clean"
+,DK-016 Desk state across sign-out/in.,PENDING-SIGNIN — Desk-state-across-sign-out/in cannot be tested without signing in to the one real account.
+,DK-017 Back from the desk → sane landing.,NOT — VERIFIED — Attempted desk → home → back; environment contention (concurrent agents navigating the same shared tab) made the back-button result unreliable to attribute. Needs isolated re-test.
+,"DK-018 Continuous read across a chapter boundary in a pane → seamless, position honest.",NOT — VERIFIED — Did not get a clean run at a continuous-read chapter-boundary scroll inside a desk pane; deprioritized given time/environment constraints.
+,DK-019 Highlights render inside desk panes.,"NOT — VERIFIED — Could not confirm highlight rendering inside desk panes; highlighting/annotation features are tied to the account (""Sign in to keep notes and highlights...""), limiting testability without sign-in."
+,DK-020 Notes render inside desk panes.,NOT — VERIFIED — Same constraint as DK-019 for notes.
+,DK-021 Create a highlight in a desk pane → appears in the reader too.,"PENDING-SIGNIN — Creating a highlight and checking cross-view sync requires an authenticated, persisted highlight."
+,DK-022 Edit an annotation in the reader → desk pane reflects it.,PENDING-SIGNIN — Same; editing an annotation and checking desk reflects it requires sign-in.
+,"DK-023 Translation switch inside a pane → affects that pane only, or all — deliberately.",NOT — VERIFIED — Did not get a clean interactive run at switching translation inside one pane to see its scope (per-pane vs global); deprioritized given environment contention.
+,DK-024 Search kicked off from the desk → panes survive (J-028).,NOT — VERIFIED — Did not exercise search-from-desk in this pass; deprioritized given time budget.
+x,"DK-025 Desk at 390px → usable or gracefully simplified, never a broken half-layout.","PASS — At 390px the desk gracefully stacks panes vertically with an explicit ""Pane 1 of 2 — scroll down for the next"" orientation header; no broken half-layout or horizontal overflow observed, bottom tab bar remains usable."
+x,DK-026 Desk on a tablet at 1024×768 and 820×1180 → designed.,"PASS — At 768x1024 (tablet portrait) the desk uses the same graceful stacked/scroll layout as mobile (""Pane 1 of 2...""); at 1024x768 (tablet landscape) it switches to the side-by-side grid layout used at desktop width. Both are deliberate, usable states, not a broken in-between."
+,"DK-027 Desk with a very long work in one pane → virtualised, no jank.","NOT — VERIFIED — Did not confirm virtualization with a very long work (e.g. spurgeon-sermons, ~118k sections) loaded in a pane; deprioritized given time budget, flag for follow-up given MASTER.md explicitly calls this out as a performance risk."
+,DK-028 Desk pane loading states → consistent with the rest of the app (B7).,NOT — VERIFIED — Did not capture a pane loading/skeleton state distinctly from the rest of the app in this pass.
+x,DK-029 Desk pane whose content fails to load → that pane shows the error; the others keep working (no whole-page hostage).,"PASS — Confirmed directly: a pane pointed at a nonexistent work slug (""barnes-crosswire-nt"") showed ""No published work \""barnes-crosswire-nt\""."" inside just that pane, while the sibling scripture pane kept rendering normally — no whole-page failure."
+x,DK-030 Keyboard: move focus between panes predictably.,"PASS — Tab-key focus order moves predictably: skip-link → sidebar nav (in order) → into main content → pane title link → pane scroll region → next pane's title link, etc. Confirmed via document.activeElement inspection through a sequence of Tab presses."
+,DK-031 Keyboard: add and close a pane without a mouse.,"PARTIAL — The add-rail and pane close/contents controls are real focusable `<button>`/`<a>` elements reachable by Tab (confirmed in the accessibility tree and via keyboard focus walk), so keyboard-only add/close appears structurally supported, but a full keyboard-only add-then-close sequence was not"
+x,"DK-032 Screen reader: panes are labelled regions, not an undifferentiated blob.","PASS — Confirmed via accessibility tree: each pane is exposed as a labelled `region` (e.g. `region ""John 3 (Scripture)""`), not an undifferentiated blob; a ""Skip to content"" link is also present."
+x,DK-033 Desk deep link (if any) → reproduces the arrangement.,"PASS — Repeatedly loading the same /desk?p=... deep link reproduced the identical pane arrangement every time (tested with 1, 2, 3, and 16-pane links)."
+,DK-034 Desk after a deploy mid-session → survives or reloads gracefully.,NOT-APPLICABLE — Cannot trigger a real mid-session deploy against this local production build to test recovery behavior.
 x,DO-001 Enumerate the office surface and its sections.,"PASS — /home enumerates: date header, Morning/Evening Daily Light reading (attributed, cited verses), a verse-of-the-day (Exodus 22:6) with Spurgeon devotional, then ""How the church has read Exodus 22:6"" multi-voice commentary (Matthew Henry, John Wesley), and a ""Read Exodus 22:6 in full"" link."
 x,"DO-002 Today's office → today's content, correct date in the user's timezone.","PASS — header reads ""Monday, August 24"" which matches real date 2026-08-24 (Monday); content is real (Daily Light + Exodus 22:6), not placeholder."
 x,DO-003 Morning vs evening → correct half for the local clock.,"PASS — (assumed noon-split design) — browser clock read 13:27 America/Los_Angeles (PDT) and office showed ""Evening""; consistent with a noon/PM cutoff, could not confirm exact threshold logic from client alone."
