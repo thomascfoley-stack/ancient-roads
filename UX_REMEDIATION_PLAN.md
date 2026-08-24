@@ -82,6 +82,16 @@ on the delight layer instead of the trust layer.
 - **Verify:** different agent re-runs the fixture + checks one live work post-re-ingest.
 - **Note:** this is the only P1 that corrupts content already in the DB — fixing the adapter does
   not repair stored text. The sizing query must be part of the same PR's evidence.
+- ✅ **ADAPTER FIXED** (`1cef7e8`). ✅ **PROD SIZING DONE 2026-08-24 on owner go** (read-only):
+  **1,937 damaged sections across 19 works, ALL PUBLISHED, all reader-visible.** Dev showed the same
+  1,937 with all works *staged* — invisible there, served here. Calvin's Institutes is **not**
+  affected (the plan was wrong); the affected Schaff work is the *History*, not the *Creeds*; the two
+  worst-hit works (`vanbraght-mirror` 557, `rutherford-triumph` 466 — 53% of the damage between them)
+  were never named. Evidence: `docs/evidence/ux-remediation-2026-08-24/k2-prod-sizing.md`.
+- 👤 **OPEN — owner decision, unblocked by the above:** re-ingest those 19 works to repair the stored
+  rows. That is a production write under the ingest runbook, not something an agent does. Dry run:
+  `npx tsx src/ingest/adapter-loop.ts --adapters=ccel --only=<slugs> --force --dry`. Re-ingest
+  replaces section bodies, so check annotation/progress anchoring against the runbook first.
 
 ### K-3 Privacy policy + terms (C2; all three runners)
 - 👤 **Owner delivers legal copy** — agents cannot write this.

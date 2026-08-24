@@ -373,14 +373,18 @@ against the live dev corpus, not re-read from my own notes.
 That is lost citations and broken sentences — real, reader-visible, and worth fixing in a product
 whose promise is precise attribution — but **not** the corpus corruption I claimed. **P2.**
 
-**Dev-branch sizing (the plan's required evidence).** 27 CCEL works · 40,463 sections · **1,937
-sections (4.8%) carrying `( )` debris**. **0 CCEL works are `published` on dev**, so nothing here is
-reader-visible on that branch — the production count is a separate number and needs the owner's
-explicit go to run (`AGENTS.md`). Do not quote 4.8% as the production blast radius.
+**PRODUCTION sizing — run 2026-08-24 on owner go, read-only.** 27 CCEL works, **all published** ·
+40,463 sections · **1,937 sections (4.8%) carrying `( )` debris, every one of them reader-visible.**
+Dev held the same corpus with all 27 works *staged*, so the damage was invisible there and visible
+here — which is exactly why the dev number was filed as indicative only. Evidence + per-work table:
+`docs/evidence/ux-remediation-2026-08-24/k2-prod-sizing.md`; re-runnable via
+`node scripts/k2-ccel-sizing.mjs`.
 
-**Also correcting the plan's inherited claim:** it lists Calvin's Institutes and Schaff's Creeds as
-affected. The sizing query names `schaff-hcc2` among the works with debris; Calvin's Institutes was
-NOT separately confirmed and should not be cited as confirmed until a per-work query says so.
+**The plan's inherited claims are now settled, and two were wrong.** **Calvin's Institutes is NOT
+affected** — it does not appear at all. **"Schaff's Creeds" is not the affected Schaff work**; it is
+Schaff's *History of the Christian Church* (`schaff-hcc1`–`hcc8` + `schaff-person`), 568 sections
+across nine works. And the two worst-hit works were never named by anyone: `vanbraght-mirror` (557)
+and `rutherford-triumph` (466), together 53% of all damage. 19 works affected in total.
 
 **Status: adapter FIXED in this branch** (`src/ingest/adapter-ccel.ts`, 4 test legs, red-proofed).
 **Stored rows are NOT repaired** — the adapter is upstream of the corpus, so existing text stays
