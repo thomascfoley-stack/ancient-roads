@@ -1228,3 +1228,14 @@ verse, tapped Back, and got yanked off Scripture entirely" — genuinely disorie
 mobile where Back is a physical/gesture button pressed reflexively to dismiss an overlay. Confirmed via
 `window.location`/document title before and after, not just a screenshot (screenshots were unreliable
 tonight — see the tooling-limitation note above).
+
+## UP-00 — enumeration only (no upload attempted — real quota/blob storage on owner's account)
+
+`/library/uploads` ("My uploads" tab title) briefly showed "Loading the library" then resolved to full
+content within ~3s (not stuck — matches a peer's local-dev-only finding about this page hanging, which
+does NOT reproduce here since this is signed in on prod with a real session, unlike their local-dev
+report). Enumerated: "My Works" heading, "Add a document" (PDF/Word/text/Markdown, up to 25MB, license-
+affirmation copy), Search, and a "Check a draft" tool ("Paste a draft to see where you have preached
+it" — a sermon/draft-matching feature not previously noted anywhere in the ledger). Did not upload a
+file tonight — that would consume real Blob storage quota on the owner's account and needs either a
+prepared safe-to-discard fixture or a synthetic account, not attempted this pass.
