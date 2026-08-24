@@ -1,5 +1,73 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — UX/UI overnight sweep, first pass (owner's ledger, worktree `fix/ux-overnight-sweep`)
+
+**Scope note first, because the ledger asked for something bigger than one session delivers honestly:**
+the owner's ledger specs a 6-agent fleet with isolated `uxtest+a1..a6` PostHog-filtered accounts running
+~650–750 checks + ~700 batched queries. What actually ran tonight: one session, working in an isolated
+worktree (`/tmp/ap-uxsweep/repo`, never the main tree — 4 other live sessions were active on it
+tonight, all pinged), plus 3 background static-analysis agents. Coverage is real but partial — see
+"NOT DONE" below. Full detail, findings, and the running task ledger are in `UX_TASKS.md` /
+`UX_SWEEP.md` in that worktree (not copied here — they're large and still live).
+
+**The dominant finding of the night: local dev cannot authenticate, by what reads as deliberate Vercel
+posture, not a bug.** `NEON_AUTH_BASE_URL`/`NEON_AUTH_COOKIE_SECRET` are absent from every local env
+file and excluded even from `vercel env pull --environment=development` (and `--environment=preview`) —
+consistent with those being Sensitive-scoped, which Vercel refuses to expose to Development. Confirmed
+independently by three peer sessions hitting the identical 500 tonight plus my own server-log evidence:
+`/auth/[path]` 500s **before rendering anything** (`AuthPage` calls `currentUser()` during server
+render — `web/src/app/auth/[path]/page.tsx:43`), so this isn't "submit fails," the sign-up/sign-in forms
+cannot be seen locally at all. The SEC-1 gate is also untestable locally (fail-open in dev by design).
+
+**Unblocked mid-run:** the owner supplied a live production session cookie (his own test account, copied
+from DevTools after signing in himself — no password ever passed through this session) so signed-in
+surfaces could be tested against real production behavior instead of skipped. Scope was kept
+conservative on his instruction: read-mostly verification, and every write round-tripped back to its
+original state (create → verify → delete/revert), nothing left behind. No bulk uploads, no large
+ask-query batches — those would spend real quota/LLM cost and need a dedicated synthetic account, not
+attempted tonight.
+
+**Verified PASS tonight, live, with evidence in `UX_TASKS.md`:** RD-04/05 error handling, RD-09 verse
+panel, CM-01 attribution, HL-01/02/03 highlight round-trip, NT-01/03 note round-trip, TR-01/03
+translation switch, IN-01/03 interlinear, DK-01/09 desk pane lifecycle, PL-01 plan toggle (both
+directions + persistence), AS-01/04/11 (one query only, by design), AU-13/23/24 gate redirect mechanism
+(`?next=` param confirmed correct), MSG-R1/PRAY-00/01, ST-00/10, TR-00 (18 translations enumerated).
+
+**Real findings filed (severity in `UX_SWEEP.md`/`UX_TASKS.md`):** MK-13 no privacy policy/terms linked
+(P1, matches the ledger's own pre-registered prediction) · verse panel's "Word study" tab lists rows
+that look clickable but aren't — the working entry point is double-tapping the word in the passage text,
+undocumented from the panel (P2) · two commentary quotes rendered with empty/broken parenthetical
+citations, e.g. "(compare with )" (P2/P3) · reading-plan page tab title duplicated
+("Reading plan · Ancient Paths · Ancient Paths", P3).
+
+**Corrected en route (worth recording so it isn't re-asserted):** a peer claimed `fix/q1-signed-out-state`
+was stale vs `origin/main` — checked directly with `git merge-base --is-ancestor`, and it's backwards:
+`origin/main` is an ancestor of `fix/q1-signed-out-state`, which is 15 commits ahead (including the
+search_outcomes/129 migration this ledger references). The COV-00 pass also found `/channel/[id]` and
+`/chat/[id]` (flagged by the ledger as an untested "messaging feature") are actually a dead redirect
+stub and an orphaned `ComingSoon` placeholder respectively — retired code, not a coverage gap.
+
+**Background static passes completed (code-only, no server/DB touched):** COV-00 (route manifest — 2
+whole features, `/prayers` and the account surface, had zero ledger coverage; appended), COV-01/02
+(interactive census + overlay inventory — Omnibox, the app's most-used overlay, has no focus trap/role/
+Escape handling), CO-00 (terminology: "Ask" vs "Search" vs "History" collide across surfaces),
+CO-02 (icon inventory — no shared icon library, hand-duplicated SVGs, several icons mean 3-4 different
+things), WK-00 (129 published works enumerated from the dev DB, read-only), NV-00 (a Back-map **draft**,
+explicitly NOT ratified — needs the owner's 15 minutes per the ledger's own instruction).
+
+**NOT DONE — the honest list, not glossed over:** the 66-book reader sweep (RD-01) beyond spot checks;
+the full AS/HS/VO query batches (~1000 queries) entirely; VO voice search entirely (needs a feasibility
+spike this session didn't reach); Daily Office, Bible/word search, canonical-passage edge cases (CP),
+sermons, library/works browsing, study editor, uploads, settings sub-items beyond theme, cross-
+device/browser matrix (BR), accessibility screen-reader passes, print — none attempted yet. This is a
+first pass, not the run. Continuing after this checkpoint.
+
+**Next steps for whoever picks this up:** (1) decide local-auth unblock — hand-copy the two Neon Auth
+vars into `web/.env.local` for future sessions, so this blocker isn't rediscovered every time; (2)
+ratify the NV-00 back-map draft; (3) decide whether the remaining batched-query sections get a
+synthetic account and a token budget, or stay out of scope for this pass; (4) the Word-study dead-click
+and the broken-citation-parens findings look cheap to fix and worth a look before the rest finishes.
+
 ## 2026-08-24 — DEPLOY BLOCKED, and the "seat block" diagnosis was WRONG
 
 **Correction first, because it was repeated to the owner and acted on.** The blocked builds were
