@@ -1117,3 +1117,37 @@ coordinates and the coordinate frame the click tool actually uses on this page �
 mis-clicks landing on the wrong verse (14 instead of 16) mid-test. Resolved by reading click targets
 directly from a fresh screenshot rather than trusting computed rects. Worth remembering for any future
 testing on this specific reader layout.
+
+## Batch 49 — UP (Uploads, second pass), live signed-in production testing, real account (3 findings)
+
+Uploaded four real malformed/edge-case files against the actual production endpoint: a random-bytes
+`.docx`, a fake-PE-header `.exe` renamed to `.docx`, a minimal valid `.png`, and a genuine 0-byte
+`.txt`. Also confirmed live: this same page (`/library/uploads`) took **over 20 seconds** to clear its
+skeleton loading state on this load — well past the plan's own B9 bar ("beyond 10s offers a way out"),
+with no progress message and no escape. A prior agent flagged a 1-3s version of this as "possible
+flakiness, not confirmed" (see Batch 27/UP.md) — this run confirms it's real and can be much worse
+than first measured.
+
+### F-100 · UP-011 · **P2/B2** · 0-byte file gets a factually wrong rejection message
+A genuine empty `.txt` file is refused with "That file is not a PDF, Word document, or text file." —
+which is false; it IS a `.txt` file. The real reason (empty/zero-length) is never stated. Same message
+as a genuinely wrong file type, so a user with an accidentally-empty file can't tell what actually went
+wrong.
+
+### F-101 · **P3** · An internal engineering codename ("Slice 1") leaks into user-facing error copy
+Both the wrong-file-type and 0-byte rejection messages read: "...Slice 1 accepts .pdf, .docx, .txt and
+.md." "Slice 1" is this repo's own internal build-phase name (`docs/SERMON_SEARCH_DESIGN.md`'s Slice 1
+ingestion pipeline) — meaningless and slightly unprofessional-looking to an end user who has no idea
+what "Slice 1" refers to.
+
+### F-102 · **P2/B9** · `/library/uploads` can take 20+ seconds to load past its skeleton state, with no progress indication
+Confirmed live: one load of this page sat on the static skeleton for over 20 seconds before rendering
+real content — no percentage, no message, no way out. This is the same page a prior agent flagged as
+having a shorter (1-3s) version of this stall and couldn't confirm as more than noise; this run
+removes that doubt.
+
+**Confirmed PASS:** malformed-.docx and fake-.exe-renamed-.docx both get clear, specific, upfront
+refusals naming the actual problem (UP-008/009); `.png` refusal is equally clean (UP-010); the empty-
+library teaching copy is unchanged and correct (UP-029). None of the four rejected files were ever
+added to the actual document list — confirmed the library stayed "Nothing here yet" throughout, no
+cleanup needed.
