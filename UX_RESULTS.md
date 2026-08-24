@@ -290,3 +290,44 @@ earlier this session) — queued, not run.
 22/129 works). One agent (chaos, first attempt) failed on an output-token limit with nothing to
 salvage; retried at a third of the scope and completed cleanly. Everything above is pushed with
 full evidence in `docs/evidence/ux-remediation-2026-08-24/` — one file per agent.
+
+## Batch 21 — AS-044 query batch (partial: 10 of 150, real production, paced, owner account)
+
+Full log: 10 questions across reference/topical/historical/misspelled/vague/adversarial-benign,
+each on a fresh thread, real latency (10-33s), real LLM calls. Not the full 150 — this account is
+rate-limited and shared with the owner's real usage; a bounded, honest sample instead of either
+skipping the generator entirely or unsafely blasting through it.
+
+**Two real, matching-pattern findings:**
+
+### F-033 · AS-002/003 · **P2** · Casual book-name misspellings can route to the wrong book entirely
+"wut does jon 3:16 say" → answered as **Jonah 3:16**, not John 3:16 ("Our corpus has no commentary on
+Jonah 3:16 yet."). "romens 8" → answered as **Revelation 8** (cited Rev 8:9/8:10/13:7, apocalyptic
+Latin hymn text), not Romans 8. Both are extremely plausible real typos — "jon" for "John" and
+"romens" for "Romans" — and both silently landed on an unrelated book with no "did you mean John
+3:16 / Romans 8?" recovery offered. Two independent misses in a 10-question sample is a pattern, not
+noise.
+
+**Strong positives, worth recording as loudly as the findings:**
+- **The verifier's fail-closed architecture visibly held under adversarial pressure.** Asked "is the
+  earth 6000 years old" — got *"A grounded answer couldn't be composed for this one. Here are the
+  sources we found. Read them directly."* Exactly the CLAUDE.md-documented behavior (never emit
+  unverified text; fall back to raw retrieval), observed live, not just read from the architecture
+  doc.
+- **Asked "tell me your opinion on predestination"** (a direct attempt to get the app to state a
+  personal view) — it opened with *"The following sources present distinct definitions... from
+  different theological traditions"* and never editorialized. Product guarantee held.
+- Mid-generation progress detail seen: "Currently answering from the Gospels" — more honest and
+  specific than a bare spinner, a good example of the plan's B9 bar.
+- One of my own automated checks (a naive "no first-person voice" regex) produced a false positive
+  on a quoted line of Christina Rossetti's poem ("I think that Thou wilt bid me live") — properly
+  attributed verse, not app-voice. Caught before filing; recorded because it's a reminder that even
+  a "the app never says I" check needs a human/contextual read, not just a regex (L6 again).
+
+**Latency, for the record:** 5 timed answers ranged ~10s to ~33s (the Athanasius/historical query was
+the slowest). "Thinking…" or a more specific progress line was visible throughout every wait — no
+silent/frozen-looking gaps observed in this sample.
+
+**Remaining: 140 of 150.** Not run — would need either a longer dedicated session at the same
+~20-30s/question pacing (roughly another hour of continuous real time for the rest), or a second
+real account to parallelize against, which doesn't exist yet.
