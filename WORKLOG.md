@@ -1,5 +1,68 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — Analytics: DAU, 7-day churn, and campaign attribution (owner directive)
+
+**Directive.** "Get me setup with posthog analytics in the best tracking plan usage for my app. I
+want to know DAU, when a user churns (churn = no visit in the last 7 days), I want to see utm
+params so i can track users from newsletter and social media campaigns back to the app."
+
+**This AMENDS the 2026-08-18 ruling, it does not overturn it.** That ruling ("after-the-fact
+analytics… never embedded") was written against four measured HIGHs, and three of its four fixes
+STAND unchanged: no same-origin `/ingest` proxy, autocapture off, session recording off. The
+fourth — `capture_pageview: false` — is the one the new directive is incompatible with, because
+DAU, churn and attribution all need one event per visit. It is replaced by a stronger mechanism
+rather than dropped.
+
+**The mechanism.** The old fix dropped every query string, which is also why UTM could never work
+from the URL. The new one is an **allowlist** (`sanitizeUrl`, instrumentation-client.ts): campaign
+parameters survive, everything else is dropped — `q` included, on every event. An allowlist fails
+in the SAFE direction: an unlisted parameter costs a dashboard breakdown, never a leak. A denylist
+fails the other way, which is why it is not one. Red-proved: seeding `k !== 'q'` in its place
+turns three tests red, including the `/gate?next=%2Fask%3Fq%3D…` nesting the original audit named.
+
+**Built.**
+* `sanitizeUrl` + reworked `stripProductText`; `capture_pageview: 'history_change'`.
+* `web/src/lib/analytics.ts` — closed `TrackEvent` union (adapted from PR #124, which got this
+  design right; that branch is NOT merged — it sits on a pre-Slice-4 base and its diff reverts the
+  user-library voice rendering), plus `identifyReader`/`resetReader`.
+* `components/analytics-identity.tsx` — identify on sign-in, in AppShell's GATED branch only.
+  The sign-out check is load-bearing: `useSession` resolves async, so the naive
+  `userId ? identify() : reset()` calls `reset()` on nearly every page load, and each reset mints
+  a new anonymous id — discarding exactly the campaign attribution this work exists to collect.
+* Waitlist form emits submitted/succeeded/failed — the conversion half of attribution. No email.
+
+**Verified, not assumed.**
+* `capture_pageview: 'history_change'` captures the INITIAL pageview (the one carrying the UTM) —
+  read out of the posthog-js bundle: the initial-pageview call site is guarded by a truthiness
+  check (`config.capture_pageview && … Jn()`), which the string satisfies, while the SPA leg
+  requires the exact string. Both legs confirmed from source, not from docs.
+* posthog-js sends `utm_*`/`gclid`/`fbclid`/`mc_cid` as SEPARATE top-level properties (read from
+  its campaign-params list), so attribution never depended on the stripped URL. The reason there
+  is no UTM data today is simply that no event has ever fired.
+* **The deployed production key writes to PostHog project 561364** — proved end to end by POSTing
+  a `setup_smoke_test` event with the key pulled from Vercel (never printed) and then finding that
+  row via HogQL in the project. Total events in the account, ever, before this: 3.
+* 18 tests green (11 new sanitizer + 7 rewired wiring guards); typecheck + eslint clean.
+
+**PostHog objects created** (project 561364): dashboard `2025202` "Ancient Paths — Growth &
+Retention" with 7 insights (DAU · WAU/MAU · Lifecycle · Retention · traffic by utm_source ·
+signups by utm_source · signup funnel), and two cohorts — `510882` "Churned — was active, no visit
+in 7 days" and `510883` "Active — visited in the last 7 days". The churn cohort carries a positive
+leg (active within 90d) BY DESIGN: a bare negation also matches every person who never visited,
+which is not churn.
+
+**Also done:** disconnected the Vercel↔GitHub integration (owner-directed, in their Chrome). It
+had been connected ~2h earlier and was auto-building every push — the source of the
+`COMMIT_AUTHOR_REQUIRED` blocked builds. Repo git identity corrected to the owner's real email.
+
+**NOT DONE / UNVERIFIED.**
+* NOT deployed. Every dashboard above is empty until it is, and the site gate means app-side DAU
+  will stay owner-only until SEC-1 lifts; the MARKETING tier (`/`, `/about`, `/features`, `/why`)
+  is public, so campaign attribution starts working the moment this ships.
+* The identify path is proven by unit test and by source reading, not yet by a signed-in browser
+  session against production.
+* PR #124 left open deliberately — do not merge as-is (stale base, reverts Slice 4).
+
 ## 2026-08-24 — PROD OUTAGE (uploads) 00:08Z–01:5xZ: my migration-before-code inversion; fixed by owner-authorized 128 apply
 
 **What broke.** `7747f10` (deployed 00:08Z) carries W-OWNERSHIPCOL's INSERT naming
