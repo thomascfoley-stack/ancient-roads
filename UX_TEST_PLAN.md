@@ -59,9 +59,12 @@ was read as the state of the world. **Measure the thing itself.**
 
 ---
 
-## 0.2 The polish bar — what "perfect" means for each of these
+## 0.2 The polish bar — a rubric, NOT a work item
 
-Applied to every surface; findings filed against the surface, not here.
+**There is nothing to "do" here.** Read it once. It exists so two people grading the same screen
+reach the same verdict instead of arguing taste. Findings file against the surface, never against a
+bar number. If it reads as ceremony to you, ignore the table and test anyway — every test below
+stands on its own.
 
 | # | Bar |
 |---|---|
@@ -903,7 +906,7 @@ ST-024 Back from settings → previous context, not home.
 
 ## NV — Navigation, URL & the Back-map — 30
 
-NV-001 **Build the Back-map**: every view-transition × what Back should do. Owner ratifies. Everything below tests against it.
+NV-001 **Back-map** — worth doing, and about 30 minutes: a table of every view-transition × what Back should do. Not for ceremony — Back is where this app actually broke (it threw readers out of the chapter), and without a written expectation every Back test below is one person's taste against another's. Draft it, use it, correct it when it's wrong. No sign-off needed.
 NV-002 Every header/nav control on every surface → labelled truthfully, goes where it says.
 NV-003 Logo/home from every surface → one consistent destination.
 NV-004 Active-section indication → you can always tell where you are.
@@ -942,7 +945,7 @@ NV-030 Every route in the manifest visited once, signed in and signed out → no
 
 ## EM — Empty states — 18
 
-EM-001 Inventory **every** list/collection surface in the app and its empty state.
+EM-001 List every collection surface in the app, so the rows below are complete. This is one pass over the route map, not a deliverable of its own — the tests ARE the inventory.
 EM-002 Home, no activity. EM-003 Continue-reading, none. EM-004 Shelf, empty.
 EM-005 Notes list, empty. EM-006 Studies list, empty. EM-007 Thread list, empty.
 EM-008 Uploads library, empty. EM-009 Plans, none started. EM-010 Prayers, empty.
@@ -980,7 +983,7 @@ ER-024 After any error, is there always a path forward? Name any dead end.
 
 ## LD — Loading, waiting, perceived speed — 22
 
-LD-001 Write the waiting standard; owner ratifies: <100ms instant ack · 100ms–1s skeleton in final layout · 1–4s progress + control disabled · >4s words · >10s a way out.
+LD-001 **The waiting standard is already written — just use it.** <100ms instant acknowledgement · 100ms–1s skeleton in the final layout · 1–4s progress signal + the control disabled · >4s a message in words · >10s a way out. These are ordinary numbers, not a house style; nothing to decide.
 LD-002 Grade **every** async surface against it; deviations are findings, not preferences.
 LD-003 Skeletons, not spinners, on the core surfaces (home, reader, ask, library, history).
 LD-004 No white void on first paint anywhere.
@@ -1147,7 +1150,7 @@ PW-020 Create a study from a thread, then edit the thread → study reference st
 
 ## CO — Consistency & the one-hand test — 20
 
-CO-001 Terminology inventory: every user-facing noun and verb; one term per concept or a finding each (B6).
+CO-001 **Terminology inventory — the one mapping that earns its keep.** The app currently uses Ask/Search/Study, Save/Bookmark/Shelf, Thread/History/Chat and Work/Book/Document/Source for overlapping ideas. You cannot fix that by testing screens one at a time; you have to see the words in one list. Collect every user-facing noun and verb, then decide one term per concept.
 CO-002 Resolve: Ask vs Search vs Study. CO-003 Resolve: Save vs Bookmark vs Shelf.
 CO-004 Resolve: Thread vs History vs Chat vs Conversation. CO-005 Resolve: Work vs Book vs Document vs Source.
 CO-006 Resolve: Voices vs Commentary vs Sources.
@@ -1212,8 +1215,10 @@ task in every section is "enumerate and append what this missed."
 2. Every enumeration task has actually appended what it found — a section whose enumeration added
    nothing is a section that was not enumerated.
 3. Every P0/P1 independently reproduced by a second person.
-4. The four inventories exist and are ratified: **Back-map** (NV-001), **waiting standard**
-   (LD-001), **terminology** (CO-001), **empty states** (EM-001).
+4. Two artefacts exist, because they cannot be derived screen-by-screen: the **Back-map**
+   (NV-001) and the **terminology list** (CO-001). No sign-off ritual — they just have to exist and
+   be used. The waiting standard is already written into LD-001; the empty-state "inventory" was
+   ceremony and has been folded into the EM tests.
 5. Every finding re-tested by someone other than whoever fixed it.
 6. The gestalt test (CO-020) passes in the owner's judgement — that one is not delegable.
 
