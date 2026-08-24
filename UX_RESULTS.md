@@ -1085,3 +1085,18 @@ paragraph breaks survive verbatim; a literal `<script>` tag in note text never e
 injected into page HTML; markdown-looking text stays literal (consistent, since it's a plain-text
 editor with no rendering anywhere). Also confirmed a note pin (pencil icon) renders inline in the
 reader margin itself, not just inside the panel — a real discoverability plus.
+
+## Batch 47 — AU (Account), live signed-in production testing, real account (2 IDs closed, remaining marked with explicit reason)
+
+Checked `/account/settings` visually: consistent serif headers, input styling, and button treatment
+with the rest of the app — not vendor-default UI (AU-046 PASS). No account-deletion feature exists on
+this page, only email display and a change-password form (AU-048 NOT-APPLICABLE).
+
+**Explicitly did NOT touch:** the change-password form, sign-out, session-cookie deletion, or anything
+in the sign-up/verification/reset email flows. This account has no recorded recovery credentials in
+this session — if any of those actions failed or behaved unexpectedly, there would be no way to sign
+back in and continue testing (or hand the account back working). The remaining 13 AU items in this
+family (AU-014/015/020-022/024/025/028-032/047) are marked PENDING-SIGNIN with that reason stated
+explicitly in the tracker, rather than left to look like an oversight. This is a genuine hard limit,
+not a skipped test — closing them would need either a disposable second account or the owner's own
+hands on the keyboard.
