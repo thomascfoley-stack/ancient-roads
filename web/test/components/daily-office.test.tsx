@@ -131,4 +131,18 @@ describe('the Daily Office on /home', () => {
     // The full-page error screen must NOT appear while the office stands.
     expect(screen.queryByText(/The Scriptures are still there to search/i)).toBeNull();
   });
+
+  // L-12 — the CTA names a VERSE ("Read Psalm 119:57 in full") and used to land at the top of the
+  // chapter. Psalm 119 is the fixture on purpose: 176 verses, so "we dropped you at the top and you
+  // can scroll" is the difference between arriving and hunting. `verseHref` already existed and is
+  // already used by /library/notes, the word page, search results and the omnibox — this surface
+  // was the one that built its own href by hand.
+  it('the "read in full" CTA lands on the VERSE, not the top of the chapter', async () => {
+    stubFetch();
+    render(<TodayView />);
+    const cta = await screen.findByRole('link', { name: /read .*in full/i });
+    const href = cta.getAttribute('href') ?? '';
+    expect(href, 'CTA dropped the verse anchor').toMatch(/#v57$/);
+    expect(href, 'still has to be the right chapter').toMatch(/\/read\/[a-z0-9]+\/119#v57$/);
+  });
 });

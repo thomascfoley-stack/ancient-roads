@@ -2,6 +2,38 @@
 
 Format: ID · lane · severity (P0 broken / P1 user-angry / P2 friction / P3 cosmetic) · narrative · repro · expected vs actual.
 
+---
+
+## ⚠ READ FIRST — the findings record has a material error rate, mine most of all
+
+Four items in the ratified plan have now failed verification **at build time, by the person who
+filed them**, and the pattern is consistent enough to act on:
+
+| Item | Filed as | Actually |
+|---|---|---|
+| **L-5** (DeepSeek-F12) | `/desk` empty state has no CTA | Both CTAs already render. Retracted at ratification (owner re-verified personally) |
+| **Claude-1 / K-2** | P1, "strips inline scripture references" — content corruption | P2. The quotation survives; the *citation* is lost. Severity was overstated on a misread example |
+| **Claude-4 / L-9** | progress reads 100% instantly | Its stated root cause was fixed on 2026-08-02 and has been **live for three weeks** |
+| **Claude-5 / L-10** | word-study rows look clickable, aren't | Rows are working accordions; chips are already links. Proposed fix would break a documented design |
+
+**Three of those four are mine.** The common factor is not carelessness about *whether* something
+looked wrong — it is that each was filed from a quick observation on production without isolating
+the mechanism, and the plan then inherited my explanation as if it were the finding. A wrong
+explanation is more expensive than a wrong observation, because it survives review: two of the four
+were endorsed by a second reviewer before anyone tried to build them.
+
+**What this means for whoever works this plan next.** Treat every un-built item as *needs
+re-observation*, not as *ready*. Specifically, before writing code for a finding, check that its
+stated root cause is still true of the current tree — `git log -S` on the line it blames takes
+seconds and would have caught L-9 outright. And when an item's exit test would pass on unfixed code
+(L-5) or would change behaviour the code deliberately chose (L-10), that is the signal to stop and
+re-observe rather than to build.
+
+The four P1 fixes that DID land tonight were all confirmed by execution first — a red-proof, a live
+browser run, or a query — which is the difference and the reason to keep insisting on it.
+
+---
+
 ## MK-13 — 🔴 P1 — no privacy policy or terms linked on the landing page
 
 **Narrative:** A first-time visitor scrolls the whole landing page looking for what happens to the
@@ -381,4 +413,26 @@ scrolling. If it does not reproduce, retire the finding.
 **My scope-gap note about reading plans is NOT retired by this** — it was a separate question
 (*does plan-day completion share this computation?*) and it does not: plan days are their own
 write path. Worth one explicit check by whoever has a session, but there is no shared code to fix.
+
+---
+
+## Claude-5 (L-10) — ⛔ **HELD: did not reproduce, and the planned fix would break a deliberate design**
+
+**What I filed:** the verse panel's Word-study rows look clickable but do nothing.
+
+**Driven live tonight** (dev, signed out, John 3:16 → Word study tab): 25 rows render. Every row is a
+working accordion. Every Strong's chip is already a link to `/word/G####` (`/word/G1063`, `/word/G25`,
+`/word/G3588`, `/word/G2316` all present in the DOM). Clicking the first row — Οὕτως, which has no
+Strong's number and therefore no chip — expands to **"ADVERB — No dictionary entry linked (lemma
+οὕτω(ς))"**. That is an honest empty state, not a dead control.
+
+**The proposed fix is actively wrong.** Its exit test is "row click navigates", which would replace
+the accordion with navigation. `study-panel.tsx:568-570` explains why the current split exists: the
+chip is a link and a **sibling** of the toggle, never nested inside it, because *"a link in a button
+is invalid and one tap cannot honestly do two things."* Implementing L-10 as written would undo a
+considered accessibility decision in order to satisfy a finding that does not reproduce.
+
+**If it is real it is a different bug** — most plausibly the lexicon assets failing to load on prod
+(CH-10's corpus-CDN class), which would present as rows that expand to nothing. That has a different
+fix. Re-observe naming the verse, the row, and what was expected.
 

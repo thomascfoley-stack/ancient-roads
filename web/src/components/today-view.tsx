@@ -9,6 +9,7 @@
 // badges, no notifications (§6) — a quiet morning, twice a day.
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { verseHref } from '@/lib/verse-link';
 import { fetchCommentary } from '@/lib/bible';
 import { EntryCard } from '@/components/commentary-panel';
 import { refOf } from '@/lib/plan/day-ref';
@@ -304,7 +305,11 @@ function ReadyCard({ card, spurgeonFailed, office, duePlan }: {
           hover (§7 — no transition on background). */}
       <div className="mt-20 border-t edge pt-12 text-center">
         <Link
-          href={`/read/${card.bookSlug}/${card.chapter}`}
+          // L-12 — the label names a verse, so the link must land on it. `verseHref` is the shipped
+          // helper (/library/notes, /word/[strongs], search results, the omnibox all use it); this
+          // surface was hand-building `/read/<slug>/<chapter>` and dropping the anchor. Psalm
+          // 119:57 landed at the top of a 176-verse chapter.
+          href={verseHref(card.passage.start)}
           className="inline-flex min-h-[44px] items-center border border-stone-900 px-6 py-3 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
         >
           Read {card.lead.refDisplay} in full
