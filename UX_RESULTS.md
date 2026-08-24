@@ -1140,11 +1140,14 @@ Both the wrong-file-type and 0-byte rejection messages read: "...Slice 1 accepts
 ingestion pipeline) — meaningless and slightly unprofessional-looking to an end user who has no idea
 what "Slice 1" refers to.
 
-### F-102 · **P2/B9** · `/library/uploads` can take 20+ seconds to load past its skeleton state, with no progress indication
-Confirmed live: one load of this page sat on the static skeleton for over 20 seconds before rendering
-real content — no percentage, no message, no way out. This is the same page a prior agent flagged as
-having a shorter (1-3s) version of this stall and couldn't confirm as more than noise; this run
-removes that doubt.
+### F-102 · **P1/B9, upgraded** · `/library/uploads` repeatedly stalls 20-60+ seconds on its skeleton state, with no progress indication
+Confirmed live, twice more in a later batch: one load sat on the static skeleton for over 20 seconds,
+a second load (same URL, same session, minutes later) took roughly **60 seconds**. No percentage, no
+message, no way out, either time. This is the same page a prior agent flagged as having a shorter
+(1-3s) version of this stall and couldn't confirm as more than noise — three independent
+confirmations at increasing severity (1-3s → 20s → 60s) removes that doubt and moves this from a P2
+polish item to a P1 reliability concern: a real user hitting the 60s case would very reasonably
+conclude the page is broken and leave.
 
 **Confirmed PASS:** malformed-.docx and fake-.exe-renamed-.docx both get clear, specific, upfront
 refusals naming the actual problem (UP-008/009); `.png` refusal is equally clean (UP-010); the empty-
