@@ -372,3 +372,36 @@ starts guessing.
 LD-005/LD-007 (skeleton layout-shift, Ask's timed wording) — **NOT RUN**, correctly flagged as such
 rather than assumed passing: the local build has near-zero latency, so a genuine loading window
 couldn't be forced without network throttling this agent didn't have.
+
+## Batch 15 — Marketing + auth edge cases (parallel agent, signed out, prod build)
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/marketing-auth.md`.
+
+**Critical-class check, explicitly requested: no P0. No password or credential ever appeared in a
+URL** across gate/sign-in/sign-up, checked directly via `location.href` after each attempt (not log
+text). **L1 confirmed holding on both auth forms** — real hydration confirmed via
+`__react*` key presence, not assumed. The hydration fix from earlier today is solid.
+
+MK-002/003/004/007/010/011/027 ✅ all pass — 390px clean, `/about` footer regression fixed, no
+placeholder text, OG meta complete. AU-002/006/011/013/020/033/035/049 ✅ all pass — method=post on
+every form, weak-password requirement shown before failure (not just after), real `minlength`
+constraint (not decorative), tab order correct, 230-char emoji name accepted, 390px clean both forms.
+
+### F-022 · **P2** · No password-visibility toggle anywhere in the app
+Checked sign-up and sign-in directly — genuinely absent, not hidden. Common pattern, missing on both
+forms that carry a password field.
+
+### F-023 · **P2** · Waitlist double-click fires two duplicate POST requests
+No disabled-while-submitting guard on the waitlist button. Confirmed via network log: two 200s,
+~0.1ms apart. Not data-loss, but violates the "no visible in-flight state" bar (B1).
+
+### F-024 · **P2** · Waitlist form has no `method="post"` (defense-in-depth gap)
+Same L4 class as today's auth-form fix, lower severity here: the field is an email, not a password,
+and JS correctly intercepts it today — but there's no floor if hydration ever fails, same as the bug
+that was live in production this morning. Cheap, same fix.
+
+### F-025 · **P3** · No print stylesheet anywhere
+Checked `document.styleSheets` directly — no `@media print` rule exists. Printing any marketing page
+prints the full screen chrome and background image.
+
+MK-009 (privacy/terms) re-confirmed absent, not new — already tracked as F-001/P1.
