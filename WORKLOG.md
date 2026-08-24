@@ -63,8 +63,7 @@ skipIf, red-proofed by hiding the dir (4 passed | 1 skipped), 5 passed with asse
 
 ### NOT DONE / UNVERIFIED
 
-- **Deploy receipt: see the addendum below this entry** (written after CI's verdict; nothing
-  above depends on it).
+- **Deploy receipt:** see the DEPLOY ADDENDUM at the end of this entry.
 - THAYER's vintage-reproduction leg (0.9994-0.9998 cosines) rests on the tool's own log +
   VERIFICATION.md; re-execution costs one embed call per section and was not run.
 - W-VEC429 LOW finding filed, not fixed (structured status field is the remedy).
@@ -74,6 +73,13 @@ skipIf, red-proofed by hiding the dir (4 passed | 1 skipped), 5 passed with asse
   env leakage between spawning tests under load. Filed here, not chased.
 - Prod-bound artifacts B1-B6 untouched — owner-gated, in the packet. ADR-118 stays OPEN
   (launch-blocker, packet A1); SEC-1 gate decision stays the owner's (A7).
+
+**DEPLOY ADDENDUM (2026-08-24T00:08Z).** `7747f10` is LIVE on `ancientpaths.app` —
+`dpl_5WBo5kQLqAme4Jgzq9wCa2pT9JAX`, alias verified by deployment-id match
+(receipt `docs/evidence/deploys/deploy-7747f10-2026-08-24T00-08-19Z.txt`). First attempt was
+BLOCKED by the served-column preflight wanting PREDEPLOY_DB_URL — supplied read-only from
+`~/.neon_prod_url` under the owner's in-session deploy directive; gate then passed. CI on the
+deployed commit's branch: SUCCESS (run 32675060580).
 
 ## 2026-08-22 — History search: the in-flight signal, and the tab that looked ignored
 

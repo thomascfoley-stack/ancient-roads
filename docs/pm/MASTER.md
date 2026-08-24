@@ -7,7 +7,7 @@ state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than c
 > histories, the A1 blocker narrative, the O-1 corrections, the failure-mode watchlist — moved
 > VERBATIM to [`MASTER_HISTORY.md`](MASTER_HISTORY.md). Rows cite it as `MASTER_HISTORY.md §<anchor>`.
 
-Last verified: 2026-08-21 · **live on `ancientpaths.app`: `d5cfa04`** (receipt
+Last verified: 2026-08-24 · **live on `ancientpaths.app`: `7747f10`** (receipt `dpl_5WBo5kQLqAme4Jgzq9wCa2pT9JAX`, 2026-08-24T00:08Z) — the swarm-closeout candidate: 22 workstream merges + 2 cherry-picks, Wave-7 verified, CI green (the first green audit on this lineage). Live sits on `swarm/closeout-2026-08-22`, which CONTAINS fix/q1-signed-out-state and origin/main; the merge-to-main gap remains. Re-measure rather than read.
 `dpl_C56HPSV59onumHD89PpqcxxhySrP`, 2026-08-21T07:13Z) — the night of three deploys: the union that
 restored the highlighter release, Daily Office Sprint 1 (+ five-lens audit remediation), study
 entrance, desk continuous read, My Works Tier 0, B021. Live sits on `fix/q1-signed-out-state`,
