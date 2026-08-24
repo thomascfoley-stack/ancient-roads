@@ -822,3 +822,23 @@ the gate itself, error-message tone.
 
 Remaining ~15 of 52 IDs PENDING-SIGNIN/PARTIAL — need either a verified signed-in session (constraint:
 the one real account) or a real inbox for throwaway test addresses, neither available this pass.
+
+## Batch 36 — CH (Chaos/edge-case), tracker-driven, signed-out
+
+### F-081 · CH-008 · **P2** · Unguarded localStorage access crashes the entire reader, not just the affected feature
+`web/src/lib/reading-prefs.ts` (lines ~66, 81, 90, 96) reads/writes `localStorage` with no try/catch,
+unlike the guarded inline script in `app/layout.tsx:138`. When `localStorage` throws (private-browsing
+mode, storage quota, browser extension interference), the exception is uncaught and the whole reader
+falls into the generic error boundary — the reading surface becomes fully unusable rather than
+degrading gracefully (e.g. just skipping the saved preference).
+
+**Confirmed PASS:** rapid navigation across 6 pages stayed coherent; no PostHog requests observed at
+all (corroborates the already-filed CSP-blackout finding — the app itself is unaffected by it); clean
+empty-state search; 20x back/forward spam settled coherently with no corruption; SQL-ish query strings
+treated as literal text, not executed; XSS/long-string injection on the search field independently
+re-confirmed safe (matches earlier CH-021/022 PASS).
+
+**Coverage limits, stated honestly:** several IDs are genuinely NOT-MEANINGFULLY-TESTABLE with the
+tooling available this pass — no third-party-cookie-blocking simulation, no distinct CDN host to
+throttle in this local build (same-origin asset serving), no clock-skew or deploy-trigger capability,
+2-hour idle-session impractical to simulate. 6 of 24 PENDING-SIGNIN as expected.
