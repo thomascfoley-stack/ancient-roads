@@ -1013,3 +1013,27 @@ have and am not asking for SITE_PASSWORD; that's a distinct decision from the au
 AU-13/23 mechanism PASS by direct observation; the "does typing the real password land you at `next`"
 final step is UNVERIFIED, flagged for whoever has SITE_PASSWORD to close in ~10 seconds.
 Restored session cookies afterward, confirmed `/home` renders signed-in correctly again.
+
+## RD-02, HT-05 — verified live, prod — PASS; also cleaned up a self-inflicted state artifact
+
+RD-02: Genesis 50 → next-chapter link correctly reads "Exodus 1 →" (book name, not just a chapter
+number) at a book boundary. PASS.
+**Process note:** discovered the single AS-01 test query from earlier actually persisted a real entry
+in the account's Research History sidebar — an ask query is a write, not a read, despite feeling like
+one. Cleaned it up via the sidebar's own delete control: first click arms a "Confirm delete: <title>"
+state (two-step delete, good friction-against-mistakes pattern), second click removes it. Verified via
+`read_page` that the list is back to exactly the 4 original entries. **HT-05 PASS** (delete → gone from
+list) as a side effect of the cleanup. Noting this for the record: any future ask-query testing on this
+account needs the same cleanup step, it's not a passive read.
+
+## ST-01 — 🔴 P2 finding: Text Size and Column Width controls appear completely non-functional
+
+Clicked "Larger text" 3× on Settings — label stayed "Medium" the whole time (never advanced). Clicked
+"Narrower column" — label stayed "Widest". Checked three ways: (1) the settings page's own label never
+updates, (2) `localStorage` after the clicks contains only `translation`, `reader-theme`,
+`bible-position:v1`, `ph_...posthog` — no text-size or column-width key at all, unlike theme which does
+persist, (3) computed `font-size` on `/read/john/3`'s `<main>` stayed `16px` before and after. By
+contrast Theme (ST-10) and Default Translation (TR-01) both work correctly and persist. This reads as
+two dead controls sitting next to two working ones on the same settings page — a user has no way to
+know their tap did nothing. No state was actually changed by this test (confirmed via localStorage), so
+nothing needed reverting.
