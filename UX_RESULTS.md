@@ -1100,3 +1100,20 @@ family (AU-014/015/020-022/024/025/028-032/047) are marked PENDING-SIGNIN with t
 explicitly in the tracker, rather than left to look like an oversight. This is a genuine hard limit,
 not a skipped test — closing them would need either a disposable second account or the owner's own
 hands on the keyboard.
+
+## Batch 48 — PW (pairwise cross-cutting), live signed-in production testing, real account
+
+### F-099 · PW-001 · **P2** · A highlight made in the reader does not appear in a Desk pane on the same chapter
+Highlighted "For God" (John 3:16, yellow) in `/read/jhn/3`, confirmed visible and persisted there.
+Opened `/desk?p=scripture:jhn/3` — same chapter, no highlight rendered anywhere on verse 16 (confirmed
+via screenshot and scrolled to the exact verse). The two surfaces show the same Scripture text but
+don't share annotation state. (Desk pane also renders a different default translation than the
+reader's chosen one — WEB vs ASV — noted for context, not filed separately since translation choice
+is a per-surface setting elsewhere too, per RD-018/TR findings.) Cleaned up: highlight removed via the
+same popover, confirmed gone.
+
+**Methodology note:** repeatedly hit a ~30px vertical offset between `getBoundingClientRect()`-computed
+coordinates and the coordinate frame the click tool actually uses on this page — cost several
+mis-clicks landing on the wrong verse (14 instead of 16) mid-test. Resolved by reading click targets
+directly from a fresh screenshot rather than trusting computed rects. Worth remembering for any future
+testing on this specific reader layout.
