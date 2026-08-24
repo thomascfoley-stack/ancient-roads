@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-08-22T17:43:30.752Z",
+    "endedAt": "2026-08-22T17:49:07.662Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 1,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "schaff-npnf201",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 588,
+      "anchored": 141,
+      "embedded": 1948
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

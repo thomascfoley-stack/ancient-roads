@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { parsePlanSpec } from '@/lib/plan/spec';
 import { resolveCanonicalGroup } from '@/lib/plan/canonical-groups';
 import { createPlan, listPlans, topicTitle } from '@/lib/plan/store';
@@ -36,6 +37,9 @@ export async function POST(req: NextRequest) {
   } catch {
     return apiError('UNAUTHENTICATED');
   }
+
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let body: { title?: unknown; spec?: unknown };
   try {

@@ -1,0 +1,44 @@
+
+FALSE-POSITIVES (PASS = floor empty, no hijack):
+  ✓ ten commandments of leadership                       inject=2:20, 5:5      floor=—
+  ✓ a good-samaritan gesture toward a stranger           inject=42:10          floor=—
+  ✓ reading Romans, curious about grace                  inject=—              floor=—
+  ✓ the good shepherd insurance company reviews          inject=43:10          floor=—
+  ✓ bread of life bakery near me                         inject=43:6           floor=—
+  ✓ he made a lazarus-like comeback                      inject=43:11          floor=—
+  ✓ the fiery furnace of political debate                inject=27:3           floor=—
+  ✓ prodigal spending on luxury goods                    inject=—              floor=—
+  ✓ the armor of a knight in shining armor               inject=—              floor=—
+  ✓ my genesis moment as an artist                       inject=—              floor=—
+  ✓ pentecost energy at the leadership rally             inject=44:2           floor=—
+  ✓ walking on water with quiet confidence               inject=40:14, 43:6    floor=—
+  ── 12/12 pass
+
+GENUINE (PASS = floor fires, recall kept):
+  ✓ the beatitudes in the Sermon on the Mount            inject=40:5, 40:5, 42:6 floor=40:5, 40:5, 42:6
+  ✓ the ten commandments given to Moses                  inject=2:20, 5:5      floor=2:20, 5:5
+  ✓ the parable of the prodigal son                      inject=42:15          floor=42:15
+  ✓ the whole armor of God, breastplate of righteousness inject=49:6           floor=49:6
+  ✓ the raising of Lazarus from the dead                 inject=43:11          floor=43:11
+  ✓ Pentecost and the tongues of fire                    inject=44:2           floor=44:2
+  ✓ the fiery furnace, Shadrach Meshach and Abednego     inject=27:3           floor=27:3
+  ✓ what does the good shepherd passage in the gospel teach inject=43:10          floor=43:10
+  ── 8/8 pass
+
+HELD-OUT NUMERIC (PASS = floor fires, generalizes untuned):
+  ✓ Habakkuk 3 the prophet prays                         inject=35:3           floor=35:3
+  ✓ 2 Kings 5 Naaman healed of leprosy                   inject=12:5           floor=12:5
+  ✓ Philippians 2 the mind of Christ                     inject=50:2           floor=50:2
+  ✓ Nehemiah 8 the reading of the law                    inject=16:8           floor=16:8
+  ✓ Amos 5 let justice roll down like waters             inject=30:5           floor=30:5
+  ── 5/5 pass
+
+HELD-OUT PERICOPE (not in gazetteer — expected no-route):
+  ✓ the woman at the well                                inject=—              floor=—
+  ✓ doubting Thomas                                      inject=—              floor=—
+  ✓ Jonah and the whale                                  inject=—              floor=—
+  ✓ the tower of Babel                                   inject=—              floor=—
+  ✓ the wedding at Cana                                  inject=—              floor=—
+  ── 5/5 pass
+
+precision PASS · recall PASS · generalization PASS · coverage-honest PASS

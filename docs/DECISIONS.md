@@ -13,6 +13,8 @@ One short entry per irreversible or architectural decision: **context → decisi
 ## ADR-003 — Move off the `@neondatabase/auth` beta (SEC-1)
 **Context:** The beta pins `better-auth@1.4.18` → 2 critical + 7 high CVEs (incl. GHSA-g38m account-takeover), unfixable via override (tested — breaks the build), and a black-box HTTP session path that made `/account`/logout unreliable. **Decision:** Migrate to Better-Auth-direct (own the version + `accountLinking` config); interim = standalone logout + social-login-only for beta. **Why:** Can't patch a managed beta we don't control; it's the gate for public launch. **Rejected:** Continuing to patch the beta (whack-a-mole); staying on it for launch. See `docs/AUTH_MIGRATION_SPIKE.md`.
 
+> **Update 2026-08-23 (W-SEC1, swarm order 2026-08-22 §9):** the "unfixable via override" premise expired when Neon shipped `@neondatabase/auth@0.5.0-beta` depending on `better-auth@1.6.23`. The in-tree exposure this ADR is rooted in is closed by version on branch `swarm/w-sec1-dependency-truth` (deps-audit green, `--expect-red` empty; evidence `docs/evidence/swarm-2026-08-22/w-sec1/baseline-red.md`). The app nonetheless still runs Neon Auth (ADR-107/108 reversed the Better-Auth-direct cutover), and the hosted server's better-auth version remains unobservable from this repo — so the public-launch ruling this ADR feeds stays the owner's, per `docs/SECURITY.md` SEC-1.
+
 ## ADR-004 — Public-domain translations for search; copyrighted display-only
 **Context:** Embedding requires storing full text; every modern copyrighted translation (ESV/NIV/NASB/NLT/CSB) forbids full-text storage, and Crossway won't license solo developers. **Decision:** Build the embedded/search core on **BSB** (public domain, modern) + WEB/KJV/ASV; offer copyrighted translations, if at all, as per-request API *display* only — never in the search index. **Why:** Legal necessity; BSB gives the "modern readable, freely embeddable" translation ESV can't. **Rejected:** Licensing ESV (ineligible as solo dev; AI/embedding separately restricted even for Logos). See `DATA_SOURCES.md`.
 
@@ -2024,6 +2026,13 @@ filter is the second line, not the hole.
 > returned **0 voices**, which under the failure taxonomy is a no-content/coverage shape with a
 > different remedy than a ranking defect; pn20-18 is checked first against `e033023`'s
 > 1/2/3-John overlap-dedupe fix (a routing-side regression would produce exactly this shape).
+>
+> **REMEDY APPLIED AND GATE CLEARED 2026-08-24** (owner-ordered in-session; bar unchanged):
+> `HNSW_EF_SEARCH` 64 → 200 per the pre-registered ef-lever slice
+> (`docs/evidence/adr118-ef-lever/PRE-REG.md` + RESULT.md). pn20 HIT@2 **18/20 against the 18/20
+> bar** through the shipped constant; full v4 holds at ef=200 (every category passes, several
+> improve); controls clean; wall-clock parity. The 07-14 ef=64 sweep was correct for its corpus;
+> P4.n outgrew it — the constant's comment now carries that history and the re-sweep rule.
 >
 > **LABEL RE-CODE DONE 2026-08-22** (`docs/evidence/swarm-2026-08-22/w-pn20/LABEL-RECODE.md`,
 > commit `46d8b9c`): the count is UNCHANGED — 17/20 both ways, no case was mis-scored. All three

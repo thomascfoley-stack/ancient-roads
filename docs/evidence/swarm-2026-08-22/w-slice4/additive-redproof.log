@@ -1,0 +1,53 @@
+=== RED LEG 2026-08-23T03:19:55Z — normalize-contract.ts seeded with the H4 defect (origin stamped 'corpus' unconditionally) ===
+ RUN  v2.1.9 /private/tmp/swarm-slice4/web
+ ❯ test/ask-additive-not-load-bearing.test.ts (3 tests | 2 failed) 7ms
+   × /ask pipeline: user voices are additive, never load-bearing > (1) a composed answer resting SOLELY on user voices is rejected 4ms
+     → expected [ 'section_resolves', …(3) ] to include 'diversity_voices'
+   × /ask pipeline: user voices are additive, never load-bearing > (2) user voices are LEGAL in a passing answer: corpus voices carry the floors, a user voice rides along 2ms
+     → expected { ok: false, violations: [ { …(3) } ] } to deeply equal { ok: true }
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/ask-additive-not-load-bearing.test.ts > /ask pipeline: user voices are additive, never load-bearing > (1) a composed answer resting SOLELY on user voices is rejected
+AssertionError: expected [ 'section_resolves', …(3) ] to include 'diversity_voices'
+ ❯ test/ask-additive-not-load-bearing.test.ts:119:20
+    117|     expect(result.ok).toBe(false);
+    118|     const checks = result.ok ? [] : result.violations.map((v) => v.che…
+    119|     expect(checks).toContain('diversity_voices');
+       |                    ^
+    120|     expect(checks).toContain('passages_grounded');
+    121|     // and the origin stamping is true (the thing the H4 defect launde…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+ FAIL  test/ask-additive-not-load-bearing.test.ts > /ask pipeline: user voices are additive, never load-bearing > (2) user voices are LEGAL in a passing answer: corpus voices carry the floors, a user voice rides along
+AssertionError: expected { ok: false, violations: [ { …(3) } ] } to deeply equal { ok: true }
+- Expected
++ Received
+  Object {
+-   "ok": true,
++   "ok": false,
++   "violations": Array [
++     Object {
++       "blockIndex": 2,
++       "check": "section_resolves",
++       "message": "section_id 3 (origin corpus) does not resolve",
++     },
++   ],
+  }
+ ❯ test/ask-additive-not-load-bearing.test.ts:135:20
+    133|     const parsed = normalizeContract(seeded, sectionAttributions);
+    134|     const result = await verifyV1(parsed, buildCorpusLookup(CORPUS_CHU…
+    135|     expect(result).toEqual({ ok: true });
+       |                    ^
+    136|   });
+    137| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed (1)
+      Tests  2 failed | 1 passed (3)
+   Start at  20:19:55
+   Duration  239ms (transform 39ms, setup 0ms, collect 75ms, tests 7ms, environment 0ms, prepare 30ms)
+
+=== GREEN LEG 2026-08-23T17:34:08Z — seed reverted (git checkout), shipped origin stamping restored ===
+ RUN  v2.1.9 /private/tmp/swarm-slice4/web
+ ✓ test/ask-additive-not-load-bearing.test.ts (3 tests) 3ms
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  10:34:08
+   Duration  320ms (transform 45ms, setup 0ms, collect 90ms, tests 3ms, environment 0ms, prepare 40ms)

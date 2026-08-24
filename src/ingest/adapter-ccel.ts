@@ -282,6 +282,7 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
     authorDied: entry.author_died as number | undefined, year: (entry.year_written as number) ?? (prov.year as number),
     sourceType: st, register: registerMap[st] ?? 'prose', tradition: entry.tradition as string, era: entry.era as string,
     license: entry.license as string, url: prov.url as string, edition: (prov.edition as string) ?? '', publish: opts.publish ?? (entry.serve !== false),
+    genre: entry.genre as string | undefined, // history-scope genre rides the manifest into sources.provenance
     // metrical psalters are PARAPHRASE-voice (never rendered as Scripture)
     paraphrase: (entry.paraphrase as boolean | undefined) ?? /psalter|metrical.*psalm/i.test(entry.slug as string),
     sections,

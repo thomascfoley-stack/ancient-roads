@@ -44,6 +44,13 @@ vi.mock('@/lib/db', () => ({
 }));
 
 import { FORBIDDEN_PROVENANCE_DOMAINS } from '@/lib/forbidden-provenance.mjs';
+import {
+  EXEGETICAL_TYPE_SQL,
+  HISTORIAN_TYPE_SQL,
+  SERMON_TYPE_SQL,
+  SONG_VERSE_TYPE_SQL,
+  THEOLOGY_TYPE_SQL,
+} from '@/lib/teacher/routing';
 import { __resetCorpusModelCache } from '@/lib/user-corpus/model';
 import { relatedVoices } from '@/lib/user-corpus/related-voices';
 import { computeSuggestedReadings } from '@/lib/user-corpus/suggested-readings';
@@ -81,13 +88,13 @@ beforeEach(() => {
   __resetCorpusModelCache();
 });
 
-describe('relatedVoices — the three corpus sweeps (H9 + D9)', () => {
+describe('relatedVoices — the six corpus sweeps (H9 + D9 + W-RELVOICE)', () => {
   it('runs the sweeps under an explicit hnsw.ef_search, in the SAME transaction', async () => {
     await relatedVoices('u-integrity', 'd-integrity', corpusPredicate('true'));
     const sweepBatch = capture.batches.find((b) => b.some((q) => q.text.includes('WITH near AS')));
     expect(sweepBatch, 'no sweep batch was issued').toBeDefined();
     const sweeps = sweepBatch!.filter((q) => q.text.includes('WITH near AS'));
-    expect(sweeps.length, 'expected the three register sweeps in one batch').toBe(3);
+    expect(sweeps.length, 'expected the four prose-lane sweeps plus hymn and poetry in one batch').toBe(6);
     // The GUC must ride the SAME runAsUser batch: runAsUser wraps its queries in one
     // sql.transaction, and `set_config(…, true)` is transaction-local — a GUC set anywhere
     // else is a no-op on the stateless driver (routing.ts:311-315 records exactly this).
@@ -100,8 +107,39 @@ describe('relatedVoices — the three corpus sweeps (H9 + D9)', () => {
   it('every sweep carries the forbidden-provenance leg with the canonical denylist bound', async () => {
     await relatedVoices('u-integrity', 'd-integrity', corpusPredicate('true'));
     const sweeps = capture.batches.flat().filter((q) => q.text.includes('WITH near AS'));
-    expect(sweeps.length).toBe(3);
+    expect(sweeps.length).toBe(6);
     for (const q of sweeps) expectProvenanceLeg(q, 'relatedVoices sweep');
+  });
+
+  it('every sweep carries a source_type conjunct, DERIVED from the shared routing constants (W-RELVOICE)', async () => {
+    // The conjunct is what lets the planner prove query ⇒ partial-index predicate; without one
+    // the sweep plans the ~8 GB full-table idx_embeddings_vector or a seq scan (red transcripts,
+    // docs/evidence/swarm-2026-08-22/W-RELVOICE/). The expected conjuncts are the routing.ts
+    // constants themselves, imported — never a second hand-typed copy (watchlist artefact 1):
+    // if the constants drift, this expectation drifts WITH the index lockstep guard
+    // (legal-hnsw-index-sync.test.ts), so the two can never silently disagree.
+    // SEED: drop any lane's `AND ${…_TYPE_SQL}` from related-voices.ts -> RED (that conjunct
+    // is found in no sweep). Proven: redproof-invariant.txt beside the fix evidence.
+    await relatedVoices('u-integrity', 'd-integrity', corpusPredicate('true'));
+    const sweeps = capture.batches.flat().filter((q) => q.text.includes('WITH near AS'));
+    expect(sweeps.length).toBe(6);
+    const proseLanes = [EXEGETICAL_TYPE_SQL, SERMON_TYPE_SQL, THEOLOGY_TYPE_SQL, HISTORIAN_TYPE_SQL];
+    for (const conjunct of proseLanes) {
+      expect(
+        sweeps.some((q) => q.text.includes(conjunct)),
+        `no sweep carries the prose-lane conjunct \`${conjunct}\` — its lane plans the full-table index`,
+      ).toBe(true);
+    }
+    // Hymn and poetry keep their register filters AND the song/verse type conjunct.
+    for (const register of ['hymn', 'poetry']) {
+      const q = sweeps.find((s) => s.text.includes(`register' = '${register}'`));
+      expect(q, `no ${register} sweep was issued`).toBeDefined();
+      expect(q!.text, `the ${register} sweep lacks the song/verse source_type conjunct`).toContain(SONG_VERSE_TYPE_SQL);
+    }
+    // And the conjunct-bearing prose sweeps are exactly the lanes — no sweep is left unscoped
+    // (an unscoped prose sweep is precisely the full-table-index consumer this fix removes).
+    const scoped = sweeps.filter((q) => q.text.includes('source_type'));
+    expect(scoped.length, 'a sweep without any source_type conjunct survives').toBe(6);
   });
 });
 

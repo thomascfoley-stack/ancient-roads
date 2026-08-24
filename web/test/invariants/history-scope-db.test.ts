@@ -1,7 +1,9 @@
 // BEHAVIORAL scope test (design §6 test 4, amended after review — never a string match on SQL):
-// every result the history search returns belongs to a PUBLISHED HISTORIAN work, and every
+// every result the history search returns belongs to an IN-SCOPE PUBLISHED work, and every
 // excerpt is a verbatim substring of its stored section. Fully derived: the probe entity comes
-// from the vocabulary itself, never hand-typed.
+// from the vocabulary itself, never hand-typed. Scope = published + (historian OR genre-history
+// by the per-work datum sources.provenance.genre) — widened 2026-08-23 per the ruled Phase-0
+// mechanism (2026-08-20-historian-ingestion-plan); the restatements below moved with it.
 //
 // ── 2026-08-21: this suite was reported as "~60% flaky, a true-positive scope leak". It was
 // neither. Root-caused with a driven probe sweep; the record matters because two of the three
@@ -47,7 +49,7 @@ const SKIP = announceSkip(
     { name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) },
     { name: 'DEEPINFRA_API_KEY (query embedding)', present: Boolean(KEY) },
   ],
-  'that history results are historian-only, published-only, with verbatim excerpts',
+  'that history results are in-scope published works only, with verbatim excerpts',
 );
 
 // The product's scope, restated (see the header for why this is not imported).
@@ -57,7 +59,7 @@ const SCOPED_VOCAB = `
     JOIN history_embeddings he ON he.section_id = a.section_id
     JOIN sections s ON s.id = a.section_id
     JOIN sources src ON src.id = s.source_id
-   WHERE he.served AND src.status = 'published' AND src.source_type = 'historian'
+   WHERE he.served AND src.status = 'published' AND (src.source_type = 'historian' OR src.provenance->>'genre' = 'history')
    ORDER BY a.entity_label
    LIMIT 1`;
 
@@ -74,7 +76,7 @@ const UNSCOPED_ONLY_VOCAB = `
          JOIN history_embeddings he2 ON he2.section_id = a2.section_id
          JOIN sections s2 ON s2.id = a2.section_id
          JOIN sources src2 ON src2.id = s2.source_id
-        WHERE he2.served AND src2.status = 'published' AND src2.source_type = 'historian')
+        WHERE he2.served AND src2.status = 'published' AND (src2.source_type = 'historian' OR src2.provenance->>'genre' = 'history'))
    ORDER BY a.entity_label
    LIMIT 1`;
 
@@ -84,7 +86,7 @@ describe.skipIf(SKIP)('history search — scope and excerpt gate against a real 
     // Derive a probe from the vocabulary the PRODUCT can actually match — a corpus with none is
     // NOT a pass. Ordered, so the probe is the same row on every machine and every plan.
     const vocab = (await sql.query(SCOPED_VOCAB)) as { label: string }[];
-    expect(vocab.length, 'no served PUBLISHED HISTORIAN anchored entities — cannot exercise the scope; NOT a pass').toBeGreaterThan(0);
+    expect(vocab.length, 'no served in-scope published anchored entities — cannot exercise the scope; NOT a pass').toBeGreaterThan(0);
 
     const res = await searchHistory(`tell me about ${vocab[0]!.label}`);
     expect(res.results.length, 'the derived probe entity returned nothing').toBeGreaterThan(0);
@@ -92,10 +94,15 @@ describe.skipIf(SKIP)('history search — scope and excerpt gate against a real 
 
     const slugs = res.results.map((g) => g.work.slug);
     const kinds = (await sql.query(
-      `SELECT slug, source_type, status FROM sources WHERE slug = ANY($1)`, [slugs],
-    )) as { slug: string; source_type: string; status: string }[];
+      `SELECT slug, source_type, status, provenance->>'genre' AS genre FROM sources WHERE slug = ANY($1)`, [slugs],
+    )) as { slug: string; source_type: string; status: string; genre: string | null }[];
     for (const k of kinds) {
-      expect(k.source_type, `${k.slug} leaked into history results`).toBe('historian');
+      // In-scope = published AND (historian OR genre-history by the per-work datum) — the
+      // widened SCOPE, restated (deliberately not imported; see the header).
+      expect(
+        k.source_type === 'historian' || k.genre === 'history',
+        `${k.slug} (${k.source_type}/genre=${k.genre}) leaked into history results`,
+      ).toBe(true);
       expect(k.status).toBe('published');
     }
     for (const g of res.results) {
@@ -109,8 +116,8 @@ describe.skipIf(SKIP)('history search — scope and excerpt gate against a real 
   it('an entity anchored ONLY in out-of-scope works returns nothing — the leak direction', async () => {
     // The check the original suite lacked. The loop above asserts "everything returned is in
     // scope", which passes trivially when nothing is returned and cannot fail while SCOPE is
-    // present. This asks the opposite question: something IS anchored and served, and is NOT a
-    // published historian — the search must not surface it.
+    // present. This asks the opposite question: something IS anchored and served, and is NOT in
+    // the published in-scope set — the search must not surface it.
     // SEED: delete `AND src.status = 'published'` from SCOPE in history-search-db.ts and this
     // goes red while every other assertion here stays green.
     const sql = getDb();
@@ -118,7 +125,7 @@ describe.skipIf(SKIP)('history search — scope and excerpt gate against a real 
     if (outside.length === 0) {
       // Not a silent pass: if every served anchored entity is in scope there is nothing to leak,
       // and the corpus state must be visible rather than inferred from a green tick.
-      console.warn('⚠ leak direction NOT EXERCISED: every served anchored entity is already published+historian on this target.');
+      console.warn('⚠ leak direction NOT EXERCISED: every served anchored entity is already in the published scope on this target.');
       return;
     }
     const res = await searchHistory(`tell me about ${outside[0]!.label}`);

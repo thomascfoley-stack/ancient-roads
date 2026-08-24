@@ -1,0 +1,13 @@
+# foxe-martyrs basis re-probe — 2026-08-23T17:39:28Z
+# manifest declares: provenance.acquire.adapter=ccel, ccel_ids=['foxe/martyrs']
+# adapter-ccel fetches https://www.ccel.org/ccel/<id>.xml and requires ThML
+
+## GET https://www.ccel.org/ccel/foxe/martyrs.xml
+HTTP 200 | content-type text/html; charset=UTF-8 | bytes 23196
+first bytes: <!DOCTYPE html PUBLIC ... XHTML+RDFa ...> — HTML, not ThML => fetchCcelXml guard fails
+
+## GET https://www.ccel.org/ccel/foxe (author page) — only work listed:
+/ccel/foxe/martyrs (the same id; no alternate ThML-bearing edition under this author)
+
+## prior attempt (2026-08-21 phase2 log, docs/evidence/historian-phase2/foxe-martyrs.log):
+STOP: foxe/martyrs fetch failed or is not ThML. Nothing written.

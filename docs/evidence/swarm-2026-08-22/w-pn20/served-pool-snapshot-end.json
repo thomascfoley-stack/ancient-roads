@@ -1,0 +1,52 @@
+{
+  "at": "2026-08-22T17:43:09.551Z",
+  "host": "ep-tiny-hat",
+  "servedTotal": 390184,
+  "bySourceType": [
+    {
+      "source_type": "sermon",
+      "n": 162507
+    },
+    {
+      "source_type": "commentary",
+      "n": 107927
+    },
+    {
+      "source_type": "theology",
+      "n": 28726
+    },
+    {
+      "source_type": "lexicon",
+      "n": 23657
+    },
+    {
+      "source_type": "father",
+      "n": 23642
+    },
+    {
+      "source_type": "topical_index",
+      "n": 13082
+    },
+    {
+      "source_type": "hymn",
+      "n": 6887
+    },
+    {
+      "source_type": "confession",
+      "n": 6590
+    },
+    {
+      "source_type": "devotional",
+      "n": 6589
+    },
+    {
+      "source_type": "historian",
+      "n": 6492
+    },
+    {
+      "source_type": "poetry",
+      "n": 4085
+    }
+  ],
+  "distinctWorks": 124
+}

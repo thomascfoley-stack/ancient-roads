@@ -1,0 +1,60 @@
+  [32mPASS[0m missing-env-var-named — exit 1
+  [32mPASS[0m missing-env-var-named — says: missing required environment variable(s): SITE_PASSWORD
+  [32mPASS[0m missing-teacher-allowlist-named — exit 1
+  [32mPASS[0m missing-teacher-allowlist-named — says: missing required environment variable(s): TEACHER_ALLOWLIST
+  [32mPASS[0m project-absent-from-org-blocked — exit 1
+  [32mPASS[0m project-absent-from-org-blocked — says: does not mention 'web'
+  [32mPASS[0m project-absent-from-org-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m project-named-webhooks-is-not-the-target — exit 1
+  [32mPASS[0m project-named-webhooks-is-not-the-target — says: does not mention 'web'
+  [32mPASS[0m licensing-gate-failure-stops-deploy — exit 1
+  [32mPASS[0m licensing-gate-failure-stops-deploy — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m tree-changed-during-build-blocked — exit 1
+  [32mPASS[0m tree-changed-during-build-blocked — says: changed during the build
+  [32mPASS[0m tree-changed-during-build-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — exit 2
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — receipt records: state:           unverified
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — says: UNVERIFIED
+  [32mPASS[0m deploy-log-path-is-unique — silent on: XXXXXX
+  [32mPASS[0m failed-upload-receipt-is-labelled — exit 1 (non-zero)
+  [32mPASS[0m failed-upload-receipt-is-labelled — receipt records: outcome unknown
+  [32mPASS[0m failed-upload-receipt-is-labelled — silent on: Done —
+  [32mPASS[0m alias-mismatch-is-a-failure — exit 3
+  [32mPASS[0m alias-mismatch-is-a-failure — says: THE DEPLOY DID NOT TAKE
+  [32mPASS[0m alias-mismatch-is-a-failure — receipt records: state:           mismatch
+  [32mPASS[0m alias-mismatch-is-a-failure — silent on: Done —
+  [32mPASS[0m inspect-unavailable-is-unverified — exit 2
+  [32mPASS[0m inspect-unavailable-is-unverified — says: does NOT mean the deploy failed
+  [32mPASS[0m inspect-unavailable-is-unverified — receipt records: state:           unverified
+  [32mPASS[0m inspect-unavailable-is-unverified — silent on: Done —
+  [32mPASS[0m happy-path-verified-live — exit 0
+  [32mPASS[0m happy-path-verified-live — says: is served by dpl_SAME999
+  [32mPASS[0m happy-path-verified-live — says: Done —
+  [32mPASS[0m happy-path-verified-live — receipt records: state:           live
+  [32mPASS[0m happy-path-verified-live — receipt records: dpl_SAME999
+  [32mPASS[0m happy-path-verified-live — CLI received: --meta sha=d211dcd29a9e0c3a607697125a65dafc52054cc5
+  [32mPASS[0m happy-path-verified-live — CLI received: vercel@
+  [32mPASS[0m happy-path-verified-live — every vercel call ran from web/
+  [32mPASS[0m runs-from-a-subdirectory — exit 0
+  [32mPASS[0m runs-from-a-subdirectory — receipt records: state:           live
+  [32mPASS[0m receipt-filename-is-not-just-the-sha — receipt name is timestamped: deploy-5978c06-2026-08-22T17-40-31Z.txt
+
+=== 59 passed, 0 failed ===
+all deploy.sh gates hold
+[32m✓ deploy.sh — gate harness (bash)[0m
+
+[1m▶ data — Gate B license (fail-closed)[0m
+======================================================================
+GATE B — LICENSE (fail closed)
+======================================================================
+Manifest: ingest/sources.config.json (917 source entries)
+Published sources (DB): skipped (no DATABASE_URL).
+
+✓ GATE B PASSED: no license/provenance violations.
+[32m✓ data — Gate B license (fail-closed)[0m
+
+[1m▶ coverage gaps (informational)[0m
+(no coverage summary produced)
+
+════════════════════════════════════
+[31mAUDIT FAILED (1): tests + coverage — vitest[0m

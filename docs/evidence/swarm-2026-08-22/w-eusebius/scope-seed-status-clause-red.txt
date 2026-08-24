@@ -1,0 +1,57 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-eusebius/web
+
+ ❯ test/invariants/history-scope-db.test.ts (2 tests | 2 failed) 3540ms
+   × history search — scope and excerpt gate against a real DB > returns historian/published works only, every excerpt verbatim 2586ms
+     → expected 'staged' to be 'published' // Object.is equality
+   × history search — scope and excerpt gate against a real DB > an entity anchored ONLY in out-of-scope works returns nothing — the leak direction 953ms
+     → Anabaptists is anchored only outside the served scope and must not surface: expected [ 'vanbraght-mirror', …(3) ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/history-scope-db.test.ts > history search — scope and excerpt gate against a real DB > returns historian/published works only, every excerpt verbatim
+AssertionError: expected 'staged' to be 'published' // Object.is equality
+
+Expected: "published"
+Received: "staged"
+
+ ❯ test/invariants/history-scope-db.test.ts:106:24
+    104|         `${k.slug} (${k.source_type}/genre=${k.genre}) leaked into his…
+    105|       ).toBe(true);
+    106|       expect(k.status).toBe('published');
+       |                        ^
+    107|     }
+    108|     for (const g of res.results) {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/invariants/history-scope-db.test.ts > history search — scope and excerpt gate against a real DB > an entity anchored ONLY in out-of-scope works returns nothing — the leak direction
+AssertionError: Anabaptists is anchored only outside the served scope and must not surface: expected [ 'vanbraght-mirror', …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "vanbraght-mirror",
++   "schaff-hcc7",
++   "schaff-hcc8",
++   "bangs-history2",
++ ]
+
+ ❯ test/invariants/history-scope-db.test.ts:133:106
+    131|     const res = await searchHistory(`tell me about ${outside[0]!.label…
+    132|     const slugs = res.results.map((g) => g.work.slug);
+    133|     expect(slugs, `${outside[0]!.label} is anchored only outside the s…
+       |                                                                                                          ^
+    134|   }, 60_000);
+    135| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  10:24:05
+   Duration  3.75s (transform 30ms, setup 0ms, collect 35ms, tests 3.54s, environment 0ms, prepare 33ms)
+

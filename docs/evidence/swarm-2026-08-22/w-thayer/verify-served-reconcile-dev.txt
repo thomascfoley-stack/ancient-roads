@@ -1,0 +1,24 @@
+(node:10559) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+served-reconcile — target ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (read-only)
+  works with keyed rows: 178; sources rows: 205
+  published & fully served (of what may legally serve): 124
+  unpublished & fully unserved:  49
+  published, NO keyed rows (legacy author cohort / sections-model, unreachable by slug): 0
+  E3-deferred: published works with FORBIDDEN-provenance rows correctly unserved: 0
+  inert orphans (keyed rows, no sources row, 0 served — E3 cleanup inventory): 0
+  work-less legacy rows: 51362 (8258 served) — reported, not asserted
+
+[31mDIVERGENCE — 5 violation(s):[0m
+  published-not-fully-served: eastons-dictionary — 4841 clean-provenance row(s) unserved (0/4841 served)
+  published-not-fully-served: naves-topical — 5357 clean-provenance row(s) unserved (0/5357 served)
+  published-not-fully-served: bdb-lexicon — 9794 clean-provenance row(s) unserved (0/9794 served)
+  published-not-fully-served: isbe — 26475 clean-provenance row(s) unserved (0/26475 served)
+  published-not-fully-served: smiths-dictionary — 5576 clean-provenance row(s) unserved (0/5576 served)

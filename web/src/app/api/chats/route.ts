@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { getChats, createChat } from '@/lib/chat';
 
 // 2026-08-17 pre-deploy audit (attack lens) #6: `title` and `persona` had no length cap — the
@@ -32,6 +33,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
+    const csrfFloor = requireJsonContentType(req);
+    if (csrfFloor) return csrfFloor;
     const body = (await req.json()) as { title?: unknown; persona?: unknown };
     const title = typeof body.title === 'string' ? body.title : '';
     if (!title) {

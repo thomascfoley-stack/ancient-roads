@@ -241,7 +241,11 @@ describe.skipIf(SKIP)('Book Reader API — /api/work/[slug] + /sections (execute
   }, 60_000);
 
   it('sections: malformed params are a 400, never a 500', async () => {
-    for (const qs of ['?after=abc', '?after=1.5', '?after=-1', '?limit=0', '?limit=-3', '?limit=two']) {
+    // after=1e21 passed Number.isInteger and reached SQL: `sections.ordinal` is INT (migration
+    // 006), so the bound value overflows int4 -> 22003 -> 500 (WORKLOG 2026-08-21 deferred
+    // security finding, W-SEC-CURSOR).
+    // SEED: drop the upper bound from the route's `after` check -> this goes RED with a 500.
+    for (const qs of ['?after=abc', '?after=1.5', '?after=-1', '?after=1e21', '?after=99999999999', '?limit=0', '?limit=-3', '?limit=two']) {
       const res = await callSections(BIG_SLUG, qs);
       expect(res.status, `${qs} must be rejected as INVALID_REQUEST`).toBe(400);
     }

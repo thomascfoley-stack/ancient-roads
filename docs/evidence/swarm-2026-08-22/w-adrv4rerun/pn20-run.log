@@ -1,0 +1,28 @@
+Held-out eval — FROZEN_PN20 · 20 q · K=6 · corpus=legal(shared) · pool=20 · ef=64
+
+  ✓ [proper-noun] pn20-01  HIT@1=Y voices=2 pass  — Abimelech king of Gerar who took Sarah
+  ✓ [proper-noun] pn20-02  HIT@1=n voices=2 pass  — Korah and the rebellion that the earth swallow
+  ✓ [proper-noun] pn20-03  HIT@1=Y voices=2 pass  — Ehud the lefthanded man who slew Eglon king of
+  ✓ [proper-noun] pn20-04  HIT@1=Y voices=2 pass  — Gideon and the fleece of wool, wet and dry
+  ✓ [proper-noun] pn20-05  HIT@1=Y voices=4 pass  — Abigail who interceded with David for Nabal he
+  ✓ [proper-noun] pn20-06  HIT@1=n voices=2 pass  — Micaiah the prophet who saw the LORD sitting o
+  ✓ [proper-noun] pn20-07  HIT@1=Y voices=2 pass  — Absalom caught by his head in the oak as his m
+  ✓ [proper-noun] pn20-08  HIT@1=Y voices=2 pass  — Adonijah who exalted himself saying I will be 
+  ✓ [proper-noun] pn20-09  HIT@1=Y voices=3 pass  — Jehu who drove furiously and cut off the house
+  ✓ [proper-noun] pn20-10  HIT@1=Y voices=2 pass  — Uzziah the king who burned incense and was smi
+  ✓ [proper-noun] pn20-11  HIT@1=Y voices=2 pass  — Mordecai who would not bow to Haman
+  ✓ [proper-noun] pn20-12  HIT@1=Y voices=3 pass  — Gomer, the wife of Hosea the prophet
+  · [proper-noun] pn20-13  HIT@1=n voices=1 <2-voices  — Joseph of Arimathaea who begged the body of Je
+  ✓ [proper-noun] pn20-14  HIT@1=n voices=2 pass  — Malchus the high priest’s servant whose ear Pe
+  ✓ [proper-noun] pn20-15  HIT@1=Y voices=2 pass  — Pilate who washed his hands before the multitu
+  · [proper-noun] pn20-16  HIT@1=n voices=0 wrong-passage  — Stephanas and his household, the firstfruits o
+  ✓ [proper-noun] pn20-17  HIT@1=Y voices=2 pass  — Jezebel of Thyatira who calls herself a prophe
+  · [proper-noun] pn20-18  HIT@1=n voices=0 wrong-passage  — Diotrephes who loveth to have the preeminence
+  ✓ [proper-noun] pn20-19  HIT@1=n voices=2 pass  — Felix the governor who trembled as Paul reason
+  ✓ [proper-noun] pn20-20  HIT@1=Y voices=2 pass  — Hymenaeus and Alexander whom Paul delivered un
+
+capture → /tmp/swarm-adrv4/docs/evidence/swarm-2026-08-22/w-adrv4rerun/pn20-capture.json  (captured 20/20)
+
+category        n   HIT@1  HIT@2   pass / <2 / wrong / none
+  proper-noun   20    65%   85%    17 / 1 / 2 / 0
+TAG corpus=legal(shared) pool=20 ef=64 cap=2 :: topicalH2=0 pericopeH1=0 epistleH2=0 verserefH1=0

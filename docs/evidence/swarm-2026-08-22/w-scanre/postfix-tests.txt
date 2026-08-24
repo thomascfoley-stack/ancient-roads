@@ -1,0 +1,72 @@
+# POST-FIX vitest (2 residual reds = the two surviving false-floor cases) — 2026-08-23T18:34:02Z
+$ npx vitest run test/reference-intent.test.ts test/ref-parse.test.ts
+
+ RUN  v2.1.9 /private/tmp/swarm-scanre
+
+ ✓ test/ref-parse.test.ts (65 tests) 19ms
+ ❯ test/reference-intent.test.ts (22 tests | 2 failed) 18ms
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: she is 1 mark 5 points from winning 8ms
+     → expected [ …(2) ] to deeply equal []
+   × resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: i counted 3 james 2 marys and a paul 1ms
+     → expected [ { start: 59002001, end: 59002999 } ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: she is 1 mark 5 points from winning
+AssertionError: expected [ …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 23001999,
++     "start": 23001001,
++   },
++   Object {
++     "end": 41005999,
++     "start": 41005001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/reference-intent.test.ts > resolveIntent — common-noun numerics floor only with corroboration > idiom injects but never floors: i counted 3 james 2 marys and a paul
+AssertionError: expected [ { start: 59002001, end: 59002999 } ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   Object {
++     "end": 59002999,
++     "start": 59002001,
++   },
++ ]
+
+ ❯ test/reference-intent.test.ts:73:26
+     71|   ])('idiom injects but never floors: %s', (q) => {
+     72|     const intent = resolveIntent(q);
+     73|     expect(intent.floor).toEqual([]); // no hijack
+       |                          ^
+     74|     expect(intent.inject.length).toBeGreaterThan(0); // soft-boost sti…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 85 passed (87)
+   Start at  11:34:03
+   Duration  418ms (transform 90ms, setup 0ms, collect 141ms, tests 36ms, environment 0ms, prepare 158ms)
+
+exit=1

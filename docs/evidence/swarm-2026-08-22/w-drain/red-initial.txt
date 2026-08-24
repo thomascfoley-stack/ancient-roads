@@ -1,0 +1,52 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-DRAIN/web
+
+ ❯ test/user-corpus/drain-failure-semantics.test.ts (2 tests | 2 failed) 9450ms
+   × drain failure semantics > a missing DEEPINFRA_API_KEY fails the document PERMANENTLY — it is not parked back at queued 8410ms
+     → expected 'queued' to be 'failed' // Object.is equality
+   × drain failure semantics > a drain that gets nowhere reports attempted, not completed 627ms
+     → expected undefined to be 1 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/user-corpus/drain-failure-semantics.test.ts > drain failure semantics > a missing DEEPINFRA_API_KEY fails the document PERMANENTLY — it is not parked back at queued
+AssertionError: expected 'queued' to be 'failed' // Object.is equality
+
+Expected: "failed"
+Received: "queued"
+
+ ❯ test/user-corpus/drain-failure-semantics.test.ts:125:27
+    123| 
+    124|     const after = await getDocument(USER, doc.id);
+    125|     expect(after?.status).toBe('failed');
+       |                           ^
+    126|     expect(after?.parseError).toContain('DEEPINFRA_API_KEY');
+    127|     expect(result.outcomes.failed ?? 0).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/user-corpus/drain-failure-semantics.test.ts > drain failure semantics > a drain that gets nowhere reports attempted, not completed
+AssertionError: expected undefined to be 1 // Object.is equality
+
+- Expected: 
+1
+
++ Received: 
+undefined
+
+ ❯ test/user-corpus/drain-failure-semantics.test.ts:150:30
+    148|     const result = await drain(USER, 1);
+    149| 
+    150|     expect(result.attempted).toBe(1);
+       |                              ^
+    151|     expect(result.completed).toBe(0);
+    152|     expect(result.outcomes.queued ?? 0).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  10:33:53
+   Duration  9.72s (transform 68ms, setup 0ms, collect 89ms, tests 9.45s, environment 0ms, prepare 35ms)
+

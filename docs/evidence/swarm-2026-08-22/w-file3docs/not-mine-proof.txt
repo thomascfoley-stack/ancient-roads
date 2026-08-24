@@ -1,0 +1,46 @@
+=== files changed on swarm/W-FILE3DOCS-programme-docs vs base 9dce273 ===
+ .../w-file3docs/green-presence.txt                 |   5 +
+ .../swarm-2026-08-22/w-file3docs/red-absence.txt   |   3 +
+ .../w-file3docs/redproof-seeded-absence.txt        |   8 ++
+ docs/pm/MASTER.md                                  |  13 ++-
+ docs/pm/PROGRAM_BRIEF.md                           |  40 ++++++++
+ docs/pm/WORKORDER_V2.md                            | 101 +++++++++++++++++++++
+ docs/pm/orders/2026-07-31-strategy-two-lanes.md    |  46 ++++++++++
+ docs/pm/swarm-2026-08-22/items/w-file3docs.md      |  54 +++++++++++
+ 8 files changed, 265 insertions(+), 5 deletions(-)
+
+=== commits touching the failing test since base (expect none) ===
+(empty above = my branch never touched the failing test)
+
+=== failing test file identical between base and HEAD ===
+IDENTICAL
+
+=== the single failure ===
+346:      Tests  1 failed | 847 passed (848)
+ FAIL  test/publish-flip-toolchain.test.ts > thayers evidence gate > the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/publish-flip-toolchain.test.ts:473:67
+    471|   });
+    472|   it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no …
+    473|     expect(fs.existsSync(path.join(ROOT, THAYERS_EVIDENCE_PATH))).toBe…
+       |                                                                   ^
+    474|     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thayers-gate-')…
+    475|     const manifest = path.join(tmp, 'slugs.json');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 69 passed (70)
+
+=== root cause of the pre-existing red ===
+THAYERS_EVIDENCE_PATH = docs/evidence/thayers-source-verification.md (scripts/lib/publish-flip-guard.mjs:170)
+That evidence file is COMMITTED at base 9dce273:
+docs/evidence/thayers-source-verification.md
+So the gate test (expects the file absent) fails at base, independent of this branch.
+Owned and verified by swarm/w-basefix-thayers-guard per the closeout briefing.

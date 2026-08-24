@@ -147,8 +147,12 @@ export async function createDocument(
     sql`SELECT count(*)::int AS documents, COALESCE(sum(byte_size), 0)::bigint AS bytes
           FROM user_documents
          WHERE user_id = ${userId}`,
-    sql`INSERT INTO user_documents (user_id, title, source_filename, byte_size, checksum, mime_type, status)
-        SELECT ${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued'
+    // asserted_ownership_at = now(): the upload UI shows the ownership sentence beside the
+    // only upload control (UPLOADER_DESIGN.md §5/Q7), so every document arriving here was
+    // uploaded past it. Pre-column rows stay NULL — "no assertion recorded", never backfilled.
+    // (Merge union 2026-08-24: B11's quota-enforcing INSERT…SELECT + main's ownership column.)
+    sql`INSERT INTO user_documents (user_id, title, source_filename, byte_size, checksum, mime_type, status, asserted_ownership_at)
+        SELECT ${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued', now()
         WHERE (SELECT count(*) FROM user_documents WHERE user_id = ${userId}) + 1 <= ${MAX_DOCUMENTS_PER_USER}
           AND (SELECT COALESCE(sum(byte_size), 0) FROM user_documents WHERE user_id = ${userId}) + ${meta.byteSize} <= ${MAX_BYTES_PER_USER}
         RETURNING *`,

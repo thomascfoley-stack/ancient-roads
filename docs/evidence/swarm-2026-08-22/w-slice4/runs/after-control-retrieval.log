@@ -1,0 +1,18 @@
+Held-out eval — FROZEN_V4 · 10 q · K=6 · corpus=legal(shared) · pool=20 · ef=64 · cats=control
+
+  ✓ [control] v4-ctl-01  clean (no floor) — garden of eden landscaping supplies coupon code
+  ✓ [control] v4-ctl-02  clean (no floor) — ark of the covenant escape room tickets
+  ✓ [control] v4-ctl-03  clean (no floor) — david and goliath marketing strategy for startups
+  ✓ [control] v4-ctl-04  clean (no floor) — jericho road bike shop opening hours
+  ✓ [control] v4-ctl-05  clean (no floor) — leviathan gaming laptop review and benchmarks
+  ✓ [control] v4-ctl-06  clean (no floor) — how to bake sourdough bread without a starter
+  ✓ [control] v4-ctl-07  clean (no floor) — used pickup trucks for sale under ten thousand dollars
+  ✓ [control] v4-ctl-08  clean (no floor) — the resurrection of vinyl records among young collectors
+  ✓ [control] v4-ctl-09  clean (no floor) — my kingdom for a decent cup of coffee this morning
+  ✓ [control] v4-ctl-10  clean (no floor) — red sea diving resorts and liveaboard trips in Egypt
+
+capture → /private/tmp/swarm-slice4/docs/evidence/heldout/FROZEN_V4-2026-08-23T17-43-51-046Z.json  (captured 10/10)
+
+category        n   HIT@1  HIT@2   pass / <2 / wrong / none
+  control       10   clean 10/10  hijacks=0
+TAG corpus=legal(shared) pool=20 ef=64 cap=2 :: topicalH2=0 pericopeH1=0 epistleH2=0 verserefH1=0

@@ -70,4 +70,11 @@ describe('ROW_COLS — the SQL half of the deep-link contract', () => {
     expect(ROW_COLS).toMatch(/\bs\.ordinal\b/);
     expect(ROW_COLS).not.toMatch(/\bs\.unit_ordinal\b/);
   });
+
+  it('carries the citation provenance, derived from the source record — W-SEC-CCEL', () => {
+    // A copied citation names the work's own edition (sources.provenance registry); a dropped
+    // projection silently nulls every citation's suffix and no mapper test would notice.
+    // SEED: remove the edition projection from ROW_COLS -> RED.
+    expect(ROW_COLS).toMatch(/src\.provenance\s*->>\s*'edition'/);
+  });
 });

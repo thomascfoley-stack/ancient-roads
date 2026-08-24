@@ -1,0 +1,6 @@
+W-THAYER re-chunk oversized thayers-lexicon sections → D1(b) bare body, leading ≤1800 chars
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: DRY-RUN · model: BAAI/bge-large-en-v1.5 (stored slug 'bge-large-en-v1.5')
+evidence log: /private/tmp/swarm-thayer/docs/evidence/swarm-2026-08-22/w-thayer/rechunk-dev-dry-run-2026-08-23T17-53-45-368Z.log
+
+oversized sections (body > 1800 chars) on thayers-lexicon: 484 (max body 34598 chars; lacking 'bge-large-en-v1.5' vector: 0)
+STOP: oversized population is 484, expected 483 — the premise moved; re-verify before writing (override only with an explicit --expect=N after re-measuring).

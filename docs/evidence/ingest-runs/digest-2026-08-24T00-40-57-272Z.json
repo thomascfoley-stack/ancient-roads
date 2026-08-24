@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-08-24T00:40:57.272Z",
+    "endedAt": "2026-08-24T00:41:19.654Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 1,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "pascal-provincial",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 20,
+      "anchored": 1,
+      "embedded": 598
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

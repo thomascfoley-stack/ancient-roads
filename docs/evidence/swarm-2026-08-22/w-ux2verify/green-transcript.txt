@@ -1,0 +1,7 @@
+# GREEN transcript — UX-2 explainer present above the work list
+# tree restored to base 9dce273 (git checkout -- page.tsx)
+explainer occurrences in rendered DOM: 1
+explainer offset in DOM: 31744
+work-list <ul> offset:   31822
+first /work/ row offset: 32085
+ORDER: explainer precedes <ul> precedes first work row: PASS

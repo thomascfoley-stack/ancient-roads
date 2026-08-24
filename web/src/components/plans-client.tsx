@@ -183,6 +183,12 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
           open={open}
           onBack={() => { setOpen(null); router.push('/plans'); }}
           onChanged={() => openPlan(open.plan.id)}
+          onDayPainted={(dayIndex, completedAt) =>
+            setOpen((cur) => cur && {
+              ...cur,
+              days: cur.days.map((day) => (day.day_index === dayIndex ? { ...day, completed_at: completedAt } : day)),
+            })
+          }
         />
       ) : initialPlanId ? null : (
         <div className="mx-auto max-w-3xl">
@@ -655,7 +661,7 @@ export function readingLabel(r: PlanReading): string {
 
 // ── the plan itself ──────────────────────────────────────────────────────────
 
-function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void> }) {
+function PlanDetail({ open, onBack, onChanged, onDayPainted }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void>; onDayPainted: (dayIndex: number, completedAt: string | null) => void }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [pane, setPane] = useState<PassageTarget | null>(null);
@@ -719,22 +725,33 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
 
   const toggle = async (d: PlanDay) => {
     setBusyDay(d.day_index);
+    // OPTIMISTIC (L2 step 2): the flip is painted NOW and rolled back if the
+    // save fails. Was: await the POST, then await a full re-read of the plan,
+    // busyDay holding the checkbox disabled the whole time — on a slow
+    // connection the tap read as dead. Painting first is safe here because
+    // the write sends an ABSOLUTE value (`completed: !d.completed_at`), never
+    // "flip": a late response cannot set the row to something the reader is
+    // no longer looking at. busyDay still locks the same day until this write
+    // resolves, so a rollback can never clobber a newer paint of that day.
+    const painted = d.completed_at ? null : new Date().toISOString();
+    onDayPainted(d.day_index, painted);
     try {
-      // Was: await fetch(...) with no res.ok check and no catch, then onChanged()
-      // unconditionally. On a 401/500 the tick flipped, the re-read returned the unchanged
-      // row, and the checkbox silently reverted with no explanation.
       const res = await fetch(`/api/plans/${open.plan.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind: 'day', dayIndex: d.day_index, completed: !d.completed_at }),
       });
-      if (!res.ok) { setWriteError('That change could not be saved. Please try again.'); return; }
+      if (!res.ok) {
+        onDayPainted(d.day_index, d.completed_at);
+        setWriteError('That change could not be saved. Please try again.');
+        return;
+      }
       setWriteError(null);
-      // AWAITED so busyDay holds until the re-read lands — the checkbox no longer
-      // sits visually unchecked and re-enabled for the length of the refetch,
-      // which read as a dead tap on phones.
-      await Promise.resolve(onChanged());
+      // No re-read on success: the acknowledged write was absolute, so the
+      // painted state IS the server state — a refetch would only spend a
+      // round-trip re-learning it.
     } catch {
+      onDayPainted(d.day_index, d.completed_at);
       setWriteError('That change could not be saved. Please try again.');
     } finally {
       setBusyDay(null);

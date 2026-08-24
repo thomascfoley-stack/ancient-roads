@@ -97,6 +97,86 @@ log lands in `docs/evidence/bug-sweep-2026-08-23/`.
   publish-flip/thayers failure), web 1655/1655 green on re-run (`tradition-gap` live test is
   timing-marginal under parallel load — 120s timeout vs ~56-89s runtime; passes solo 15/15,
   passed in both worktree full audits; not caused by the batch), rate-limit 23/23.
+## 2026-08-23 — swarm closeout: rulings executed, 7 builds resolved, Wave 7 verified, Wave 8 integrated (Claude session, bylaw-4 verifier)
+
+**Session role.** A session that wrote none of the swarm's original work took Wave 7 (independent
+verification), the owner's four rulings, the 7 remaining builds, and Wave 8 (integration). Owner
+rulings recorded in `docs/pm/swarm-2026-08-22/OWNER_RULINGS-2026-08-23.md` per bylaw 1.
+
+**Rulings executed.** W-SLICE4 un-reverted (`3e94771` — control bar read per frozen ADR-028; all
+pre-registered bars cleared under it). W-ANN un-reverted (`24bc0f0` — iterative_scan accepted with
+its cold tail). W-SCANRE **built from scratch** (`290b249`): the fix had never been committed —
+only its eval set and harness. Implemented to the ADR proposal's spec (corroboration gate on
+{mark, james, job, acts, numbers, kings} via a new `scanReferenceSpans` accessor that
+`scanReferences` now delegates to), measured **34/67 -> 65/67** with residuals exactly the ADR's
+named pair, 31/31 genuine citations preserved, plus a CI invariant (68 legs, red-proofed by
+emptying the word set — 31 red; the two ruled residuals PINNED as expected-failing so a silent
+close turns the pin red). One deviation from my first cut, corrected by measurement: an
+explicit-ordinal exemption scored 62/67 ("2 kings 4 pawns" floors like "2 Kings 4"); removed.
+W-SEC-CCEL: candidate B (`cba1bcc`, `sources.provenance->>'edition'`) is canonical per the
+cite-the-work-or-delete ruling; pushed as `swarm/w-sec-ccel-edition`; host-based candidates drop.
+
+**The 7 builds.** W-SIXWORKS enumerated (917-entry manifest: `luther-church` resolves to NOTHING;
+`brooks` -> jowett-brooks is a probable false friend — Jowett, not Thomas Brooks; manton=9 vols,
+bunyan=5, pascal=3, ignatius=2 Loyola) — HELD-FOR-OWNER, packet A6. W-DEVROW MOOT (user_documents
+= 0 rows on BOTH devs; measured). W-ANCHORBACKFILL MOOT on dev (same measurement; prod leg stays
+packet B5). W-OWNERSHIPCOL built: migration 128 applied to both devs (same sha256 fb3939ea),
+ownership sentence beside the only upload control, INSERT records now(); conjunction test
+red-proofed both ways, DB leg live (`swarm/w-ownershipcol-licensing` @ 6d6cbaa). W-RELVOICE dev
+leg was already done by its lane agent (board was stale); independently re-verified — 127 applied
+(ledger + pg_indexes agree), fresh EXPLAIN plans onto idx_embeddings_served_legal. W-BOARDHYGIENE
+is this entry + the board updates.
+
+**Wave 7.** Every non-MOOT item verified — verdicts with method per item in
+`docs/pm/swarm-2026-08-22/verdicts/wave7-verdicts.md`. Binding red-proofs (test kept, fix
+reverted, watched RED): SEC-CSRF, DRAIN, DOCRESTATE, L2TOGGLE, SEC-CURSOR, plus VEC429 and
+HISTSCOPE live. State measurement: EUSEBIUS, THAYER, RELVOICE, SEC1 (deps-audit re-executed:
+512 prod packages, 0 un-ignored high/critical), REGDURABLE (dry-run posture executed). Evidence
+checks: FILE3DOCS, HISTBACKLOG, UX2VERIFY, ADRV4RERUN, UX3 (267 tests green). One LOW finding
+filed (VEC429's message-regex classifier violates its own header contract via deepinfra.ts:46 —
+reachable, bounded, filed not fixed). Two verifier-side errors made and recorded en route
+(DOCRESTATE wrong-file revert; THAYER wrong-property check).
+
+**Wave 8.** 22 branch merges + 2 cherry-picks onto `swarm/closeout-2026-08-22`. 15 clean; 7
+conflicts resolved deliberately (4x pre-split MASTER.md — took the split, ported each branch's
+row updates; 2x item-file double-adds — took the workstream's own; 1x history-search-db.ts —
+kept the peer's concurrency refactor, injected ANN's GUC, widened the destructure). Integration
+caught one real cross-branch breakage: the concurrency test's hand-shaped transaction mock broke
+when the ANN GUC moved the KNN to slot 2 — generalized to one-slot-per-statement. Browser leg on
+the integrated candidate: reader at 1280 + 375, no overflow, verse-tap -> Commentaries sheet (15
+voices, Chrysostom attributed) — `docs/evidence/swarm-2026-08-22/wave8-browser/BROWSER-CHECK.md`;
+auth-gated surfaces walk on prod (NEON_AUTH_BASE_URL absent locally, pre-existing posture).
+
+**Audit truth, all four local rounds.** R1 red: my env (no DEEPINFRA key -> blob leg; stale
+node_modules vs candidate lockfile -> deps). R2 red: my env (no owner URL -> MIG-A ran as
+app_runtime, RLS refused; the same suite is 12/12 with the owner connection — R1's "green" on
+that suite was an honest skip). R3+R4 red: ONE leg, `target-guard` register-label — passes in
+isolation on BOTH trees with identical env, twice red only under full local load; candidate
+touches neither file; CI passes it. CI on the candidate: the base branch's two standing CI reds
+(publish-flip-toolchain, tradition-gap) are FIXED by the candidate; one new red was the
+w-adrv4rerun anchor-check GREEN leg red-ing on ENOENT when CI's root vitest leg runs without the
+gitignored KJV assets — an artifact absence reported as a property failure; now an honest
+skipIf, red-proofed by hiding the dir (4 passed | 1 skipped), 5 passed with assets (`3b128ef`).
+
+### NOT DONE / UNVERIFIED
+
+- **Deploy receipt:** see the DEPLOY ADDENDUM at the end of this entry.
+- THAYER's vintage-reproduction leg (0.9994-0.9998 cosines) rests on the tool's own log +
+  VERIFICATION.md; re-execution costs one embed call per section and was not run.
+- W-VEC429 LOW finding filed, not fixed (structured status field is the remedy).
+- Auth-gated UI surfaces (plans toggle paint, My Works sentence, history citation) not
+  browser-walked locally — component suites cover behavior; prod walk owed after deploy.
+- `target-guard` full-local-run flake is unexplained (isolation-green x2, CI-green); likely
+  env leakage between spawning tests under load. Filed here, not chased.
+- Prod-bound artifacts B1-B6 untouched — owner-gated, in the packet. ADR-118 stays OPEN
+  (launch-blocker, packet A1); SEC-1 gate decision stays the owner's (A7).
+
+**DEPLOY ADDENDUM (2026-08-24T00:08Z).** `7747f10` is LIVE on `ancientpaths.app` —
+`dpl_5WBo5kQLqAme4Jgzq9wCa2pT9JAX`, alias verified by deployment-id match
+(receipt `docs/evidence/deploys/deploy-7747f10-2026-08-24T00-08-19Z.txt`). First attempt was
+BLOCKED by the served-column preflight wanting PREDEPLOY_DB_URL — supplied read-only from
+`~/.neon_prod_url` under the owner's in-session deploy directive; gate then passed. CI on the
+deployed commit's branch: SUCCESS (run 32675060580).
 
 ## 2026-08-22 — History search: the in-flight signal, and the tab that looked ignored
 

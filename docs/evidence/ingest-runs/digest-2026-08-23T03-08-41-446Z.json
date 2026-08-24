@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "startedAt": "2026-08-23T03:08:41.446Z",
+    "endedAt": "2026-08-23T03:19:18.380Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 2,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "schaff-npnf203",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 584,
+      "anchored": 127,
+      "embedded": 1403
+    },
+    {
+      "slug": "schaff-npnf202",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 495,
+      "anchored": 64,
+      "embedded": 1870
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { createStudy, listStudies, STUDIES_PAGE_LIMIT, STUDY_TITLE_MAX } from '@/lib/studies';
 
 // Study Docs routes (design §6.2; build task 1.3). Two deliberate route-shape decisions,
@@ -60,6 +61,9 @@ export async function GET(req: NextRequest): Promise<Response> {
 export async function POST(req: NextRequest): Promise<Response> {
   let user: { id: string };
   try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let body: { title?: unknown };
   try { body = await req.json(); } catch { return apiError('INVALID_REQUEST'); }

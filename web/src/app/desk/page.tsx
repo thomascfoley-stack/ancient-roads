@@ -1,15 +1,17 @@
 'use client';
 
-// THE STUDY DESK — up to three panes side by side: Scripture, a commentary, and a third voice.
+// THE STUDY DESK — up to sixteen panes in a grid: Scripture, a commentary, and more voices.
 //
 // State lives entirely in the URL (`/desk?p=scripture:john/3&p=work:calvin-institutes`), so a desk
 // is shareable and the back button works. See lib/desk.ts for the parser and why the cap is
 // enforced there rather than here.
 //
-// LAYOUT. Columns on a wide screen, stacked on a narrow one. Panes scroll independently — the page
-// itself does not scroll, which is what makes side-by-side reading work: losing your place in the
-// commentary because the Scripture column was taller is the exact frustration this replaces.
-// On mobile three columns cannot be read, so panes stack and the page scrolls normally.
+// LAYOUT (UX-3). A GRID on a wide screen — up to 4x4, the shape coming from deskGridShape (a pure
+// function, so a shared desk places its panes identically on every screen) — stacked single-column
+// on a narrow one. Panes scroll independently — the page itself does not scroll on desktop, which
+// is what makes side-by-side reading work: losing your place in the commentary because the
+// Scripture pane was taller is the exact frustration this replaces. On mobile a grid cannot be
+// read, so panes stack and the page scrolls normally.
 //
 // ADDING. Two kinds of pane, two affordances (UX-1 named the gap: the + routed to /library, which
 // offers works only, so Scripture could not be ADDED to a desk at all — only arrived at by URL).
@@ -23,8 +25,25 @@ import { BookPicker } from '@/components/book-picker';
 import { DeskPane } from '@/components/desk-pane';
 import { BOOK_BY_BOOK_SLUG, BOOKS } from '@/lib/bible';
 import { resolveBookSlug } from '@bible/ref-parse';
-import { MAX_PANES, decodeDeskReport, deskHref, encodePane, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
+import { MAX_PANES, decodeDeskReport, deskGridShape, deskHref, encodePane, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
 import { count } from '@/lib/plural';
+
+// The grid's classes, as STATIC lookups. Tailwind only emits classes it can see in source, so a
+// computed `lg:grid-cols-${n}` would silently produce no rule at all — and the shape table is
+// closed (deskGridShape returns cols/rows in 1..4), so enumerating it costs eight lines, not a
+// pattern. The base layout is `grid-cols-1` (the mobile stack); these apply from `lg` up.
+const GRID_COLS: Record<number, string> = {
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+};
+const GRID_ROWS: Record<number, string> = {
+  1: 'lg:grid-rows-1',
+  2: 'lg:grid-rows-2',
+  3: 'lg:grid-rows-3',
+  4: 'lg:grid-rows-4',
+};
 
 /** The picker needs a book to highlight; John is the app's standing default entry point. The
  *  alias fallback is the wiring invariant (book-slug-alias-wiring): EVERY BOOK_BY_BOOK_SLUG.get
@@ -121,8 +140,8 @@ function DeskInner() {
       <div className="mx-auto w-full max-w-2xl px-5 py-16 text-center">
         <h1 className="mb-3 font-display text-3xl font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-100">Your desk is empty</h1>
         <p className="mb-6 font-scripture text-base leading-relaxed text-stone-600 dark:text-stone-400">
-          Open up to {MAX_PANES} things side by side: a chapter of Scripture, a commentary on it, and a
-          sermon, hymn, poem or history beside them.
+          Open up to {MAX_PANES} things in a grid: a chapter of Scripture, a commentary on it, and a
+          sermon, hymn, poem or history in the panes around them.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {/* PRD §6 CTAs: 1px hairline, transparent, fill on hover — primary in ink,
@@ -150,7 +169,7 @@ function DeskInner() {
         </div>
         {/* A080, first of two call sites. On the EMPTY desk the note sits under the calls to
             action, because this is the moment before the reader invests: every desk starts here,
-            and a limitation is worth knowing before you assemble three panes, not after. Below the
+            and a limitation is worth knowing before you assemble the panes, not after. Below the
             buttons rather than above them, so the invitation still leads. */}
         <SessionOnlyNote className="mt-6" />
         {bookPicker}
@@ -160,7 +179,7 @@ function DeskInner() {
 
   // A078 — THE CAP HAS TO SAY SOMETHING. Two silences, one line.
   //
-  // (1) A URL carrying more panes than the desk holds rendered three and never mentioned the rest.
+  // (1) A URL carrying more panes than the desk holds rendered what fit and never mentioned the rest.
   // (2) At the cap BOTH add controls simply disappear (`panes.length < MAX_PANES` below): the
   //     reader is left looking for a "+" that is no longer there, with nothing on screen saying
   //     the desk is full or what to do about it. A control that vanishes is a rule stated in
@@ -178,15 +197,17 @@ function DeskInner() {
         ? `Your desk is full at ${MAX_PANES} panes. Close one to add another.`
         : null;
 
+  const shape = deskGridShape(panes.length);
+
   return (
     // h-dvh + overflow-hidden on the OUTER column is what gives each pane its own scroll region on
-    // desktop without the page scrolling; the panes row below takes the remaining height. On mobile
+    // desktop without the page scrolling; the panes grid below takes the remaining height. On mobile
     // `lg:h-dvh` is dropped, so the page scrolls normally through stacked panes.
     //
-    // The row became two levels for the notice above: a full-width line has nowhere honest to sit
-    // inside a row of columns — as a flex child it becomes a fourth column, and wrapping it would
-    // put the panes on a second line. So the height contract moved up one div and the row keeps it
-    // via flex-1/min-h-0, which is the same contract expressed one level further in.
+    // The grid became two levels for the notice above: a full-width line has nowhere honest to sit
+    // inside a grid of cells — as a grid child it becomes one more cell. So the height contract
+    // moved up one div and the grid keeps it via flex-1/min-h-0, which is the same contract
+    // expressed one level further in.
     <div className="flex w-full flex-col gap-2 px-3 py-3 lg:h-dvh lg:overflow-hidden">
       {/* The POPULATED desk had no h1 at all: the only heading on this route lived in the
           empty state above, so the working screen started at the panes' own h3 and a
@@ -202,14 +223,23 @@ function DeskInner() {
           {capNotice}
         </p>
       )}
-      <div className="flex w-full flex-col gap-3 lg:min-h-0 lg:flex-1 lg:flex-row">
+      <div
+        // THE GRID (UX-3). `grid-cols-1` below `lg` (the stack the A079 counter serves); from `lg`
+        // the shape table takes over — columns AND rows, so the desk grows top-to-bottom as well as
+        // left-to-right instead of squeezing ever-thinner columns. Equal rows (Tailwind's
+        // grid-rows-N is minmax(0,1fr)), so every cell is viewport-bounded and each pane keeps its
+        // own scroll region: the desk's core contract survives the second dimension.
+        className={`grid w-full grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 ${GRID_COLS[shape.cols]} ${GRID_ROWS[shape.rows]}`}
+      >
         {panes.map((pane, i) => (
           <div
             key={`${pane.kind}:${pane.kind === 'work' ? pane.slug : `${pane.book}/${pane.chapter}`}`}
-            // flex-col (was a bare `flex` row holding one child) so the A079 line below can sit
-            // above the pane. The pane keeps `flex-1`, so it still takes the whole remaining box on
-            // both axes and the desktop layout is unchanged — verified in a browser at 1280px.
-            className="flex min-h-[60vh] min-w-0 flex-1 flex-col gap-1.5 lg:min-h-0"
+            // A grid cell now (was a flex-1 column): the grid owns the cell's box on both axes, so
+            // `flex-1` is gone — `min-h-0 min-w-0` is what keeps the pane's own scroll inside the
+            // cell instead of blowing the grid out. `min-h-[60vh]` only matters in the mobile
+            // stack, where cells size to content. flex-col so the A079 line below can sit above
+            // the pane.
+            className="flex min-h-[60vh] min-w-0 flex-col gap-1.5 lg:min-h-0"
           >
             {/* A079 — A STACKED DESK GAVE NO SIGN THE OTHER PANES EXISTED.
                 MEASURED FIRST, because the finding offered three treatments and two of them
@@ -225,8 +255,8 @@ function DeskInner() {
                 shared link) never sees it at all. Attached to each pane it is present at the top of
                 whichever pane you are on, and it doubles as "where am I".
 
-                `lg:hidden` because above that breakpoint the panes ARE side by side and visibly
-                co-present — there the line would be a caption stating what the reader can see.
+                `lg:hidden` because above that breakpoint the panes ARE co-present in the grid and
+                visibly so — there the line would be a caption stating what the reader can see.
 
                 Not a `role="status"`: nothing changed, this is a standing property of the layout.
                 The same reasoning as SessionOnlyNote above, and the same mechanical consequence —
@@ -246,7 +276,9 @@ function DeskInner() {
           </div>
         ))}
         {panes.length < MAX_PANES && (
-          <div className="flex shrink-0 items-center justify-center gap-2 lg:w-12 lg:flex-col">
+          // One more grid cell: the add controls take the next open slot in the same grid, so
+          // "where a new pane would go" and "how you add it" are the same place.
+          <div className="flex items-center justify-center gap-2 lg:flex-col">
             <Link
               /* Carry the open desk so the library's "+" APPENDS rather than replacing. */
               href={`/library?desk=${encodeURIComponent(panes.map(encodePane).join(','))}`}

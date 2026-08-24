@@ -3,6 +3,7 @@
 // Fail closed everywhere — an error returns nothing, never partial or unverified content.
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { checkHistorySearchRateLimit } from '@/lib/rate-limit';
 import { searchHistory } from '@/lib/history-search-db';
 import { createHistoryThread } from '@/lib/history-threads';
@@ -22,7 +23,7 @@ function parseBody(raw: unknown): string | null {
   return t.length >= 1 && t.length <= 500 ? t : null;
 }
 
-export async function POST(req: Request): Promise<NextResponse> {
+export async function POST(req: Request): Promise<Response> {
   // requireUser in its OWN try (the A1-16 pattern): an auth failure must be a 401, never the
   // catch-all 500 that would hide it.
   let userId: string;
@@ -31,6 +32,9 @@ export async function POST(req: Request): Promise<NextResponse> {
   } catch {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
+
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let query: string | null = null;
   try {

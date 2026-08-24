@@ -63,7 +63,10 @@ function fakeSql() {
       if (text.includes('count(DISTINCT')) { timeline.push('coverage'); return [{ works: 28, sections: 40463 }]; }
       throw new Error(`unmocked query: ${text.slice(0, 60)}`);
     },
-    transaction: async (qs: unknown[]): Promise<unknown[]> => [null, await qs[1]],
+    // One result slot per statement, set_configs resolving to null — mirrors the real driver,
+    // so the mock survives GUCs being added to the transaction (the ANN iterative_scan merge
+    // moved the KNN from slot 1 to slot 2 and the hand-shaped [null, q] mock broke).
+    transaction: async (qs: unknown[]): Promise<unknown[]> => Promise.all(qs.map(async (q) => await q)),
   });
 }
 

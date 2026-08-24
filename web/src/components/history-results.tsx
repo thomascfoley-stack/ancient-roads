@@ -17,8 +17,8 @@ export interface HistoryResultRow {
 }
 export interface HistoryPayload {
   interpretation: { entities: { slug: string; label: string }[]; period: { start: number; end: number } | null };
-  closest: (HistoryResultRow & { work: { slug: string; title: string; author: string } }) | null;
-  results: { work: { slug: string; title: string; author: string }; periodSpan: [number, number] | null; sections: HistoryResultRow[] }[];
+  closest: (HistoryResultRow & { work: { slug: string; title: string; author: string; edition: string | null } }) | null;
+  results: { work: { slug: string; title: string; author: string; edition: string | null }; periodSpan: [number, number] | null; sections: HistoryResultRow[] }[];
   coverage: { works: number; sections: number };
 }
 
@@ -67,13 +67,18 @@ export function HistoryResults({ data, query, threadId }: {
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
   }, [data.results]);
 
-  const cite = async (r: HistoryResultRow, work: { title: string; author: string }): Promise<void> => {
+  const cite = async (r: HistoryResultRow, work: { title: string; author: string; edition: string | null }): Promise<void> => {
     // Only confirm a copy that happened. navigator.clipboard is undefined on a non-secure context
     // and rejects when the document is unfocused or permission is denied; flashing ✓ regardless is
     // a false confirmation on an attribution control — the wrong direction for this product
     // (deep-audit client finding 7).
+    // The provenance suffix is the work's OWN record (`sources.provenance->>'edition'`, carried
+    // through the payload), never a hardcoded one — this surface once appended the literal
+    // " (CCEL)" to every citation, Josephus and archive.org works included (W-SEC-CCEL).
     try {
-      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')} (CCEL)`);
+      await navigator.clipboard.writeText(
+        `${work.author}, ${work.title}, ${r.headingPath.join(' — ')}${work.edition ? ` — ${work.edition}` : ''}`,
+      );
       setCopied(r.sectionId);
       setTimeout(() => setCopied(null), 1500);
     } catch {

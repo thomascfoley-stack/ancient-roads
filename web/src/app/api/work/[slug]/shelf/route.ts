@@ -1,5 +1,6 @@
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { getShelf, isShelf, removeFromLibrary, setShelf } from '@/lib/library';
 import { publishedSourceId } from '@/lib/work';
 
@@ -54,6 +55,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
 }
 
 export async function PUT(req: Request, ctx: { params: Promise<{ slug: string }> }): Promise<Response> {
+  // CSRF floor first, like the rest of the body validation below: a refused request costs no
+  // session or database work.
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
+
   let raw: unknown;
   try {
     raw = await req.json();

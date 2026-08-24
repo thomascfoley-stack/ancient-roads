@@ -1,0 +1,133 @@
+Held-out eval — FROZEN_V4 · 120 q · K=6 · corpus=legal(shared) · pool=20 · ef=200
+
+  ✓ [verse-ref] v4-vr-01  HIT@1=Y voices=6 pass  — Genesis 2, the garden planted in Eden and the 
+  ✓ [verse-ref] v4-vr-02  HIT@1=Y voices=6 pass  — Genesis 12, the call of Abram, in thee shall a
+  ✓ [verse-ref] v4-vr-03  HIT@1=Y voices=6 pass  — Exodus 12, the Passover lamb and the blood on 
+  ✓ [verse-ref] v4-vr-04  HIT@1=Y voices=5 pass  — Exodus 33, Moses prays show me thy glory
+  ✓ [verse-ref] v4-vr-05  HIT@1=Y voices=5 pass  — Leviticus 25, the year of jubilee and liberty 
+  ✓ [verse-ref] v4-vr-06  HIT@1=Y voices=4 pass  — Numbers 20, Moses strikes the rock at the wate
+  ✓ [verse-ref] v4-vr-07  HIT@1=Y voices=4 pass  — Deuteronomy 30, I have set before you life and
+  ✓ [verse-ref] v4-vr-08  HIT@1=Y voices=6 pass  — Joshua 1, be strong and of a good courage
+  ✓ [verse-ref] v4-vr-09  HIT@1=Y voices=4 pass  — Judges 16, Samson and Delilah and the pillars 
+  ✓ [verse-ref] v4-vr-10  HIT@1=Y voices=6 pass  — Ruth 2, Ruth gleaning in the field of Boaz
+  ✓ [verse-ref] v4-vr-11  HIT@1=Y voices=6 pass  — 2 Samuel 6, David dances before the ark of the
+  ✓ [verse-ref] v4-vr-12  HIT@1=Y voices=5 pass  — 1 Kings 8, Solomon’s prayer at the dedication 
+  ✓ [verse-ref] v4-vr-13  HIT@1=Y voices=5 pass  — 2 Kings 22, Josiah and the book of the law fou
+  ✓ [verse-ref] v4-vr-14  HIT@1=Y voices=6 pass  — 2 Chronicles 20, the battle is not yours but G
+  ✓ [verse-ref] v4-vr-15  HIT@1=Y voices=4 pass  — Job 19, I know that my redeemer liveth
+  ✓ [verse-ref] v4-vr-16  HIT@1=Y voices=6 pass  — Psalm 8, what is man that thou art mindful of 
+  ✓ [verse-ref] v4-vr-17  HIT@1=Y voices=6 pass  — Psalm 46, God is our refuge and strength, a ve
+  ✓ [verse-ref] v4-vr-18  HIT@1=Y voices=6 pass  — Psalm 90, teach us to number our days
+  ✓ [verse-ref] v4-vr-19  HIT@1=Y voices=4 pass  — Proverbs 31, the virtuous woman whose price is
+  ✓ [verse-ref] v4-vr-20  HIT@1=Y voices=4 pass  — Ecclesiastes 1, vanity of vanities, all is van
+  ✓ [verse-ref] v4-vr-21  HIT@1=Y voices=4 pass  — Isaiah 9, unto us a child is born, the Prince 
+  ✓ [verse-ref] v4-vr-22  HIT@1=Y voices=6 pass  — Isaiah 61, the Spirit of the Lord GOD is upon 
+  ✓ [verse-ref] v4-vr-23  HIT@1=Y voices=5 pass  — Jeremiah 29, the letter to the exiles, thought
+  ✓ [verse-ref] v4-vr-24  HIT@1=Y voices=5 pass  — Ezekiel 34, the shepherds of Israel who feed t
+  ✓ [verse-ref] v4-vr-25  HIT@1=Y voices=6 pass  — Daniel 7, one like the Son of man coming with 
+  ✓ [verse-ref] v4-vr-26  HIT@1=Y voices=4 pass  — Jonah 4, the gourd and God’s pity on Nineveh
+  ✓ [verse-ref] v4-vr-27  HIT@1=Y voices=5 pass  — Zechariah 4, not by might nor by power but by 
+  ✓ [verse-ref] v4-vr-28  HIT@1=Y voices=5 pass  — Malachi 4, the Sun of righteousness with heali
+  ✓ [verse-ref] v4-vr-29  HIT@1=Y voices=6 pass  — Matthew 28, the Great Commission, go and teach
+  ✓ [verse-ref] v4-vr-30  HIT@1=n voices=2 pass  — Mark 10, the Son of man came to give his life 
+  ✓ [verse-ref] v4-vr-31  HIT@1=Y voices=6 pass  — Luke 4, Jesus reads Isaiah in the synagogue at
+  ✓ [verse-ref] v4-vr-32  HIT@1=Y voices=6 pass  — John 10, the good shepherd who lays down his l
+  ✓ [verse-ref] v4-vr-33  HIT@1=Y voices=6 pass  — John 14, in my Father’s house are many mansion
+  ✓ [verse-ref] v4-vr-34  HIT@1=Y voices=6 pass  — Acts 17, Paul at Mars’ hill and the unknown go
+  ✓ [verse-ref] v4-vr-35  HIT@1=Y voices=6 pass  — Romans 5, peace with God, while we were yet si
+  ✓ [verse-ref] v4-vr-36  HIT@1=Y voices=6 pass  — Ephesians 2, by grace are ye saved through fai
+  ✓ [verse-ref] v4-vr-37  HIT@1=Y voices=6 pass  — 1 Thessalonians 4, caught up together in the c
+  ✓ [verse-ref] v4-vr-38  HIT@1=Y voices=6 pass  — 2 Timothy 2, a workman not ashamed, rightly di
+  ✓ [verse-ref] v4-vr-39  HIT@1=Y voices=6 pass  — 1 Peter 2, a royal priesthood, a holy nation, 
+  ✓ [verse-ref] v4-vr-40  HIT@1=Y voices=6 pass  — Revelation 3, behold I stand at the door and k
+  ✓ [pericope] v4-pc-01  HIT@1=Y voices=2 pass  — Jacob wrestles with the angel at Peniel until 
+  ✓ [pericope] v4-pc-02  HIT@1=Y voices=4 pass  — the crossing of the Jordan on dry ground with 
+  ✓ [pericope] v4-pc-03  HIT@1=Y voices=2 pass  — Elijah and the widow of Zarephath whose meal a
+  ✓ [pericope] v4-pc-04  HIT@1=Y voices=3 pass  — Hezekiah’s sickness and the shadow turned back
+  ✓ [pericope] v4-pc-05  HIT@1=Y voices=2 pass  — Esther’s banquet and the downfall of Haman
+  ✓ [pericope] v4-pc-06  HIT@1=Y voices=2 pass  — the potter’s house and the vessel marred in th
+  ✓ [pericope] v4-pc-07  HIT@1=n voices=2 pass  — the ten lepers healed and the one who returned
+  ✓ [pericope] v4-pc-08  HIT@1=n voices=4 pass  — the widow who cast her two mites into the trea
+  ✓ [pericope] v4-pc-09  HIT@1=n voices=2 pass  — the rich man and the beggar Lazarus at his gat
+  ✓ [pericope] v4-pc-10  HIT@1=Y voices=2 pass  — the laborers in the vineyard hired at the elev
+  ✓ [pericope] v4-pc-11  HIT@1=Y voices=3 pass  — the woman who anointed Jesus at Bethany with t
+  ✓ [pericope] v4-pc-12  HIT@1=Y voices=2 pass  — Peter delivered from prison by the angel in th
+  ✓ [pericope] v4-pc-13  HIT@1=n voices=3 pass  — Paul’s shipwreck and the escape to the island 
+  ✓ [pericope] v4-pc-14  HIT@1=Y voices=2 pass  — Eutychus who fell from the window during Paul’
+  ✓ [pericope] v4-pc-15  HIT@1=Y voices=3 pass  — the cleansing of the temple and the overturnin
+  ✓ [epistle] v4-ep-01  HIT@1=Y voices=3 pass  — given to hospitality, entertaining strangers a
+  ✓ [epistle] v4-ep-02  HIT@1=Y voices=3 pass  — servants obedient to their own masters, and ma
+  ✓ [epistle] v4-ep-03  HIT@1=Y voices=2 pass  — subjection to the higher powers and honoring t
+  ✓ [epistle] v4-ep-04  HIT@1=Y voices=2 pass  — all scripture given by inspiration of God, hol
+  ✓ [epistle] v4-ep-05  HIT@1=Y voices=3 pass  — false teachers who privily bring in damnable h
+  ✓ [epistle] v4-ep-06  HIT@1=Y voices=2 pass  — believe not every spirit, but try the spirits 
+  ✓ [epistle] v4-ep-07  HIT@1=Y voices=2 pass  — the brother weak in the faith and meat offered
+  ✓ [epistle] v4-ep-08  HIT@1=Y voices=3 pass  — running the race with patience, pressing towar
+  ✓ [epistle] v4-ep-09  HIT@1=Y voices=4 pass  — strangers and pilgrims on the earth whose citi
+  ✓ [epistle] v4-ep-10  HIT@1=Y voices=2 pass  — the man of sin revealed and the mystery of ini
+  ✓ [epistle] v4-ep-11  HIT@1=n voices=3 pass  — the mediator of a better covenant established 
+  ✓ [epistle] v4-ep-12  HIT@1=Y voices=2 pass  — pure religion undefiled, visiting the fatherle
+  ✓ [epistle] v4-ep-13  HIT@1=n voices=2 pass  — in Christ dwells all the fulness of the Godhea
+  ✓ [epistle] v4-ep-14  HIT@1=Y voices=3 pass  — coming boldly to the throne of grace, boldness
+  ✓ [epistle] v4-ep-15  HIT@1=Y voices=2 pass  — sealed with the Spirit of promise, the earnest
+  ✓ [epistle] v4-ep-16  HIT@1=Y voices=2 pass  — the chief corner stone and the foundation of t
+  ✓ [epistle] v4-ep-17  HIT@1=Y voices=2 pass  — psalms and hymns and spiritual songs, singing 
+  ✓ [epistle] v4-ep-18  HIT@1=Y voices=2 pass  — the whole creation groaning and travailing, wa
+  ✓ [epistle] v4-ep-19  HIT@1=Y voices=2 pass  — not forsaking the assembling of ourselves toge
+  ✓ [epistle] v4-ep-20  HIT@1=Y voices=3 pass  — the elders who feed the flock of God, the offi
+  ✓ [epistle] v4-ep-21  HIT@1=Y voices=2 pass  — the body the temple of the Holy Ghost, flee fo
+  ✓ [epistle] v4-ep-22  HIT@1=Y voices=2 pass  — hope as an anchor of the soul, sure and stedfa
+  ✓ [epistle] v4-ep-23  HIT@1=Y voices=2 pass  — fervent charity that covers a multitude of sin
+  ✓ [epistle] v4-ep-24  HIT@1=Y voices=2 pass  — rooted and grounded in love, knowing the love 
+  ✓ [epistle] v4-ep-25  HIT@1=Y voices=2 pass  — begotten to a lively hope, an inheritance inco
+  ✓ [topical] v4-tp-01  HIT@1=Y voices=4 pass  — fasting seen in secret and the fast that God h
+  ✓ [topical] v4-tp-02  HIT@1=Y voices=2 pass  — the fear of man brings a snare, obeying God ra
+  ✓ [topical] v4-tp-03  HIT@1=Y voices=3 pass  — swearing not at all, letting your yea be yea, 
+  ✓ [topical] v4-tp-04  HIT@1=Y voices=3 pass  — loving the stranger, for you were strangers in
+  ✓ [topical] v4-tp-05  HIT@1=Y voices=3 pass  — even to old age and hoar hairs I will carry yo
+  ✓ [topical] v4-tp-06  HIT@1=Y voices=3 pass  — whatsoever a man sows that shall he also reap,
+  ✓ [topical] v4-tp-07  HIT@1=Y voices=2 pass  — the light of the world, walking as children of
+  ✓ [topical] v4-tp-08  HIT@1=Y voices=3 pass  — harden not your hearts as in the provocation i
+  ✓ [topical] v4-tp-09  HIT@1=Y voices=3 pass  — the remnant according to grace, seven thousand
+  ✓ [topical] v4-tp-10  HIT@1=n voices=2 pass  — envy the rottenness of the bones, and charity 
+  ✓ [topical] v4-tp-11  HIT@1=Y voices=4 pass  — wine is a mocker, be not drunk with wine but f
+  ✓ [topical] v4-tp-12  HIT@1=Y voices=4 pass  — the harvest plenteous but the laborers few, fi
+  ✓ [topical] v4-tp-13  HIT@1=Y voices=3 pass  — the cities of refuge appointed for the manslay
+  ✓ [topical] v4-tp-14  HIT@1=Y voices=2 pass  — beating swords into plowshares, nation shall n
+  ✓ [topical] v4-tp-15  HIT@1=Y voices=2 pass  — the eyes of the LORD in every place beholding 
+  · [topical] v4-tp-16  HIT@1=n voices=0 wrong-passage  — a father of the fatherless and a judge of the 
+  ✓ [topical] v4-tp-17  HIT@1=Y voices=2 pass  — come all you that labor and are heavy laden, r
+  ✓ [topical] v4-tp-18  HIT@1=Y voices=2 pass  — the name of the LORD a strong tower where the 
+  ✓ [topical] v4-tp-19  HIT@1=n voices=3 pass  — return to me and I will return to you, I will 
+  ✓ [topical] v4-tp-20  HIT@1=Y voices=3 pass  — iron sharpens iron, walking with the wise, evi
+  ✓ [proper-noun] v4-pn-01  HIT@1=Y voices=2 pass  — Achan and the accursed thing hidden in his ten
+  ✓ [proper-noun] v4-pn-02  HIT@1=Y voices=2 pass  — Mephibosheth the lame son of Jonathan at David
+  ✓ [proper-noun] v4-pn-03  HIT@1=n voices=2 pass  — the witch of Endor and the spirit of Samuel
+  ✓ [proper-noun] v4-pn-04  HIT@1=n voices=3 pass  — Apollos, mighty in the scriptures, who watered
+  ✓ [proper-noun] v4-pn-05  HIT@1=Y voices=2 pass  — Demas who forsook Paul, having loved this pres
+  ✓ [proper-noun] v4-pn-06  HIT@1=Y voices=2 pass  — Jephthah and his rash vow concerning his daugh
+  ✓ [proper-noun] v4-pn-07  HIT@1=Y voices=2 pass  — the Rechabites who would drink no wine
+  ✓ [proper-noun] v4-pn-08  HIT@1=Y voices=2 pass  — king Agrippa before whom Paul made his defense
+  ✓ [proper-noun] v4-pn-09  HIT@1=n voices=2 pass  — Naboth’s vineyard and Jezebel’s plot with the 
+  ✓ [proper-noun] v4-pn-10  HIT@1=Y voices=2 pass  — Nehushtan, the brasen serpent broken in pieces
+  ✓ [control] v4-ctl-01  clean (no floor) — garden of eden landscaping supplies coupon code
+  ✓ [control] v4-ctl-02  clean (no floor) — ark of the covenant escape room tickets
+  ✓ [control] v4-ctl-03  clean (no floor) — david and goliath marketing strategy for startups
+  ✓ [control] v4-ctl-04  clean (no floor) — jericho road bike shop opening hours
+  ✓ [control] v4-ctl-05  clean (no floor) — leviathan gaming laptop review and benchmarks
+  ✓ [control] v4-ctl-06  clean (no floor) — how to bake sourdough bread without a starter
+  ✓ [control] v4-ctl-07  clean (no floor) — used pickup trucks for sale under ten thousand dollars
+  ✓ [control] v4-ctl-08  clean (no floor) — the resurrection of vinyl records among young collectors
+  ✓ [control] v4-ctl-09  clean (no floor) — my kingdom for a decent cup of coffee this morning
+  ✓ [control] v4-ctl-10  clean (no floor) — red sea diving resorts and liveaboard trips in Egypt
+
+capture → /private/tmp/ap-wave7/docs/evidence/heldout/FROZEN_V4-2026-08-24T00-30-11-188Z.json  (captured 120/120)
+
+category        n   HIT@1  HIT@2   pass / <2 / wrong / none
+  verse-ref     40    98%  100%    40 / 0 / 0 / 0
+  pericope      15    73%  100%    15 / 0 / 0 / 0
+  epistle       25    92%  100%    25 / 0 / 0 / 0
+  topical       20    85%   95%    19 / 0 / 1 / 0
+  proper-noun   10    70%  100%    10 / 0 / 0 / 0
+  control       10   clean 10/10  hijacks=0
+TAG corpus=legal(shared) pool=20 ef=200 cap=2 :: topicalH2=95 pericopeH1=73 epistleH2=100 verserefH1=98

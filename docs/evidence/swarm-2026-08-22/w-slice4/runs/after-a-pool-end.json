@@ -1,0 +1,27 @@
+(node:8916) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "host": "ep-tiny-hat-atdgpisx-pooler",
+  "takenAt": "2026-08-23T17:54:48.538Z",
+  "total": 390184,
+  "bySourceType": {
+    "commentary": 107927,
+    "confession": 6590,
+    "devotional": 6589,
+    "father": 23642,
+    "historian": 6492,
+    "hymn": 6887,
+    "lexicon": 23657,
+    "poetry": 4085,
+    "sermon": 162507,
+    "theology": 28726,
+    "topical_index": 13082
+  }
+}

@@ -1,0 +1,1152 @@
+
+> theology-study-app@0.1.0 audit
+> bash scripts/audit.sh
+
+
+[1m▶ env — audit allow-list (shell + ingest env)[0m
+shell:  DATABASE_URL / APP_DATABASE_URL / DATABASE_URL_UNPOOLED on allow-list (or unset)
+host:   ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech
+branch: dev
+(node:20009) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role:   neondb_owner
+positive control (Gill on dev): 28843
+OK: root .env.local -> allowed owner, probe fires. Safe for population.
+[32m✓ env — audit allow-list (shell + ingest env)[0m
+
+[1m▶ typecheck — tsc --noEmit (strict)[0m
+[32m✓ typecheck — tsc --noEmit (strict)[0m
+
+[1m▶ typecheck — cutover gate (scripts/)[0m
+[32m✓ typecheck — cutover gate (scripts/)[0m
+
+[1m▶ typecheck — web/ tsc --noEmit[0m
+[32m✓ typecheck — web/ tsc --noEmit[0m
+
+[1m▶ typecheck — web/test tsc --noEmit[0m
+[32m✓ typecheck — web/test tsc --noEmit[0m
+
+[1m▶ lint — eslint src/ test/[0m
+
+/private/tmp/swarm-W-L2TOGGLE/src/ingest/ingest-biblehub.ts
+  145:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/private/tmp/swarm-W-L2TOGGLE/src/ingest/ingest-scrollmapper-bibles.ts
+  98:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/private/tmp/swarm-W-L2TOGGLE/src/ingest/ingest-strongs.ts
+  44:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-implied-eval')
+
+/private/tmp/swarm-W-L2TOGGLE/test/evals.test.ts
+  11:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/private/tmp/swarm-W-L2TOGGLE/test/verifier.test.ts
+   17:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 35 problems (0 errors, 35 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+[32m✓ lint — eslint src/ test/[0m
+
+[1m▶ lint — web/ eslint[0m
+[32m✓ lint — web/ eslint[0m
+
+[1m▶ unused — knip (files/exports/deps)[0m
+Configuration hints (3)
+[src/ingest/*.ts, …]    knip.json  Remove, or move unused top-level entry to one of "workspaces"  
+[src/**/*.ts, …]        knip.json  Remove, or move unused top-level project to one of "workspaces"
+src/evals/run.ts        knip.json  Remove redundant entry pattern                                 
+[32m✓ unused — knip (files/exports/deps)[0m
+
+[1m▶ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+(node:20158) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+deps-audit scanned package versions (expect-red / ignore carriers):
+  scanned better-auth: 1.4.18
+✓ deps-audit: observed red set matches --expect-red exactly (2 GHSA(s): GHSA-g38m-r43w-p2q7, GHSA-qq9h-g4jm-xgf3).
+[32m✓ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+
+[1m▶ tests + coverage — vitest[0m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-L2TOGGLE
+      Coverage enabled with v8
+
+ ✓ test/unit-ordinal-cohort.test.ts (21 tests) 7ms
+ ✓ test/ref-parse.test.ts (65 tests) 26ms
+ ✓ test/invariants/ci-ephemeral-branch.test.ts (10 tests) 7ms
+ ✓ test/corpus-manifest.test.ts (23 tests) 42ms
+ ✓ test/invariants/served-corpus-authors.test.ts (16 tests) 20ms
+ ✓ test/verifier.test.ts (31 tests) 11ms
+ ✓ test/normalize-contract.test.ts (14 tests) 4ms
+ ✓ test/resource-textmatch-calibration.test.ts (9 tests) 9ms
+ ✓ test/ask-max-duration-literal.test.ts (5 tests) 5ms
+ ✓ test/excerpt-sample-policy.test.ts (13 tests) 9ms
+file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:121
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:121:11)
+    at file:///private/tmp/swarm-W-L2TOGGLE/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:121
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:121:11)
+    at file:///private/tmp/swarm-W-L2TOGGLE/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:103
+    throw new Error(
+          ^
+
+Error: STOP: label target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:103:11)
+    at assertTarget (file:///private/tmp/swarm-W-L2TOGGLE/scripts/register-label-embeddings.mjs:30:3)
+    at file:///private/tmp/swarm-W-L2TOGGLE/scripts/register-label-embeddings.mjs:43:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/routing-orchestration.test.ts (21 tests) 4ms
+ ✓ test/invariants/upload-root-lockfile.test.ts (6 tests) 12ms
+file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:103
+    throw new Error(
+          ^
+
+Error: STOP: slice target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///private/tmp/swarm-W-L2TOGGLE/scripts/lib/target-guard.mjs:103:11)
+    at file:///private/tmp/swarm-W-L2TOGGLE/scripts/cutover-e4-slice-all.mjs:26:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/front-matter-detector.test.ts (30 tests) 16ms
+ ✓ test/invariants/dev-only-target.test.ts (15 tests) 41ms
+FAIL: shell DATABASE_URL points at ep-odd-fog-atnykudm — not on the audit allow-list (dev endpoints, localhost, or AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT by exact id). Unset it before npm run audit — qa/vitest inherit shell env.
+FAIL: shell DATABASE_URL points at ep-fresh-fork-at000000 — not on the audit allow-list (dev endpoints, localhost, or AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT by exact id). Unset it before npm run audit — qa/vitest inherit shell env.
+ ✓ test/publish-flip-census.test.ts (25 tests) 650ms
+   ✓ the runner imports the serving predicates rather than restating them > refuses production outright — DRIVEN, not grepped 643ms
+ ✓ test/invariants/served-lists-respect-the-manifest.test.ts (8 tests) 2ms
+ ✓ test/passages-anchor-grounding.test.ts (10 tests) 7ms
+ ✓ test/license-manifest.test.ts (20 tests) 7ms
+ ✓ test/invariants/source-archive-coverage.test.ts (14 tests) 9ms
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:09.707Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:09.708Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS CLOSED (denies) when the limiter DB call throws — this is the SPEND path
+{"evt":"rate_limit_fail_closed","ts":"2026-08-23T01:51:09.708Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > a ZERO-ROW return is denied, not a TypeError swallowed into an allow
+{"evt":"rate_limit_fail_closed","ts":"2026-08-23T01:51:09.708Z","userId":"u1","error":"rate-limit bump returned no row for bucket ask:min"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > the GLOBAL daily ceiling denies once all users together exceed it
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:09.708Z","userId":"u1","cap":"global","count":99999,"limit":5000}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:09.709Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-23T01:51:09.709Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-23T01:51:09.709Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-08-23T01:51:09.709Z","userId":"gate:1.2.3.4","error":"db down"}
+
+ ✓ test/rate-limit.test.ts (13 tests) 6ms
+ ✓ test/invariants/publish-admission-covers-served-lists.test.ts (12 tests) 7ms
+ ✓ test/invariants/ci-claims-match-reality.test.ts (4 tests) 15ms
+ ✓ test/teacher.test.ts (6 tests) 15ms
+ ✓ test/invariants/served-backfill-frozen-sync.test.ts (4 tests) 10ms
+ ✓ test/invariants/no-committed-credentials.test.ts (3 tests) 416ms
+ ✓ test/invariants/explicit-citation.test.ts (21 tests) 5ms
+ ✓ test/prod-path-no-transpiler.test.ts (5 tests) 55ms
+ ✓ test/unit-ordinal-instrument-preflight.test.ts (10 tests) 10ms
+ ✓ test/served-assets-count.test.ts (9 tests) 50ms
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > fires 429 semantics past the per-minute IP cap: 10 pass, the 11th and beyond are denied
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.299Z","userId":"auth:ip:6.6.6.6","cap":"min","count":11,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.299Z","userId":"auth:ip:6.6.6.6","cap":"min","count":12,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.299Z","userId":"auth:ip:6.6.6.6","cap":"min","count":13,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.299Z","userId":"auth:ip:6.6.6.6","cap":"min","count":14,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.299Z","userId":"auth:ip:6.6.6.6","cap":"min","count":15,"limit":10}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > a slow drip past the hourly IP cap is denied with the hour retry
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.300Z","userId":"auth:ip:1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > H4: a minute-refused request does NOT burn the hourly bucket
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.300Z","userId":"auth:ip:1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > rotating IPs do NOT evade the cap when the email is constant (credential stuffing)
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.300Z","userId":"auth:email:victim@example.com","cap":"min","count":6,"limit":5}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.300Z","userId":"auth:email:victim@example.com","cap":"min","count":7,"limit":5}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:10.300Z","userId":"auth:email:victim@example.com","cap":"min","count":8,"limit":5}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > FAILS OPEN (allows, logged) when the limiter DB call throws
+{"evt":"rate_limit_fail_open","ts":"2026-08-23T01:51:10.300Z","userId":"auth:ip:1.2.3.4","error":"db down"}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > a ZERO-ROW upsert return fails open too, not a TypeError into a denial
+{"evt":"rate_limit_fail_open","ts":"2026-08-23T01:51:10.300Z","userId":"auth:ip:1.2.3.4","error":"rate-limit bump returned no row for bucket auth:min"}
+
+ ✓ test/auth-rate-limit.test.ts (10 tests) 6ms
+ ✓ test/invariants/loop-breakers.test.ts (18 tests) 8ms
+ ✓ test/invariants/user-data-invariant.test.ts (6 tests) 13ms
+ ✓ test/topical-refs.test.ts (11 tests) 10ms
+ ✓ test/invariants/archive-record-merge.test.ts (7 tests) 22ms
+ ✓ test/ccel-primary-book-anchor.test.ts (6 tests) 10ms
+ ✓ test/invariants/reingest-guard-wiring.test.ts (7 tests) 15ms
+ ✓ test/invariants/book-slug-url-forms.test.ts (72 tests) 5ms
+ ✓ test/passages-grounding.test.ts (4 tests) 4ms
+ ✓ test/invariants/g10-verdict-agreement.test.ts (2 tests) 2ms
+(node:20406) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/target-guard.test.ts (20 tests) 1685ms
+   ✓ the shipped scripts refuse an uppercase production URL > assert-ingest-env-dev.mjs passes with a clean shell (no DB vars) 1315ms
+ ✓ test/invariants/manifest-provenance.test.ts (3 tests) 2ms
+ ✓ test/invariants/web-upload-root.test.ts (2 tests) 60ms
+ ✓ test/corpus-blob-sync.test.ts (6 tests) 4ms
+ ✓ test/deps-audit-core.test.ts (8 tests) 4ms
+ ✓ test/invariants/g10-baseline-floor.test.ts (3 tests) 14ms
+/private/tmp/swarm-W-L2TOGGLE/src/ingest/quarantine-served-corpus.ts:116
+    throw new Error(`No chapter files under ${SERVED_ROOT}. Refusing: an empty scan is not a pass.`);
+          ^
+
+
+Error: No chapter files under web/public/commentaries. Refusing: an empty scan is not a pass.
+    at filterRun (/private/tmp/swarm-W-L2TOGGLE/src/ingest/quarantine-served-corpus.ts:116:11)
+    at <anonymous> (/private/tmp/swarm-W-L2TOGGLE/src/ingest/quarantine-served-corpus.ts:241:6)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/verifier-unassigned-not-a-tradition.test.ts (3 tests) 5ms
+ ✓ test/resource-textmatch.test.ts (7 tests) 4ms
+ ✓ test/normalize.test.ts (12 tests) 3ms
+ ✓ test/verse-coverage-core.test.ts (6 tests) 13ms
+ ✓ test/invariants/served-reconcile.test.ts (8 tests) 4ms
+ ✓ test/invariants/coverage-census.test.ts (7 tests) 4ms
+ ✓ test/reference-intent.test.ts (8 tests) 4ms
+ ✓ test/invariants/vercel-json.test.ts (2 tests) 6ms
+ ✓ test/api-error.test.ts (6 tests) 5ms
+ ✓ test/gate-decision.test.ts (7 tests) 3ms
+ ✓ test/embedder-model-guard.test.ts (5 tests) 6ms
+ ✓ test/invariants/book-slug-alias-wiring.test.ts (5 tests) 3ms
+ ✓ test/web-core-sync.test.ts (9 tests) 2ms
+ ✓ test/heldout-frozen-hash.test.ts (2 tests) 2ms
+ ✓ test/content-sanity.test.ts (7 tests) 2ms
+ ✓ test/invariants/adapter-archive-ryle.test.ts (7 tests) 16ms
+ ✓ test/observability.test.ts (2 tests) 7ms
+ ✓ test/deps-audit-expect-red.test.ts (4 tests) 3ms
+ ✓ test/invariants/neon-branch-guard.test.ts (4 tests) 2ms
+ ✓ test/bible-sync.test.ts (9 tests) 2ms
+ ✓ test/verse-id.test.ts (5 tests) 2ms
+ ✓ test/invariants/quarantine-served-corpus.test.ts (9 tests) 2505ms
+   ✓ filter > is idempotent — a second run removes nothing 425ms
+   ✓ filter > MERGES into an existing quarantine file instead of clobbering it 323ms
+   ✓ restore > round-trips: filter then restore reproduces the original entries 356ms
+   ✓ restore > does not duplicate entries when restored twice 483ms
+ ✓ test/evals.test.ts (5 tests) 4ms
+ ✓ test/publish-flip-toolchain.test.ts (39 tests) 5690ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > adjudicates the REAL production census — the positive control 608ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 2271ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a PUBLISHED cohort — that would mean the flip already ran 385ms
+ ✓ test/invariants/uncited-shingle-parity.test.ts (42 tests) 6827ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: a verbatim quote 1249ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: a quote inside prose 957ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: prose quoting nothing 526ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: multiple quotes 534ms
+   ✓ verse-level parity over the real KJV index > agrees at every K on the trade curve, not only at the frozen K=1 2535ms
+   ✓ verse-level parity over the real KJV index > agrees ON the distinctiveness boundary, where a verse has EXACTLY minVerseShingles 476ms
+   ✓ verse-level parity over the real KJV index > agrees one BELOW the boundary too — the floor excludes, it does not merely include 513ms
+
+ Test Files  70 passed (70)
+      Tests  848 passed (848)
+   Start at  18:51:08
+   Duration  8.63s (transform 888ms, setup 0ms, collect 4.37s, tests 18.47s, environment 11ms, prepare 4.13s)
+
+ % Coverage report from v8
+
+=============================== Coverage summary ===============================
+Statements   : 19.03% ( 1863/9788 )
+Branches     : 79.8% ( 640/802 )
+Functions    : 48.63% ( 107/220 )
+Lines        : 19.03% ( 1863/9788 )
+================================================================================
+[32m✓ tests + coverage — vitest[0m
+
+[1m▶ qa — Layer 1 invariants + regressions[0m
+
+> theology-study-app@0.1.0 qa /private/tmp/swarm-W-L2TOGGLE
+> vitest run --config web/vitest.config.ts && vitest run test/rate-limit.test.ts test/auth-rate-limit.test.ts
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-L2TOGGLE/web
+
+ ↓ test/invariants/reading-progress-round-trip.test.ts (14 tests | 14 skipped)
+stderr | test/invariants/reading-progress-round-trip.test.ts
+
+⚠  NOT RUN — N1 — a reader’s position reaches the account and returns on the Library hub DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the whole Continue-reading loop: reader → /api/work/[slug]/progress → reading_progress → listContinueReading. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/clipping-tombstone.test.ts (7 tests | 7 skipped)
+stderr | test/invariants/clipping-tombstone.test.ts
+
+⚠  NOT RUN — S-2/S-3/S-10 — the servability re-check and the tombstone DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the tombstone: fail-closed re-check on both key legs, attribution kept, quote and link dropped. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/regression/studies-surface-routes.test.ts (12 tests | 12 skipped)
+stderr | test/regression/studies-surface-routes.test.ts
+
+⚠  NOT RUN — Studies surface routes (feed + export, handler → lib → dev DB, session mocked) DID NOT RUN — missing an owner seed URL (DATABASE_URL via seedOwnerUrl). It covers: the feed/export contract: per-block renderState, tombstone payload shape, download headers, accurate codes. A green suite without it is not evidence that any of those hold.
+
+
+stderr | test/user-corpus/queue-never-drops.test.ts
+
+⚠  NOT RUN — user-corpus queue — FOR UPDATE SKIP LOCKED under a concurrent lock holder DID NOT RUN — missing DATABASE_URL (an independent owner connection, via seedOwnerUrl). It covers: that a drain steps over a row another worker holds instead of blocking on it. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/library-published-boundary.test.ts (9 tests | 9 skipped)
+stderr | test/invariants/library-published-boundary.test.ts
+
+⚠  NOT RUN — Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the published-status boundary across every read surface. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/user-corpus/model-parity.test.ts (18 tests) 4ms
+stderr | test/invariants/unit-ordinal-instrument.test.ts
+
+⚠  NOT RUN — unit_ordinal instrument — 024 backfill perturbations DID NOT RUN — missing DATABASE_URL (owner seed via seedOwnerUrl). It covers: standing perturbation regression against migration 024 backfill SQL. A green suite without it is not evidence that any of those hold.
+
+
+(node:21366) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ↓ test/invariants/clipping-provenance.test.ts (4 tests | 4 skipped)
+stderr | test/invariants/clipping-provenance.test.ts
+
+⚠  NOT RUN — S-1 — the server is the only writer of clipping quote/attribution DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: clipping provenance: route-level 400 on client-supplied quote/attribution, the server-side INSERT…SELECT as the only writer, and the table-level CHECKs. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/regression/plans-routes.test.ts (13 tests) 3072ms
+   ✓ Plans routes (handler → store → dev DB, session mocked) > POST creates a Romans plan: 201, days persisted, dates arithmetic 796ms
+   ✓ Plans routes (handler → store → dev DB, session mocked) > ACCEPTS Song of Songs — the 2026-08-12 ingest closed the known zero-coverage hole 402ms
+   ✓ Plans routes (handler → store → dev DB, session mocked) > creates a Pauline-epistles collection plan spanning book boundaries (ADR-048) 431ms
+   ✓ Plans routes (handler → store → dev DB, session mocked) > pins the ±48h window BOUNDARY, so the bound cannot silently widen or vanish 348ms
+ ↓ test/user-corpus/blob-round-trip.test.ts (4 tests | 4 skipped)
+stderr | test/user-corpus/blob-round-trip.test.ts
+
+⚠  NOT RUN — @vercel/blob against the live store DID NOT RUN — missing BLOB_READ_WRITE_TOKEN. It covers: the @vercel/blob network hop — put, get and delete against the real store. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/user-corpus/anchor.test.ts (20 tests) 12ms
+ ↓ test/invariants/annotations-polymorphic.test.ts (12 tests | 12 skipped)
+stderr | test/invariants/annotations-polymorphic.test.ts
+
+⚠  NOT RUN — MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the 025 anchor XOR CHECK and the verse-only partial unique index. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/library-shelf-round-trip.test.ts (13 tests | 13 skipped)
+stderr | test/invariants/library-shelf-round-trip.test.ts
+
+⚠  NOT RUN — N3 — a work a reader saves reaches their shelf and comes back DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the whole shelf loop: reader → /api/work/[slug]/shelf → library_items → listLibraryItems. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/search-register-groups.test.ts (3 tests | 3 skipped)
+stderr | test/invariants/search-register-groups.test.ts
+
+⚠  NOT RUN — S-5/S-6/S-12 — the register groups: labelled, fenced, honestly empty DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: register-group search: per-group labels and fences (S-5), staged/quarantined absence (S-6), per-group zeros (S-12). A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/studies-bounds.test.ts (5 tests | 5 skipped)
+stderr | test/invariants/studies-bounds.test.ts
+
+⚠  NOT RUN — S-7 studies bounds (row caps, cursor pagination, stated byte ceiling, deleted-study absence) DID NOT RUN — missing DATABASE_URL (owner — teardown deletes; app_runtime holds no DELETE by design). It covers: bounded reads on the studies tables and the deleted-study cascade. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/catalog-filter-wiring.test.ts (21 tests) 7ms
+ ✓ test/user-corpus/sniff-and-judge.test.ts (22 tests) 4ms
+ ✓ test/search-personal-servability.test.ts (6 tests) 3ms
+ ✓ test/ask-outcome-persist.test.ts (11 tests) 5ms
+ ✓ test/invariants/legal-hnsw-index-sync.test.ts (11 tests) 18ms
+ ✓ test/user-corpus/parse-docx.test.ts (13 tests) 188ms
+stderr | test/user-corpus/routes.test.ts > the user-corpus routes > upload > accepts a real document as 201 and indexes it through the drain
+[user-corpus] could not schedule the drain; document stays queued: `after` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+
+ ✓ test/invariants/work-reader.test.ts (7 tests) 7204ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > 404s a staged source on BOTH routes (published-only boundary) 2612ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > TOC: source whitelist, no bodies, (unitOrdinal, ordinal) reading order, never a host URL 406ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: keyset pages are ascending, non-overlapping, cursor-driven 700ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: the default limit applies when limit is absent 341ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: limit=100000 is clamped — NEVER an unbounded response 363ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: walking nextAfter to the end reconstructs the whole work; the cursor ends null 1759ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: malformed params are a 400, never a 500 1022ms
+ ✓ test/invariants/annotation-rls-tenancy.test.ts (6 tests) 3308ms
+   ✓ Phase 3 annotation tables — two-account RLS tenancy (executed) > with NO app.current_user_id set, the tables return zero rows (fail-closed backstop) 431ms
+stderr | test/invariants/annotation-rls-tenancy.test.ts > Phase 3 annotation tables — two-account RLS tenancy (executed)
+⚠  qa-residue sweep NOT RUN (no owner DATABASE_URL) for qa-rls-a-, qa-rls-b-. Rows stranded by an INTERRUPTED earlier run are still there; this run cleaned only after itself.
+
+ ✓ test/invariants/research-history-static.test.ts (5 tests) 95ms
+ ✓ test/user-corpus/queue-never-drops.test.ts (15 tests | 1 skipped) 11159ms
+   ✓ the queue never silently drops a document > a document whose bytes were never stored FAILS with a reason, rather than being skipped 814ms
+   ✓ the queue never silently drops a document > processes every document exactly once across repeated drains 1544ms
+   ✓ the queue never silently drops a document > an exhausted document is RETIRED, not left invisible in parsing 636ms
+   ✓ the queue never silently drops a document > a stale claim from a dead worker is reclaimed rather than stranded 889ms
+   ✓ the queue never silently drops a document > a FRESH claim is left alone — the reclaim is by age, not by status 629ms
+   ✓ the queue never silently drops a document > one user's drain never touches another user's queue 1056ms
+   ✓ the queue never silently drops a document > reapExhausted reports nothing to do when there is nothing to do 537ms
+   ✓ the queue never silently drops a document > a worker killed during chunking is reclaimed, not stranded 889ms
+   ✓ the queue never silently drops a document > an exhausted document stuck in chunking is retired rather than left invisible 524ms
+   ✓ the queue never silently drops a document > a FRESH chunking claim is left alone — the reclaim is by age, not by status 629ms
+   ✓ the queue never silently drops a document > a worker killed during embedding is reclaimed, not stranded 937ms
+   ✓ the queue never silently drops a document > an exhausted document stuck in embedding is retired rather than left invisible 535ms
+   ✓ the queue never silently drops a document > a FRESH embedding claim is left alone — the reclaim is by age, not by status 652ms
+ ↓ test/invariants/studies-tenancy.test.ts (6 tests | 6 skipped)
+stderr | test/invariants/studies-tenancy.test.ts
+
+⚠  NOT RUN — S-4 studies tenancy (two accounts over app_runtime; belt + RLS) DID NOT RUN — missing DATABASE_URL (owner — teardown deletes; app_runtime holds no DELETE by design). It covers: cross-tenant read/write isolation on studies, study_blocks, study_block_revisions. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/search-servability.test.ts (3 tests | 3 skipped)
+stderr | test/invariants/search-servability.test.ts
+
+⚠  NOT RUN — /search servability belt — searchStudies tombstones withdrawn quotes DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the /search render path re-checks servability like its three siblings; a withdrawn quote never reaches a snippet. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/study-position.test.ts (14 tests) 222ms
+ ✓ test/invariants/gate-ugc-blindness.test.ts (5 tests) 14ms
+stderr | test/invariants/commentary-entries-provenance.test.ts
+
+⚠  NOT RUN — executed — the predicate run as SQL over seeded rows DID NOT RUN — missing a DIRECT (non-pooled) test DB — DATABASE_URL via seedOwnerUrl, or REDPROOF_DATABASE_URL. It covers: that the predicate actually refuses aggregator rows and keeps their clean twins. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/commentary-entries-provenance.test.ts (4 tests | 2 skipped) 1ms
+ ✓ test/user-corpus/search.test.ts (17 tests) 14313ms
+   ✓ the three searches > semantic > is EXACT brute force — equals a reference cosine computed here (SLICE_1_DATA_MODEL test 2) 339ms
+   ✓ the three searches > keyword > does not throw on punctuation that would break to_tsquery 401ms
+stderr | test/regression/studies-routes.test.ts > Studies routes (handler → lib → dev DB, session mocked)
+⚠  qa-residue sweep NOT RUN (no owner DATABASE_URL) for qa-study-routes-. Rows stranded by an INTERRUPTED earlier run are still there; this run cleaned only after itself.
+
+ ✓ test/regression/studies-routes.test.ts (8 tests) 2782ms
+   ✓ Studies routes (handler → lib → dev DB, session mocked) > 404 NOT_FOUND (never 401) for a well-formed id the caller does not own 544ms
+   ✓ Studies routes (handler → lib → dev DB, session mocked) > golden path: create → rename/pin → text block → list in order → delete block → delete study 1332ms
+   ✓ Studies routes (handler → lib → dev DB, session mocked) > licensing refusal is 409 NOT_SERVABLE, distinct from 404 902ms
+ ✓ test/invariants/tab-bar-reserved-once.test.ts (4 tests) 25ms
+stderr | test/regression/annotations-routes.test.ts > #7 — 401 means signed out, and ONLY signed out > a DB fault on GET is 500 INTERNAL, never 401 — and leaks nothing
+annotations read error: connection to ep-odd-fog failed: password authentication
+
+stderr | test/regression/annotations-routes.test.ts > #7 — 401 means signed out, and ONLY signed out > a DB fault on POST is 500 INTERNAL, never 401
+annotations write error: permission denied for table notes
+
+stderr | test/regression/annotations-routes.test.ts > #7 — 401 means signed out, and ONLY signed out > a DB fault on DELETE is 500 INTERNAL, never 401
+annotations delete error: permission denied for table notes
+
+ ✓ test/regression/annotations-routes.test.ts (12 tests) 9ms
+ ↓ test/invariants/studies-order.test.ts (6 tests | 6 skipped)
+stderr | test/invariants/studies-order.test.ts
+
+⚠  NOT RUN — S-14 studies order (total, stable, collision-free) DID NOT RUN — missing DATABASE_URL (owner — teardown deletes; app_runtime holds no DELETE by design). It covers: stable total block order across renders and deterministic midpoint-collision handling. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/regression/plan-topic-flow.test.ts (5 tests | 5 skipped)
+stderr | test/regression/plan-topic-flow.test.ts
+
+⚠  NOT RUN — Topic plan end-to-end (owner-seeded fixture, real handlers, real DB) DID NOT RUN — missing an owner seed URL (DATABASE_URL, non-prod). It covers: the topic→plan wiring: match → create → readings → tenancy → cascade. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/user-corpus/real-files-end-to-end.test.ts (4 tests | 4 skipped)
+stderr | test/user-corpus/real-files-end-to-end.test.ts
+
+⚠  NOT RUN — real files, end to end, against the real database DID NOT RUN — missing REALFILE_DOCX_DIR (operator-supplied local corpus) and REALFILE_PDF_DIR (operator-supplied local corpus) and REALFILE_SCAN_DIR (operator-supplied local corpus). It covers: real .docx/.pdf/scanned files through the shipped pipeline. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/annotation-tables.test.ts (8 tests | 8 skipped)
+stderr | test/invariants/annotation-tables.test.ts
+
+⚠  NOT RUN — MIG-B..E — bookmarks, library_items, reading_progress, tags DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: bookmarks, library_items, reading_progress and tags schema invariants. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/no-dead-user-table-writer.test.ts (4 tests) 3ms
+ ↓ test/invariants/sections-unit-ordinal.test.ts (2 tests | 2 skipped)
+stderr | test/invariants/sections-unit-ordinal.test.ts
+
+⚠  NOT RUN — ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the 024 backfill reassembly of mis-ordered chunks in (unit_ordinal, ordinal) order. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/health-corpus-identity.test.ts (13 tests) 79ms
+ ↓ test/user-corpus/scanned-threshold-calibration.test.ts (1 test | 1 skipped)
+stderr | test/user-corpus/scanned-threshold-calibration.test.ts
+
+⚠  NOT RUN — MIN_CHARS_PER_PAGE, measured against real documents DID NOT RUN — missing CALIBRATION_TEXT_DIR (operator-supplied local corpus) and CALIBRATION_SCAN_DIR (operator-supplied local corpus). It covers: the MIN_CHARS_PER_PAGE scanned-vs-text threshold against real documents. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/user-corpus/routes.test.ts (14 tests) 11713ms
+   ✓ the user-corpus routes > upload > rejects a request with no file as 400, not 500 326ms
+   ✓ the user-corpus routes > upload > accepts a real document as 201 and indexes it through the drain 8971ms
+   ✓ the user-corpus routes > search > answers a text query from the indexed rows 440ms
+ ✓ test/invariants/work-toc-browse.test.ts (15 tests) 5ms
+ ✓ test/user-corpus/chunk.test.ts (16 tests) 4ms
+ ✓ test/invariants/ask-composer-mask.test.ts (8 tests) 2ms
+stderr | test/invariants/api-hardening.test.ts > /api/search/commentaries validates every number — H9 > a DB fault returns the stable envelope, not a raw 500 — and leaks nothing
+[search/commentaries] connection to ep-odd-fog failed: password authentication
+
+ ✓ test/invariants/api-hardening.test.ts (14 tests) 29ms
+ ✓ test/invariants/fonts-self-hosted.test.ts (5 tests) 19ms
+ ✓ test/verifier-origin.test.ts (4 tests) 4ms
+ ✓ test/invariants/prayer-carry-forward.test.ts (11 tests) 3ms
+ ✓ test/invariants/ask-outcomes-migration.test.ts (7 tests) 3ms
+stderr | test/user-corpus/upload-quota.test.ts > H5b — upload quotas > route wiring > at the document cap: a DUPLICATE re-upload still answers 200, a new file gets the 403
+[user-corpus] could not schedule the drain; document stays queued: `after` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+
+stderr | test/research-store-edges.test.ts > research store — edge cases (executed)
+⚠  qa-residue sweep NOT RUN (no owner DATABASE_URL) for qa-research-edge-. Rows stranded by an INTERRUPTED earlier run are still there; this run cleaned only after itself.
+
+ ✓ test/research-store-edges.test.ts (14 tests) 4144ms
+   ✓ research store — edge cases (executed) > E1: a crashed ask (question with no answer) renders as an unanswered turn, not lost 637ms
+   ✓ research store — edge cases (executed) > E2: interleaved Q1,Q2,A1,A2 pairs by qid — never misattributed (I1-M1 by execution) 532ms
+   ✓ research store — edge cases (executed) > E7: title truncates at 80 with an ellipsis; short titles stay verbatim 379ms
+   ✓ research store — edge cases (executed) > E11: an archived thread disappears from the list but stays readable at its URL 360ms
+   ✓ research store — edge cases (executed) > E13: updated_at ordering — the most recently ACTIVE thread lists first 371ms
+ ✓ test/desk-panes.test.ts (37 tests) 4ms
+ ✓ test/invariants/wallet.test.ts (3 tests) 25ms
+ ✓ test/user-corpus/corpus-join-integrity.test.ts (4 tests) 2ms
+ ✓ test/search-groups.test.ts (16 tests) 3ms
+ ✓ test/user-corpus/upload-quota.test.ts (8 tests) 2804ms
+   ✓ H5b — upload quotas > route wiring > at the document cap: a DUPLICATE re-upload still answers 200, a new file gets the 403 959ms
+ ✓ test/invariants/today.test.ts (7 tests) 4ms
+ ✓ test/invariants/t1-t3-first-run.test.ts (6 tests) 2ms
+ ✓ test/invariants/voice-floor-authors.test.ts (8 tests) 4ms
+ ✓ test/user-corpus/scanned-pdf-real-path.test.ts (3 tests) 388ms
+   ✓ a PDF with a real text layer > is read, and accepted 380ms
+ ✓ test/regression/chat-write-caps.test.ts (12 tests) 7ms
+ ✓ test/teach-rejection-capture.test.ts (5 tests) 23ms
+ ✓ test/user-corpus/readings-reentrancy.test.ts (8 tests) 1379ms
+   ✓ H8 — the readings route > 409s a POST while a FRESH pending run exists — the exact H8 reproduction 353ms
+   ✓ H8 — the readings route > lets a POST through once the pending is STALE (the crashed-kick escape) 660ms
+ ✓ test/invariants/fetched-assets-actually-ship.test.ts (3 tests) 40ms
+ ✓ test/original/match-english-word.test.ts (13 tests) 3ms
+ ✓ test/invariants/annotation-exact-substring.test.ts (5 tests) 836ms
+   ✓ §P1 the exact substring survives the persistence round-trip (RLS) > span_start/span_end read back slice the verse to the EXACT selected substring 559ms
+ ✓ test/invariants/prayers-c9.test.ts (6 tests) 2ms
+ ✓ test/study-clipping-trim.test.ts (4 tests) 10ms
+ ✓ test/user-corpus/pipeline-to-ready.test.ts (4 tests) 11839ms
+   ✓ a document goes in and comes out searchable > reaches ready, with sections, vectors and anchors all written 9729ms
+   ✓ a document goes in and comes out searchable > re-indexing is idempotent — a retry replaces rather than duplicates 1480ms
+ ✓ test/invariants/gate-leg-inventory.test.ts (10 tests) 4ms
+ ✓ test/plan-canonical-groups.test.ts (9 tests) 4ms
+ ✓ test/invariants/section-label.test.ts (12 tests) 2ms
+stdout | test/invariants/teacher-owner-gate-routes.test.ts > the teacher owner-gate fires on the shipped routes (ADR-116 ruling 3) > an ALLOWLISTED caller is NOT refused — the gate is not simply off
+{"evt":"ask_outcome","ts":"2026-08-23T01:51:41.470Z","kind":"empty","ms":0,"attempts":0,"voices":0,"traditions":0}
+
+ ✓ test/invariants/teacher-owner-gate-routes.test.ts (4 tests) 30ms
+ ✓ test/invariants/sec1-upload-gate.test.ts (7 tests) 2ms
+ ✓ test/invariants/studies-grants.test.ts (2 tests) 267ms
+ ✓ test/invariants/date-locale-and-plan-title.test.ts (6 tests) 40ms
+ ✓ test/invariants/reading-progress-contract.test.ts (27 tests) 3ms
+ ✓ test/invariants/unit-ordinal-instrument.test.ts (15 tests | 3 skipped) 24237ms
+   ✓ unit_ordinal instrument — published works + digest > passes NULL/order/recompute/digest checks on all published works 23616ms
+ ✓ test/invariants/migration-zero-window.test.ts (8 tests) 2ms
+ ↓ test/invariants/neon-auth-live.test.ts (3 tests | 3 skipped)
+stderr | test/invariants/neon-auth-live.test.ts
+
+⚠  NOT RUN — Neon Auth against the real hosted service DID NOT RUN — missing NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET. It covers: Neon Auth can create and authenticate a user against the real hosted service. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/history-search.test.ts (16 tests) 7ms
+ ✓ test/invariants/must-not-serve-veto-on-fts.test.ts (17 tests) 3ms
+ ✓ test/invariants/naming-lock.test.ts (9 tests) 7ms
+ ✓ test/invariants/licensing.test.ts (6 tests) 25649ms
+   ✓ Layer 1 — licensing invariant (behavioral) > search path: Tyndale Study Notes is never returned 559ms
+   ✓ Layer 1 — licensing invariant (behavioral) > search path: explicit Tyndale author filter returns nothing 350ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher legal SQL pool: no quarantined author in top candidates 11787ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher LEGAL_CORPUS_FILTER admits ALL 9 served voices (presence) 1319ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher retrieveCommentary: no quarantined author in returned chunks 4525ms
+   ✓ Layer 1 — static reader forbidden-provenance ratchet > forbidden-provenance count may only decrease (or must be zero) 3352ms
+ ✓ test/user-corpus/pdf-dom-globals.test.ts (11 tests) 153ms
+ ✓ test/teach-stage-timings.test.ts (2 tests) 691ms
+   ✓ teach() stage timings (B1) > reproduces seeded stage delays, records EVERY compose attempt, and totals coherently 308ms
+   ✓ teach() stage timings (B1) > a compose that THROWS still records its duration (the tail must not hide) 382ms
+ ✓ test/invariants/register-wall-fail-closed.test.ts (6 tests) 5ms
+ ✓ test/invariants/highlight-range.test.ts (11 tests) 6ms
+ ✓ test/desk-cap-overflow.test.ts (11 tests) 2ms
+ ✓ test/plan-expand.test.ts (10 tests) 4ms
+ ✓ test/ask-outcome-discriminator.test.ts (6 tests) 10ms
+ ✓ test/invariants/seed-owner-url.test.ts (8 tests) 6ms
+ ✓ test/invariants/pr1c-prayer-surface.test.ts (5 tests) 4ms
+ ✓ test/invariants/provider-availability.test.ts (8 tests) 3ms
+ ✓ test/invariants/n4-fake-doors.test.ts (7 tests) 5ms
+ ✓ test/verse-span.test.ts (11 tests) 4ms
+stdout | test/invariants/section-vector-pairing.test.ts > §B0 class 2 — every section body matches its own stored vector > re-embedding the body reproduces the stored vector, and discriminates against a neighbour
+§B0 class 2 — pairing probed on 98/129 published works; NOT COVERED: 31 — vectorless (no section_embeddings): 0; no section of sampleable length: 31 [baxter-saints-rest, bett-methhymns, calvin-calcom03, calvin-calcom07, calvin-calcom14, calvin-calcom15, calvin-calcom16, calvin-calcom17, calvin-calcom18, calvin-calcom19, calvin-calcom20, calvin-calcom21, calvin-calcom24, calvin-calcom25, calvin-calcom26, calvin-prayer, easton-ebd2, jowett-mattermost, lawrence-practice-presence, luther-largecatechism, manning-wesleyhymns, reeves-hymnlit, ryle-expository, ryle-holiness, schaff-npnf213, scougal-life-of-god, smith-w-bibledict, spurgeon-comment, spurgeon-faiths-checkbook, spurgeon-morning-evening, tolstoy-confession]
+
+stdout | test/invariants/register-end-to-end.test.ts > §B1 per-register end-to-end (real route handlers, real DB) > runs the five reader checks for every published register
+
+§B1 per-register end-to-end — 11 register(s):
+  commentary  john-gill                sections= 28843 units=1169 catalog=commentaries
+  confession  schaff-creeds            sections=  4852 units=223 catalog=theology
+  devotional  spurgeon-morning-evening sections=   744 units=744 catalog=devotionals
+  father      chrysostom-homilies      sections=  8840 units=377 catalog=commentaries
+  historian   josephus-whiston         sections=  4112 units=2687 catalog=historians
+  hymn        watts-psalmshymns        sections=   731 units=731 catalog=hymns-poetry
+  lexicon     isbe                     sections= 26475 units=8928 catalog=(none)
+  poetry      milton-poetical-works    sections=   903 units=95 catalog=hymns-poetry
+  sermon      spurgeon-sermons         sections=118371 units=3540 catalog=sermons
+  theology    owen-works               sections= 20054 units=702 catalog=theology
+  topical_index openbible-topics         sections=  6711 units=6711 catalog=(none) phrase-probe=n/a (no-prose register)
+
+ ✓ test/invariants/register-end-to-end.test.ts (2 tests) 31299ms
+   ✓ §B1 per-register end-to-end (real route handlers, real DB) > every published register has a representative work, and the no-catalog set is exactly as declared 580ms
+   ✓ §B1 per-register end-to-end (real route handlers, real DB) > runs the five reader checks for every published register 30719ms
+ ✓ test/invariants/work-sections-provenance-static.test.ts (3 tests) 2ms
+ ✓ test/study-export-docx.test.ts (7 tests) 27ms
+ ✓ test/invariants/library-nav-labels.test.ts (5 tests) 3ms
+ ✓ test/invariants/verse-keys.test.ts (2 tests) 8262ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter 3242ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no SERVED (published) entry carries a biblehub.com / studylight.org sourceUrl 5020ms
+ ✓ test/invariants/studies-api-no-get.test.ts (3 tests) 2ms
+ ✓ test/posthog-wiring.test.ts (6 tests) 7ms
+ ✓ test/invariants/translation-licensing.test.ts (6 tests) 3ms
+ ✓ test/regression/bait-route-production-gate.test.ts (6 tests) 16ms
+ ✓ test/invariants/docx-extract-redos.test.ts (5 tests) 5ms
+ ✓ test/invariants/history-scope-db.test.ts (2 tests) 15072ms
+   ✓ history search — scope and excerpt gate against a real DB > returns historian/published works only, every excerpt verbatim 12121ms
+   ✓ history search — scope and excerpt gate against a real DB > an entity anchored ONLY in out-of-scope works returns nothing — the leak direction 2950ms
+ ✓ test/invariants/must-not-serve-format-agnostic.test.ts (18 tests) 4ms
+ ✓ test/invariants/chapter-advance-identity.test.ts (5 tests) 3ms
+ ✓ test/invariants/coverage-floor.test.ts (3 tests) 73ms
+ ✓ test/teach-budget.test.ts (6 tests) 2ms
+ ✓ test/history-row-to-result.test.ts (5 tests) 2ms
+stdout | test/user-corpus/upload-rate-limit.test.ts > H5a — checkCorpusUploadRateLimit > allows exactly at the per-minute cap, blocks the next
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:51.895Z","userId":"u1","cap":"corpus-upload:min","count":11,"limit":10}
+
+stdout | test/user-corpus/upload-rate-limit.test.ts > H5a — checkCorpusUploadRateLimit > blocks over the per-day cap
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:51.895Z","userId":"u1","cap":"corpus-upload:day","count":101,"limit":100}
+
+stdout | test/user-corpus/upload-rate-limit.test.ts > H5a — checkCorpusUploadRateLimit > a minute-limited burst never consumes the daily quota (the H4 ordering)
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:51:51.895Z","userId":"u1","cap":"corpus-upload:min","count":99,"limit":10}
+
+stdout | test/user-corpus/upload-rate-limit.test.ts > H5a — checkCorpusUploadRateLimit > FAILS CLOSED when the limiter DB call throws — each accepted upload is a paid embedding run
+{"evt":"rate_limit_fail_closed","ts":"2026-08-23T01:51:51.895Z","userId":"u1","error":"db down"}
+
+stdout | test/user-corpus/upload-rate-limit.test.ts > H5a — checkCorpusUploadRateLimit > a zero-row return is denied, not a TypeError swallowed into an allow
+{"evt":"rate_limit_fail_closed","ts":"2026-08-23T01:51:51.895Z","userId":"u1","error":"rate-limit bump returned no row for bucket corpus-upload:min"}
+
+ ✓ test/user-corpus/upload-rate-limit.test.ts (8 tests) 3ms
+ ✓ test/invariants/fts-legal-index-sync.test.ts (1 test) 7ms
+ ✓ test/user-corpus/plain-excerpt.test.ts (8 tests) 2ms
+ ✓ test/invariants/bait-harness-uses-shipped-pipeline.test.ts (7 tests) 2ms
+ ✓ test/teach-lane-flags.test.ts (4 tests) 3ms
+ ✓ test/invariants/served-veto-db.test.ts (2 tests) 1097ms
+   ✓ MUST_NOT_SERVE — nothing vetoed is serving (DB) > no work whose author matches a vetoed name is serving, unless an owner ruling admits it 1013ms
+ ✓ test/invariants/daily-light-json.test.ts (3 tests) 43ms
+ ✓ test/invariants/s2-era-accent.test.ts (4 tests) 2ms
+ ✓ test/invariants/published-authors.test.ts (6 tests) 2ms
+ ✓ test/user-corpus/translation-detect.test.ts (7 tests) 8716ms
+   ✓ detection over the real shipped indexes > BAR 3 (pre-registered): 10 synthetic BSB sermons detect bsb, each with confidence > 0.6 8699ms
+ ✓ test/user-corpus/search-limit-default.test.ts (6 tests) 5ms
+ ✓ test/tradition-count-matches-gate.test.ts (4 tests) 2ms
+ ✓ test/invariants/tradition-gap-wiring.test.ts (6 tests) 2ms
+ ✓ test/invariants/sec1-route-guard.test.ts (13 tests) 4ms
+ ✓ test/invariants/persist-write-retry.test.ts (7 tests) 4ms
+ ✓ test/invariants/gate-next-redirect.test.ts (3 tests) 1ms
+ ✓ test/invariants/plan-builder-defaults.test.ts (6 tests) 2ms
+ ✓ test/invariants/teacher-owner-gate.test.ts (6 tests) 1ms
+ ✓ test/invariants/scroll-fade-focus.test.ts (3 tests) 2ms
+ ✓ test/clipping-display.test.ts (7 tests) 2ms
+ ✓ test/invariants/plan-tenancy.test.ts (6 tests) 1583ms
+   ✓ Plans tenancy invariant (two-account, executed) > positive control: user A reads, toggles, and still owns the plan 343ms
+ ✓ test/invariants/highlight-palette.test.ts (5 tests) 2ms
+ ✓ test/middleware-gate.test.ts (3 tests) 4ms
+ ✓ test/invariants/commentary-entries-work-column.test.ts (4 tests) 1ms
+ ✓ test/embed-model-guard.test.ts (7 tests) 5ms
+ ✓ test/invariants/s2-polish.test.ts (3 tests) 2ms
+ ✓ test/invariants/eval-whole-capture.test.ts (2 tests) 704ms
+   ✓ eval-heldout whole-capture > GREEN: a complete run writes every record and exits 0 424ms
+ ✓ test/regression/get-messages-filters-by-user-id.test.ts (2 tests) 5ms
+ ✓ test/invariants/highlight-tenancy.test.ts (3 tests) 990ms
+ ✓ test/teach-fallback-deadline.test.ts (1 test) 4ms
+ ✓ test/invariants/search-sections.test.ts (6 tests) 9067ms
+   ✓ searchSections — deduped to reading units, and capped > collapses many chunks of one reading unit into ONE result 954ms
+   ✓ searchSections — deduped to reading units, and capped > caps the page size no matter what the caller asks for 4520ms
+   ✓ searchSections — deduped to reading units, and capped > caps the reported count instead of scanning every match 3159ms
+ ✓ test/invariants/neon-auth-wiring.test.ts (5 tests) 3ms
+ ✓ test/user-corpus/draft-check.test.ts (4 tests) 13100ms
+   ✓ draft check > anchors a draft in-process — detection live, no rows written, no spend 9697ms
+   ✓ draft check > finds the user's own document on the same passage, and the tradition beside it 3222ms
+stderr | test/history-search-route.test.ts > POST /api/history/search > 500 fail-closed when retrieval throws — including the excerpt gate
+history_search_failed excerpt is not a verbatim substring
+
+stderr | test/history-search-route.test.ts > POST /api/history/search > 200 passes the contract through untouched
+history_thread_persist_failed APP_DATABASE_URL or DATABASE_URL must be set
+
+ ✓ test/history-search-route.test.ts (5 tests) 7ms
+ ✓ test/invariants/chapter-param-guard.test.ts (5 tests) 2ms
+ ✓ test/invariants/auth-route-table.test.ts (4 tests) 2ms
+ ✓ test/paragraph-around.test.ts (7 tests) 2ms
+ ✓ test/user-corpus/metadata-extract.test.ts (6 tests) 5ms
+ ✓ test/invariants/popover-position.test.ts (6 tests) 2ms
+ ✓ test/plan-topical-expand.test.ts (5 tests) 3ms
+ ✓ test/invariants/prayers-route.test.ts (4 tests) 2ms
+ ✓ test/marketing-verse-panel-sync.test.ts (1 test) 3ms
+ ✓ test/plan-reschedule.test.ts (6 tests) 3ms
+ ✓ test/word-articles-route.test.ts (3 tests) 4ms
+ ✓ test/invariants/no-returns-empty-by-construction.test.ts (2 tests) 19ms
+ ✓ test/regression/add-message-rejects-foreign-channel.test.ts (2 tests) 2ms
+ ✓ test/invariants/neon-auth-config.test.ts (3 tests) 157ms
+ ✓ test/invariants/s2-translation-explainer.test.ts (2 tests) 1ms
+ ✓ test/invariants/work-toc-grouping.test.ts (3 tests) 2ms
+ ✓ test/invariants/bible-translation-gate.test.ts (4 tests) 3ms
+ ✓ test/user-corpus/readings-stale-running.test.ts (4 tests) 2ms
+ ✓ test/invariants/copy-format.test.ts (6 tests) 1ms
+ ↓ test/invariants/protected-branches-exist.test.ts (1 test | 1 skipped)
+stderr | test/invariants/protected-branches-exist.test.ts
+
+⚠  NOT RUN — protected-branches-exist DID NOT RUN — missing NEON_API_KEY (Neon branch inventory). It covers: every registered rollback branch id still exists in Neon. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/servedof-provenance-belt.test.ts (1 test) 1ms
+ ✓ test/invariants/snippet-sanitize.test.ts (4 tests) 1ms
+ ✓ test/lexicon-404-degrade.test.ts (3 tests) 3ms
+ ✓ test/plan-reading-label.test.ts (4 tests) 1ms
+stderr | test/invariants/loud-skip.test.ts > loud-skip: secrets fail closed, artifacts loud-skip > REQUIRE_SECRETS=1 + missing artifact only returns skip (no throw)
+
+⚠  NOT RUN — §3 verse-key distribution DID NOT RUN — missing web/public/commentaries (gitignored static corpus). It covers: verse-key collapse. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/loud-skip.test.ts (2 tests) 2ms
+stderr | test/user-corpus/tradition-gap.test.ts > the tradition-gap join > A2 — a user-owned row seeded INTO the corpus table never surfaces
+⚠ A2 leg SKIPPED: no owner URL
+
+ ✓ test/research-tenancy.test.ts (6 tests) 6148ms
+   ✓ Research tenancy invariant (two-account, executed) > listThreads clamps an oversized ask to 50 — proven against >50 real rows (I2-H3) 4993ms
+ ✓ test/invariants/tenancy.test.ts (3 tests) 886ms
+stderr | test/db-boot-assert.test.ts > assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves)
+[boot] assertAppRuntimeRole: could not reach the DB to verify the runtime role after 4 attempts; serving anyway (per-request RLS still binds). Last error: fetch failed: other side closed
+
+ ✓ test/db-boot-assert.test.ts (4 tests) 1708ms
+   ✓ assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves) 1707ms
+ ✓ test/save-to-study.test.tsx (19 tests) 189ms
+ ✓ test/components/study-panel-verse-sequence.test.tsx (15 tests) 274ms
+ ✓ test/invariants/bible-position.test.tsx (22 tests) 200ms
+ ✓ test/verse-ref-preview.test.tsx (11 tests) 189ms
+ ✓ test/invariants/annotation-write-failure.test.tsx (8 tests) 24ms
+ ✓ test/catalog-url-facets.test.tsx (11 tests) 262ms
+ ✓ test/components/selection-popover-add-to-study.test.tsx (5 tests) 123ms
+ ✓ test/auth-session-dedupe.test.tsx (4 tests) 694ms
+ ✓ test/invariants/ask-client-live.test.tsx (12 tests) 330ms
+ ✓ test/plans-builder-preview.test.tsx (7 tests) 273ms
+ ✓ test/invariants/settings-and-auth-routes.test.tsx (12 tests) 77ms
+stderr | test/user-corpus/tradition-gap.test.ts > the tradition-gap join > D9 — a corpus row with forbidden provenance never surfaces, even under the widest predicate
+⚠ D9 leg SKIPPED: no owner URL
+
+stderr | test/user-corpus/tradition-gap.test.ts > the tradition-gap join > D8 — a USER-owned embeddings row is invisible to the clip-failure probe
+⚠ D8 leg SKIPPED: no owner URL
+
+ ✓ test/catalog-search-sends-filter.test.tsx (7 tests) 158ms
+ ✓ test/invariants/ask-show-filter.test.tsx (10 tests) 274ms
+ ✓ test/components/study-editor.test.tsx (8 tests) 2717ms
+   ✓ StudyEditor — autosave and save state > typing in a text block saves by itself (update_text on the block id) and shows Saved 543ms
+   ✓ StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it 529ms
+   ✓ StudyEditor — the insert point (v2) > inserts between blocks, creates once with the captured placement, then updates on the returned id 1041ms
+   ✓ StudyEditor — movement and the trailing composer (v2) > the ghost composer creates an END block (no anchor) seeded with the first keystrokes 516ms
+ ✓ test/invariants/bookmark-write-path.test.tsx (7 tests) 42ms
+ ✓ test/invariants/work-toc-bounded.test.tsx (7 tests) 256ms
+ ✓ test/components/sidebar-tablet-default.test.tsx (7 tests) 180ms
+ ✓ test/components/desk-pane-loading.test.tsx (7 tests) 102ms
+ ✓ test/sidebar-catalog-nav.test.tsx (6 tests) 93ms
+ ✓ test/components/my-works-upload-batch.test.tsx (10 tests) 273ms
+ ✓ test/components/desk-nav-and-session-note.test.tsx (7 tests) 184ms
+ ✓ test/components/work-reader-add-to-study.test.tsx (2 tests) 138ms
+ ✓ test/invariants/work-reader-paging.test.tsx (6 tests) 25ms
+ ✓ test/invariants/register-wall-surfaces.test.ts (6 tests) 23464ms
+   ✓ register wall — the NEW catalog + search surfaces > every catalog returns ONLY its declared types (fence holds against real data) 987ms
+   ✓ register wall — the NEW catalog + search surfaces > no catalog surfaces lane/other content that exists in the corpus 908ms
+   ✓ register wall — the NEW catalog + search surfaces > catalog-scoped SEARCH honours the same fence 19073ms
+   ✓ register wall — the NEW catalog + search surfaces > EVERY cross-corpus search result is register-LABELLED (the caller can honour the wall) 2313ms
+ ✓ test/components/desk-cap-notice.test.tsx (9 tests) 179ms
+ ✓ test/components/my-works-file-size.test.tsx (7 tests) 157ms
+ ✓ test/components/work-reader-progress-sync.test.tsx (6 tests) 265ms
+ ✓ test/components/desk-pane-continuous-read.test.tsx (5 tests) 578ms
+ ✓ test/components/plan-day-toggle-optimistic.test.tsx (4 tests) 239ms
+ ✓ test/components/ask-terminal-state.test.tsx (4 tests) 164ms
+ ✓ test/components/marketing-nav-focus-order.test.tsx (4 tests) 101ms
+ ✓ test/components/my-works-resilient-fetch.test.tsx (5 tests) 195ms
+ ✓ test/invariants/work-section-lineation.test.tsx (6 tests) 24ms
+ ✓ test/components/daily-office.test.tsx (6 tests) 261ms
+ ✓ test/invariants/selection-popover-layout.test.tsx (4 tests) 36ms
+ ✓ test/invariants/search-result-attribution.test.tsx (5 tests) 66ms
+ ✓ test/invariants/g1-measure-executable.test.ts (28 tests) 7409ms
+   ✓ G1 digest SQL is executable for every classified table > measureSql(annotation_tags) runs against the real schema 633ms
+   ✓ G1 digest SQL is executable for every classified table > measureSql(library_items) runs against the real schema 312ms
+ ✓ test/invariants/selection-collapse-grace.test.tsx (3 tests) 22ms
+ ✓ test/components/word-study-occurrences.test.tsx (2 tests) 150ms
+ ✓ test/invariants/signed-in-derivation.test.tsx (5 tests) 17ms
+ ✓ test/components/desk-stacked-pane-position.test.tsx (5 tests) 132ms
+ ✓ test/components/ask-signed-out.test.tsx (3 tests) 142ms
+ ✓ test/invariants/drag-handle-swallows-clicks.test.tsx (4 tests) 37ms
+ ✓ test/components/word-study-lang-race.test.tsx (2 tests) 124ms
+ ✓ test/invariants/mobile-menu-labels.test.tsx (4 tests) 186ms
+ ✓ test/invariants/section-vector-pairing.test.ts (1 test) 46047ms
+   ✓ §B0 class 2 — every section body matches its own stored vector > re-embedding the body reproduces the stored vector, and discriminates against a neighbour 46046ms
+ ✓ test/components/sidebar-collapse-label.test.tsx (3 tests) 166ms
+ ✓ test/components/work-header-save-shelf.test.tsx (7 tests) 175ms
+ ✓ test/components/study-library-panel.test.tsx (3 tests) 1346ms
+   ✓ StudyLibraryPanel > searches the active register group and renders labelled rows 447ms
+   ✓ StudyLibraryPanel > Add sends a REFERENCE (sectionId + placement), never quote/attribution text, and hands the block back 474ms
+   ✓ StudyLibraryPanel > a 409 from the write renders the not-servable refusal on that row 424ms
+ ✓ test/components/tap-highlight-mode.test.tsx (6 tests) 65ms
+ ✓ test/components/research-thread-delete.test.tsx (4 tests) 326ms
+ ✓ test/components/settings-close-on-study.test.tsx (3 tests) 242ms
+ ✓ test/components/study-delete-button.test.tsx (5 tests) 175ms
+ ✓ test/components/my-works-dates-and-stuck.test.tsx (4 tests) 222ms
+ ✓ test/invariants/ask-passage-link.test.tsx (1 test) 70ms
+ ✓ test/components/selection-popover-define.test.tsx (4 tests) 178ms
+ ✓ test/components/search-studies-tombstone.test.tsx (4 tests) 26ms
+ ✓ test/components/desk-empty-cta-adds-scripture.test.tsx (2 tests) 169ms
+ ✓ test/components/study-panel-selection.test.tsx (3 tests) 75ms
+ ✓ test/components/mobile-bar-bookmark-order.test.tsx (2 tests) 160ms
+ ✓ test/components/pray-entry-point.test.tsx (5 tests) 152ms
+ ✓ test/components/study-panel-all-voices.test.tsx (4 tests) 196ms
+ ✓ test/catalog-row-affordances.test.tsx (2 tests) 135ms
+ ✓ test/components/sidebar-writing-rail.test.tsx (3 tests) 214ms
+ ✓ test/components/foreign-highlight.test.tsx (4 tests) 66ms
+ ✓ test/components/prayer-delete-headless.test.tsx (2 tests) 225ms
+ ✓ test/invariants/work-reader-ui.test.tsx (4 tests) 33ms
+ ✓ test/invariants/verse-open-gesture.test.tsx (3 tests) 41ms
+ ✓ test/invariants/verse-deep-link.test.tsx (6 tests) 31ms
+ ✓ test/components/unhighlight-affordance.test.tsx (3 tests) 152ms
+ ✓ test/components/cross-verse-selection.test.tsx (3 tests) 11ms
+ ✓ test/components/ask-error-banner-message.test.tsx (4 tests) 200ms
+ ✓ test/components/study-panel-bookmark.test.tsx (4 tests) 205ms
+ ✓ test/components/prayer-autosave.test.tsx (3 tests) 5611ms
+   ✓ Prayer compose redesign — autosave > has NO Save and NO Cancel, and typing saves by itself: create once, then update 1959ms
+   ✓ Prayer compose redesign — autosave > editing an existing prayer autosaves an UPDATE on its id and never creates 2132ms
+   ✓ Prayer compose redesign — autosave > an empty draft is never written 1519ms
+ ✓ test/components/withdrawn-thread-fail-closed.test.tsx (3 tests) 94ms
+ ✓ test/components/highlight-bloom.test.tsx (3 tests) 32ms
+ ✓ test/components/history-filter-reset.test.tsx (1 test) 178ms
+ ✓ test/components/ask-single-flight.test.tsx (2 tests) 222ms
+ ✓ test/invariants/chapter-param-no-dispatch.test.tsx (2 tests) 96ms
+ ✓ test/components/my-works-retry-remove-errors.test.tsx (3 tests) 237ms
+ ✓ test/components/word-page.test.tsx (4 tests) 190ms
+ ✓ test/components/ask-retry-replaces.test.tsx (2 tests) 244ms
+ ✓ test/components/word-articles.test.tsx (2 tests) 53ms
+ ✓ test/invariants/settings-cross-links.test.tsx (3 tests) 129ms
+ ✓ test/invariants/omnibox-verse-anchor.test.tsx (4 tests) 59ms
+ ✓ test/components/bookmark-state-label.test.tsx (2 tests) 154ms
+ ✓ test/components/study-entrance.test.tsx (4 tests) 161ms
+ ✓ test/invariants/history-results.test.tsx (5 tests) 194ms
+ ✓ test/components/history-ask-autorun.test.tsx (2 tests) 158ms
+ ✓ test/components/my-works-draft-check.test.tsx (3 tests) 277ms
+ ✓ test/components/work-section-landing.test.tsx (3 tests) 57ms
+ ✓ test/components/ask-history-invite.test.tsx (2 tests) 150ms
+ ✓ test/components/suggested-readings-load-failure.test.tsx (4 tests) 181ms
+ ✓ test/components/my-works-remove.test.tsx (2 tests) 229ms
+ ✓ test/components/word-links.test.tsx (2 tests) 163ms
+ ✓ test/components/sign-out-arming.test.tsx (2 tests) 248ms
+ ✓ test/components/plan-route-states.test.tsx (2 tests) 103ms
+ ✓ test/components/reader-hint-gesture.test.tsx (2 tests) 83ms
+ ✓ test/components/history-context-bar-query.test.tsx (3 tests) 72ms
+ ✓ test/components/search-groups-works-rows.test.tsx (3 tests) 28ms
+ ✓ test/user-corpus/tradition-gap.test.ts (15 tests) 57617ms
+   ✓ the tradition-gap join > returns corpus voices on the passages the document engages 8596ms
+   ✓ the tradition-gap join > THE INJECTED PREDICATE IS ACTUALLY APPLIED — this is ADR-104s load-bearing assertion 9971ms
+   ✓ the tradition-gap join > a voice is an AUTHOR, not an entry 3048ms
+   ✓ the tradition-gap join > the LIMIT counts VOICES, not anchor×entry pairs 2351ms
+   ✓ the tradition-gap join > never returns the user’s own words — the trust boundary (§7) 2949ms
+   ✓ the tradition-gap join > returns nothing for a document that anchors nothing 1337ms
+   ✓ the tradition-gap join > bounds its own output 2757ms
+   ✓ the tradition-gap join > REAL EXECUTION — relatedVoices runs its sweeps (ef_search + provenance leg) live 14737ms
+   ✓ the tradition-gap join > REAL EXECUTION — computeSuggestedReadings runs its category scan (provenance leg) live 1855ms
+
+ Test Files  253 passed | 20 skipped (273)
+      Tests  1622 passed | 128 skipped (1750)
+   Start at  18:51:17
+   Duration  58.04s (transform 3.08s, setup 0ms, collect 17.41s, tests 385.26s, environment 39.35s, prepare 8.86s)
+
+
+ RUN  v2.1.9 /private/tmp/swarm-W-L2TOGGLE
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.041Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS CLOSED (denies) when the limiter DB call throws — this is the SPEND path
+{"evt":"rate_limit_fail_closed","ts":"2026-08-23T01:52:16.042Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > a ZERO-ROW return is denied, not a TypeError swallowed into an allow
+{"evt":"rate_limit_fail_closed","ts":"2026-08-23T01:52:16.042Z","userId":"u1","error":"rate-limit bump returned no row for bucket ask:min"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > the GLOBAL daily ceiling denies once all users together exceed it
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"u1","cap":"global","count":99999,"limit":5000}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+ ✓ test/rate-limit.test.ts (13 tests) 3ms
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > fires 429 semantics past the per-minute IP cap: 10 pass, the 11th and beyond are denied
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.041Z","userId":"auth:ip:6.6.6.6","cap":"min","count":11,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:ip:6.6.6.6","cap":"min","count":12,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:ip:6.6.6.6","cap":"min","count":13,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:ip:6.6.6.6","cap":"min","count":14,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:ip:6.6.6.6","cap":"min","count":15,"limit":10}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > a slow drip past the hourly IP cap is denied with the hour retry
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:ip:1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-23T01:52:16.043Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-08-23T01:52:16.043Z","userId":"gate:1.2.3.4","error":"db down"}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > H4: a minute-refused request does NOT burn the hourly bucket
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:ip:1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > rotating IPs do NOT evade the cap when the email is constant (credential stuffing)
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:email:victim@example.com","cap":"min","count":6,"limit":5}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:email:victim@example.com","cap":"min","count":7,"limit":5}
+{"evt":"rate_limit_hit","ts":"2026-08-23T01:52:16.042Z","userId":"auth:email:victim@example.com","cap":"min","count":8,"limit":5}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > FAILS OPEN (allows, logged) when the limiter DB call throws
+{"evt":"rate_limit_fail_open","ts":"2026-08-23T01:52:16.043Z","userId":"auth:ip:1.2.3.4","error":"db down"}
+
+stdout | test/auth-rate-limit.test.ts > checkAuthRateLimit — the hammer (red-proof) > a ZERO-ROW upsert return fails open too, not a TypeError into a denial
+{"evt":"rate_limit_fail_open","ts":"2026-08-23T01:52:16.043Z","userId":"auth:ip:1.2.3.4","error":"rate-limit bump returned no row for bucket auth:min"}
+
+ ✓ test/auth-rate-limit.test.ts (10 tests) 3ms
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  18:52:15
+   Duration  180ms (transform 33ms, setup 0ms, collect 56ms, tests 6ms, environment 0ms, prepare 74ms)
+
+[32m✓ qa — Layer 1 invariants + regressions[0m
+
+[1m▶ hygiene — no test residue in dev (post-suite)[0m
+⚠ SKIPPED (visibly): no owner DATABASE_URL — cannot check dev for test residue.
+⚠ SKIPPED (visibly): no target to inspect.
+[32m✓ hygiene — no test residue in dev (post-suite)[0m
+
+[1m▶ deploy.sh — gate harness (bash)[0m
+
+=== deploy.sh gate tests — script under test: /tmp/swarm-W-L2TOGGLE/deploy.sh ===
+
+  [32mPASS[0m dirty-tree-blocked — exit 1
+  [32mPASS[0m dirty-tree-blocked — says: working tree is dirty
+  [32mPASS[0m dirty-tree-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m behind-origin-main-blocked — exit 1
+  [32mPASS[0m behind-origin-main-blocked — says: DEPLOY BLOCKED
+  [32mPASS[0m behind-origin-main-blocked — says: other lane's shipped work
+  [32mPASS[0m behind-origin-main-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m origin-main-unresolvable-named-honestly — exit 1
+  [32mPASS[0m origin-main-unresolvable-named-honestly — says: does not resolve
+  [32mPASS[0m origin-main-unresolvable-named-honestly — silent on: has  commit(s)
+  [32mPASS[0m whoami-failure-prints-its-stop — exit 1
+  [32mPASS[0m whoami-failure-prints-its-stop — says: vercel whoami
+  [32mPASS[0m whoami-failure-prints-its-stop — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m env-ls-failure-distinct-from-missing — exit 1
+  [32mPASS[0m env-ls-failure-distinct-from-missing — says: could not read production environment
+  [32mPASS[0m env-ls-failure-distinct-from-missing — silent on: missing required environment variable
+  [32mPASS[0m env-table-unparseable-refuses-to-blame-the-project — exit 1
+  [32mPASS[0m env-table-unparseable-refuses-to-blame-the-project — says: no parseable variable names
+  [32mPASS[0m env-table-unparseable-refuses-to-blame-the-project — silent on: missing required environment variable
+  [32mPASS[0m missing-env-var-named — exit 1
+  [32mPASS[0m missing-env-var-named — says: missing required environment variable(s): SITE_PASSWORD
+  [32mPASS[0m missing-teacher-allowlist-named — exit 1
+  [32mPASS[0m missing-teacher-allowlist-named — says: missing required environment variable(s): TEACHER_ALLOWLIST
+  [32mPASS[0m project-absent-from-org-blocked — exit 1
+  [32mPASS[0m project-absent-from-org-blocked — says: does not mention 'web'
+  [32mPASS[0m project-absent-from-org-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m project-named-webhooks-is-not-the-target — exit 1
+  [32mPASS[0m project-named-webhooks-is-not-the-target — says: does not mention 'web'
+  [32mPASS[0m licensing-gate-failure-stops-deploy — exit 1
+  [32mPASS[0m licensing-gate-failure-stops-deploy — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m tree-changed-during-build-blocked — exit 1
+  [32mPASS[0m tree-changed-during-build-blocked — says: changed during the build
+  [32mPASS[0m tree-changed-during-build-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — exit 2
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — receipt records: state:           unverified
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — says: UNVERIFIED
+  [32mPASS[0m deploy-log-path-is-unique — silent on: XXXXXX
+  [32mPASS[0m failed-upload-receipt-is-labelled — exit 1 (non-zero)
+  [32mPASS[0m failed-upload-receipt-is-labelled — receipt records: outcome unknown
+  [32mPASS[0m failed-upload-receipt-is-labelled — silent on: Done —
+  [32mPASS[0m alias-mismatch-is-a-failure — exit 3
+  [32mPASS[0m alias-mismatch-is-a-failure — says: THE DEPLOY DID NOT TAKE
+  [32mPASS[0m alias-mismatch-is-a-failure — receipt records: state:           mismatch
+  [32mPASS[0m alias-mismatch-is-a-failure — silent on: Done —
+  [32mPASS[0m inspect-unavailable-is-unverified — exit 2
+  [32mPASS[0m inspect-unavailable-is-unverified — says: does NOT mean the deploy failed
+  [32mPASS[0m inspect-unavailable-is-unverified — receipt records: state:           unverified
+  [32mPASS[0m inspect-unavailable-is-unverified — silent on: Done —
+  [32mPASS[0m happy-path-verified-live — exit 0
+  [32mPASS[0m happy-path-verified-live — says: is served by dpl_SAME999
+  [32mPASS[0m happy-path-verified-live — says: Done —
+  [32mPASS[0m happy-path-verified-live — receipt records: state:           live
+  [32mPASS[0m happy-path-verified-live — receipt records: dpl_SAME999
+  [32mPASS[0m happy-path-verified-live — CLI received: --meta sha=ce387bf7dec7c3fcfcfa61e009cf620f32e7a9d9
+  [32mPASS[0m happy-path-verified-live — CLI received: vercel@
+  [32mPASS[0m happy-path-verified-live — every vercel call ran from web/
+  [32mPASS[0m runs-from-a-subdirectory — exit 0
+  [32mPASS[0m runs-from-a-subdirectory — receipt records: state:           live
+  [32mPASS[0m receipt-filename-is-not-just-the-sha — receipt name is timestamped: deploy-2b533ad-2026-08-23T01-52-21Z.txt
+
+=== 59 passed, 0 failed ===
+all deploy.sh gates hold
+[32m✓ deploy.sh — gate harness (bash)[0m
+
+[1m▶ data — Gate B license (fail-closed)[0m
+======================================================================
+GATE B — LICENSE (fail closed)
+======================================================================
+Manifest: ingest/sources.config.json (917 source entries)
+Published sources (DB): skipped (no DATABASE_URL).
+
+✓ GATE B PASSED: no license/provenance violations.
+[32m✓ data — Gate B license (fail-closed)[0m
+
+[1m▶ coverage gaps (informational)[0m
+Files with ZERO coverage (69):
+  src/bible/verse-counts.ts
+  src/evals/run.ts
+  src/ingest/adapter-bdb.ts
+  src/ingest/adapter-gutenberg.ts
+  src/ingest/adapter-helloao.ts
+  src/ingest/adapter-loop.ts
+  src/ingest/adapter-thayers.ts
+  src/ingest/b2-remove-forbidden-provenance.ts
+  src/ingest/build-commentary-manifest.ts
+  src/ingest/build-concordance.ts
+  src/ingest/ccel-to-historian-jsonl.ts
+  src/ingest/check-corpus-coverage.ts
+  src/ingest/check-licenses.ts
+  src/ingest/clean-crossref-authors.ts
+  src/ingest/consolidate-bibles.ts
+  src/ingest/embed-full-corpus.ts
+  src/ingest/gate-ingest.ts
+  src/ingest/gutenberg-scoped-dryrun.ts
+  src/ingest/helloao-source.ts
+  src/ingest/historian-contract-backfill.ts
+  src/ingest/ingest-api.ts
+  src/ingest/ingest-biblehub.ts
+  src/ingest/ingest-commentaries.ts
+  src/ingest/ingest-commentary-api.ts
+  src/ingest/ingest-commentary-fts.ts
+  src/ingest/ingest-embeddings.ts
+  src/ingest/ingest-harness.ts
+  src/ingest/ingest-original.ts
+  src/ingest/ingest-scrollmapper-bibles.ts
+  src/ingest/ingest-sermon.ts
+  src/ingest/ingest-strongs.ts
+  src/ingest/ingest-topical-index.ts
+  src/ingest/ingest-web.ts
+  src/ingest/ingest-whitefield-works.ts
+  src/ingest/insert-static-author.ts
+  src/ingest/measure-embedding-gap.ts
+  src/ingest/merge-commentaries.ts
+  src/ingest/migrate-sections-slice.ts
+  src/ingest/newadvent-crawl.ts
+  src/ingest/newadvent-source.ts
+  src/ingest/parity-probe-sections.ts
+  src/ingest/poole-tcp.ts
+  src/ingest/profile-whitefield-works.ts
+  src/ingest/quarantine-served-corpus.ts
+  src/ingest/rebuild-register-indexes.ts
+  src/ingest/reference-register-bridge.ts
+  src/ingest/regen-crosswire-static.ts
+  src/ingest/reingest-guard.ts
+  src/ingest/repair-tennyson-traherne-flat.ts
+  src/ingest/repoint-sections-work.ts
+  src/ingest/resource-classify-patristic.ts
+  src/ingest/resource-classify-topn.ts
+  src/ingest/resource-match-probe.ts
+  src/ingest/resource-probe-patristic.ts
+  src/ingest/resource-repair-helloao.ts
+  src/ingest/suppress-chrysostom-prolegomena.ts
+  src/ingest/suppress-nonauthorial-matter.ts
+  src/ingest/sword-genbook.ts
+  src/ingest/sword-ld.ts
+  src/ingest/sword-register-bridge.ts
+  src/ingest/sword-zverse.ts
+  src/ingest/usfm.ts
+  src/ingest/verse-key-gate.ts
+  src/ingest/versification-gate.ts
+  src/retrieval/ingest.ts
+  src/retrieval/store.ts
+  src/retrieval/sources/commentary.ts
+  src/teacher/llm.ts
+  src/teacher/run.ts
+
+════════════════════════════════════
+[32mAUDIT PASSED — all gates green[0m

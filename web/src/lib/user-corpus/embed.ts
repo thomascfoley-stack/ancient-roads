@@ -16,7 +16,15 @@ const TIMEOUT_MS = 90_000;
 const ATTEMPTS = 5;
 
 export class EmbeddingUnavailable extends Error {
-  constructor(message: string) {
+  /**
+   * `permanent` is true only for a failure no retry can heal — a missing API key. A 429 or 5xx
+   * stays false: `retryable()` below already classifies those as transient one layer down, and
+   * failing a document on a provider blip is the error the drain's retry loop exists to absorb.
+   */
+  constructor(
+    message: string,
+    readonly permanent = false,
+  ) {
     super(message);
     this.name = 'EmbeddingUnavailable';
   }
@@ -24,7 +32,7 @@ export class EmbeddingUnavailable extends Error {
 
 function apiKey(): string {
   const k = process.env.DEEPINFRA_API_KEY;
-  if (!k) throw new EmbeddingUnavailable('DEEPINFRA_API_KEY is not set');
+  if (!k) throw new EmbeddingUnavailable('DEEPINFRA_API_KEY is not set', true);
   return k;
 }
 

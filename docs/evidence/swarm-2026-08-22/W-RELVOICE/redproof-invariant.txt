@@ -1,0 +1,11 @@
+# RED-PROOF: seeded removal of the sermon lane conjunct (sweep('') in place of sweep(`AND ${SERMON_TYPE_SQL}`))
+# in web/src/lib/user-corpus/related-voices.ts. The invariant failed with the named message.
+# After revert:
+ ❯ test/user-corpus/corpus-join-integrity.test.ts (5 tests | 1 failed) 6ms
+   × relatedVoices — the six corpus sweeps (H9 + D9 + W-RELVOICE) > every sweep carries a source_type conjunct, DERIVED from the shared routing constants (W-RELVOICE) 3ms
+     → no sweep carries the prose-lane conjunct `source_type = 'sermon'` — its lane plans the full-table index: expected false to be true // Object.is equality
+ FAIL  test/user-corpus/corpus-join-integrity.test.ts > relatedVoices — the six corpus sweeps (H9 + D9 + W-RELVOICE) > every sweep carries a source_type conjunct, DERIVED from the shared routing constants (W-RELVOICE)
+AssertionError: no sweep carries the prose-lane conjunct `source_type = 'sermon'` — its lane plans the full-table index: expected false to be true // Object.is equality
+    130|         `no sweep carries the prose-lane conjunct \`${conjunct}\` — it…
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)

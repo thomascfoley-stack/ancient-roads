@@ -1,0 +1,14 @@
+mode=shipped ef_search=120 iterative_scan=(default strict) probes=12
+query | knn_rows | knn_ms | exact_in_scope_top50 | exact_max_cosine
+"the fall of Jerusalem in 70 AD" | 27 | 4456 | 50 | 0.754
+"the destruction of the second temple" | 35 | 1221 | 50 | 0.754
+"the siege of Masada" | 44 | 849 | 50 | 0.734
+"the martyrdom of early Christians under Nero" | 0 | 2070 | 50 | 0.696
+"the conversion of Constantine" | 0 | 1804 | 50 | 0.673
+"the council of Nicaea and the Arian controversy" | 0 | 1313 | 50 | 0.715
+"the edict of Milan" | 0 | 1597 | 50 | 0.669
+"monasticism in the Egyptian desert" | 2 | 755 | 50 | 0.680
+"the sack of Rome by the Visigoths" | 17 | 438 | 50 | 0.708
+"Augustine of Hippo and his conversion" | 0 | 714 | 50 | 0.645
+"the persecution of Christians under Diocletian" | 0 | 228 | 50 | 0.698
+"the siege of Jerusalem by Titus" | 50 | 287 | 50 | 0.795

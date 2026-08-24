@@ -1,0 +1,30 @@
+   ✓ verse-level parity over the real KJV index > agrees at every K on the trade curve, not only at the frozen K=1 3486ms
+   ✓ verse-level parity over the real KJV index > agrees ON the distinctiveness boundary, where a verse has EXACTLY minVerseShingles 701ms
+   ✓ verse-level parity over the real KJV index > agrees one BELOW the boundary too — the floor excludes, it does not merely include 696ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/publish-flip-toolchain.test.ts > thayers evidence gate > the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/publish-flip-toolchain.test.ts:473:67
+    471|   });
+    472|   it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no …
+    473|     expect(fs.existsSync(path.join(ROOT, THAYERS_EVIDENCE_PATH))).toBe…
+       |                                                                   ^
+    474|     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thayers-gate-')…
+    475|     const manifest = path.join(tmp, 'slugs.json');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 69 passed (70)
+      Tests  1 failed | 847 passed (848)
+   Start at  10:41:43
+   Duration  12.28s (transform 1.16s, setup 0ms, collect 6.01s, tests 26.15s, environment 16ms, prepare 6.25s)
+

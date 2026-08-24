@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/session';
 import { isTeacherAllowed } from '@/lib/teacher-access';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { logEvent } from '@/lib/observability';
 import { teach } from '@/lib/teacher/teach';
 import { randomUUID } from 'node:crypto';
@@ -51,6 +52,9 @@ export async function POST(req: NextRequest) {
     return apiError(code, { retryAfterSec: rl.retryAfterSec });
   }
 
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
+
   let body: { question?: unknown };
   try {
     body = await req.json();
@@ -68,7 +72,7 @@ export async function POST(req: NextRequest) {
 
   const startedAt = Date.now();
   try {
-    const { result, meta } = await teach(question);
+    const { result, meta } = await teach(question, { userId: user.id });
     const latencyMs = Date.now() - startedAt;
     logAskOutcome(result.kind, latencyMs, meta);
     // Same durable write as the stream route (migration 116) — off the request path,
