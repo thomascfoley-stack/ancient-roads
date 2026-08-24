@@ -24,6 +24,31 @@ export { FORBIDDEN_PROVENANCE_DOMAINS, forbiddenProvenanceDomain };
 import { ALLOWED_LICENSES, isAllowedLicense } from './allowed-licenses.mjs';
 
 export { ALLOWED_LICENSES, isAllowedLicense };
+
+/**
+ * FAIL CLOSED on a quarantined manifest entry.
+ *
+ * `quarantine` is a human disposition written into `ingest/sources.config.json` — a work that
+ * must not be ingested or served, whatever its `license` field says (a quarantine reason is
+ * often *about* the license being void, e.g. `chesterton-preexistence`, quarantined for false
+ * attribution after it had already served 25 rows).
+ *
+ * The historian and sermon paths enforced this at their mouths (ingest-historian.ts,
+ * ingest-sermon.ts) and the register/adapter path did not (DEEP_SWEEP.md D2) — every mention of
+ * "quarantine" in adapter-loop / adapter-ccel / register-writer / adapter-gutenberg was a
+ * comment, a log label, or a runtime counter, never a read of `entry.quarantine`. This is that
+ * check, extracted so the two enforcing paths and the register path share ONE definition of the
+ * word rather than three hand-typed copies.
+ *
+ * Blank or whitespace-only is NOT a quarantine — the field is a reason string, and an empty
+ * reason is an authoring slip, not a disposition. Same predicate as the historian/sermon line.
+ */
+export function assertNotQuarantined(entry: { slug?: unknown; quarantine?: unknown }): void {
+  const q = entry.quarantine;
+  if (typeof q === 'string' && q.trim()) {
+    throw new Error(`FAIL CLOSED: ${String(entry.slug ?? '(unknown slug)')} is quarantined in the manifest: ${q}`);
+  }
+}
 export type AllowedLicense = 'Public Domain' | 'CC BY' | 'CC BY-SA';
 
 // Provenance is the attribution + license basis for a work. `year` and

@@ -28,7 +28,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     return apiError('INVALID_REQUEST', { message: '`limit` must be a positive integer.' });
   }
 
-  const page = await getWorkSectionsPage(slug, { after, limit });
-  if (!page) return Response.json({ error: 'not found' }, { status: 404 });
-  return Response.json(page);
+  // Cluster A (DEEP_SWEEP D14/D32/D33): the data layer has no catch of its own, so an
+  // unwrapped call escapes to Next's RAW 500 instead of the envelope every /api/* route promises.
+  try {
+    const page = await getWorkSectionsPage(slug, { after, limit });
+    if (!page) return Response.json({ error: 'not found' }, { status: 404 });
+    return Response.json(page);
+  } catch (e) {
+    console.error('GET /api/work/[slug]/sections:', (e as Error).message);
+    return apiError('INTERNAL');
+  }
 }

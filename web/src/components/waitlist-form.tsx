@@ -1,7 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { track } from '@/lib/analytics';
+import { captureAttribution } from '@/lib/attribution';
+
+/** The exact promise shown beside the button, stored with the signup (migration 130). Kept HERE,
+ *  next to the copy it must match, so the two cannot drift apart silently. */
+export const CONSENT_TEXT =
+  'The preview is free. We invite a few readers at a time, and your email is used for the invitation alone.';
 
 type State = 'idle' | 'submitting' | 'done' | 'error';
 
@@ -17,6 +23,13 @@ export function WaitlistForm() {
   const [state, setState] = useState<State>('idle');
   const [message, setMessage] = useState('');
 
+  // ON MOUNT, not on submit. The campaign is on the URL when the reader ARRIVES and gone the
+  // moment they navigate to /about — capturing it at submit time would record "no campaign" for
+  // most real signups while appearing to work. See lib/attribution.ts.
+  useEffect(() => {
+    captureAttribution();
+  }, []);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (state === 'submitting') return;
@@ -29,7 +42,9 @@ export function WaitlistForm() {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email }),
+        // The attribution captured on ARRIVAL, and the exact promise this form displayed. Both are
+        // re-validated server-side — a public endpoint trusts nothing from a client.
+        body: JSON.stringify({ email, attribution: captureAttribution(), consent: CONSENT_TEXT }),
       });
       const data = (await res.json().catch(() => ({}))) as { message?: string };
       if (res.ok) {

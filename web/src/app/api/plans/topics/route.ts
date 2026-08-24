@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { matchTopics } from '@/lib/plan/topic-match';
 
@@ -13,9 +13,7 @@ export const runtime = 'nodejs';
 export async function GET(req: NextRequest) {
   try {
     await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
-  }
+  } catch (e) { return authFailureResponse(e); }
   const q = req.nextUrl.searchParams.get('q') ?? '';
   if (!q.trim()) return apiError('INVALID_REQUEST', { message: 'q is required' });
   try {

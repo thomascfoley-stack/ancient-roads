@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { encodeVerseId } from '@bible/verse-id';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { createPrayer, deletePrayer, listPrayers, updatePrayer, PRAYER_MAX_LENGTH } from '@/lib/prayers';
 
@@ -22,9 +23,12 @@ export const runtime = 'nodejs';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// D31: the same ceiling annotations/route.ts uses — book*1e6 + chapter*1e3 + verse over 66 books.
+const PRAYER_VERSE_ID_MAX = encodeVerseId({ book: 66, chapter: 999, verse: 999 });
+
 export async function GET(): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   try {
     return NextResponse.json({ prayers: await listPrayers(user.id) });
   } catch (e) {
@@ -37,7 +41,9 @@ export async function GET(): Promise<Response> {
 
 export async function POST(req: NextRequest): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  // Merge 2026-08-24: this branch made the catch answer through authFailureResponse (D43 — an
+  // auth-SERVICE outage is 503, not "signed out"); main added the CSRF floor. Both kept.
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   const csrfFloor = requireJsonContentType(req);
   if (csrfFloor) return csrfFloor;
   let body: { kind?: unknown; id?: unknown; body?: unknown; verseId?: unknown };
@@ -82,7 +88,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     // `verseId` is OPTIONAL by ruling — a prayer stands alone. Absent, null, or a positive integer.
     const verseId =
       body.verseId === undefined || body.verseId === null ? null
-      : Number.isInteger(Number(body.verseId)) && Number(body.verseId) > 0 ? Number(body.verseId)
+      // D31: `> 0` alone let verseId: 3000000000 through to an int4 column, dying as Postgres
+      // 22003 inside createPrayer — a 500 for what is plainly a 400. The annotations route bounds
+      // this at VERSE_ID_MAX for exactly that reason; same bound, same reason.
+      : Number.isInteger(Number(body.verseId)) && Number(body.verseId) > 0 && Number(body.verseId) <= PRAYER_VERSE_ID_MAX ? Number(body.verseId)
       : NaN;
     if (Number.isNaN(verseId)) return apiError('INVALID_REQUEST', { message: 'verseId must be a positive integer' });
 

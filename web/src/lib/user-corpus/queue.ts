@@ -18,12 +18,16 @@
 // as a specification.
 
 import { runAsUser } from '@/lib/db';
+import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './claim-constants';
+export { CLAIMED_STATUSES, STALE_CLAIM_MINUTES };
 import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
 import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
-import { setReadingsState } from './readings-store';
+// Merge 2026-08-24: main's EmbeddingUnavailable is kept (used at the permanent-failure branch
+// below). main's `setReadingsState` import is NOT: D1 removed the drain's readings_status write
+// — the only call site — because writing 'pending' here wedged every freshly-ingested document.
 import { EmbeddingUnavailable, embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
 import { extractSermonMetadata } from './metadata-extract';
@@ -38,7 +42,6 @@ export const MAX_ATTEMPTS = 3;
  * maxDuration, so the reclaim window has to exceed the longest legitimate parse; 5 minutes is well
  * past a 25 MB PDF and short enough that a user retrying by hand is not waiting on it.
  */
-export const STALE_CLAIM_MINUTES = 5;
 
 /**
  * The statuses a worker holds a claim in — everything `processOne` can be interrupted mid-way
@@ -54,7 +57,6 @@ export const STALE_CLAIM_MINUTES = 5;
  * ONE definition, used by both predicates, so they cannot drift apart again — and so adding a
  * status to the walk means adding it here rather than remembering two call sites.
  */
-export const CLAIMED_STATUSES = ['parsing', 'chunking', 'embedding'] as const;
 
 /** The same set as a plain array, because a `readonly` tuple is not a bindable SQL parameter. */
 const CLAIMED_SQL: string[] = [...CLAIMED_STATUSES];
@@ -196,8 +198,11 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
     // this row — running it inline would keep that claim for a minute and block the queue behind a
     // job that is not ingestion. The client kicks it, and a document that is never opened simply
     // never pays for a search nobody asked to see.
-    await setReadingsState(userId, row.id, { status: 'pending', progress: 0, step: null, error: null })
-      .catch((e) => console.error('[user-corpus] could not mark readings pending:', String((e as Error)?.message ?? e)));
+    // D1: this used to write readings_status='pending' here. It must NOT — 'pending' is what
+    // claimReadingsStart writes when a real job claims the document, and writing it from ingest
+    // wedged every fresh document permanently (readings-not-wedged.test.ts). The state ingest
+    // leaves is READINGS_AFTER_INGEST (null, "no search has been run"): the UI renders that with
+    // its button, and the claim side accepts it. Nothing to write — the row is already null.
 
     return 'ready';
   } catch (e) {

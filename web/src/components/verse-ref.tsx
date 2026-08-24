@@ -18,6 +18,7 @@
 // render agree and no hover-only markup depends on something the server cannot know.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { DialogPanel } from '@/lib/use-dialog';
 import { createPortal } from 'react-dom';
 import { PassageView, type PassageStatus } from '@/components/passage-view';
 import { placePopover, type Placement } from '@/lib/popover-position';
@@ -270,7 +271,11 @@ export function VerseRef({
       {mounted &&
         mode === 'sheet' &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex items-end" role="dialog" aria-modal="true" aria-label={label}>
+          // D40 (DEEP_SWEEP): this outer div CLAIMED role="dialog" aria-modal="true" while
+          // focus was never moved in and Tab was never trapped — the sheet's own Close and
+          // "Open in reader" sat at the END of body's tab order behind the entire
+          // focusable page. The promise now lives on the panel that actually enforces it.
+          <div className="fixed inset-0 z-50 flex items-end">
             <button
               type="button"
               aria-label="Close passage"
@@ -278,7 +283,11 @@ export function VerseRef({
               // PRD §6 scrims: rgba(26,20,15,0.32) light / rgba(251,248,242,0.08) dark, no blur.
               className="absolute inset-0 bg-stone-950/[0.32] dark:bg-stone-50/[0.08]"
             />
-            <div className="relative max-h-[70vh] w-full overflow-y-auto overscroll-contain rounded-t-2xl border-t edge bg-paper p-4 dark:bg-stone-900">
+            <DialogPanel
+              label={label}
+              onClose={hide}
+              className="relative max-h-[70vh] w-full overflow-y-auto overscroll-contain rounded-t-2xl border-t edge bg-paper p-4 dark:bg-stone-900"
+            >
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <p className="font-semibold text-stone-900 dark:text-stone-100">{label}</p>
                 <button type="button" onClick={hide} className="text-sm text-stone-500 dark:text-stone-400">
@@ -295,7 +304,7 @@ export function VerseRef({
               >
                 Open in reader
               </button>
-            </div>
+            </DialogPanel>
           </div>,
           document.body,
         )}

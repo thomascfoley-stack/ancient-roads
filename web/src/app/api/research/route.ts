@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { listThreads } from '@/lib/research';
 
@@ -14,11 +14,19 @@ export async function GET(req: NextRequest) {
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
+  } catch (e) {
+    // D43: an auth-SERVICE outage is 503, not "you are signed out".
+    return authFailureResponse(e);
   }
   const raw = Number(req.nextUrl.searchParams.get('limit') ?? '20');
   const limit = Number.isFinite(raw) ? raw : 20; // listThreads caps to [1, 50]
-  const threads = await listThreads(user.id, limit);
-  return Response.json({ threads });
+  // Cluster A (DEEP_SWEEP D14/D32/D33): the data layer has no catch of its own, so an
+  // unwrapped call escapes to Next's RAW 500 instead of the envelope every /api/* route promises.
+  try {
+    const threads = await listThreads(user.id, limit);
+    return Response.json({ threads });
+  } catch (e) {
+    console.error('GET /api/research:', (e as Error).message);
+    return apiError('INTERNAL');
+  }
 }

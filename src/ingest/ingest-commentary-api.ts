@@ -229,4 +229,14 @@ console.log('\n=== Summary ===');
 for (const r of results) {
   console.log(`  ${r.source}: ${r.totalEntries} entries, ${r.totalChapters} chapters${r.errors ? `, ${r.errors} errors` : ''}`);
 }
+// D44 (DEEP_SWEEP): errors were counted, printed, and then thrown away — the run ended
+// "Done." with exit code 0 while chapters were missing. The repo's standard is fail loud, and
+// a script that reports green on an incomplete corpus is the shape a gate exists to prevent.
+// Resume-by-existsSync makes the fix free: re-running fills the gaps.
+const failed = results.reduce((n, r) => n + (r.errors ?? 0), 0);
+if (failed > 0) {
+  console.error(`\nFAILED: ${failed} chapter(s) could not be fetched after 3 attempts. Re-run to fill the gaps.`);
+  process.exit(1);
+}
 console.log('Done.');
+

@@ -96,6 +96,22 @@ export const USER_TABLE_EXCLUDED = {
   // exclusion shape for the same reasons: one telemetry row appended per search, so a digest
   // would churn on ordinary use, and nothing in it is authored content. INSERT-only posture is
   // pinned by 129's DO tail and web/test/invariants/search-outcomes-migration.test.ts.
+  // Activity ledger (migration 130) — one row per user per day, the vendor-free DAU/churn/retention
+  // signal. Same exclusion shape as the two outcome logs: telemetry, not authored content, and a
+  // content digest would churn on every day anybody opens the product. What matters here is the
+  // append-only posture (GUC-bound INSERT and nothing else), pinned by 130's self-verifying DO tail.
+  user_active_day:
+    'Append-only activity ledger (migration 130) — one row per user per day, written fail-open off ' +
+    'the request path from lib/session.ts. Telemetry, not authored user content; a digest would ' +
+    'churn daily. Runtime posture (INSERT-only, GUC-bound RLS) is covered by the migration DO block.',
+
+  // Email suppression (migration 130) — hash-keyed, so a person can be erased from `waitlist` and
+  // still never be mailed again. No user_id and no authored content: the row IS the fact.
+  email_suppression:
+    'Append-only suppression list (migration 130) — sha256(lower(email)) plus a reason. Not user ' +
+    'content and not user-scoped; it exists so an ESP swap or a restore cannot resurrect someone ' +
+    'who unsubscribed. Runtime posture (INSERT-only) is covered by the migration DO block.',
+
   search_outcomes:
     'Append-only search query log (migration 129) — one row per completed search across the ' +
     'works/commentaries/library/my_works/history surfaces, written fail-open off the request ' +
@@ -171,7 +187,13 @@ export const USER_TABLE_SPEC = {
     anchor: ['email', 'source', 'created_at'],
     tombstone: null,
     active: 'true',
-    body: [],
+    // `attribution` and `consent_text` (migration 130) are in the BODY, not the anchor, and the
+    // distinction is load-bearing. This file's header says columns are declared so that a DROPPED
+    // column errors — but an ADDED one simply stays outside the digest, and the gate goes on
+    // reporting clean while the new data rots. Attribution is the row's whole commercial value
+    // (which campaign earned this signup) and consent_text is the promise that was made to the
+    // person, so both are digested: corrupt either and G1 goes red.
+    body: ['attribution', 'consent_text'],
   },
   // Study groups — user-scoped, no tombstone; every row is live.
   channels: {

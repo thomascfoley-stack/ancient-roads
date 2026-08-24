@@ -5,9 +5,12 @@
 // the answer is stored, and the card's count never depends on the search being importable.
 
 import { runAsUser } from '@/lib/db';
+import { READINGS_AFTER_INGEST, readingsIsRunning } from './readings-state';
+import type { ReadingsStatus } from './readings-state';
+export { READINGS_AFTER_INGEST, readingsIsRunning };
+export type { ReadingsStatus } from './readings-state';
 import type { ReadingCategoryId, ReadingRow } from './suggested-readings';
 
-export type ReadingsStatus = 'pending' | 'running' | 'ready' | 'failed';
 
 export interface ReadingsState {
   status: ReadingsStatus | null;

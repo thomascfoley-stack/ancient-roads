@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { isTeacherAllowed } from '@/lib/teacher-access';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
@@ -26,9 +26,7 @@ export async function POST(req: NextRequest) {
   let user: { id: string; email: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
-  }
+  } catch (e) { return authFailureResponse(e); }
 
   // ADR-116 ruling 3 (gated beta): the teacher is OWNER-ONLY until interpretation_bait earns
   // its >=99% bar (currently 100/100 = a ~97% lower bound). Placed BEFORE the rate limiter and
@@ -36,6 +34,30 @@ export async function POST(req: NextRequest) {
   // cover this — a beta user has the password by definition.
   if (!isTeacherAllowed(user)) return apiError('FORBIDDEN');
 
+  // Merge 2026-08-24: main added this CSRF floor while this branch restructured the handler.
+  // Both kept — the floor runs before the body is read, as on main.
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
+  let body: { question?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return apiError('INVALID_REQUEST');
+  }
+
+  const question = typeof body.question === 'string' ? body.question.trim() : '';
+  if (!question) {
+    return apiError('INVALID_REQUEST', { message: 'A question is required.' });
+  }
+  if (question.length > 500) {
+    return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
+  }
+
+  // D42 (DEEP_SWEEP): the limiter used to run HERE-MINUS-TWENTY-LINES, before req.json() — so a
+  // malformed body or an empty question returned 400 having already burned a DAILY ask slot (the
+  // counter bumps minute, day AND global together). This client retries on timeout, so a buggy
+  // retry loop could exhaust a user's 100/day without one teach() call. Charge only what could
+  // spend. Still before teach(), which is the wallet invariant the shape test enforces.
   // Per-user rate limit BEFORE any spend (wallet-DoS guard). Fails open on its
   // own DB error (see rate-limit.ts) so a limiter outage can't down the product.
   const rl = await checkAskRateLimit(user.id);
@@ -52,23 +74,6 @@ export async function POST(req: NextRequest) {
     return apiError(code, { retryAfterSec: rl.retryAfterSec });
   }
 
-  const csrfFloor = requireJsonContentType(req);
-  if (csrfFloor) return csrfFloor;
-
-  let body: { question?: unknown };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError('INVALID_REQUEST');
-  }
-
-  const question = typeof body.question === 'string' ? body.question.trim() : '';
-  if (!question) {
-    return apiError('INVALID_REQUEST', { message: 'A question is required.' });
-  }
-  if (question.length > 500) {
-    return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
-  }
 
   const startedAt = Date.now();
   try {

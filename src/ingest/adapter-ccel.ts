@@ -14,6 +14,7 @@
 // quarantines rather than ingesting a blob.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { assertNotQuarantined } from './license-manifest.js';
 import { parseRef } from '../bible/ref-parse.js';
 import { BOOKS } from '../bible/books.js';
 // The id-range expansion moved to source-artifact-urls.mjs so the ARCHIVER expands it identically.
@@ -228,6 +229,9 @@ export async function enumerateCcelAuthor(author: string, cap = 40): Promise<str
 }
 
 export async function acquireCcel(entry: Record<string, unknown>, opts: { write: boolean; publish?: boolean } = { write: true }): Promise<CcelWorkResult> {
+  // D2 (DEEP_SWEEP.md): quarantine is enforced at the MOUTH, before any fetch, parse or
+  // write — the historian/sermon line, which this path was missing entirely.
+  assertNotQuarantined(entry);
   const prov = entry.provenance as Record<string, unknown>;
   const acq = prov.acquire as { ccel_ids?: string[]; ccel_id_pattern?: string; ccel_author?: string };
   // resolve the id list

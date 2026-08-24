@@ -39,7 +39,16 @@ export function AccountSettings({ email }: { email: string }) {
         // to losing control of it, so leaving other sessions alive would defeat the point.
         revokeOtherSessions: true,
       });
-      if (error) throw new Error('That current password is not correct.');
+      // D41 (DEEP_SWEEP): every failure was reported as "that current password is not correct" —
+      // including a network drop, a rate-limit refusal, and a policy rejection of the NEW
+      // password. Telling someone their password is wrong when it is not sends them to a reset
+      // they do not need. Report what the service actually said and keep the specific wording
+      // only for the specific failure.
+      if (error) {
+        const msg = typeof error.message === 'string' && error.message.trim() ? error.message : '';
+        const wrongCurrent = /invalid|incorrect|password/i.test(msg) && /current|credential/i.test(msg);
+        throw new Error(wrongCurrent || !msg ? 'That current password is not correct.' : msg);
+      }
       form.reset();
       setNote({ ok: true, text: 'Your password has been changed. Other sessions were signed out.' });
     } catch (err) {

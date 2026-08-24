@@ -235,6 +235,136 @@ vars into `web/.env.local` for future sessions, so this blocker isn't rediscover
 ratify the NV-00 back-map draft; (3) decide whether the remaining batched-query sections get a
 synthetic account and a token budget, or stay out of scope for this pass; (4) the Word-study dead-click
 and the broken-citation-parens findings look cheap to fix and worth a look before the rest finishes.
+## 2026-08-24 — UNION DEPLOYED (ca433a6) — and I repeated the migration-before-code inversion
+
+**Owner instruction:** "do theirs and mine, do them both."
+
+**LIVE:** `ancientpaths.app` → `dpl_HpVH9bJ78kPDcwC93AU7KTRzkSuh`, sha `ca433a6`, READY, target
+production, ready 05:20:10Z. Receipt `docs/evidence/deploys/deploy-ca433a6-2026-08-24T05-15-36Z.txt`.
+Verified TWO ways rather than trusting deploy.sh: its own post-deploy alias check, and Vercel's
+deployment API queried separately (alias list carries ancientpaths.app + www, author
+thomascfoley@gmail.com, source cli).
+
+**What shipped in one alias move:** wave-0 licensing closeout (peer -be, carried forward from their
+05:07Z deploy) · the ADR-118 ef change (peer -90, via main) · search_outcomes query logging (129) ·
+PostHog analytics with the allowlist URL sanitiser · match_outcome telemetry on all three
+sermon→commentary surfaces · first-party growth data (130).
+
+**THE MISTAKE, STATED PLAINLY. I shipped code whose migration was not applied, which is exactly
+the inversion I had criticised peer -90 for eight hours earlier in this same file.** The live
+waitlist route inserts `attribution` and `consent_text`; production had neither column, so every
+signup on the PUBLIC landing page answered 503 "We couldn't reach the list just now." Window:
+deployment READY 05:20:10Z until migration 130 was applied minutes later. The landing page is
+outside the SEC-1 gate, so a real visitor in that window would have been turned away. Nothing was
+lost (the insert failed, it did not half-write) but the exposure was real and public.
+
+Root cause is not ignorance — I had WRITTEN the "NOT applied to prod" line in the entry below. I
+verified the deploy's ancestry, the audit, the clean tree, the CDN manifest and the alias, and did
+not verify the schema the shipped code requires. **The deploy checklist has no schema-parity gate**
+— exactly the backlog item peer -90 filed after their outage (diff migrations-applied-on-prod
+against the migrations the deploying sha's code references). Two sessions have now hit this in one
+night from opposite directions. It should be built before the next deploy, not filed again.
+
+**Fixed forward, then proven on production:** migration 130 applied (ledger sha 1df5e4191857) and
+verified — `attribution`/`consent_text` present, `user_active_day` + `email_suppression` created
+with exactly one INSERT policy each, zero UNIQUE constraints left on waitlist (append-only live).
+Then the real path, against the live site: `POST https://ancientpaths.app/api/waitlist` with a
+campaign tag → 200, and the row landed carrying `{utm_source, utm_campaign, landing_path}` plus the
+consent sentence. **Campaign attribution now works end to end in production.** Verification row
+deleted; waitlist back to 4 rows.
+
+**Multi-session coordination, for the record.** Five sessions live. The union was assembled rather
+than raced: 8 real conflicts resolved as UNIONS, never by picking a winner — D43 auth-outage
+handling + markActiveDay (activity now cannot be recorded from a misconfigured server, since D43
+throws first); D14/D32/D33 error envelopes + the 129 query log; D35's try/catch with the log moved
+INSIDE the success path so a throw is not recorded as a search; documents.ts resolved to peer -be's
+superset (advisory lock + quota + D8 in-lock checksum re-check + asserted_ownership_at — four
+controls, one statement), independently confirmed identical to my own resolution. `ref-parse.ts`:
+two sessions hit the same 5-arg `consider` conflict from opposite branches and resolved it
+identically; twins re-verified byte-identical.
+
+**NOT DONE / UNVERIFIED / OWED.**
+* **`rootDirectory` is still `null` and that is an ERROR sitting in place, not a ruling.** Peer -be
+  flipped it from "web" at ~04:45Z on a wrong inference, then disclosed it against their own
+  interest. I had reported it to the owner as "option A confirmed by measurement" — the value was
+  right, the PROVENANCE was wrong, and I corrected that. Hard evidence both ways: deploy.sh needs
+  `./`, while PR #124's git build (`dpl_54gK8uL…`, READY 02:35Z, sha 578b6a8) is proof git builds
+  need `web`. **Owner decision, both exhibits on the table.** Tonight's two deploys worked BECAUSE
+  of the error.
+* A schema-parity pre-deploy gate. See above. Twice in one night.
+* Most of wave-0 is unverified in production — peer -be smoked only D26; the rest sits behind the
+  SEC-1 password they do not hold. Paths worth walking: grounding, traditions count, auth-outage,
+  document creation, delete route.
+* `user_active_day` has no production rows yet: the gate means only the owner reaches authenticated
+  paths, so DAU/churn will read ~1 until SEC-1 lifts.
+* Landing copy still promises "the invitation alone"; `consent_text` now records it per row.
+
+## 2026-08-24 — First-party growth data: own the nouns, rent the mouse movements (migration 130)
+
+**Directive.** "i don't want to be tool dependent… should be ancient paths dependent", "i want to
+move off of posthog next week", "All user data should be referenceable, its mine and belongs to
+ME", "I don't care about gdpr, don't build for that or ccpa", "simple simple simple setups that
+scale". Then: "build it."
+
+**Six adversarial reviews before a line was written** (4 on the schema, 2 on the revised design).
+They killed two of MY proposals, and both deaths were earned:
+
+1. **`posthog_distinct_id` — DROPPED.** Three of four reviewers rejected it independently: it makes
+   a Postgres row a re-identification key into PostHog's behavioural record; it decays (ITP expires
+   the cookie weekly, ad-blockers suppress it, and `person_profiles:'identified_only'` means an
+   anonymous visitor has NO profile to point at); and it puts a vendor's identifier in the schema as
+   load-bearing. No vendor id appears anywhere in this migration.
+2. **A generic `events` table + `POST /api/events` — DROPPED.** I proposed it to "own everything".
+   It would have been the THIRD logging system (the "9 systems" outcome wearing the costume of
+   avoiding it), and worse: **this database also serves the corpus.** The same Neon compute holds
+   the vector index over ~295k sections and answers /ask at p50 10.5s; a pageview-rate append stream
+   evicts that working set — trading a measured product gate for dashboards ANALYTICS.md calls
+   non-load-bearing. It also pins compute out of autosuspend from ~10 users (≈$65-70/mo) on a public
+   endpoint whose limiter fails OPEN by design.
+
+**Built instead — one migration, three changes.**
+* `user_active_day (user_id, day)` — ONE ROW PER USER PER DAY. Scales with people, not page loads
+  (~13× cheaper than pageviews). Yields DAU/WAU/MAU, 7-day churn, retention and resurrection,
+  vendor-free. Written from `lib/session.ts` — the single choke point every authenticated route and
+  page passes through, so a reader who spends an hour in Scripture without searching still counts.
+* **`waitlist` is now APPEND-ONLY** (`UNIQUE(email)` dropped) + `attribution JSONB` + `consent_text`.
+  This is a REPAIR: the 23505 catch made a repeat signup look like success while discarding the
+  campaign that produced it — newsletter signup, then a Twitter ad two weeks later, and Twitter
+  recorded zero conversions, invisibly. Unfixable in place (033 revoked UPDATE, 034 grants no UPDATE
+  policy). Dedupe moved to the owner-side export where it belongs.
+* `email_suppression` — hash-keyed (`sha256(lower(email))`), so a person can be deleted from
+  `waitlist` and STILL never be mailed again. Corrects my own false claim that "Resend is a
+  rebuildable mirror": unsubscribes and complaints originate AT the provider and exist nowhere in
+  Postgres, so a rebuild-from-DB would re-mail people who opted out.
+* Attribution captured **on arrival, not at submit** (`lib/attribution.ts`): the campaign is on the
+  URL when the reader lands and gone once they read /about. Submit-time capture records "no
+  campaign" for most real signups WHILE APPEARING TO WORK.
+* `scripts/growth-report.mts` + `scripts/waitlist-export.mts` — the whole analytics stack until
+  ~1k users, owner-run, no vendor. Export excludes suppressed addresses at source, with no flag to
+  include them.
+
+**Verified as the real `app_runtime` role on dev, not assumed:**
+GUC-bound activity INSERT ALLOWED · same-day duplicate REFUSED 23505 (which the writer treats as
+"already active") · writing ANOTHER user's activity REFUSED by policy · SELECT sees 0 rows ·
+**two signups on one email with different campaigns BOTH recorded** (the defect, fixed) · UPDATE on
+waitlist still REFUSED (033/034 posture intact). Probe rows deleted after. `growth-report` and
+`waitlist-export` both run clean against dev (7 signups, 62 searches by surface).
+
+**Also fixed, and it was silent:** `scripts/lib/user-data-invariant.mjs` hand-declares waitlist's
+columns. Its header says a DROPPED column errors — but an ADDED one just stays outside the digest
+and the gate keeps reporting clean. `attribution`/`consent_text` added to the digest body;
+`user_active_day` and `email_suppression` registered as excluded telemetry with reasons.
+
+**NOT DONE / UNVERIFIED.**
+* NOT applied to prod, NOT deployed (Root Directory conflict still blocks every deploy).
+* Unsubscribe ROUTE not built — table and grants only. When it is: the runtime holds INSERT and
+  nothing else, so unsubscribe must INSERT a suppression row, never UPDATE the waitlist.
+* The landing copy still promises "your email is used for the invitation alone"; `consent_text` now
+  records that promise per row, but the copy itself is an owner decision and is unchanged.
+* Resend has never sent from `ancientpaths.app` (DNS records prepared 2026-08-06, never added per
+  `docs/evidence/resend-dns-records.txt`). Current domain status UNVERIFIED — `MAIL_FROM` and
+  `RESEND_API_KEY` are Vercel `sensitive` vars and cannot be read back via API; check the Resend
+  dashboard before any send.
 
 ## 2026-08-24 — DEPLOY BLOCKED, and the "seat block" diagnosis was WRONG
 
@@ -504,6 +634,7 @@ route boundary. (Same recon settled the sibling questions: waitlist emails land 
   passes solo 15/15, re-verified). The same load-marginal red the bug-sweep entry below already
   documents; not caused by this branch, which touches no user-corpus retrieval path.
 
+
 ## 2026-08-23 — Bug sweep execution: all 15 Detail findings resolved (14 fixed, 1 not-a-bug)
 
 **Context.** `BUG_SWEEP.md` (c7a41b9) triaged 15 Detail findings with per-bug plans and exit-test
@@ -551,6 +682,42 @@ log lands in `docs/evidence/bug-sweep-2026-08-23/`.
   publish-flip/thayers failure), web 1655/1655 green on re-run (`tradition-gap` live test is
   timing-marginal under parallel load — 120s timeout vs ~56-89s runtime; passes solo 15/15,
   passed in both worktree full audits; not caused by the batch), rate-limit 23/23.
+* Nothing committed; the batch sits dirty in `/tmp/ap-bugsweep` pending the audit verdict and the
+  owner's merge call.
+## 2026-08-24 — PROD OUTAGE (uploads) 00:08Z–01:5xZ: my migration-before-code inversion; fixed by owner-authorized 128 apply
+
+**What broke.** `7747f10` (deployed 00:08Z) carries W-OWNERSHIPCOL's INSERT naming
+`asserted_ownership_at` (documents.ts:137) while migration 128 was deliberately held off prod as
+packet B4 — so every production My Works upload 500ed from deploy until the fix. **The inversion
+is mine**: I applied 128 to both devs, correctly filed the prod apply as owner-gated, then
+deployed the code that requires it. The packet's own migration-before-code flag, violated by its
+author. Mitigation: the SEC-1 site gate is up, so exposure was gate-holders only.
+
+**Found by** the search-outcomes peer session (cross-session heads-up), **verified independently
+here** (information_schema count 0; the INSERT present in the deployed sha), surfaced to the
+owner, who authorized in-session: "apply 128".
+
+**Fix.** 128 applied to prod (ledger sha256 fb3939ea — identical to both dev ledgers), column
+verified present. **End-to-end proof through the real UI, owner's session:** upload of a 147-byte
+probe → Added → pipeline to `ready` → DB row confirmed `asserted_ownership_at IS NOT NULL` →
+deleted through the UI, count 0 after. Prod left as found. The ownership sentence renders live
+beside the only upload control. **Packet B4 is DISCHARGED** (the B-runs script's B4 step is now a
+no-op re-run).
+
+**Lesson, filed for the next integrator:** a candidate that merges a migration-dependent code
+change must either carry the prod apply in the SAME gate as the deploy, or hold the CODE with the
+migration — holding only the migration ships the breakage. The deploy preflight checks
+`embeddings.served` exists; it has no general schema-parity leg. A cheap ratchet would diff
+`db/migrations/` applied-on-prod vs migrations the deploying sha's code references — filed as a
+backlog note, not built tonight.
+
+**Also this window:** peer session renumbered their colliding 127→129 and applied it to prod
+cleanly (their record); their deploy candidate waits on the Vercel seat block with everyone else's.
+
+**Waitlist cleanup (owner: "DELETE", 2026-08-24).** Three test rows removed from prod waitlist
+(jim@test.com id6, thomas@test.com id13, ux.audit.traveler@example.com id14 — full pre-delete
+snapshot with timestamps in the session record; re-INSERT restores). 4 real signups remain.
+
 ## 2026-08-23 — swarm closeout: rulings executed, 7 builds resolved, Wave 7 verified, Wave 8 integrated (Claude session, bylaw-4 verifier)
 
 **Session role.** A session that wrote none of the swarm's original work took Wave 7 (independent

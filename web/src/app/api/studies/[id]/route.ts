@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { softDeleteStudy, updateStudy, STUDY_TITLE_MAX } from '@/lib/studies';
@@ -28,7 +28,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // PATCH /api/studies/[id] { title? , pinned? } — rename and/or pin. At least one field.
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'study id must be a UUID' });
 
@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 // (design §6.2, review S-H), so there is no instant with a deleted study and live blocks.
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'study id must be a UUID' });
 

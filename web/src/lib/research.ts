@@ -15,11 +15,12 @@
 // id and owner; a re-ask always runs the live pipeline and APPENDS. There is no content index
 // and there must never be one.
 import { runAsUser, getDb } from './db';
+import { THREAD_PERSONA, HISTORY_PERSONA } from './thread-personas';
+export { THREAD_PERSONA };
 import { truncateCodePoints } from './text';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 import type { TeacherResult } from './teacher/teach';
 
-export const THREAD_PERSONA = 'ask';
 const TITLE_MAX = 80;
 const THREAD_LIST_MAX = 50;
 /** Turns are messages pairs; 200 messages = 100 turns, far beyond any real thread today.
@@ -163,8 +164,27 @@ export async function listThreads(userId: string, limit = 20): Promise<ResearchT
  * only thing standing between a thread's turns and deletion is a constraint this module does not
  * own. Both statements carry `user_id`, so the scoping is visible in the code that intends it.
  */
+/** The personas a user may remove through the thread-delete path.
+ *
+ *  D49 (DEEP_SWEEP): this fenced on THREAD_PERSONA alone, so history threads — written by every
+ *  /api/history/search as persona 'history' — could never be deleted by anything. The route
+ *  answered 204 regardless, so the delete reported success and removed nothing, and the rows
+ *  accumulated invisibly (no listing surface reads persona 'history' either).
+ *
+ *  The route's 204-always is NOT the defect and is deliberately unchanged: it is a documented
+ *  anti-enumeration decision ("there is then NO existence oracle at all"). Answering 404 for
+ *  "nothing deleted" would hand any caller a does-this-id-exist-and-is-it-mine probe — the same
+ *  oracle class this sweep closed on sign-up. The STORE is made truthful instead, so 204 now
+ *  means the delete really happened.
+ *
+ *  Exactly two personas. 'general' chats (POST /api/chats) stay fenced out: they are a different
+ *  surface with a different contract, and widening this to "anything the user owns" would make a
+ *  research-thread endpoint a general chat deleter. */
+const DELETABLE_PERSONAS = [THREAD_PERSONA, HISTORY_PERSONA] as const;
+
 export async function deleteThread(userId: string, threadId: string): Promise<boolean> {
   if (!isThreadId(threadId)) return false;
+  const personas = [...DELETABLE_PERSONAS];
   const [, chatRows] = await runAsUser(userId, (sql) => [
     // THE `EXISTS` IS LOAD-BEARING, not defensive noise. `chats` holds more than research threads
     // — the persona fence below is what separates them — and the two statements run as one batch
@@ -175,9 +195,9 @@ export async function deleteThread(userId: string, threadId: string): Promise<bo
         WHERE user_id = ${userId} AND chat_id = ${threadId}
           AND EXISTS (SELECT 1 FROM chats c
                       WHERE c.id = ${threadId} AND c.user_id = ${userId}
-                        AND c.persona = ${THREAD_PERSONA})`,
+                        AND c.persona = ANY(${personas}))`,
     sql`DELETE FROM chats
-        WHERE id = ${threadId} AND user_id = ${userId} AND persona = ${THREAD_PERSONA}
+        WHERE id = ${threadId} AND user_id = ${userId} AND persona = ANY(${personas})
         RETURNING id`,
   ]);
   return (chatRows as unknown[]).length > 0;

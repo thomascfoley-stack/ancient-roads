@@ -63,7 +63,12 @@ export async function searchCommentaries(opts: {
         AND ($2::smallint IS NULL OR book = $2)
         AND ($3::text IS NULL OR tradition = $3)
         AND ($4::text IS NULL OR author = $4)
-      ORDER BY rank DESC
+      -- D20: ts_rank_cd over short commentary bodies ties HEAVILY, and without a unique
+      -- secondary key Postgres may order tied rows differently between the two page requests —
+      -- so a row can fall between page N and N+1 and never be shown. The client dedupes by id,
+      -- which hides duplicates but cannot recover a skipped row. search-sections.ts:156 already
+      -- carries ", id" for exactly this reason.
+      ORDER BY rank DESC, id
       LIMIT $5
       OFFSET $6`,
       [q, book, tradition, author, limit, offset],

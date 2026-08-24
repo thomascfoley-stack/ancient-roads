@@ -206,10 +206,16 @@ export function StudyPanel({
         <HighlightRow annotation={annotation} bookmarked={bookmarked} onToggleBookmark={onToggleBookmark} />
 
         {/* Tabs — PRD §4: 14px Source Sans, weight 600, tracking 0.02em. */}
- <div className="flex gap-1 border-b edge px-4">
+ {/* D37: these switch mutually exclusive panels but were plain buttons — no tab semantics,
+            no selected state, the active one conveyed by accent colour and an underline only. The
+            repo's own convention for this exact pattern is at plans-client.tsx:464 and
+            study-library-panel.tsx:169. */}
+        <div className="flex gap-1 border-b edge px-4" role="tablist">
           {TABS.map((t) => (
             <button
               key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
               onClick={() => selectTab(t.id)}
               className={`relative min-h-[44px] px-3.5 py-2.5 font-sans text-sm font-semibold tracking-[0.02em] transition-colors ease-gentle ${
                 tab === t.id
@@ -368,6 +374,10 @@ function HighlightRow({
             key={c.id}
             onClick={() => annotation.onSetHighlight(c.id)}
             aria-label={`Highlight ${c.id}`}
+            // D38: the current colour was shown by a ring class alone, so all ten swatches
+            // announced identically and a screen-reader user could not tell which colour the
+            // verse already carried before hitting Clear.
+            aria-pressed={annotation.color === c.id}
             className="flex h-11 w-11 items-center justify-center rounded-full active:bg-stone-100 dark:active:bg-stone-800"
           >
             <span

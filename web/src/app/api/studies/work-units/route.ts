@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { countWorkUnits, WHOLE_WORK_BLOCK_CAP } from '@/lib/studies';
 
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
   const slug = new URL(req.url).searchParams.get('slug')?.trim() ?? '';
   if (!slug || slug.length > 200) {
