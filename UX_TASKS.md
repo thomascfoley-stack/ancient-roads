@@ -1324,3 +1324,15 @@ behavior) vs. a genuine stray/duplicate annotation — plausibly "always keep th
 correct here too, since a footnote-only scripRef keeping its own text ("Eccles. 1:8.") is harmless,
 while every inline case currently breaks. That policy call and the resulting re-ingest are out of scope
 for this investigation.
+
+## PW-01 — attempted, INCONCLUSIVE (not filed as pass or fail — my detection method was wrong)
+
+Highlighted John 3:16 (confirmed real via the panel's "clear" button appearing — the create DID work),
+then opened the same chapter in a Desk pane and searched the DOM for `mark`/`[class*="highlight"]`/
+`[style*="background-color"]` — found zero matches in EITHER the desk pane OR the standalone reader
+that has the confirmed-real highlight, which proves my selector doesn't match however this app actually
+renders highlight spans (some other class-naming scheme, likely a CSS custom property or a Tailwind
+arbitrary-value class my guessed selector didn't cover) — not that the highlight is missing. Cleaned up
+(cleared the highlight, verified gone via the "clear" button's absence). **PW-01 needs a redo** with
+either a visual screenshot (unavailable tonight — Browser pane stopped compositing) or the correct CSS
+selector, not attempted further this pass.
