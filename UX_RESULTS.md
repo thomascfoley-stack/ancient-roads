@@ -756,3 +756,29 @@ pages, waitlist validation/dedup/double-submit-guard/unicode handling, responsiv
 browser zoom 80-150%, scroll-position-on-refresh, utm-param handling, manifest sanity, reduced-motion
 CSS. Several PARTIALs are genuinely PENDING on external resources this pass didn't have (a real inbox
 for the confirmation email, real device for add-to-home-screen) rather than app defects.
+
+## Batch 34 — CM (Commentary tab), tracker-driven, signed-out
+
+### F-073 · CM-011 · **P2** · "Read more" on a truncated commentary entry navigates away instead of expanding
+Clicking "Read more" on a truncated entry doesn't expand it or scroll to the full entry — it
+navigates away to the generic `/library/commentaries` catalog page, unrelated to what was being read.
+
+### F-074 · CM-020 · **P3** · Inconsistent loading-state treatment, same class as F-055/F-066
+Desk's commentary pane shows a bare "Loading…" string while other pages (My Works) use skeleton
+placeholder blocks — another instance of the same three-incompatible-loading-idioms pattern already
+filed.
+
+**Confirmed PASS:** multiple commentary entry points (verse-tap panel, `/library/commentaries`,
+Passage search, Desk pane) all correctly reachable; attribution (author/year/tradition pill/work
+title) correct; era labelling ("MODERN") correct; Greek/Hebrew rendering clean in both interlinear
+and Adam Clarke's Hebrew excerpt, no mojibake; mobile layout (375-390px) reflows cleanly.
+
+**Worth a second look, not confirmed as a bug:** John 3:8's commentary panel showed the identical
+first excerpt as John 3:4 (same Matthew Henry text) while the verse header and entry counts (11 vs 16)
+updated correctly — most likely a legitimate range-anchored commentary entry, not content bleed, but
+not independently confirmed against source data.
+
+**Coverage gap:** browser-automation tooling was notably unstable for this agent (tabs multiplying,
+losing session state, pane going "not displayed") — CM-006/007/009/010/012/013/016/017/021 and full
+confirmation of CM-019/022 are genuinely NOT VERIFIED, not silently marked pass. Flagged for a
+dedicated re-run.

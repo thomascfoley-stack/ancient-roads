@@ -147,28 +147,28 @@ x,AX-017 `prefers-reduced-motion` honoured app-wide — including the highlighte
 ,CH-022 XSS probe strings in every user-supplied field → escaped everywhere they're echoed.,SEE UX_RESULTS.md / evidence — needs status confirm
 ,CH-023 SQL-ish strings in search inputs → treated as text.,
 ,CH-024 Unicode direction-override characters in a note title → don't reverse surrounding UI.,
-,CM-001 Enumerate every entry point into commentary across the app.,
-,CM-002 Open commentary for a verse → correct verse's material.,
-,"CM-003 Attribution visible on every block: author, work, year (B10). Unattributed = P1.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"CM-004 Multiple commentators → switching works, labels correct, no bleed.",
-,CM-005 Era/tradition labelling consistent with the rest of the app (B6).,
-,"CM-006 Scripture cross-references inside commentary → clickable, land correctly.",
-,"CM-007 Back from a cross-reference → returns to the same commentary, same scroll.",
-,"CM-008 Commentary containing Greek/Hebrew → renders, no mojibake.",
-,"CM-009 Commentary containing empty citation parens `( )` → known corpus damage; count occurrences seen (1,937 sections in prod).",
-,CM-010 Commentary with an `&amp;` or other raw entity in the title/body → decoded.,
-,CM-011 Very long commentary → scroll performance.,
-,"CM-012 Verse with no commentary → teaching empty state, not silence.",
-,CM-013 Refresh on a commentary view → same view.,
-,"CM-014 Commentary at 390px → readable, dismissible.",
-,CM-015 Public-domain/quarantine handling → nothing served that shouldn't be.,
-,CM-016 Chesterton-era content → correct gate behaviour.,
-,"CM-017 Commentary text selection + copy → clean, attribution included or deliberately not.",
-,CM-018 Two commentaries in sequence → no bleed.,
-,"CM-019 Commentary in the desk pane vs the verse panel → same content, same attribution.",
-,CM-020 Commentary loading state consistent with the rest of the app (B7).,
-,CM-021 Print a commentary view → attribution included.,
-,"CM-022 Screen reader: author and work announced before the quoted text, not after.",
+x,CM-001 Enumerate every entry point into commentary across the app.,"PASS — Multiple entry points confirmed: verse-number tap in /read/[book]/[ch] opens a commentary side panel (Commentaries/Word study/Notes tabs); Library > Commentaries (grid of 33 works, filterable by tradition, with a text search box); a dedicated ""Passage search"" page (browse by book+chapter+auth"
+x,CM-002 Open commentary for a verse → correct verse's material.,"PASS — (with note) — John 3:1 showed Adam Clarke/John Gill text specific to v1 (""Nicodemus, a ruler of the Jews...""); John 3:4 showed Matthew Henry text specific to v4. John 3:8's panel header/quoted-text correctly read ""JOHN 3:8"" but the first commentary entry shown was byte-identical to v4's Matth"
+x,"CM-003 Attribution visible on every block: author, work, year (B10). Unattributed = P1.","PASS — Every entry showed AUTHOR — YEAR plus a tradition pill (e.g. ""ADAM CLARKE — 1832 [Methodist]"", ""JOHN GILL — 1763 [Reformed Baptist]"", ""MATTHEW HENRY — 1710 [Nonconformist]"") and the source work title at the bottom of the excerpt (""Adam Clarke's Commentary"", ""Matthew Henry's Commentary""). No u"
+x,"CM-004 Multiple commentators → switching works, labels correct, no bleed.","PASS — (limited) — John 3:1 showed Adam Clarke and John Gill stacked under one ""MODERN"" era heading with distinct, correctly-labelled author blocks and no visible text bleed between them. Did not scroll through the full 10-entry stack for v1."
+x,CM-005 Era/tradition labelling consistent with the rest of the app (B6).,"PASS — Era heading ""MODERN"" rendered above the commentator group in the same typographic/label style used elsewhere in the app (small caps, muted color)."
+,"CM-006 Scripture cross-references inside commentary → clickable, land correctly.","NOT — VERIFIED — Did not find an inline Scripture cross-reference inside the commentary excerpts sampled (Adam Clarke/John Gill/Matthew Henry on John 3) to test click-through; ran out of reliable interaction time. (A separate Daily-Light devotional block on the home page did show a ""How the church h"
+,"CM-007 Back from a cross-reference → returns to the same commentary, same scroll.",NOT — VERIFIED — depends on CM-006; not reached.
+x,"CM-008 Commentary containing Greek/Hebrew → renders, no mojibake.","PASS — Greek interlinear view (Ξα toggle) rendered Greek script, transliteration and gloss cleanly, no mojibake. Separately, Adam Clarke's commentary on Genesis 1:1 (seen via a Desk pane) rendered Hebrew script (""בראשית ברא אלהים..."") plus transliteration cleanly alongside the English commentary — n"
+,"CM-009 Commentary containing empty citation parens `( )` → known corpus damage; count occurrences seen (1,937 sections in prod).","PARTIAL/NOT — INDEPENDENTLY VERIFIED — did not encounter an empty ""( )"" citation in the samples read; relying on the test-plan's own documented figure (1,937 sections in prod) rather than a fresh count, since the library's search box filters by work title/author, not commentary body text, and did no"
+,CM-010 Commentary with an `&amp;` or other raw entity in the title/body → decoded.,"NOT — VERIFIED — no raw ""&amp;""-style entity observed in the sampled excerpts, but sample size was small (3 commentators on 3 verses); not a systematic check."
+,CM-011 Very long commentary → scroll performance.,"PARTIAL/FAIL — Long commentary entries are truncated with a ""READ MORE"" link, but clicking it did NOT expand the text or scroll to the full entry — it navigated away to the generic /library/commentaries catalog page (33-item grid), not even scrolled/filtered to the entry being read. This looks like "
+,"CM-012 Verse with no commentary → teaching empty state, not silence.",NOT — VERIFIED — did not find/confirm a verse with zero commentary entries in the time available to check the empty-state treatment.
+,CM-013 Refresh on a commentary view → same view.,NOT — VERIFIED — refresh-persistence not tested; ran out of reliable browser-tool interaction (see general note).
+,"CM-014 Commentary at 390px → readable, dismissible.","PARTIAL — At 375–390px the chapter text reflows cleanly with no horizontal overflow or clipping, and the toolbar/bottom nav adapt correctly. Could not verify the commentary panel is reachable/dismissible at this width — verse-number taps at mobile viewport size consistently failed to register throug"
+,CM-015 Public-domain/quarantine handling → nothing served that shouldn't be.,"NOT-APPLICABLE — quarantine/public-domain-serving correctness is a data/licensing check against the corpus manifest, not observable from the UI alone; out of scope for browser-only testing."
+,CM-016 Chesterton-era content → correct gate behaviour.,NOT — VERIFIED — did not locate Chesterton-era (copyright-adjacent) content to exercise gate behaviour in the time available.
+,"CM-017 Commentary text selection + copy → clean, attribution included or deliberately not.",NOT — VERIFIED — text selection/copy not exercised; browser-automation tool does not reliably drive clipboard interactions in this session.
+x,CM-018 Two commentaries in sequence → no bleed.,"PASS — (with same caveat as CM-002) — Sequentially opening commentary for v4 then v8 updated the panel header/quoted verse text correctly each time; the one wrinkle is the shared first entry noted in CM-002, which reads as a range-anchored entry rather than UI-state bleed (era heading, counts, and v"
+,"CM-019 Commentary in the desk pane vs the verse panel → same content, same attribution.","NOT — VERIFIED (inconclusive) — a Desk layout was found with a Scripture pane (John 3, WEB-style text) and an independent Commentary pane (Adam Clarke on Genesis 1:1) that did NOT correspond to each other — but that appears to be because Desk panes are independently-added, unlinked items by design, "
+,CM-020 Commentary loading state consistent with the rest of the app (B7).,"PARTIAL/FAIL — Loading states are inconsistent: the Desk commentary pane showed a bare ""Loading…"" text string, while other parts of the app (e.g. the My Works library page) use skeleton placeholder blocks. Not confirmed as the intended pattern either way, but the two loading treatments visibly diffe"
+,CM-021 Print a commentary view → attribution included.,NOT — VERIFIED — print output not tested (no reliable way to drive/inspect the browser print dialog with the available tools).
+,"CM-022 Screen reader: author and work announced before the quoted text, not after.","PARTIAL — Visual/DOM order in the panel and reader consistently put attribution before quoted text (verse buttons are labelled ""Verse N, read commentary"" ahead of the verse text in the accessibility tree; on-screen the ""AUTHOR — YEAR [Tradition]"" line sits above the commentary paragraph). This is su"
 ,"CO-001 Terminology inventory — the one mapping that earns its keep. The app currently uses Ask/Search/Study, Save/Bookmark/Shelf, Thread/History...","PARTIAL — full terminology inventory collected (see consistency.md), but no single term-per-concept decision has been made yet across the five concept groups below"
 ,CO-002 Resolve: Ask vs Search vs Study. CO-003 Resolve: Save vs Bookmark vs Shelf.,"FAIL — the one /ask route is named 4 ways depending on chrome: ""Ask"" (mobile nav), ""Ancient Paths"" (desktop sidebar), ""Explore the paths"" (page h1), ""Voices"" (mode tab); its own submit verb flips ""Ask""→""Study"" between modes (ask-client.tsx:556 vs history-ask.tsx:105-107)"
 ,CO-003 Resolve: Save vs Bookmark vs Shelf.,
