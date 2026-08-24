@@ -138,3 +138,49 @@ renders "Your desk, 2 panes open" with Scripture and Commentary correctly side b
 a broken feature; it is a **finished feature with no door into it**. No real user will ever hand-type
 a `p=` query string. This is the single highest-value finding of the run: it is the exact journey
 the product exists for, and it currently requires URL knowledge a user cannot have.
+
+## Batch 8 — Plans (production, signed in)
+
+PL-004 ✅ "Mark as read" → "0 of 40" → "1 of 40 days read", real click event.
+PL-009-adjacent ✅ humane fallen-behind handling: "21 days behind... Life happened. Pick up where
+  you left off... nothing you read is lost." with "Resume from today" / "Keep the original dates" —
+  good example of the polish bar (B2/B4) done right.
+F-005 confirmed on REAL data, not just an invalid id: `/plans/[id]` title is doubled —
+  "Reading plan · Ancient Paths · Ancient Paths".
+🔴 P3 no `aria-pressed`/`aria-checked` found on the day-read toggle — accessibility gap, ties to the
+  known "ignores synthetic/a11y-API clicks" finding already filed against this control.
+Note: left the owner's "The Gospels" plan at 1/40 (was 0/40) — did not find the unmark control in
+the time available; trivial, reversible, flagging rather than chasing further.
+
+## Batch 9 — Settings (production, signed in)
+
+ST-001 ✅ enumerated: Reading Theme (Light/Dark), Text Size (A−/Medium/A+), Column Width
+  (Standard/Widest), Default Translation (18 options), Account (Email and password →), Your saved
+  work section.
+ST-009/ST-011 ✅✅ **CORRECTS the remediation plan's L-11** ("Text Size does nothing"). Verified:
+  clicking A+ changes `--reading-size` (1rem→1.4rem) AND the verse font-size in `/read/jhn/3`
+  changes to match (22.4px = 1.4rem), confirmed by navigating there fresh. L-11 as filed is stale —
+  either fixed since or mistested. Retest column width before fully retiring L-11 (not done, queued).
+ST-018 ✅ "Email and password →" links out toward `/account/settings` (ACCT section), confirming the
+  ST/ACCT split noted earlier is intentional and cross-linked.
+
+## Batch 10 — Library, signed in, production — second P0/P1 finding
+
+### F-012 · LB / WS / UP · **P1** · Most of the Library section hangs forever on "Loading the library"
+Confirmed, signed in, current session, production, right now:
+
+    /library              STUCK, 10s+, forever
+    /library/books        STUCK
+    /library/word-study   STUCK
+    /library/uploads      STUCK
+    /library/notes        WORKS ("Saved" — 19 highlights listed correctly)
+
+Not a network hang — `performance.getEntriesByType('resource')` on `/library` shows only 3 fast API
+calls (`get-session` 137ms, `research?limit=5` 210ms, `studies` 150ms), all completed, none pending.
+Session is confirmed valid (`get-session` 200 the whole time). This is a client-side bug: whatever
+signal that loading state waits on never arrives, on every affected route except `/library/notes`.
+
+This makes Library — a primary nav item, and the home of the works readers actually study — mostly
+unusable right now. Given the console/network access available to me I could narrow WHICH shared
+condition `/library/notes` alone satisfies, but did not have time to go further; flagging for a
+fix session to pick up from here rather than guessing at the cause.
