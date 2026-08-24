@@ -474,3 +474,23 @@ that pattern rather than differ from it (B6/B7 consistency).
 
 Remaining 26 of 32 SE IDs: PENDING-SIGNIN, as expected — none of the editor's core behavior is
 observable without the one real production account.
+
+## Batch 25 — PL (Reading Plans) and PW (pairwise cross-cutting), tracker-driven, signed-out slice
+
+### F-044 · PL-021 · **P3** · Invalid `/plans/[id]` silently falls back instead of 404, and its `<title>` is doubled
+Visiting `/plans/nonexistent-id-12345` doesn't 404 — it silently renders the same generic gate content
+as a valid route. Independent of auth state, the page's `<title>` is malformed:
+`"Reading plan · Ancient Paths · Ancient Paths"` (site name doubled), vs. the correct
+`"Reading plans · Ancient Paths"` on `/plans` itself.
+
+PL-017 PARTIAL: the signed-out gate confirms but doesn't really "teach" — no preview of what a plan
+looks like, just a bare sign-in prompt (same pattern noted for `/studies`, F-043 above). PL-019 PASS
+at 390px. Remaining 18 of 22: PENDING-SIGNIN, as expected.
+
+PW (pairwise cross-cutting): 18 of 20 PENDING-SIGNIN (all exercise account-bound state — highlights,
+notes, Desk panes, plans, Ask threads). PW-013/014 (text size, theme) PARTIAL PASS — device-level
+Settings apply instantly across pages/reloads with no signed-in dependency, no FOUC.
+
+**Unconfirmed side observation, not filed as a finding:** one agent reported `/read/jhn/1` direct nav
+intermittently rendering "John 3" instead of chapter 1 in this local build — flagged for a follow-up
+look, not independently reproduced, so kept out of the findings list per the plan's repro requirement.

@@ -593,28 +593,28 @@ Done,ID / Name,Notes
 ,UP-030 `/library/uploads/[id]` → the document reads well; attribution says it's yours.,
 ,UP-031 Mobile upload → file picker works; progress visible; backgrounding the app doesn't lose it.,
 ,"UP-032 Keyboard-only: choose a file, upload, and delete.",
-,"PL-001 Enumerate the plans surface, the day list, and the toggle.",SEE UX_RESULTS.md / evidence — needs status confirm
-,PL-002 Browse available plans → each has a clear description and length.,
-,PL-003 Start a plan → confirmation; it appears on home.,
-,PL-004 Day toggle both directions → persists across reload.,SEE UX_RESULTS.md / evidence — needs status confirm
-,PL-005 Day toggle by keyboard → works (known pointer-only suspect).,
-,PL-006 Day toggle by assistive click → works.,
-,"PL-007 Toggle while offline → honest failure, not a silently reverted checkbox (B4).",
-,PL-008 Plan content links → into the reader; Back returns to the plan at the same position.,
-,PL-009 Progress indicator accurate (days read / total) — does it share the fake-100% computation? Check explicitly.,SEE UX_RESULTS.md / evidence — needs status confirm
-,PL-010 Progress persists across refresh and sign-out/in.,
-,PL-011 Finish a plan → celebrated or at least acknowledged; no broken state.,
-,"PL-012 Abandon/restart a plan → possible, confirmed, honest.",
-,PL-013 Delete a plan → confirmed; gone; home updates.,
-,"PL-014 A plan day with a multi-chapter reading → all chapters reachable, progress sensible.",
-,PL-015 A plan day in the past → clearly marked as missed or catch-up.,
-,PL-016 Two plans at once → both tracked independently.,
-,PL-017 Plans empty state → teaches.,
-,PL-018 Annotate a verse from inside plan context → appears in the normal reader too.,
-,"PL-019 Plans at 390px → tappable, legible.",
-,PL-020 Plan list with 50 plans → usable.,
-,PL-021 `/plans/[id]` invalid → human 404.,
-,PL-022 Screen reader: day list is a list; toggle state announced.,
+,"PL-001 Enumerate the plans surface, the day list, and the toggle.","PENDING-SIGNIN — /plans signed out shows only ""Sign in to build a reading plan.""; no plan/day list/toggle to enumerate."
+,PL-002 Browse available plans → each has a clear description and length.,PENDING-SIGNIN — no browsable list of available plans exists signed out; nothing to compare descriptions/lengths against.
+,PL-003 Start a plan → confirmation; it appears on home.,PENDING-SIGNIN — starting a plan requires an account.
+,PL-004 Day toggle both directions → persists across reload.,PENDING-SIGNIN — day toggle not present signed out.
+,PL-005 Day toggle by keyboard → works (known pointer-only suspect).,PENDING-SIGNIN — keyboard toggle not testable without a started plan.
+,PL-006 Day toggle by assistive click → works.,PENDING-SIGNIN — assistive-click toggle not testable without a started plan.
+,"PL-007 Toggle while offline → honest failure, not a silently reverted checkbox (B4).",PENDING-SIGNIN — offline toggle behavior needs an active plan/account.
+,PL-008 Plan content links → into the reader; Back returns to the plan at the same position.,PENDING-SIGNIN — no plan content links exist signed out to test reader nav/back.
+,PL-009 Progress indicator accurate (days read / total) — does it share the fake-100% computation? Check explicitly.,PENDING-SIGNIN — no progress indicator rendered signed out.
+,PL-010 Progress persists across refresh and sign-out/in.,PENDING-SIGNIN — progress persistence needs sign-out/in with an account.
+,PL-011 Finish a plan → celebrated or at least acknowledged; no broken state.,PENDING-SIGNIN — finishing a plan requires an account.
+,"PL-012 Abandon/restart a plan → possible, confirmed, honest.",PENDING-SIGNIN — abandon/restart requires an account.
+,PL-013 Delete a plan → confirmed; gone; home updates.,PENDING-SIGNIN — delete requires an account.
+,"PL-014 A plan day with a multi-chapter reading → all chapters reachable, progress sensible.",PENDING-SIGNIN — multi-chapter day content requires an active plan.
+,PL-015 A plan day in the past → clearly marked as missed or catch-up.,PENDING-SIGNIN — past-day marking requires an active plan.
+,PL-016 Two plans at once → both tracked independently.,PENDING-SIGNIN — concurrent plans requires an account.
+,PL-017 Plans empty state → teaches.,"PARTIAL — confirmed: /plans signed out is a pure gate (""Sign in to build a reading plan."", no browsing), matching the known finding; as an empty-state it does not ""teach"" (no plan preview, no example of what a plan looks like, no value framing beyond one description sentence)."
+,PL-018 Annotate a verse from inside plan context → appears in the normal reader too.,PENDING-SIGNIN — annotating from plan context requires an active plan.
+x,"PL-019 Plans at 390px → tappable, legible.","PASS — at 390px the gate page renders cleanly: heading, description, and ""Sign in"" link all legible, no horizontal overflow, bottom tab bar unobstructed."
+,PL-020 Plan list with 50 plans → usable.,PENDING-SIGNIN — no plan list exists signed out; cannot test 50-plan scale.
+,PL-021 `/plans/[id]` invalid → human 404.,"PARTIAL — /plans/[id] with an invalid id (tried /plans/nonexistent-id-12345) does not 404; it silently renders the same generic signed-out ""Reading plans"" gate content, so a genuine invalid-id 404 vs. a real plan is indistinguishable signed out (real behavior PENDING-SIGNIN). Found a real bug indepe"
+,PL-022 Screen reader: day list is a list; toggle state announced.,"PENDING-SIGNIN — no day list/toggle exists signed out to check list/toggle-state semantics; only a single ""Sign in"" link and static paragraph present."
 ,DO-001 Enumerate the office surface and its sections.,SEE UX_RESULTS.md / evidence — needs status confirm
 ,"DO-002 Today's office → today's content, correct date in the user's timezone.",
 ,DO-003 Morning vs evening → correct half for the local clock.,
@@ -865,26 +865,26 @@ Done,ID / Name,Notes
 ,CH-022 XSS probe strings in every user-supplied field → escaped everywhere they're echoed.,SEE UX_RESULTS.md / evidence — needs status confirm
 ,CH-023 SQL-ish strings in search inputs → treated as text.,
 ,CH-024 Unicode direction-override characters in a note title → don't reverse surrounding UI.,
-,PW-001 Highlight in reader → same verse in a desk pane shows it; edit in desk → reader reflects it.,
-,PW-002 Note on a verse → reach it via search → note indicator present.,
-,PW-003 Interlinear ON → click an ask citation into the reader → interlinear state sensible.,
-,PW-004 Plan reading → highlight inside plan context → appears in the normal reader.,
-,PW-005 History thread → scripture ref in a historian source → reader → Back → thread intact.,
-,PW-006 Uploaded doc cited in ask → open citation → Back → answer intact.,
-,PW-007 Bookmark a chapter → switch translation → bookmark still targets it.,
-,PW-008 Word study open → switch translation elsewhere → word study coherent.,
-,PW-009 Copy verse text with a highlight active → clipboard clean.,
-,PW-010 Daily Office reading → annotate from within it → persists in the reader.,
-,PW-011 Study referencing a verse whose source is withdrawn → still renders.,
-,"PW-012 Desk pane + verse panel open together → no overlap, both usable.",
-,PW-013 Aa settings changed → do they apply in desk panes and plan reading too?,
-,"PW-014 Theme change → applies everywhere without reload, including open panels.",
-,PW-015 Sign out with unsaved work in a study → warned.,
-,PW-016 Search → open result → highlight → Back → results intact with the highlight visible.,
-,PW-017 Two panes on the same chapter → annotations sync between them live.,
-,PW-018 Ask a question about the chapter you're reading → context carries; Back returns to the chapter.,
-,"PW-019 Upload a doc, then ask a question it should answer, then open it from the citation.",
-,"PW-020 Create a study from a thread, then edit the thread → study reference stays valid.",
+,PW-001 Highlight in reader → same verse in a desk pane shows it; edit in desk → reader reflects it.,"PENDING-SIGNIN — Highlight-sync between reader and Desk pane requires saved highlights (sign-in) and Desk, which shows ""Study spaces are coming soon"" for signed-out users."
+,PW-002 Note on a verse → reach it via search → note indicator present.,"PENDING-SIGNIN — Notes require an account; signed-out /library/notes-equivalent (""Saved"") shows ""Sign in to see your highlights, notes and bookmarks."""
+,PW-003 Interlinear ON → click an ask citation into the reader → interlinear state sensible.,"PENDING-SIGNIN — /ask shows ""Not open yet"" for signed-out users, so no ask citation exists to click into the reader."
+,PW-004 Plan reading → highlight inside plan context → appears in the normal reader.,PENDING-SIGNIN — Reading-plan progress and highlighting both require an account; plan reading beyond browsing needs sign-in.
+,PW-005 History thread → scripture ref in a historian source → reader → Back → thread intact.,"PENDING-SIGNIN — Historian source threads are reached via Ask, which is gated (""Not open yet"") for signed-out users."
+,PW-006 Uploaded doc cited in ask → open citation → Back → answer intact.,"PENDING-SIGNIN — Uploaded-doc citation flow requires My uploads + Ask, both account-gated."
+,PW-007 Bookmark a chapter → switch translation → bookmark still targets it.,"PENDING-SIGNIN — Bookmarking a chapter requires sign-in (Saved page: ""Sign in to see your highlights, notes and bookmarks"")."
+,PW-008 Word study open → switch translation elsewhere → word study coherent.,"PENDING-SIGNIN — Word study (/library/word-study) itself loads signed-out, but the interlinear toggle in the reader showed no visible state change on click and cross-context coherence needs a persisted account session to verify meaningfully."
+,PW-009 Copy verse text with a highlight active → clipboard clean.,"PENDING-SIGNIN — Copying verse text with an active highlight requires a saved highlight, which needs sign-in."
+,PW-010 Daily Office reading → annotate from within it → persists in the reader.,"PENDING-SIGNIN — Daily Office reading is visible signed-out, but annotating it requires an account."
+,PW-011 Study referencing a verse whose source is withdrawn → still renders.,"PENDING-SIGNIN — ""Study"" is an authenticated Desk/study-space feature, unavailable signed-out."
+,"PW-012 Desk pane + verse panel open together → no overlap, both usable.","PENDING-SIGNIN — Desk shows a ""coming soon"" teaser to signed-out users; no panes can be opened to check overlap."
+,PW-013 Aa settings changed → do they apply in desk panes and plan reading too?,"PARTIAL — Text size (Aa) control in Settings works signed-out and states ""Applies everywhere,"" confirmed changing it affects the reader; could not verify propagation into Desk panes or plan reading since both are sign-in gated."
+,"PW-014 Theme change → applies everywhere without reload, including open panels.","PARTIAL — Theme toggle (Settings → Dark) applied instantly to sidebar/Settings without reload, and persisted correctly into the Bible reader on a fresh navigation; could not verify it reaching open Desk panels since Desk is sign-in gated for this account."
+,PW-015 Sign out with unsaved work in a study → warned.,PENDING-SIGNIN — Sign-out warning-for-unsaved-work flow requires being signed in first.
+,PW-016 Search → open result → highlight → Back → results intact with the highlight visible.,PENDING-SIGNIN — Search-result highlighting requires a saved highlight (sign-in).
+,PW-017 Two panes on the same chapter → annotations sync between them live.,"PENDING-SIGNIN — Two Desk panes on the same chapter requires Desk, which is sign-in gated (shows ""coming soon"" for signed-out)."
+,PW-018 Ask a question about the chapter you're reading → context carries; Back returns to the chapter.,"PENDING-SIGNIN — /ask is gated ""Not open yet"" for signed-out users; no chapter-context ask flow is reachable."
+,"PW-019 Upload a doc, then ask a question it should answer, then open it from the citation.",PENDING-SIGNIN — Upload + Ask + citation flow requires an account; both My uploads and Ask are gated signed-out.
+,"PW-020 Create a study from a thread, then edit the thread → study reference stays valid.","PENDING-SIGNIN — Creating a study from a thread requires Ask/Desk study features, both sign-in gated."
 ,"CO-001 Terminology inventory — the one mapping that earns its keep. The app currently uses Ask/Search/Study, Save/Bookmark/Shelf, Thread/History...",SEE UX_RESULTS.md / evidence — needs status confirm
 ,CO-002 Resolve: Ask vs Search vs Study. CO-003 Resolve: Save vs Bookmark vs Shelf.,
 ,CO-004 Resolve: Thread vs History vs Chat vs Conversation. CO-005 Resolve: Work vs Book vs Document vs Source.,
