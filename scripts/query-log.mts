@@ -1,5 +1,5 @@
 // QUERY LOG — what people actually asked and searched, newest first, across BOTH outcome
-// tables: ask_outcomes (116, /ask) and search_outcomes (127, the five search surfaces).
+// tables: ask_outcomes (116, /ask) and search_outcomes (129, the five search surfaces).
 //
 // This is the owner's read side of the "we need to see all of that" directive (2026-08-23).
 // Both tables are INSERT-only for app_runtime by RLS policy, so this runs as the OWNER role

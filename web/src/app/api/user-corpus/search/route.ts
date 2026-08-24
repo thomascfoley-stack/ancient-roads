@@ -52,7 +52,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const params = req.nextUrl.searchParams;
   const documentId = params.get('documentId') ?? undefined;
-  // Query log (migration 127), off the request path, fail-open. This is the user's PRIVATE
+  // Query log (migration 129), off the request path, fail-open. This is the user's PRIVATE
   // corpus: the row stores their own typed input and counts, attributed through runAsUser —
   // the same first-party, owner-read-only posture as ask_outcomes (which already stores the
   // question text for asks over this same corpus).

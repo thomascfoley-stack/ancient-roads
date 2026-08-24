@@ -59,7 +59,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     } catch (e) {
       console.error('history_thread_persist_failed', (e as Error).message);
     }
-    // Query log (migration 127), off the request path, fail-open. The thread above is the
+    // Query log (migration 129), off the request path, fail-open. The thread above is the
     // user's own UX record; this row is the owner-readable one, same as every other surface.
     scheduleSearchOutcome({
       surface: 'history',

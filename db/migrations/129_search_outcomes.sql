@@ -1,5 +1,5 @@
 -- ============================================================
--- 127: search_outcomes — the query log for every search surface (owner directive 2026-08-23)
+-- 129: search_outcomes — the query log for every search surface (owner directive 2026-08-23)
 -- ============================================================
 -- ask_outcomes (116) made /ask queries durable and owner-readable; every OTHER query surface
 -- still evaporated at the route boundary — /api/search/works, /api/search/commentaries,
@@ -10,7 +10,7 @@
 -- (after()/fire-and-forget in web/src/lib/search-outcomes.ts — a logging failure must never
 -- break a search, so the writer fails open with a caught log line), same shape as 116.
 -- IDEMPOTENT: CREATE TABLE/INDEX IF NOT EXISTS; DROP POLICY IF EXISTS before CREATE.
---   RUN (owner, dev-guarded): node db/apply-migration.mjs db/migrations/127_search_outcomes.sql
+--   RUN (owner, dev-guarded): node db/apply-migration.mjs db/migrations/129_search_outcomes.sql
 --   ROLLBACK: DROP TABLE IF EXISTS search_outcomes;
 --
 -- ── WHAT A ROW IS ─────────────────────────────────────────────────────────────────────────────
@@ -73,31 +73,31 @@ DO $$
 BEGIN
   -- The verb the writer needs. Absence = the 039 outage shape, caught at apply time.
   IF NOT has_table_privilege('app_runtime', 'search_outcomes', 'INSERT') THEN
-    RAISE EXCEPTION '127 FAILED: app_runtime lacks INSERT on search_outcomes — every outcome write would fail (silently, by design)';
+    RAISE EXCEPTION '129 FAILED: app_runtime lacks INSERT on search_outcomes — every outcome write would fail (silently, by design)';
   END IF;
 
   -- The verbs that must remain absent. Presence = the least-privilege posture drifted.
   IF has_table_privilege('app_runtime', 'search_outcomes', 'UPDATE') THEN
-    RAISE EXCEPTION '127 FAILED: app_runtime has UPDATE on search_outcomes; the log is append-only';
+    RAISE EXCEPTION '129 FAILED: app_runtime has UPDATE on search_outcomes; the log is append-only';
   END IF;
   IF has_table_privilege('app_runtime', 'search_outcomes', 'DELETE') THEN
-    RAISE EXCEPTION '127 FAILED: app_runtime has DELETE on search_outcomes; the log is append-only';
+    RAISE EXCEPTION '129 FAILED: app_runtime has DELETE on search_outcomes; the log is append-only';
   END IF;
 
   -- RLS on, with EXACTLY the INSERT policy: no policy for a command = zero rows for app_runtime,
   -- so a second policy appearing here means someone widened runtime access without review.
   IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'search_outcomes' AND relrowsecurity) THEN
-    RAISE EXCEPTION '127 FAILED: RLS not enabled on search_outcomes';
+    RAISE EXCEPTION '129 FAILED: RLS not enabled on search_outcomes';
   END IF;
   IF (SELECT count(*) FROM pg_policies WHERE tablename = 'search_outcomes') <> 1
      OR NOT EXISTS (SELECT 1 FROM pg_policies
                     WHERE tablename = 'search_outcomes'
                       AND policyname = 'search_outcomes_insert'
                       AND cmd = 'INSERT') THEN
-    RAISE EXCEPTION '127 FAILED: search_outcomes must carry exactly one policy (search_outcomes_insert, FOR INSERT)';
+    RAISE EXCEPTION '129 FAILED: search_outcomes must carry exactly one policy (search_outcomes_insert, FOR INSERT)';
   END IF;
 
-  RAISE NOTICE '127 OK: search_outcomes created; RLS on; app_runtime holds INSERT and nothing else';
+  RAISE NOTICE '129 OK: search_outcomes created; RLS on; app_runtime holds INSERT and nothing else';
 END $$;
 
 COMMIT;

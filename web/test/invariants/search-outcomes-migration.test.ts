@@ -1,4 +1,4 @@
-// search_outcomes migration shape (127) — static, no DB, runs in CI. The exact pattern of
+// search_outcomes migration shape (129) — static, no DB, runs in CI. The exact pattern of
 // ask-outcomes-migration.test.ts (116): parse the shipped SQL and fail if the posture drifts.
 //
 // What is pinned, and the seed that turns each red:
@@ -22,7 +22,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = path.resolve(__dirname, '../../..');
 const MIGRATIONS = path.join(ROOT, 'db/migrations');
-const FILE = '127_search_outcomes.sql';
+const FILE = '129_search_outcomes.sql';
 const sql = readFileSync(path.join(MIGRATIONS, FILE), 'utf8');
 // Strip line comments so commented-out examples can't satisfy an assertion (and rollback
 // comments can't trip one) — same reason 116's test strips them.
@@ -36,7 +36,7 @@ const stripped = sql
 
 const writer = readFileSync(path.join(ROOT, 'web/src/lib/search-outcomes.ts'), 'utf8');
 
-describe('127_search_outcomes.sql — migration shape', () => {
+describe('129_search_outcomes.sql — migration shape', () => {
   // Same durable ordering property as 116's test settled on (its header records why
   // "nothing higher" and "no gap" were both tried and are both wrong): the number is not reused.
   it('is uniquely numbered', () => {
@@ -44,7 +44,7 @@ describe('127_search_outcomes.sql — migration shape', () => {
       .map((f) => /^(\d+)_/.exec(f)?.[1])
       .filter(Boolean)
       .map(Number);
-    expect(nums.filter((n) => n === 127), '127 must appear exactly once').toHaveLength(1);
+    expect(nums.filter((n) => n === 129), '129 must appear exactly once').toHaveLength(1);
   });
 
   it('creates search_outcomes with the query-log columns, user_id nullable', () => {
@@ -95,7 +95,7 @@ describe('127_search_outcomes.sql — migration shape', () => {
     expect(stripped).toMatch(/has_table_privilege\('app_runtime', 'search_outcomes', 'INSERT'\)/);
     expect(stripped).toMatch(/has_table_privilege\('app_runtime', 'search_outcomes', 'UPDATE'\)/);
     expect(stripped).toMatch(/has_table_privilege\('app_runtime', 'search_outcomes', 'DELETE'\)/);
-    expect(stripped).toMatch(/RAISE EXCEPTION '127 FAILED/g);
+    expect(stripped).toMatch(/RAISE EXCEPTION '129 FAILED/g);
     expect(stripped).toMatch(/relrowsecurity/);
   });
 

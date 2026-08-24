@@ -4,7 +4,7 @@ import { getDb, runAsUser } from '@/lib/db';
 import { logEvent } from '@/lib/observability';
 import { truncateCodePoints } from '@/lib/text';
 
-// ── search_outcomes — one row per completed search (migration 127; owner directive
+// ── search_outcomes — one row per completed search (migration 129; owner directive
 // 2026-08-23: "when users run queries searches etc we need to see all of that") ────────────
 // ask-outcomes.ts made /ask durable; every OTHER query surface evaporated at the route
 // boundary. This module is the durable sink for the five search surfaces. It runs OFF the

@@ -110,7 +110,7 @@ export async function GET(req: NextRequest): Promise<Response> {
         snippet: r.snippet,
       }];
     });
-    // Query log (migration 127), off the request path, fail-open.
+    // Query log (migration 129), off the request path, fail-open.
     scheduleSearchOutcome({
       surface: 'library',
       userId: user.id,

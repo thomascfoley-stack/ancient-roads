@@ -1,4 +1,4 @@
-// search-outcome persistence — the write path behind scheduleSearchOutcome (migration 127,
+// search-outcome persistence — the write path behind scheduleSearchOutcome (migration 129,
 // the query log for every search surface). Two properties, both red-provable, mirroring
 // ask-outcome-persist.test.ts:
 //

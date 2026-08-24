@@ -11,7 +11,10 @@ route boundary. (Same recon settled the sibling questions: waitlist emails land 
 2026-08-18 ruling captures exceptions only — no behavioral events exist anywhere in the tree.)
 
 **Built, on `feat/search-outcomes`.**
-* Migration `127_search_outcomes.sql` — 116's exact shape: append-only, INSERT-only RLS policy
+* Migration `129_search_outcomes.sql` [RENUMBERED from 127 on 2026-08-24 pre-prod-apply: canonical
+  127 is `127_drop_full_table_vector_index.sql` on origin/main (128 likewise taken) — the collision
+  was caught by peer sessions -90/-db and verified against `git ls-tree origin/main` before
+  anything reached prod] — 116's exact shape: append-only, INSERT-only RLS policy
   (NULL user or GUC-bound), grant-verified DO tail. Row = surface + typed query (≤500) + validated
   params JSONB + result_count/total + latency_ms. Never corpus text, never snippets.
 * `web/src/lib/search-outcomes.ts` — ask-outcomes.ts verbatim contract: after()/fire-and-forget,
@@ -28,7 +31,9 @@ route boundary. (Same recon settled the sibling questions: waitlist emails land 
   ask_outcomes exclusion shape), completeness invariant green.
 
 **Verified, not assumed.**
-* 127 applied to DEV (ledger sha 4a10b11ffb17…), DO tail passed.
+* Applied to DEV under the old number (ledger sha 4a10b11ffb17…), DO tail passed; on renumber the
+  stale `127_search_outcomes.sql` dev-ledger row was deleted and 129 re-applied (idempotent), so
+  "127" on dev refers only to the canonical vector-index drop.
 * End-to-end on the dev server: real HTTP GETs to works + commentaries → rows read back via
   `query-log.mts` as owner ("good shepherd"/catalogs:[sermons]/20r/1020ms; "grace"/book:43/20r).
 * RLS semantics proven as the real `app_runtime` role on dev: GUC-bound authed insert lands;

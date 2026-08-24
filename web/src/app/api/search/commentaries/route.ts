@@ -79,7 +79,7 @@ export async function GET(req: Request): Promise<Response> {
       limit: limit ?? undefined,
       offset: offset ?? undefined,
     });
-    // Query log (migration 127), off the request path, fail-open. user_id stays NULL here on
+    // Query log (migration 129), off the request path, fail-open. user_id stays NULL here on
     // purpose — this route is public and resolves no session; see the migration header.
     const logged: SearchParams = {};
     if (book !== undefined && book !== null) logged.book = book;
