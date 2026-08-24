@@ -405,3 +405,13 @@ Checked `document.styleSheets` directly — no `@media print` rule exists. Print
 prints the full screen chrome and background image.
 
 MK-009 (privacy/terms) re-confirmed absent, not new — already tracked as F-001/P1.
+
+## Batch 16 — Studies + Shelf/Save (production, signed in, owner account)
+
+SE-004 ✅ "New study" creates a real study, real URL.
+SE-006/SE-008 ✅ typing → "Saved" indicator appears within ~2.5s (autosave confirmed).
+SE-026 ✅ delete confirmed via two-step "Delete?" control, then verified gone from the list.
+LB-015 ✅ "Save" on a work (`/work/calvin-institutes`) toggles `aria-pressed` + label ("Save"↔"Saved"),
+  survives a full page refresh, unsave cleanly reverts. Cleaned up after verifying.
+NV-016 addendum: `/studies/[id]` also ships only the generic "My Studies · Ancient Paths" title, not
+  the study's own name — same class as the reader/work/word findings already filed.
