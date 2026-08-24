@@ -263,3 +263,32 @@ mobile twin has correctly. `sidebar.tsx:623/651` (desktop collapse chevron) has 
 - 13 of 14 checked toggles correctly expose `aria-pressed`; the catalog filter chips correctly use
   `aria-current` instead (they're `role=link`, not buttons — `aria-pressed` would be invalid there,
   and the code says so).
+
+## Batch 13 — RD-002 66-book sweep + WK-00/LB-038 works enumeration (parallel agents)
+
+Full detail: `/tmp/ap-uxsweep/agent-results/66books.md`, `/tmp/ap-uxsweep/agent-results/works.md`
+(copied to `docs/evidence/ux-remediation-2026-08-24/`).
+
+**RD-002 ✅ ALL 66 BOOKS PASS.** Every canonical book, chapter 1: correct HTTP status, correct
+chapter count, non-empty verse 1. Zero 404s/500s/empty bodies across the whole canon.
+RD-003/004/005 ✅ boundary nav verified correct by source trace (Mal 4→Matt 1, Gen 50→Ex 1, no
+prev at Gen 1, no next at Rev 22).
+RD-061 refined: only **Acts 8:37** is a genuinely empty verse in WEB; Matt 17:21 and Matt 18:11
+both have real text in this translation — the plan's assumption that all three behave alike does
+not hold, and the empty-verse case is deliberately handled (drop-cap logic skips it), not a bug.
+CP-01/06 ✅ pericope adulterae intact; canon boundaries clean.
+
+**WK-00 ✅ 129 published works on dev** (11 source_types; commentary 26, hymn 32, lexicon 15,
+devotional 15, poetry 13, confession 8, father 7, sermon 6, theology 3, topical_index 3,
+historian 1). Dev count, not prod — prod's own figure (123) is separate, do not conflate.
+**LB-038 ✅ 22/22 spot-checked works pass** — attribution + non-empty content, one from every
+source_type in the corpus.
+LB-021 clarified, not P1: the header renders `author · tradition · era · license`, never a literal
+year — if the plan's "year" wording is taken literally every work "fails" it, but `era` is very
+likely the intentional substitute (design call, not a defect).
+
+**F-010 root cause found** (the "unassigned" leak, previously filed from user-visible symptoms only):
+`web/src/components/work-header.tsx:96` — `[author, tradition, era, license].filter(Boolean).join(' · ')`
+— `era` is never filtered for the literal string `'unassigned'`, so it prints verbatim whenever set.
+Confirmed live on 3/22 sampled works (gill-song, calvin-calcom17, augustine-confess) = 13.6% of the
+sample, consistent with F-010's "not a one-off" framing.
