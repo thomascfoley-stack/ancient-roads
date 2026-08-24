@@ -30,6 +30,10 @@ backlog note, not built tonight.
 **Also this window:** peer session renumbered their colliding 127→129 and applied it to prod
 cleanly (their record); their deploy candidate waits on the Vercel seat block with everyone else's.
 
+**Waitlist cleanup (owner: "DELETE", 2026-08-24).** Three test rows removed from prod waitlist
+(jim@test.com id6, thomas@test.com id13, ux.audit.traveler@example.com id14 — full pre-delete
+snapshot with timestamps in the session record; re-INSERT restores). 4 real signups remain.
+
 ## 2026-08-23 — swarm closeout: rulings executed, 7 builds resolved, Wave 7 verified, Wave 8 integrated (Claude session, bylaw-4 verifier)
 
 **Session role.** A session that wrote none of the swarm's original work took Wave 7 (independent
