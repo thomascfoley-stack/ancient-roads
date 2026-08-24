@@ -367,3 +367,91 @@ L-2 finding, now confirmed for a bare book name too, not just a full reference.
 **Low-confidence, not confirmed:** a possible focus-race on first navigation to `/search` where
 typed characters were consumed as single-letter hotkeys and silently navigated away — observed once,
 not reproduced in isolation, flagged for someone to retest deliberately rather than filed as fact.
+
+## Batch 23 — Keyboard/Perf, Reader-deep (RD/TR/IN/VS/CP), Chaos retry, History-search query batch
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/keyboard-performance.md`,
+`docs/evidence/ux-remediation-2026-08-24/reader-deep.md`, `docs/evidence/ux-remediation-2026-08-24/chaos.md`,
+`/tmp/ap-uxsweep/ask-batch/hs-results.md`.
+
+**Keyboard (KB), `/` and `/read/jhn/3`, signed out:**
+KB-013/014 ✅ Tab order on `/` matches visual top-to-bottom order for 15 stops, nothing skipped/trapped.
+KB-015 ✅ No positive tabindex on `/` or `/read/jhn/3`.
+
+### F-037 · KB-016 · **P2** · Skip-to-content link never moves keyboard focus
+Activating "Skip to content" (Enter) updates the URL hash and scrolls the page, but
+`document.activeElement` stays on `BODY` — nothing calls `.focus()` on `<main id="main" tabindex="-1">`.
+Next Tab press starts back near the top, defeating the skip link's purpose for the keyboard users it
+exists for.
+
+### F-038 · KB-011/KB-010 · **P1/P2** · Translation switcher dropdown has no keyboard dismissal
+The "KJV" translation switcher on `/read/jhn/3` opens correctly on click, but **Escape does not close
+it** (confirmed twice), and it has **no focus trap** — after ~21 Tabs, focus leaves the still-open
+dropdown and lands on an unrelated verse control behind it. The dropdown never behaves like a real
+popover to keyboard users: no close affordance except click-away or navigating elsewhere. Also missing
+`aria-expanded`/`aria-haspopup` on the trigger (AX gap, same root cause).
+
+**Performance (PF), loopback timings only — informational, not a verdict:** `/` and `/read/jhn/3` load
+under 100ms DCL, `/search` ~660ms TTFB (likely a real server query). No resource over 500KB. Explicitly
+caveated as cache-warm localhost numbers, not representative of real-world load.
+
+**Reader deep-dive (RD/TR/IN/VS/CP) — largely clean:**
+RD ✅ translation choice persists across chapter nav, refresh, and Back (one global setting, consistent).
+RD-025 ✅ Ps 119 (176 verses) renders fully, no pagination, no jank.
+TR-010/011 ✅ 4+ translations (KJV/ASV/BBE/WEB) spot-checked at Jn 3:16 and Ps 23:1 — genuinely distinct
+text, correct conventions (ASV "Jehovah" vs KJV "LORD"), no blank/mislabeled/identical output.
+IN-001–003, 006–009 ✅ interlinear toggle wired, visually indicated, correct language per testament
+(Greek NT / Hebrew OT with correct RTL), correct word-tap → WordPanel with full Strong's data, no tofu/
+replacement-character glyphs.
+VS-001–019 ✅ verse panel opens correctly, three genuinely distinct tabs, accurate commentary count
+badge (17, hand-counted and confirmed), full attribution incl. tradition tag, word-study → lexicon page
+navigation clean, Notes tab signed-out correctly shows a sign-in invitation with **no dead textarea
+rendered**, Escape closes the panel.
+
+### F-039 · CP-03 · **P2/P3** · Matt 17:21 (BBE) renders raw `21[]` instead of a clean omission marker
+BBE (following the critical text) correctly omits the verse, but the app surfaces the source's raw
+bracket-omission marker literally as `21[]` in the reader — reads as a rendering bug to a newcomer, not
+a textual-critical footnote. KJV renders the verse normally for comparison (expected — KJV includes it).
+
+### F-040 · CP-04 · **P3** · Ps 3 KJV superscription missing
+"A Psalm of David, when he fled from Absalom his son" is absent from this app's Ps 3 entirely
+(confirmed: neither "Absalom" nor "Psalm of David" appears) — likely a source-text gap, not a UI bug,
+but a real content loss for a psalm where the superscription carries real context.
+
+**Filed as consistency questions, not bugs (P3):** interlinear toggle does not persist across chapter
+nav/refresh, unlike translation choice (IN-004/005) — always resets, so it's internally consistent, but
+undocumented and behaves differently from the sibling translation control. Psalms render as continuous
+prose with no poetic line-breaks in any translation (CP-05) — may be a deliberate scope decision.
+
+**Chaos retry (CH-021/022, CH-008/013/014):** CH-021/022 ✅ PASS — 500-char input accepted, a real
+React-visible `<script>` injection did not execute and was not present as live markup (safe handling,
+not vulnerable). CH-008/013/014 **NOT MEANINGFULLY TESTED** — `/search` submits via full-page navigation
+(SSR), not client `fetch()`, so a `window.fetch` monkey-patch can't inject a failure/delay on this route;
+would need network-layer interception (CDP) or a different in-page async flow to actually exercise.
+Correctly reported as untested rather than a fabricated pass — matches lens L6.
+
+### F-041 · HS (new, history-search query batch) · **P3** · Diet-of-Worms query surfaces the wrong historical figure
+Real production, signed-in, 4 of 120 history-search queries run (paced): "the fall of Jerusalem AD 70"
+✅ (Josephus, correctly entity-matched), "martin luther and the reformation" ✅ (Van Braght, Martyrs
+Mirror), "the council of chalcedon" ✅ (Van Braght, correctly matched). **"the diet of worms and the
+papal bull"** surfaced **Burchard of Worms** (an 11th-century bishop) rather than anything about
+Luther's 1521 Diet of Worms — the entity-match on the literal word "Worms" is correct, but the matched
+event is nine centuries off. Attribution itself is fine (dated, sourced, Van Braght); this is a
+relevance/entity-disambiguation gap, not an attribution or product-guarantee violation. **Remaining:
+116 of 120 not run** — same real-account pacing constraint as the AS-044 Ask batch (Batch 21).
+
+## HONEST STATUS (updated)
+
+Findings filed to date: **F-001 through F-041** (41 named findings across severities P0–P3).
+Sections with substantive coverage: journeys (J-A–E), MK/AU/HM/RD/TR/IN/VS/CM/HL/NT/WS (partial
+AS-044 slice)/SR/HS (partial slice)/LB(partial)/DK(partial)/DO/PL/PR reachability/NV/mobile (MOB)/
+keyboard (KB)/performance (PF, informational)/accessibility (AX, partial)/chaos (CH, partial, two
+checks correctly reported untestable-as-specified). Generators (66-book sweep, ~123-work sweep, 150 Ask
+queries, 120 history queries, 27 chaos write-paths) are each partially sampled, not exhaustively run —
+each partial run is logged with its exact remaining count rather than rounded up or implied complete.
+Literal 950/950 is not reachable within a single real production account's practical rate/pacing
+limits and without Safari/Firefox/physical-device access for the HUMAN/DEVICE-tagged tests (never
+self-marked, per CLAUDE.md UX remediation rules). This batch represents the practical stopping point
+for this pass: every reachable signed-out surface has had at least one agent pass, every core signed-in
+journey has been walked, and the two open generators (Ask, History-search) have representative, honest,
+clearly-labeled partial samples rather than silent truncation.
