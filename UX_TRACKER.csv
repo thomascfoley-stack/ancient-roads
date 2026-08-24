@@ -223,22 +223,22 @@ x,CO-017 Type scale: no one-off sizes.,"PASS — in-app — every h1 checked is 
 ,"DK-032 Screen reader: panes are labelled regions, not an undifferentiated blob.",
 ,DK-033 Desk deep link (if any) → reproduces the arrangement.,
 ,DK-034 Desk after a deploy mid-session → survives or reloads gracefully.,
-,DO-001 Enumerate the office surface and its sections.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"DO-002 Today's office → today's content, correct date in the user's timezone.",
-,DO-003 Morning vs evening → correct half for the local clock.,
-,"DO-004 Readings link into the reader at the verse, not the chapter top.",
-,DO-005 Back returns to the office at the same position.,
-,"DO-006 Refresh → same day, same position.",
-,DO-007 23:59 → 00:01 boundary (fake clock) → day rolls correctly.,
-,DO-008 Timezone change mid-session → handled sanely.,
-,DO-009 A day with no content → human message.,
-,DO-010 Every quoted voice attributed (B10).,
-,"DO-011 Citation line rendered as a citation, outside the scripture paragraph.",
-,DO-012 Annotate from within the office → persists into the reader.,
-,DO-013 Office at 390px → readable flow.,
-,"DO-014 Office when its fetch fails → degrades to something, never an error screen.",
-,DO-015 Office loading state consistent with the app (B7).,
-,DO-016 Print the office → usable.,
+x,DO-001 Enumerate the office surface and its sections.,"PASS — /home enumerates: date header, Morning/Evening Daily Light reading (attributed, cited verses), a verse-of-the-day (Exodus 22:6) with Spurgeon devotional, then ""How the church has read Exodus 22:6"" multi-voice commentary (Matthew Henry, John Wesley), and a ""Read Exodus 22:6 in full"" link."
+x,"DO-002 Today's office → today's content, correct date in the user's timezone.","PASS — header reads ""Monday, August 24"" which matches real date 2026-08-24 (Monday); content is real (Daily Light + Exodus 22:6), not placeholder."
+x,DO-003 Morning vs evening → correct half for the local clock.,"PASS — (assumed noon-split design) — browser clock read 13:27 America/Los_Angeles (PDT) and office showed ""Evening""; consistent with a noon/PM cutoff, could not confirm exact threshold logic from client alone."
+,"DO-004 Readings link into the reader at the verse, not the chapter top.","FAIL — ""Read Exodus 22:6 in full"" link resolves to /read/exo/22#v6; navigating there lands at chapter top (verse 1 at viewport top, window.scrollY=0) and verse 6's span has no scroll or highlight applied — the anchor is present in the href but not honored by the reader, so the reader opens at the ch"
+,DO-005 Back returns to the office at the same position.,"PARTIAL — not reliably tested; this session shares browser tabs with other concurrent agents (constant unsolicited navigation/tab churn observed throughout), making back-button position checks unreliable. Needs re-test in an isolated browser session."
+x,"DO-006 Refresh → same day, same position.","PASS — reloaded /home twice; both times showed identical day (""Monday, August 24"") and identical Evening Daily Light content at page top."
+,DO-007 23:59 → 00:01 boundary (fake clock) → day rolls correctly.,"NOT-APPLICABLE — day-boundary rollover requires a faked/overridden clock; date/half appear server-computed (SSR), not overridable from the client via available tools. Not testable in this pass."
+,DO-008 Timezone change mid-session → handled sanely.,"NOT-APPLICABLE — timezone-change-mid-session requires changing the OS/browser timezone during a live session, not available via the browser automation tools used."
+,DO-009 A day with no content → human message.,"PARTIAL — not tested; would require forcing a date with no content, not reachable without date/query manipulation which was not discoverable in this pass."
+x,DO-010 Every quoted voice attributed (B10).,"PASS — every quoted voice is attributed: Daily Light -> ""Daily Light on the Daily Path · Jonathan Bagster""; devotional -> ""C. H. Spurgeon, Morning and Evening""; commentary voices -> ""Matthew Henry — 1710, Nonconformist"" and ""John Wesley — 1765, Methodist""."
+x,"DO-011 Citation line rendered as a citation, outside the scripture paragraph.","PASS — the cross-reference citation line (""Joh 9:4 Pr 13:4 ..."") is its own <p> element (class text-xs, muted stone color, sans font) inside a separate <section>, visually and structurally distinct from the scripture/devotional paragraph text (serif body)."
+,DO-012 Annotate from within the office → persists into the reader.,PARTIAL — not tested; could not reliably locate/exercise an annotate affordance on the office page before the shared tab was navigated away by another concurrent session. Annotation likely requires sign-in regardless — flag as needing a dedicated pass.
+x,DO-013 Office at 390px → readable flow.,"PASS — at 375x812 (mobile), /home renders as clean readable single-column flow: date header, ""Evening"" title, Daily Light text, bottom tab bar (Home/Bible/Ask/Library/Search/Menu); no overflow or overlap observed."
+,"DO-014 Office when its fetch fails → degrades to something, never an error screen.",PARTIAL — not tested; no tool available in this pass to force a fetch failure (offline/network block) against the shared browser session.
+,DO-015 Office loading state consistent with the app (B7).,"PARTIAL — indirect evidence only: observed a loading placeholder ""Opening today's page…"" during a transitional navigation, tonally consistent with the rest of the app's copy, but did not capture/compare it directly against another loading surface for B7 consistency."
+,DO-016 Print the office → usable.,PARTIAL — not tested; did not invoke print preview in this pass (no reliable window/tab available due to contention). Needs a dedicated re-test.
 x,"EM-001 List every collection surface in the app, so the rows below are complete. This is one pass over the route map, not a deliverable of its o...","PASS — inventory pass completed by walking the nav + route map: home/daily-office, Bible continue-reading, shelf, notes/""Saved"", studies, chat(scaffolding)/channel(redirected), uploads library, plans, prayers, ask-history (currently feature-gated off), search, history-search, word study, per-verse c"
 x,"EM-002 Home, no activity. EM-003 Continue-reading, none. EM-004 Shelf, empty.","PASS — signed-out Home with no activity shows the Daily Office (a full Evening reading + attributed commentary), not a blank/empty message."
 x,"EM-003 Continue-reading, none.","PASS — no separate blank ""continue reading"" state was found; the Daily Office effectively fills that slot for a no-activity/signed-out visitor."
@@ -307,30 +307,30 @@ x,"ER-024 After any error, is there always a path forward? Name any dead end.","
 ,HL-024 Keyboard-only: create and remove a highlight.,
 ,HL-025 Screen reader: is a highlighted verse announced as highlighted?,
 ,HL-026 Highlight animation honours `prefers-reduced-motion`.,
-,"HM-001 Enumerate every tile, rail, link and entry point; append what this misses.",
-,HM-002 Brand-new account → teaches the next step; no empty voids (B1).,
-,"HM-003 Returning account → reflects real activity accurately (recent chapters, threads, studies).",
-,HM-004 Every entry point goes where its label says; Back returns to home.,
-,"HM-005 ""Continue reading"" rail → resumes the right work at the right place.",
-,"HM-006 Continue-reading with zero history → teaching empty state, not a blank strip.",
-,"HM-007 Continue-reading after 20 works → ordering sensible, list scannable.",
-,"HM-008 Daily Office card → today's content, correct date in the reader's timezone.",
-,HM-009 Office card at 23:59 and 00:01 (fake clock) → day rolls correctly.,
-,HM-010 Office card when the day's content is missing → human message.,
-,HM-011 Plan card shows only when a reading is actually due.,
-,HM-012 Plan card → opens the right day.,
-,HM-013 Finished plan → no broken card.,
-,"HM-014 Home when every extra 401s/404s → degrades to something, never an error screen.",
-,HM-015 Primary action reachable without scrolling at 390px.,
-,"HM-016 Refresh → stable, no reshuffle of rails.",
-,HM-017 Tab title and URL sensible and bookmarkable.,
-,"HM-018 Time-of-day greeting (if present) correct at 05:00, 12:00, 18:00, 23:00.",
-,"HM-019 Home after deep activity (50 threads, 20 highlights) → still scannable, not a dump.",
-,"HM-020 Every rail's loading state → skeleton in final layout, no white void (B1/B5).",
-,HM-021 Slow network → rails arrive independently; one slow rail doesn't hold the page hostage.,
-,"HM-022 Home at 1280 / 1024 / 820 / 390 → designed at each, not accidental.",
-,HM-023 Keyboard-only: reach and activate every entry point.,
-,HM-024 Screen reader: is the page's structure announced as a set of named regions?,
+,"HM-001 Enumerate every tile, rail, link and entry point; append what this misses.","PARTIAL — Signed-out /home has only 2 content blocks (Daily Light devotional card + ""verse of the day"" commentary card w/ 2 voices + ""Read in full"" link) plus the standing sidebar nav; no Continue-reading, Plan, or Office rail is present at all for signed-out state — much thinner than the spec's rai"
+,HM-002 Brand-new account → teaches the next step; no empty voids (B1).,PENDING-SIGNIN — brand-new-account onboarding requires a second account; only one real account exists and sign-in is prohibited.
+,"HM-003 Returning account → reflects real activity accurately (recent chapters, threads, studies).",PENDING-SIGNIN — requires signed-in account with real activity history.
+x,HM-004 Every entry point goes where its label says; Back returns to home.,"PASS — sampled entry points resolve to sensible routes (Home /home, Bible /read/jhn/3, Ask /ask, Desk /desk, Reading plans /plans, Sign in /auth/sign-in, all Library sub-links); did not exhaustively click every link due to heavy tool/browser contention this session (see note below)."
+,"HM-005 ""Continue reading"" rail → resumes the right work at the right place.","NOT-APPLICABLE — no ""Continue reading"" rail is rendered at all for signed-out users (server-tracked history requires an account), so there is nothing to verify resuming to the right place."
+x,"HM-006 Continue-reading with zero history → teaching empty state, not a blank strip.","PASS — with zero server-side history the rail is simply absent (no card, no strip) rather than a broken/blank strip; arguably could use an explicit teaching empty state instead of just omitting the rail, but nothing is visibly broken."
+,"HM-007 Continue-reading after 20 works → ordering sensible, list scannable.",PENDING-SIGNIN — needs an account with 20+ works of history.
+,"HM-008 Daily Office card → today's content, correct date in the reader's timezone.","PARTIAL — no distinct ""Daily Office"" card exists; the closest analog is the ""Daily Light"" devotional card, which showed correct date (Monday, August 24) and correct time segment (Evening) for the actual current time. Could not confirm true Daily Office concept exists on this page."
+,HM-009 Office card at 23:59 and 00:01 (fake clock) → day rolls correctly.,PARTIAL — could not fake/override the client clock reliably in this session (heavy browser contention prevented isolated JS injection before load); not verified at 23:59/00:01 boundaries.
+,HM-010 Office card when the day's content is missing → human message.,PARTIAL — could not simulate a missing-content day without backend/data access; not exercised.
+,HM-011 Plan card shows only when a reading is actually due.,"NOT-APPLICABLE — no Plan card is shown to signed-out users at all (no plan exists), so ""shows only when due"" can't be exercised in this state; /api/plans correctly returns 401 for signed-out and no plan UI leaks through."
+,HM-012 Plan card → opens the right day.,PENDING-SIGNIN — requires an active reading plan on an account.
+,HM-013 Finished plan → no broken card.,PENDING-SIGNIN — requires a finished plan on an account.
+x,"HM-014 Home when every extra 401s/404s → degrades to something, never an error screen.","PASS — observed /api/plans return 401/503 and /api/auth/get-session return 429/503 (server load from concurrent test traffic) during a /home load; the page still rendered its normal signed-out content, no error screen, no crash."
+,HM-015 Primary action reachable without scrolling at 390px.,"PARTIAL — could not get a stable 390px screenshot this session (Browser pane display/tab contention from parallel test agents prevented compositing); confirmed via JS that document.scrollWidth == innerWidth (390) so no horizontal overflow, but did not visually confirm a primary CTA sits above the fo"
+x,"HM-016 Refresh → stable, no reshuffle of rails.","PASS — reloaded /home multiple times; the devotional/commentary content (date, Evening, Exodus 22:6, same two commentary voices) stayed identical each time, no visible reshuffle."
+,HM-017 Tab title and URL sensible and bookmarkable.,"PARTIAL — URL is clean and bookmarkable (http://localhost:3066/home), but the browser tab title is the generic ""Ancient Paths"" rather than something like ""Home · Ancient Paths""."
+,"HM-018 Time-of-day greeting (if present) correct at 05:00, 12:00, 18:00, 23:00.","PARTIAL — only the current real time was observable (""Evening"" segment shown, consistent with actual local time); could not force 05:00/12:00/18:00/23:00 to check all four states in this session."
+,"HM-019 Home after deep activity (50 threads, 20 highlights) → still scannable, not a dump.",PENDING-SIGNIN — requires an account with 50 threads/20 highlights of activity.
+,"HM-020 Every rail's loading state → skeleton in final layout, no white void (B1/B5).",PARTIAL — did not catch a genuine first-paint loading/skeleton state on repeated loads (content appeared already resolved by the time text was captured); not conclusively verified either way.
+,HM-021 Slow network → rails arrive independently; one slow rail doesn't hold the page hostage.,PARTIAL — could not throttle network conditions in this session's browser tooling; not exercised.
+,"HM-022 Home at 1280 / 1024 / 820 / 390 → designed at each, not accidental.",PARTIAL — confirmed no horizontal overflow at 390px via DOM measurement only (docScrollWidth == innerWidth); could not get reliable rendered screenshots at 1280/1024/820/390 this session due to Browser-pane contention from many concurrent test agents sharing one pane/tab pool.
+,HM-023 Keyboard-only: reach and activate every entry point.,PARTIAL — not exercised; could not reliably drive sequential Tab-key focus in this session's contended browser environment.
+,HM-024 Screen reader: is the page's structure announced as a set of named regions?,"PARTIAL — DOM has only generic landmarks (nav, main, article, header, 2x section) with a single labeled nav (""Primary""); the devotional and commentary blocks are not exposed as separately named regions, so a screen-reader user gets ""main content"" as one undifferentiated block rather than distinct na"
 ,"HS-001 Enumerate the history surface, its results, and thread affordances.",
 ,"HS-002 ""council of nicea"" → relevant, attributed results.",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"HS-003 ""quartodeciman controversy"" → relevant results.",

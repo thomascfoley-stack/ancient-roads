@@ -595,3 +595,26 @@ prompt, no dropzone before auth).
 **Not filed as confirmed findings — flagged for a clean re-test:** possible upload-page loading stall
 (1-3s on the outer Suspense fallback, 3 occurrences) that a code comment describes as previously fixed;
 could not isolate real regression vs. concurrent-session noise.
+
+## Batch 28 — DO (Daily Office) and HM (Home), tracker-driven, signed-out
+
+### F-056 · DO-004 · **P2** · Daily Office reading link ignores its own verse anchor
+The office's "Read Exodus 22:6 in full" link points to `/read/exo/22#v6`, but the reader ignores the
+anchor entirely — loads at chapter top (verse 1 in view, `scrollY=0`), no scroll or highlight applied
+to verse 6. A reader following the office's own cross-reference lands in the wrong place with no
+indication anything went wrong.
+
+### F-057 · HM-024 · **P3/AX** · Home page content isn't landmark-labeled for screen readers
+DOM only exposes generic `nav/main/article/header/section` with one labeled nav ("Primary") — the
+devotional and commentary blocks aren't separately named regions, so a screen-reader user gets no
+structural way to jump between them.
+
+**Also confirmed:** signed-out `/home` correctly omits account-gated content (Continue-reading rail,
+Plan card) rather than showing broken/empty versions of them (HM-005/006/011); the page degrades
+gracefully when background API calls 401/429/503 under load (HM-014); refresh is stable (HM-016).
+DO-001/002/003/006/010/011/013 all PASS. HM-017: tab title is generic "Ancient Paths" rather than
+home-specific — noted, not filed as its own finding (cosmetic, low severity).
+
+Both agents independently reported heavy browser-pool contention from other concurrent sweep agents
+degrading viewport/keyboard/network-throttle checks to PARTIAL rather than confirmed — flagged for
+re-run in isolation, not guessed at.
