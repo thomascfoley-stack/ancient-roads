@@ -138,7 +138,11 @@ describe('A027 — the panel steps through the chapter', () => {
     // -> RED. That dep made the panel re-derive the tab on every step, which left the property
     // resting entirely on the CALLER carrying the tab across. Held here, on the panel's own side.
     const { rerender } = render(<StudyPanel {...panelProps} prevVerse={1} nextVerse={3} onNavigate={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Notes' }));
+    // Queried as a TAB, not a button: DEEP_SWEEP D37 gave the StudyPanel tab strip the
+    // role="tablist"/role="tab"/aria-selected semantics the repo already uses in plans-client
+    // and study-library-panel. The assertion below is unchanged — only the role this control
+    // truthfully reports. Changed 2026-08-23 alongside that fix, not to make a test pass.
+    fireEvent.click(screen.getByRole('tab', { name: 'Notes' }));
     expect(screen.getByText(/Save notes to your account/)).toBeTruthy();
 
     // The verse changes; `defaultTab` does not, because the caller is preserving it.
@@ -345,7 +349,11 @@ describe('A027/A028 through the reader page', () => {
     // shape the reported experience actually had.
     render(<ReaderPage />);
     const dialog = await openVerse(2);
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Notes' }));
+    // Queried as a TAB, not a button: DEEP_SWEEP D37 gave the StudyPanel tab strip the
+    // role="tablist"/role="tab"/aria-selected semantics the repo already uses in plans-client
+    // and study-library-panel. The assertion below is unchanged — only the role this control
+    // truthfully reports. Changed 2026-08-23 alongside that fix, not to make a test pass.
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Notes' }));
     expect(within(dialog).getByText(/Save notes to your account/)).toBeTruthy();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Next verse' }));

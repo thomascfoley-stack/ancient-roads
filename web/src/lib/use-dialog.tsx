@@ -66,17 +66,26 @@ export function useDialog(onClose: () => void, label: string) {
         onCloseRef.current();
         return;
       }
-      if (e.key !== 'Tab' || !node) return;
-      const items = visibleFocusable(node);
+      // D15 (DEEP_SWEEP, P2): this used the `node` captured when the effect ran. BookPicker
+      // renders TWO mutually exclusive stages — pick a multi-chapter book and the panel div is
+      // REPLACED — so the closure held a detached element. visibleFocusable() on a detached node
+      // returns [] (offsetParent null), which took the branch below and called focus() on
+      // nothing: every Tab was swallowed and the chapter cells, the jump input and Close were all
+      // unreachable by keyboard. Escape alone worked. The ref OBJECT updated the whole time; the
+      // closure never did. Read it live instead — every other consumer renders one stable panel,
+      // which is why only BookPicker ever tripped it.
+      const panel = ref.current;
+      if (e.key !== 'Tab' || !panel) return;
+      const items = visibleFocusable(panel);
       if (items.length === 0) {
         e.preventDefault();
-        node.focus({ preventScroll: true });
+        panel.focus({ preventScroll: true });
         return;
       }
       const first = items[0]!;
       const last = items[items.length - 1]!;
       const active = document.activeElement;
-      const inside = node.contains(active);
+      const inside = panel.contains(active);
       if (e.shiftKey && (active === first || !inside)) {
         e.preventDefault();
         last.focus();
@@ -107,4 +116,26 @@ export function useDialog(onClose: () => void, label: string) {
       tabIndex: -1,
     },
   };
+}
+
+/**
+ * The panel element, wired to `useDialog`, as a component.
+ *
+ * `useDialog`'s effect is deps-[] on purpose — it means "on open". A parent that renders its
+ * overlay conditionally (`if (!open) return null`) cannot call the hook itself without the effect
+ * firing at page load instead, so overlays like the omnibox and the verse-ref sheet went without
+ * a trap rather than restructure (DEEP_SWEEP D39, D40). Mounting the panel through THIS component
+ * gets the semantics, focus-in, trap and restore with no prop threading: the children stay exactly
+ * where they were, closing over the parent's state as before.
+ */
+export function DialogPanel(
+  { label, onClose, className, children }:
+  { label: string; onClose: () => void; className?: string; children: React.ReactNode },
+) {
+  const { ref, dialogProps } = useDialog(onClose, label);
+  return (
+    <div ref={ref} {...dialogProps} className={className}>
+      {children}
+    </div>
+  );
 }
