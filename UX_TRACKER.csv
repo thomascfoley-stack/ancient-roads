@@ -5,49 +5,49 @@ x,ACCT-002 Visual consistency with the app (B7) — does it read as a different 
 x,ACCT-004 Relationship to `/settings` — two places for one concept? (B6),"PASS — relationship to /settings is an explicit, documented ruling (B038): two surfaces on purpose (auth-bound account vs per-device reading prefs), cross-linked both directions (Settings → Account already existed; Account → Settings is a visible in-page link)."
 x,ACCT-005 Invalid sub-path → human 404.,"PASS — invalid sub-path (/account/xyz-invalid) returns a proper 404 with branded title ""Not found · Ancient Paths"" and the app's shared not-found.tsx (friendly copy, ""Open the Bible"" / ""Browse the library"" buttons), not a raw framework error."
 ,ACCT-006 Mobile.,"PENDING-SIGNIN — /account/settings redirects to /auth/sign-in when signed out, so the actual mobile render of the account page can't be observed without the real account."
-,"AS-001 Enumerate the ask surface: input, submit, mode toggle, suggestions, citation affordances, history rail.",
+x,"AS-001 Enumerate the ask surface: input, submit, mode toggle, suggestions, citation affordances, history rail.","PASS — Enumerated live: input, Voices/History mode toggle, history rail with clickable prior threads, all present and working"
 x,"AS-002 Ask ""what does 1 Corinthians 13 say"" → real answer with sources.","PASS — Live prod: real question -> real attributed answer (Barnes, Adam Clarke), see F-097 batch"
-,"AS-003 Same question as ""1 Cor 13"", ""1cor13"", ""First Corinthians 13"", ""1 corinthians 13"" → all route to the same place.",
-,"AS-004 A topical question (""what does the Bible say about grief"") → answer with visible sources.",
-,"AS-005 A vague question (""that verse about love"") → graceful and useful, not empty.",
-,AS-006 A question with no good answer in the corpus → says so honestly; does not invent.,
+,"AS-003 Same question as ""1 Cor 13"", ""1cor13"", ""First Corinthians 13"", ""1 corinthians 13"" → all route to the same place.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-004 A topical question (""what does the Bible say about grief"") → answer with visible sources.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-005 A vague question (""that verse about love"") → graceful and useful, not empty.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,AS-006 A question with no good answer in the corpus → says so honestly; does not invent.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 ,AS-007 The product guarantee: scan 20 answers for anything that reads as the app's own opinion rather than a quoted voice. Any interpretation in...,"PARTIAL — Spot-checked one answer, no app-voice language found; full 20-answer scan not done this pass"
 x,AS-008 Every answer names its voices with author + work (B10).,"PASS — Every source names author + work + tradition, confirmed live"
 x,AS-009 Empty question → prevented politely; no request fired.,"PASS — Empty submit correctly prevented, no navigation/request fired"
 x,AS-010 Whitespace-only question → same.,PASS — Whitespace-only submit correctly prevented
-,"AS-011 450-character question → handled; cap communicated, not silently truncated.",
-,AS-012 Question at exactly the cap and one over → boundary behaviour correct.,
+,"AS-011 450-character question → handled; cap communicated, not silently truncated.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,AS-012 Question at exactly the cap and one over → boundary behaviour correct.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 x,"AS-013 Emoji / Greek / Hebrew in the question → no crash, no mangled echo.","PASS — Emoji + Greek echo safely in input, no crash/mangling"
 x,AS-014 A question containing a script tag → escaped everywhere it's echoed.,"PASS — Literal <script> tag echoes as inert text, no execution"
-,"AS-015 Double-click submit → one answer, one history entry.",
+,"AS-015 Double-click submit → one answer, one history entry.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 x,AS-016 Enter submits; Shift+Enter behaviour matches the visual affordance.,PASS — Real Enter keydown submits correctly
 x,AS-017 Loading state within 100ms; the page never looks frozen (B1).,"PASS — Loading state visible immediately, specific progress text"
 x,AS-018 At ~4s the wait is acknowledged in words; at ~10s there's a way out (B9).,"PASS — ""Currently answering from the Gospels"" - honest, specific progress signal"
-,AS-019 Time 10 varied questions; record p50 and worst. Anything >8s without a progress signal = finding.,
-,"AS-020 Streaming (if present) → readable as it arrives, not a flicker.",
+,AS-019 Time 10 varied questions; record p50 and worst. Anything >8s without a progress signal = finding.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-020 Streaming (if present) → readable as it arrives, not a flicker.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 x,AS-021 Every citation in an answer → click-through lands on the right verse/source.,PASS — Citation click-through lands on exact correct verse /read/1co/13#v1
 ,"AS-022 Citation → Back → the SAME answer, scroll preserved.","FAIL — Back to finished thread shows blank form, not the answer - F-097"
-,"AS-023 A citation to a work that is no longer served → handled, not a dead link.",
-,AS-024 Follow-up question → context visibly continues; same-thread vs new-thread is legible.,
-,"AS-025 Refresh mid-generation → sane recovery, no orphan spinner.",
-,"AS-026 Navigate away mid-generation and return → answer present or cleanly absent, never half.",
-,"AS-027 Ask 11 questions in a minute → rate-limit message is human (""try again in a moment""), not a code.",
-,AS-028 Rate-limit message says roughly when to retry.,
-,"AS-029 Answer typography on mobile → readable, sources tappable, no overflow.",
-,"AS-030 Answer with 10+ voices → scannable, not a wall.",
-,"AS-031 Ask history rail → previous questions listed, clickable, correct.",
-,AS-032 History rail empty state → teaches.,
+,"AS-023 A citation to a work that is no longer served → handled, not a dead link.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,AS-024 Follow-up question → context visibly continues; same-thread vs new-thread is legible.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-025 Refresh mid-generation → sane recovery, no orphan spinner.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-026 Navigate away mid-generation and return → answer present or cleanly absent, never half.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-027 Ask 11 questions in a minute → rate-limit message is human (""try again in a moment""), not a code.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,AS-028 Rate-limit message says roughly when to retry.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-029 Answer typography on mobile → readable, sources tappable, no overflow.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-030 Answer with 10+ voices → scannable, not a wall.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+x,"AS-031 Ask history rail → previous questions listed, clickable, correct.","PASS — History rail shows previous questions, clickable, correct links to /ask/[id]"
+,AS-032 History rail empty state → teaches.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 x,AS-033 `/ask/[id]` → reopens the full answer after refresh.,PASS — Hard reload of /ask/[id] correctly reopens full answer
-,"AS-034 `/ask/[id]` opened by a different account → intended behaviour, never an error page.",
-,"AS-035 `/ask/[id]` opened signed out → gate/auth flow, then arrives.",
-,"AS-036 Ask thread URL unfurled in chat → sane card, leaks nothing the owner didn't choose to share.",
-,AS-037 Mode toggle (Voices / History) → both modes work; pending state visible during the switch.,
-,"AS-038 Ask signed out → is it open, gated, or ""not open yet""? Whichever, it must be unambiguous.",
-,"AS-039 Ask while offline → honest failure, question preserved.",
-,"AS-040 Ask with the LLM provider erroring → human message, retry, question preserved.",
-,"AS-041 Ask a question about the passage you're reading, from the reader → context carries.",
-,AS-042 Your own uploaded document cited in an answer → distinguishable from the public corpus.,
-,AS-043 Keyboard-only: ask a question and open a citation.,
+,"AS-034 `/ask/[id]` opened by a different account → intended behaviour, never an error page.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-035 `/ask/[id]` opened signed out → gate/auth flow, then arrives.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-036 Ask thread URL unfurled in chat → sane card, leaks nothing the owner didn't choose to share.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+x,AS-037 Mode toggle (Voices / History) → both modes work; pending state visible during the switch.,"PASS — Voices/History mode toggle both work, correct ?mode=history param"
+,"AS-038 Ask signed out → is it open, gated, or ""not open yet""? Whichever, it must be unambiguous.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-039 Ask while offline → honest failure, question preserved.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-040 Ask with the LLM provider erroring → human message, retry, question preserved.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"AS-041 Ask a question about the passage you're reading, from the reader → context carries.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,AS-042 Your own uploaded document cited in an answer → distinguishable from the public corpus.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,AS-043 Keyboard-only: ask a question and open a citation.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 ,AS-044 Query batch: 150 typed questions across reference / topical / historical / misspelled / vague / adversarial-benign. Grade each on: routed...,SEE UX_RESULTS.md / evidence — needs status confirm
 x,"AU-001 Is the form wired? On each of sign-in / sign-up / forgot-password / reset-password, confirm the form and its inputs are hydrated before t...",PASS — sign-in/sign-up/forgot-password/reset-password all fully hydrated on load (input elements have __react* fiber keys; verified via JS on each of the 4 routes). Note: an earlier hydration bug on this exact page was already fixed this session per task context.
 x,"AU-002 Every auth form has `method=""post""` (L4).","PASS — all four auth forms render with method=""post"" (verified via DOM on sign-in, sign-up, forgot-password, reset-password)."
@@ -331,36 +331,36 @@ x,"HM-016 Refresh → stable, no reshuffle of rails.","PASS — reloaded /home m
 ,"HM-022 Home at 1280 / 1024 / 820 / 390 → designed at each, not accidental.",PARTIAL — confirmed no horizontal overflow at 390px via DOM measurement only (docScrollWidth == innerWidth); could not get reliable rendered screenshots at 1280/1024/820/390 this session due to Browser-pane contention from many concurrent test agents sharing one pane/tab pool.
 ,HM-023 Keyboard-only: reach and activate every entry point.,PARTIAL — not exercised; could not reliably drive sequential Tab-key focus in this session's contended browser environment.
 ,HM-024 Screen reader: is the page's structure announced as a set of named regions?,"PARTIAL — DOM has only generic landmarks (nav, main, article, header, 2x section) with a single labeled nav (""Primary""); the devotional and commentary blocks are not exposed as separately named regions, so a screen-reader user gets ""main content"" as one undifferentiated block rather than distinct na"
-,"HS-001 Enumerate the history surface, its results, and thread affordances.",
+,"HS-001 Enumerate the history surface, its results, and thread affordances.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 ,"HS-002 ""council of nicea"" → relevant, attributed results.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"HS-003 ""quartodeciman controversy"" → relevant results.",
-,"HS-004 ""easter"" → not polluted by controversy-anchoring.",
+,"HS-003 ""quartodeciman controversy"" → relevant results.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"HS-004 ""easter"" → not polluted by controversy-anchoring.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 ,"HS-005 Misspelled ""counsil of nicea"" → still useful, or helpfully empty.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"HS-006 Zero-result query → honest, teaching, suggests reformulation.",
-,HS-007 Result click → source view correct; Back → results intact.,
+,"HS-006 Zero-result query → honest, teaching, suggests reformulation.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-007 Result click → source view correct; Back → results intact.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 ,"HS-008 Every result attributed: author, work, date (B10).",SEE UX_RESULTS.md / evidence — needs status confirm
-,HS-009 A result from a quarantined/withdrawn work → not served.,
+,HS-009 A result from a quarantined/withdrawn work → not served.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 ,"HS-010 Latency + progress bar during search (the `progress-travel` indicator) → appears, and disappears.",SEE UX_RESULTS.md / evidence — needs status confirm
-,HS-011 Progress indicator honours `prefers-reduced-motion` (asserted only in CSS so far — verify live).,
-,HS-012 Rapid consecutive searches → results match the last query.,
-,HS-013 Refresh after a search → query/results handled consistently.,
+,HS-011 Progress indicator honours `prefers-reduced-motion` (asserted only in CSS so far — verify live).,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-012 Rapid consecutive searches → results match the last query.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-013 Refresh after a search → query/results handled consistently.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 ,"HS-014 Create a thread from a search → exists, titled sensibly.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"HS-015 Thread titled from a query containing emoji → title intact, not truncated mid-character.",
-,HS-016 Thread URL → reopens with full results.,
-,"HS-017 Thread in a second tab, same account → works.",
-,"HS-018 Thread list → all present, none orphaned-empty.",
-,HS-019 Thread list empty state → teaches.,
-,"HS-020 Thread list with 100 threads → paginated/scrollable, findable.",
-,HS-021 Delete a thread → confirmed (B8); gone from the list; URL handled gracefully afterwards.,
-,HS-022 Close a thread by its own control → lands somewhere sane; reopen restores full state.,
-,HS-023 Back from a thread → per the ratified back-map.,
-,HS-024 Old thread after a deploy → still renders (payload compatibility).,
-,"HS-025 Thread with zero results, shared → opens to something comprehensible.",
-,"HS-026 Shared thread opened by a different account → intended behaviour, never an error page.",
-,"HS-027 Shared thread opened signed out → gate/auth, then arrives.",
-,HS-028 Scripture reference inside a historian's prose → clickable into the reader; Back returns to the thread.,
-,HS-029 Mobile thread view → readable.,
-,"HS-030 Query batch: 120 historical queries (events, people, councils, heresies, places, dates), none reused. Grade: relevance-as-felt · attribut...",
+,"HS-015 Thread titled from a query containing emoji → title intact, not truncated mid-character.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-016 Thread URL → reopens with full results.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"HS-017 Thread in a second tab, same account → works.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+x,"HS-018 Thread list → all present, none orphaned-empty.","PASS — thread list shows 5+ threads live, all titled and clickable, none orphaned-empty"
+,HS-019 Thread list empty state → teaches.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"HS-020 Thread list with 100 threads → paginated/scrollable, findable.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-021 Delete a thread → confirmed (B8); gone from the list; URL handled gracefully afterwards.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-022 Close a thread by its own control → lands somewhere sane; reopen restores full state.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-023 Back from a thread → per the ratified back-map.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-024 Old thread after a deploy → still renders (payload compatibility).,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"HS-025 Thread with zero results, shared → opens to something comprehensible.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"HS-026 Shared thread opened by a different account → intended behaviour, never an error page.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"HS-027 Shared thread opened signed out → gate/auth, then arrives.",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-028 Scripture reference inside a historian's prose → clickable into the reader; Back returns to the thread.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,HS-029 Mobile thread view → readable.,NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
+,"HS-030 Query batch: 120 historical queries (events, people, councils, heresies, places, dates), none reused. Grade: relevance-as-felt · attribut...",NOT RUN — pacing/rate-limit constraint on the one real production account; not exercised this pass
 x,IN-001 Enumerate interlinear behaviour for OT vs NT.,PASS — (per reader-deep.md) — toggle wired correctly for both testaments.
 x,IN-002 Toggle on → original language appears; toggle off → clean removal.,"PASS — (per reader-deep.md, re-confirmed live) — toggle on shows glossed original-language text; toggle off cleanly removes it."
 x,"IN-003 State visually obvious on the אα button, not only in aria (B3).","PASS — (per reader-deep.md) — active state has an accent-colored background, not aria-only."
