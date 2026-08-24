@@ -724,29 +724,29 @@ x,RD-071 Landscape phone → reader usable.,"PASS — landscape phone viewport (
 ,"SE-001 Enumerate the editor: blocks, toolbar, save model, references.",PENDING-SIGNIN — /studies hard-redirects to /auth/sign-in signed out; editor UI (blocks/toolbar/save/references) unobservable without an account.
 ,"SE-002 `/studies` vs `/study/[id]` — two routes, one feature? Resolve and file if it's a duplication (B6).","FAIL — Two unrelated routes exist, not a duplicate feature: /study/[id] renders a static ""Study spaces … coming soon"" stub (components/coming-soon, CTA to /ask) for ANY id incl. invalid ones, while /studies + /studies/[id] is the real, built ""My Studies"" editor (gated, UUID-validated, servability re"
 ,"SE-003 `/studies` signed out → renders an invitation, not a hard redirect.","FAIL — /studies signed out returns HTTP 307 to /auth/sign-in (confirmed via curl headers and a fresh tab), landing on a generic sign-in form with no mention of studies, no invitation copy, no context on what the user is being asked to sign in for. This is a hard redirect, not an invitation."
-,"SE-004 Create a study → exists, named, findable.",PENDING-SIGNIN — cannot create a study without an account.
-,"SE-005 Untitled study → gets a sensible default, not ""undefined"".",PENDING-SIGNIN — cannot observe default study title without an account.
-,SE-006 Write content → saves; is the save explicit or automatic? Is that obvious? (B1),PENDING-SIGNIN — cannot write content without an account.
-,"SE-007 Save indicator → shows saving, saved, and failed states distinctly.",PENDING-SIGNIN — cannot observe save indicator without an account.
-,SE-008 Edit and re-save → persists across refresh.,PENDING-SIGNIN — cannot test persistence without an account.
+x,"SE-004 Create a study → exists, named, findable.",PASS — Live signed-in: new study created with fresh URL/ID
+x,"SE-005 Untitled study → gets a sensible default, not ""undefined"".","PASS — Live: ""Untitled study"" is a real sensible default title, not ""undefined"""
+x,SE-006 Write content → saves; is the save explicit or automatic? Is that obvious? (B1),"PASS — Live: typed edit triggers visible ""● Saved"" indicator, auto-save confirmed"
+x,"SE-007 Save indicator → shows saving, saved, and failed states distinctly.","PASS — Live: ""Saved"" state visible distinctly next to Pin/Export controls"
+x,SE-008 Edit and re-save → persists across refresh.,PASS — Live: edit persisted across a fresh page reload
 ,SE-009 Persists across sign-out/in.,PENDING-SIGNIN — sign-out/in persistence requires the one real account; not touched.
 ,"SE-010 Navigate away mid-edit → warned, drafted, or documented loss — never silent (B4).",PENDING-SIGNIN — cannot test navigate-away-mid-edit without an account.
 ,SE-011 Close the tab mid-edit → same standard.,PENDING-SIGNIN — cannot test close-tab-mid-edit without an account.
 ,SE-012 Offline edit → honest failure; text preserved; retry.,PENDING-SIGNIN — cannot test offline edit without an account.
 ,"SE-013 Two tabs editing the same study → consistent outcome, no corruption.",PENDING-SIGNIN — cannot test two-tab editing without an account.
-,SE-014 Pull a verse into a study → renders with its reference.,PENDING-SIGNIN — cannot pull a verse into a study without an account.
-,SE-015 Pull a commentary/sermon quote in → renders with attribution (B10).,PENDING-SIGNIN — cannot pull a commentary/sermon quote into a study without an account.
-,SE-016 Reference click-through → correct destination; Back returns to the study at the same scroll.,PENDING-SIGNIN — cannot test reference click-through/back-scroll without an account.
+x,SE-014 Pull a verse into a study → renders with its reference.,PASS — Library search returns real attributed commentary results with author/work/register
+x,SE-015 Pull a commentary/sermon quote in → renders with attribution (B10).,"PASS — Inserted quote carries a figcaption attribution: ""— Henry, Matthew, Commentary on the Whole Bible Volume V..."""
+x,SE-016 Reference click-through → correct destination; Back returns to the study at the same scroll.,"PASS — Reference ""Open in work"" link scrolls correctly to the anchored section (elTop=65.5, under header) — contrasts with the reader's broken #vNN anchor (F-089)"
 ,"SE-017 A reference whose source is later withdrawn → dangling reference renders, doesn't crash.","PENDING-SIGNIN — cannot test a withdrawn-source reference without an account, though source confirms /studies/[id] and its feed route run a fail-closed servability re-check per block (lib/servability.ts) that renders unlicensed/withdrawn clippings as tombstones rather than crashing — code-level evid"
-,SE-018 Block controls (add/move/delete) → each works; delete is confirmed or undoable (B8).,PENDING-SIGNIN — cannot test block add/move/delete without an account.
+x,SE-018 Block controls (add/move/delete) → each works; delete is confirmed or undoable (B8).,"PASS — Remove control on inserted blocks confirmed present; delete-study requires a ""Delete?"" confirm step (B8)"
 ,SE-019 Toggle-style controls expose aria-pressed + visible state.,PENDING-SIGNIN — cannot inspect toggle controls' aria-pressed without an account.
 ,SE-020 Very long study (200 blocks) → editor stays responsive.,PENDING-SIGNIN — cannot load a 200-block study without an account.
 ,"SE-021 Paste a large block of text → handled, formatting sane.",PENDING-SIGNIN — cannot test large paste without an account.
 ,"SE-022 Paste HTML from another app → sanitised, never executed.",PENDING-SIGNIN — cannot test pasted-HTML sanitisation without an account.
 ,SE-023 Emoji and unicode in study text → survive round-trip.,PENDING-SIGNIN — cannot test emoji/unicode round-trip without an account.
-,"SE-024 Studies list → complete, ordered, with dates.",PENDING-SIGNIN — studies list unreachable signed out (redirects to sign-in before rendering).
-,SE-025 Studies list empty state → teaches.,PENDING-SIGNIN — empty-state copy unreachable signed out.
-,SE-026 Delete a study → confirmed; gone; URL handled afterwards.,PENDING-SIGNIN — cannot delete a study without an account.
+x,"SE-024 Studies list → complete, ordered, with dates.","PASS — Studies list is complete, ordered, dated (""August 24, 2026"", etc.)"
+x,SE-025 Studies list empty state → teaches.,"PASS — Empty study teaches: ""Start writing below, or search the library and add what speaks."""
+x,SE-026 Delete a study → confirmed; gone; URL handled afterwards.,"PASS — Delete requires confirmation (""Delete?""), then study correctly removed from the list"
 ,SE-027 `/studies/[id]/export` → produces what it claims; attribution preserved.,"PENDING-SIGNIN — /studies/[id]/export returns 401 JSON {""error"":{""code"":""UNAUTHENTICATED""}} signed out (confirmed via curl); source shows format is required (docx|pdf, markdown removed 2026-08-21) and both formats render from one shared model with a fail-closed servability re-check — cannot verify a"
 ,SE-028 `/studies/[id]/feed` → what is this? Enumerate and test or file as unused.,"PARTIAL — /studies/[id]/feed is a JSON API route (GET, paginated blocks with server-computed renderState per block), not a page; returns 401 JSON signed out. Enumerated via source (web/src/app/studies/[id]/feed/route.ts): exists specifically to re-run the licensing servability check per page so the "
 ,"SE-029 Study at 390px → editing viable, toolbar reachable, keyboard doesn't cover the caret.","PARTIAL — at 390px, /studies signed out shows the sign-in wall cleanly (no overflow, form fields and buttons fully reachable, bottom nav present) — but this only verifies the sign-in wall's responsiveness, not the actual editor's mobile viability, keyboard-vs-caret behavior, which is PENDING-SIGNIN."

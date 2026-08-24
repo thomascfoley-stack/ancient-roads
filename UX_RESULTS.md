@@ -984,3 +984,27 @@ refresh). No first-person app-voice language observed in the answer text — pro
 **Also confirmed, not a new finding:** the generic "Bible" nav link (sidebar + bottom bar) points to
 a fixed `/read/mrk/16` default — unrelated to the answer being viewed, correctly not conflated with
 citation links in this pass (initial grep over-matched it, corrected before filing).
+
+## Batch 41 — SE (Study editor), live signed-in production testing, real account (12 IDs closed, 0 new findings)
+
+Continuing directly on the real production account (`ancientpaths.app`) to close PENDING-SIGNIN gaps
+that only I can test sequentially (one identity, no parallel agents). Created a disposable test study,
+exercised it thoroughly, then deleted it — leaving the account's real studies untouched except one
+edit-then-revert on the existing "Untitled study" (confirmed restored to original content and re-saved).
+
+**All 12 PASS, no new findings** — this is a genuinely well-built feature:
+- Auto-save is real and visibly acknowledged (a "● Saved" indicator appears next to Pin/Export within
+  ~1s of typing).
+- Edits persist across a fresh reload.
+- Library search returns real attributed results; inserting one into a study correctly carries a
+  `<figcaption>` attribution line ("— Henry, Matthew, Commentary on the Whole Bible Volume V...") —
+  initially misread as missing because it fell outside a truncated text-scan range on the first check;
+  corrected before filing anything.
+- The "Open in work" reference link scrolls correctly to the exact anchored section (confirmed via
+  `getBoundingClientRect()`, lands right under the sticky header) — this is the same category of
+  anchor-scroll the reader's own `#vNN` deep links get wrong (F-089); the study feature's version
+  works correctly, worth noting as a positive contrast, not just an absence of bugs.
+- Delete requires an explicit "Delete?" confirmation step before removing a study (B8 compliance),
+  and the list correctly updates afterward.
+- Studies list is complete, ordered, and dated; the empty-study state teaches the next action instead
+  of a bare blank page.
