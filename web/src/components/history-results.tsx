@@ -66,6 +66,13 @@ export function HistoryResults({ data, query, threadId }: {
     }),
   })).filter((g) => g.sections.length > 0), [data.results, offEntities, bucket]);
 
+  // D21: the hero is only honest if the section it shows survived the reader's own chips.
+  const heroVisible = useMemo(() => {
+    const c = data.closest;
+    if (!c) return false;
+    return groups.some((g) => g.work.slug === c.work.slug && g.sections.some((x) => x.sectionId === c.sectionId));
+  }, [data.closest, groups]);
+
   const buckets = useMemo(() => {
     const m = new Map<number, number>();
     for (const g of data.results) for (const s of g.sections) {
@@ -144,7 +151,11 @@ export function HistoryResults({ data, query, threadId }: {
         </div>
       )}
 
-      {data.closest && groups.length > 0 ? (
+      {/* D21 (DEEP_SWEEP): the hero rendered data.closest whenever ANY group survived, even when
+          the lit century bucket or an off entity chip excluded that exact section — a "Closest
+          match" card showing a hit the chips claimed to exclude. It is only shown when the
+          filtered results still contain it. */}
+      {heroVisible && data.closest ? (
         <Link
           href={workHref(data.closest.work.slug, data.closest.ordinal, threadId, query)}
           className="mt-5 block border edge bg-paper p-5 transition-colors ease-gentle hover:bg-accent-50/40 dark:bg-stone-900 dark:hover:bg-accent-950/20"
@@ -162,7 +173,14 @@ export function HistoryResults({ data, query, threadId }: {
         </Link>
       ) : (
         <div className="mt-6 border edge p-4">
-          <p className="text-stone-700 dark:text-stone-300">Nothing in the {data.coverage.works} served history items matches this.</p>
+          {/* D21: when filters emptied the results this claimed "nothing in the N served history
+              items matches this" — a false statement about the CORPUS caused by the reader's own
+              chips. Unfiltered results existed; only the filter hid them. */}
+          <p className="text-stone-700 dark:text-stone-300">
+            {filtering
+              ? 'No results within these filters. Clear a chip to see the rest.'
+              : `Nothing in the ${data.coverage.works} served history items matches this.`}
+          </p>
           <Link href="/library/historians" className="mt-2 inline-block text-sm text-accent-700 underline dark:text-accent-300">Browse the history shelf</Link>
         </div>
       )}

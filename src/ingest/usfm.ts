@@ -120,7 +120,16 @@ export function parseUsfmFile(content: string): ParsedVerse[] {
     if (!book || chapter === 0) continue;
 
     // Lines with \v markers: may have multiple \v on one line
-    const vMatches = [...trimmed.matchAll(/\\v\s+(\d+[-–]\d+|\d+)\s/g)];
+    // D7 (DEEP_SWEEP): the trailing \s used to be MANDATORY, and every line is trimEnd()'d above
+    // — so a line that is exactly `\v 2` matched nothing, fell through to the continuation branch,
+    // and the verse ceased to exist while its number was glued into the previous verse's prose.
+    // Neither downstream check catches it: computeVerseCounts takes the MAX verse number so the
+    // counts stay right, and the versification gate reads the result as a ±1 variant. Latent, not
+    // live — the served WEB corpus is clean — but it fires on any source that wraps a line after a
+    // verse number, which is ordinary formatting. `[a-z]?` admits the letter-suffixed markers
+    // (\v 14a) that were being swallowed the same way; parseInt('14a') is 14, so the range maths
+    // below is unaffected.
+    const vMatches = [...trimmed.matchAll(/\\v\s+(\d+[a-z]?[-–]\d+[a-z]?|\d+[a-z]?)(?:\s|$)/g)];
     if (vMatches.length > 0) {
       // Flush the previous verse before starting new ones
       flush();
