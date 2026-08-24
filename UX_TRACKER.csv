@@ -535,7 +535,7 @@ x,NT-006 Note with newlines/paragraphs → formatting survives.,PASS — Newline
 x,"NT-007 Note with markdown-looking text → rendered or escaped, consistently.","PASS — Markdown-looking text (""**bold-looking**"") stays literal/escaped, consistent (plain-text editor, not rendered anywhere)"
 x,"NT-008 Note with a script tag / HTML → escaped, never executed.","PASS — Script tag in note text never executed (window.__xss2 undefined), never injected into page HTML"
 x,NT-009 Empty note save → prevented or meaningful.,"PASS — Save button correctly disabled when textarea is empty, preventing an empty save"
-,NT-010 Whitespace-only note → same as empty.,"PENDING-SIGNIN — requires note editor, sign-in only."
+x,NT-010 Whitespace-only note → same as empty.,"PASS — Whitespace-only text correctly disables Save, same handling as truly empty"
 ,"NT-011 Navigate away mid-typing → warned, drafted, or documented loss — never silent (B4).","PENDING-SIGNIN — no textarea is rendered signed-out, so draft-loss behavior cannot be exercised."
 ,NT-012 Refresh mid-typing → same standard.,PENDING-SIGNIN — same as NT-011.
 ,NT-013 Note editor on mobile → keyboard covers neither the text area nor the save button.,PENDING-SIGNIN — no note editor available signed-out to test on a mobile viewport.
