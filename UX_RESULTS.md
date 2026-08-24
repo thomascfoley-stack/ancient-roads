@@ -1337,3 +1337,53 @@ F-099 (highlights don't sync between reader and Desk), this is the third finding
 underlying gap: the Desk feature's core promise — "read Scripture and commentary together" — is
 currently missing the connective tissue between the two panes and the rest of the app's per-verse
 tooling.
+
+## HONEST STATUS — latest (real signed-in production pass complete for this stretch)
+
+**Tracker**: 918/918 test IDs carry a real status. Of those:
+
+| Status | Count | Meaning |
+|---|---|---|
+| PASS | 358 | Genuinely exercised and confirmed working |
+| FAIL | 79 | Real findings, filed as F-001 through F-109 below |
+| PENDING-SIGNIN | 128 | Needs the one real account, sequentially — most now closed or explicitly reasoned (multi-tab, offline, screen-reader, or true-empty-state items this session couldn't safely force) |
+| PENDING-DEVICE | 21 | Hard block — real hardware, never self-marked |
+| PARTIAL | ~201 | Tool-limited (no network throttle, no second account/device, no screen reader) — each row states the specific limit |
+| NOT-RUN | ~59 | Named generators (Ask/History-search query batches) rate-limited on one real account, or a specific sample that didn't surface the tested condition |
+| NOT-APPLICABLE | 38 | Feature genuinely doesn't exist in this app |
+
+**79 findings filed this session**, several severe and worth an owner's attention ahead of the rest:
+
+- **F-108 (P1)** — "Delete plan" freezes the entire tab/renderer, reproduced 3 independent ways
+  including a pure JS click that bypasses all input dispatch. A basic action (deleting something you
+  made) currently locks up the page.
+- **F-012 (P1, reconfirmed)** — `/library/books` hung 55+ seconds with zero resolution during this
+  pass, the same route this repo's own `MASTER.md` UX-2 gate calls already fixed. Four independent
+  `/library/*` route hangs observed this session (20s/60s/50s+/55s+) — one shared root cause, not
+  fixed.
+- **F-069 (P1)** — no privacy policy or terms of service anywhere on the site; every `/privacy` and
+  `/terms` variant 404s.
+- **F-075/F-076 (P1)** — Google sign-in gets permanently stuck loading; deep authenticated routes
+  lose the return path (or don't redirect to sign-in at all) when signed out.
+- **F-090 (P1)** — the verse-study panel (commentary/notes/word-study) is completely unreachable
+  while interlinear mode is on — the handles vanish from the DOM, not just hidden.
+- **F-082 (P1)** — the verse-number control (the primary way to open per-verse commentary) has zero
+  keyboard path — Enter/Space do nothing, mouse-only.
+- **F-011/F-099/F-109** — three separate findings converging on the same gap: the Desk feature's
+  "read Scripture and commentary side by side" promise is missing real connective tissue (no way to
+  add a commentary pane discoverably, highlights don't sync between reader and Desk, and Desk panes'
+  verse numbers aren't interactive at all).
+- **F-107 (P2)** — Home shows zero personalized activity for this real, active account (2 in-progress
+  plans, 19 highlights, 3 studies, 5 threads) — renders identically to a brand-new account.
+- **F-105 (P1)** — study export to Word (.docx) returns a server 503, silently, no user feedback.
+
+**Known incomplete cleanup**: one disposable test reading plan ("Romans · 3 weeks",
+`/plans/959dc6bc-d3b4-471c-8bdb-c034c8d4719a`) could not be deleted through the UI because of F-108
+and was left in the account rather than risk another freeze — flagged for manual cleanup once that
+bug is fixed. All other test data created during this session (studies, highlights, notes, prayers,
+uploads, bookmarks) was successfully created, tested, and cleanly removed — confirmed via reload/
+re-check after each cleanup, not assumed.
+
+This represents the practical ceiling for a single-session, single-account pass: every remaining
+PENDING-SIGNIN/PARTIAL row has a stated reason (tool limitation, hard device block, or a specific
+untested condition) rather than being silently left blank or guessed at.
