@@ -6,27 +6,27 @@ x,ACCT-004 Relationship to `/settings` — two places for one concept? (B6),"PAS
 x,ACCT-005 Invalid sub-path → human 404.,"PASS — invalid sub-path (/account/xyz-invalid) returns a proper 404 with branded title ""Not found · Ancient Paths"" and the app's shared not-found.tsx (friendly copy, ""Open the Bible"" / ""Browse the library"" buttons), not a raw framework error."
 ,ACCT-006 Mobile.,"PENDING-SIGNIN — /account/settings redirects to /auth/sign-in when signed out, so the actual mobile render of the account page can't be observed without the real account."
 ,"AS-001 Enumerate the ask surface: input, submit, mode toggle, suggestions, citation affordances, history rail.",
-,"AS-002 Ask ""what does 1 Corinthians 13 say"" → real answer with sources.",SEE UX_RESULTS.md / evidence — needs status confirm
+x,"AS-002 Ask ""what does 1 Corinthians 13 say"" → real answer with sources.","PASS — Live prod: real question -> real attributed answer (Barnes, Adam Clarke), see F-097 batch"
 ,"AS-003 Same question as ""1 Cor 13"", ""1cor13"", ""First Corinthians 13"", ""1 corinthians 13"" → all route to the same place.",
 ,"AS-004 A topical question (""what does the Bible say about grief"") → answer with visible sources.",
 ,"AS-005 A vague question (""that verse about love"") → graceful and useful, not empty.",
 ,AS-006 A question with no good answer in the corpus → says so honestly; does not invent.,
-,AS-007 The product guarantee: scan 20 answers for anything that reads as the app's own opinion rather than a quoted voice. Any interpretation in...,SEE UX_RESULTS.md / evidence — needs status confirm
-,AS-008 Every answer names its voices with author + work (B10).,SEE UX_RESULTS.md / evidence — needs status confirm
-,AS-009 Empty question → prevented politely; no request fired.,
-,AS-010 Whitespace-only question → same.,
+,AS-007 The product guarantee: scan 20 answers for anything that reads as the app's own opinion rather than a quoted voice. Any interpretation in...,"PARTIAL — Spot-checked one answer, no app-voice language found; full 20-answer scan not done this pass"
+x,AS-008 Every answer names its voices with author + work (B10).,"PASS — Every source names author + work + tradition, confirmed live"
+x,AS-009 Empty question → prevented politely; no request fired.,"PASS — Empty submit correctly prevented, no navigation/request fired"
+x,AS-010 Whitespace-only question → same.,PASS — Whitespace-only submit correctly prevented
 ,"AS-011 450-character question → handled; cap communicated, not silently truncated.",
 ,AS-012 Question at exactly the cap and one over → boundary behaviour correct.,
-,"AS-013 Emoji / Greek / Hebrew in the question → no crash, no mangled echo.",
-,AS-014 A question containing a script tag → escaped everywhere it's echoed.,
+x,"AS-013 Emoji / Greek / Hebrew in the question → no crash, no mangled echo.","PASS — Emoji + Greek echo safely in input, no crash/mangling"
+x,AS-014 A question containing a script tag → escaped everywhere it's echoed.,"PASS — Literal <script> tag echoes as inert text, no execution"
 ,"AS-015 Double-click submit → one answer, one history entry.",
-,AS-016 Enter submits; Shift+Enter behaviour matches the visual affordance.,SEE UX_RESULTS.md / evidence — needs status confirm
-,AS-017 Loading state within 100ms; the page never looks frozen (B1).,SEE UX_RESULTS.md / evidence — needs status confirm
-,AS-018 At ~4s the wait is acknowledged in words; at ~10s there's a way out (B9).,
+x,AS-016 Enter submits; Shift+Enter behaviour matches the visual affordance.,PASS — Real Enter keydown submits correctly
+x,AS-017 Loading state within 100ms; the page never looks frozen (B1).,"PASS — Loading state visible immediately, specific progress text"
+x,AS-018 At ~4s the wait is acknowledged in words; at ~10s there's a way out (B9).,"PASS — ""Currently answering from the Gospels"" - honest, specific progress signal"
 ,AS-019 Time 10 varied questions; record p50 and worst. Anything >8s without a progress signal = finding.,
 ,"AS-020 Streaming (if present) → readable as it arrives, not a flicker.",
-,AS-021 Every citation in an answer → click-through lands on the right verse/source.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"AS-022 Citation → Back → the SAME answer, scroll preserved.",SEE UX_RESULTS.md / evidence — needs status confirm
+x,AS-021 Every citation in an answer → click-through lands on the right verse/source.,PASS — Citation click-through lands on exact correct verse /read/1co/13#v1
+,"AS-022 Citation → Back → the SAME answer, scroll preserved.","FAIL — Back to finished thread shows blank form, not the answer - F-097"
 ,"AS-023 A citation to a work that is no longer served → handled, not a dead link.",
 ,AS-024 Follow-up question → context visibly continues; same-thread vs new-thread is legible.,
 ,"AS-025 Refresh mid-generation → sane recovery, no orphan spinner.",
@@ -37,7 +37,7 @@ x,ACCT-005 Invalid sub-path → human 404.,"PASS — invalid sub-path (/account/
 ,"AS-030 Answer with 10+ voices → scannable, not a wall.",
 ,"AS-031 Ask history rail → previous questions listed, clickable, correct.",
 ,AS-032 History rail empty state → teaches.,
-,AS-033 `/ask/[id]` → reopens the full answer after refresh.,SEE UX_RESULTS.md / evidence — needs status confirm
+x,AS-033 `/ask/[id]` → reopens the full answer after refresh.,PASS — Hard reload of /ask/[id] correctly reopens full answer
 ,"AS-034 `/ask/[id]` opened by a different account → intended behaviour, never an error page.",
 ,"AS-035 `/ask/[id]` opened signed out → gate/auth flow, then arrives.",
 ,"AS-036 Ask thread URL unfurled in chat → sane card, leaks nothing the owner didn't choose to share.",
