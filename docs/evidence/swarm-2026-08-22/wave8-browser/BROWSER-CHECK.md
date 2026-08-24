@@ -34,3 +34,22 @@ history-citation-provenance 74-line suite, UX3 267 tests).
 - Signed-in flows (sign-in requires credentials this agent must not enter).
 - Dark mode at both widths (component suites assert dual-theme classes; a human look on prod
   is listed in the deploy follow-ups).
+
+---
+
+## Prod walk addendum — plans toggle (2026-08-24, signed-in via owner's Chrome)
+
+Live site (`7747f10`), the owner's real session; no credential passed through the agent.
+
+| leg | result |
+|---|---|
+| `/plans` renders | PASS — two plans, per-plan progress |
+| plan detail | PASS — progress strip, behind-schedule recovery card, day list |
+| **MARK day read** | PASS — one click repainted every dependent surface at once (ring→check, passages struck, strip 1→2 of 40, "20 days behind"→18, up-next advanced), and **survived a full reload** (server-persisted) |
+| **UNMARK day** | PASS — reverse identical; restored state **held across reload**. Production left exactly as found (1 of 40) |
+| console | no errors |
+
+**Observation (LOW, not chased):** the toggle did not respond to accessibility-API synthetic
+clicks (three attempts via element refs — no optimistic flip, no request), while real pointer
+clicks work both directions. Possibly pointer-event-only handling. If real, keyboard/AT users
+cannot toggle a day. Needs a keyboard-only repro before it is treated as a defect.

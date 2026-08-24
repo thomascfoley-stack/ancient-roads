@@ -18,7 +18,7 @@ read against dev's mutation state before being treated as signal.**
 
 ## DEPLOYED 2026-08-24T00:08Z
 
-`swarm/closeout-2026-08-22` @ `7747f10` is LIVE on `ancientpaths.app` — `dpl_5WBo5kQLqAme4Jgzq9wCa2pT9JAX`, alias verified by deployment-id match, receipt `docs/evidence/deploys/deploy-7747f10-2026-08-24T00-08-19Z.txt`. CI green on the candidate (run 32675060580). Wave 7 verdicts: `verdicts/wave7-verdicts.md`. Owner rulings executed: `OWNER_RULINGS-2026-08-23.md`. Still open: prod-bound B1-B6 (owner-gated), packet A-decisions, ADR-118 (launch-blocker), post-deploy prod walk of auth-gated surfaces.
+`swarm/closeout-2026-08-22` @ `7747f10` is LIVE on `ancientpaths.app` — `dpl_5WBo5kQLqAme4Jgzq9wCa2pT9JAX`, alias verified by deployment-id match, receipt `docs/evidence/deploys/deploy-7747f10-2026-08-24T00-08-19Z.txt`. CI green on the candidate (run 32675060580). Wave 7 verdicts: `verdicts/wave7-verdicts.md`. Owner rulings executed: `OWNER_RULINGS-2026-08-23.md`. Still open: prod-bound B1-B6 (owner-gated), packet A-decisions, ADR-118 (launch-blocker), post-deploy prod walk: plans toggle DONE 2026-08-24 (both directions, reload-persisted, prod restored; one LOW a11y observation) — My Works sentence + history citation remain for an owner look.
 
 | key | value |
 |---|---|
