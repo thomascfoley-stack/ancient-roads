@@ -20,6 +20,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ strongs: string
   }
   const key = `${m[1]!.toUpperCase()}${parseInt(m[2]!, 10)}`;
 
-  const articles = await fetchWordArticles(key);
-  return Response.json({ articles });
+  // Cluster A (DEEP_SWEEP D14/D32/D33): the data layer has no catch of its own, so an
+  // unwrapped call escapes to Next's RAW 500 instead of the envelope every /api/* route promises.
+  try {
+    const articles = await fetchWordArticles(key);
+    return Response.json({ articles });
+  } catch (e) {
+    console.error('GET /api/word/[strongs]/articles:', (e as Error).message);
+    return apiError('INTERNAL');
+  }
 }

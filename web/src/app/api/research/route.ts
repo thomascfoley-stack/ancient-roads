@@ -19,6 +19,13 @@ export async function GET(req: NextRequest) {
   }
   const raw = Number(req.nextUrl.searchParams.get('limit') ?? '20');
   const limit = Number.isFinite(raw) ? raw : 20; // listThreads caps to [1, 50]
-  const threads = await listThreads(user.id, limit);
-  return Response.json({ threads });
+  // Cluster A (DEEP_SWEEP D14/D32/D33): the data layer has no catch of its own, so an
+  // unwrapped call escapes to Next's RAW 500 instead of the envelope every /api/* route promises.
+  try {
+    const threads = await listThreads(user.id, limit);
+    return Response.json({ threads });
+  } catch (e) {
+    console.error('GET /api/research:', (e as Error).message);
+    return apiError('INTERNAL');
+  }
 }

@@ -75,8 +75,15 @@ export async function GET(req: NextRequest): Promise<Response> {
     // Slice 2 concern and answering only the first is better than answering a merged span the user
     // did not ask for.
     const range = parsed.ref.ranges[0]!;
-    const anchors = await verseAnchorScan(user.id, range, scope);
-    return NextResponse.json({ mode: 'verse', ref: parsed.ref.display, range, anchors });
+    // D35: this data-layer call sat OUTSIDE the try below, so a DB fault on the verse path
+    // escaped as Next's raw 500 while the fused path degraded gracefully three lines down.
+    try {
+      const anchors = await verseAnchorScan(user.id, range, scope);
+      return NextResponse.json({ mode: 'verse', ref: parsed.ref.display, range, anchors });
+    } catch (e) {
+      console.error('[user-corpus] verse anchor scan failed:', String((e as Error)?.message ?? e));
+      return apiError('INTERNAL');
+    }
   }
 
   // ── text search ───────────────────────────────────────────────────────────────────────────────
@@ -92,7 +99,13 @@ export async function GET(req: NextRequest): Promise<Response> {
   if (!q) return NextResponse.json({ error: 'Provide q or ref.' }, { status: 400 });
 
   if (params.get('mode') === 'keyword') {
-    return NextResponse.json({ mode: 'keyword', q, hits: await keywordSearch(user.id, q, scope) });
+    // D35: likewise unwrapped.
+    try {
+      return NextResponse.json({ mode: 'keyword', q, hits: await keywordSearch(user.id, q, scope) });
+    } catch (e) {
+      console.error('[user-corpus] keyword search failed:', String((e as Error)?.message ?? e));
+      return apiError('INTERNAL');
+    }
   }
 
   try {
@@ -103,11 +116,18 @@ export async function GET(req: NextRequest): Promise<Response> {
     // The embedder is the only external dependency here. Degrade to FTS rather than returning
     // nothing: a keyword answer is a worse answer, and no answer looks like an empty corpus.
     console.error('[user-corpus] search fell back to keyword:', String((e as Error)?.message ?? e));
-    return NextResponse.json({
-      mode: 'keyword',
-      q,
-      degraded: 'semantic search is unavailable; showing keyword matches only',
-      hits: await keywordSearch(user.id, q, scope),
-    });
+    // D35: the FALLBACK itself was unwrapped — if FTS is what is down, the degrade path threw
+    // straight out of the handler, turning a graceful degradation into a raw 500.
+    try {
+      return NextResponse.json({
+        mode: 'keyword',
+        q,
+        degraded: 'semantic search is unavailable; showing keyword matches only',
+        hits: await keywordSearch(user.id, q, scope),
+      });
+    } catch (e2) {
+      console.error('[user-corpus] keyword fallback also failed:', String((e2 as Error)?.message ?? e2));
+      return apiError('INTERNAL');
+    }
   }
 }

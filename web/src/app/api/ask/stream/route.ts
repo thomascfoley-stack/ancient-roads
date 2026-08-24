@@ -56,6 +56,17 @@ export async function POST(req: NextRequest) {
   // cover this — a beta user has the password by definition.
   if (!isTeacherAllowed(user)) return apiError('FORBIDDEN');
 
+  let body: { question?: unknown; lanes?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return apiError('INVALID_REQUEST');
+  }
+  const question = typeof body.question === 'string' ? body.question.trim() : '';
+  if (!question) return apiError('INVALID_REQUEST', { message: 'A question is required.' });
+  if (question.length > 500) return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
+
+  // D42 (DEEP_SWEEP): charged only for a request that could spend — see /api/ask for the note.
   // Per-user rate limit before any spend (same guard as /api/ask; fails open).
   const rl = await checkAskRateLimit(user.id);
   if (!rl.ok) {
@@ -71,15 +82,6 @@ export async function POST(req: NextRequest) {
     return apiError(code, { retryAfterSec: rl.retryAfterSec });
   }
 
-  let body: { question?: unknown; lanes?: unknown };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError('INVALID_REQUEST');
-  }
-  const question = typeof body.question === 'string' ? body.question.trim() : '';
-  if (!question) return apiError('INVALID_REQUEST', { message: 'A question is required.' });
-  if (question.length > 500) return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
   const lanes = parseLaneFlags(body.lanes);
   // Optional: append to an existing thread. Anything that is not a well-formed uuid is treated
   // as absent (a new thread), never an error — the transcript is an aid, not a gate.

@@ -23,7 +23,7 @@ import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
-import { setReadingsState } from './readings-store';
+import {} from './readings-store';
 import { embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
 import { extractSermonMetadata } from './metadata-extract';

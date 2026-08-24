@@ -48,7 +48,11 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   if (!limit_.ok) {
     return NextResponse.json(
       { error: 'Too many searches. Please wait a moment and try again.', retryAfterSec: limit_.retryAfterSec },
-      { status: 429 },
+      // D34: docs/API_ERRORS.md — "Retry-After is required on every 429 ... so clients back off
+      // instead of hammering a paid endpoint". The plain-string `error` shape here is deliberate
+      // (H6: the client reads a string), but nothing ever justified omitting the HEADER; the
+      // sibling routes that use apiError get it for free. These are the paid endpoints.
+      { status: 429, headers: { 'Retry-After': String(limit_.retryAfterSec ?? 60) } },
     );
   }
 

@@ -18,6 +18,7 @@
 
 import { CATALOG_IDS, CATALOGS, isCatalogId, isSubFilterOf, type CatalogId } from '@/lib/catalog';
 import { searchSections } from '@/lib/search-sections';
+import { apiError } from '@/lib/api-error';
 import { publicReadThrottle } from '@/lib/public-read-limit';
 
 /** Upper bound on filter cardinality. A URL cannot be used to build an unbounded IN-list. */
@@ -118,16 +119,24 @@ export async function GET(req: Request): Promise<Response> {
     return Response.json({ error: `${badNum.join(' and ')} must be an integer` }, { status: 400 });
   }
 
-  const page = await searchSections({
-    query,
-    // A single catalog keeps the `catalog` path so its sub-filter still applies; two or more go
-    // through the pooled path, where sub-filters have no meaning (see typesForMany).
-    ...(catalogs.length === 1 ? { catalog: catalogs[0]! } : { catalogs }),
-    subFilter: sub,
-    sourceSlug: url.searchParams.get('work') ?? undefined,
-    traditions,
-    limit,
-    offset,
-  });
+  // Cluster A (DEEP_SWEEP D14/D32/D33): the data layer has no catch of its own, so an
+  // unwrapped call escapes to Next's RAW 500 instead of the envelope every /api/* route promises.
+  let page;
+  try {
+    page = await searchSections({
+      query,
+      // A single catalog keeps the `catalog` path so its sub-filter still applies; two or more go
+      // through the pooled path, where sub-filters have no meaning (see typesForMany).
+      ...(catalogs.length === 1 ? { catalog: catalogs[0]! } : { catalogs }),
+      subFilter: sub,
+      sourceSlug: url.searchParams.get('work') ?? undefined,
+      traditions,
+      limit,
+      offset,
+    });
+  } catch (e) {
+    console.error('GET /api/search/works:', (e as Error).message);
+    return apiError('INTERNAL');
+  }
   return Response.json(page);
 }

@@ -121,6 +121,15 @@ describe('isAuthLimitedPath — which auth subpaths the proxy throttles', () => 
       '/api/auth/forget-password',
       '/api/auth/request-password-reset',
       '/api/auth/reset-password',
+      // D18 — change-password is CREDENTIAL-BEARING: better-auth verifies `currentPassword`
+      // server-side, so anyone holding a live session (shared device, stolen cookie) had
+      // unlimited online guesses at the account password. Exactly the brute-force class this
+      // limiter was built for, and it was outside the allowlist.
+      '/api/auth/change-password',
+      // D50 — unthrottled verification mail is mail-spend and mailbox harassment keyed to any
+      // registered address. Whether the hosted config enables it is not knowable from this
+      // repo, so it is throttled regardless: the cost of throttling an unused endpoint is zero.
+      '/api/auth/send-verification-email',
     ]) {
       expect(isAuthLimitedPath(p), p).toBe(true);
     }
