@@ -1324,3 +1324,16 @@ reference — confirming the section really is conditionally hidden at zero coun
 
 NT-019 confirmed PASS: the note's `/library/notes` reference chip correctly jumped back to the reader
 at the right verse. Test note cleaned up via Delete, confirmed removed.
+
+## Batch 59 — PW cross-cutting (Desk + verse panel), live signed-in production testing
+
+### F-109 · PW-012 · **P2** · Verse numbers inside a Desk pane are not interactive — the verse-study panel can't be opened from Desk at all
+Confirmed via DOM inspection (zero `<sup>` elements found in a Desk scripture pane, versus real
+interactive `<sup role="button">` verse numbers in the full reader) — clicking a verse number in a
+Desk pane does nothing. This means the verse-study panel (Commentaries/Word study/Notes, plus
+Highlight/Bookmark/Ask) that's central to reading in this app is entirely unreachable while using the
+side-by-side Desk view. Combined with F-011 (no discoverable way to add a commentary pane at all) and
+F-099 (highlights don't sync between reader and Desk), this is the third finding pointing at the same
+underlying gap: the Desk feature's core promise — "read Scripture and commentary together" — is
+currently missing the connective tissue between the two panes and the rest of the app's per-verse
+tooling.
