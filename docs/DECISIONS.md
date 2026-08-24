@@ -2027,6 +2027,13 @@ filter is the second line, not the hole.
 > different remedy than a ranking defect; pn20-18 is checked first against `e033023`'s
 > 1/2/3-John overlap-dedupe fix (a routing-side regression would produce exactly this shape).
 >
+> **REMEDY APPLIED AND GATE CLEARED 2026-08-24** (owner-ordered in-session; bar unchanged):
+> `HNSW_EF_SEARCH` 64 → 200 per the pre-registered ef-lever slice
+> (`docs/evidence/adr118-ef-lever/PRE-REG.md` + RESULT.md). pn20 HIT@2 **18/20 against the 18/20
+> bar** through the shipped constant; full v4 holds at ef=200 (every category passes, several
+> improve); controls clean; wall-clock parity. The 07-14 ef=64 sweep was correct for its corpus;
+> P4.n outgrew it — the constant's comment now carries that history and the re-sweep rule.
+>
 > **LABEL RE-CODE DONE 2026-08-22** (`docs/evidence/swarm-2026-08-22/w-pn20/LABEL-RECODE.md`,
 > commit `46d8b9c`): the count is UNCHANGED — 17/20 both ways, no case was mis-scored. All three
 > misses are retrieval-side: the gold content is present-and-served on dev in all three cases
