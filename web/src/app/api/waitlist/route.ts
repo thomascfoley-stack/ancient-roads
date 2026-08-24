@@ -3,12 +3,41 @@ import { getDb } from '@/lib/db';
 import { checkGateRateLimit } from '@/lib/rate-limit';
 import { logEvent } from '@/lib/observability';
 import { clientIp } from '@/lib/client-ip';
+import { truncateCodePoints } from '@/lib/text';
 
 // node runtime: the neon DB insert. This route is PUBLIC (gate.ts isPublicPath), so it must
 // validate and rate-limit its own input, because nothing upstream gates it.
 export const runtime = 'nodejs';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Campaign keys the server will persist. The client sends an allowlisted bag already; this is the
+ *  edge re-validating it anyway, because a public endpoint trusts nothing it is handed and these
+ *  rows land in a table `app_runtime` can never read back or clean up. Same list as
+ *  lib/attribution.ts, deliberately duplicated on the trust boundary rather than imported from the
+ *  client module — the client's copy is a convenience, this one is the rule. */
+const ALLOWED_ATTRIBUTION_KEYS = new Set([
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+  'gclid', 'gad_source', 'fbclid', 'msclkid', 'twclid', 'ttclid', 'igshid',
+  'li_fat_id', 'rdt_cid', 'mc_cid', 'mc_eid',
+  'landing_path', 'referrer_host',
+]);
+const MAX_ATTRIBUTION_VALUE = 200;
+/** Bounds the whole bag, so a caller cannot post 16 keys of maximum length forever. */
+const MAX_ATTRIBUTION_KEYS = 20;
+
+/** Keep known keys with string values, capped; drop everything else. Never throws. */
+function sanitizeAttribution(raw: unknown): Record<string, string> {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (Object.keys(out).length >= MAX_ATTRIBUTION_KEYS) break;
+    if (!ALLOWED_ATTRIBUTION_KEYS.has(k)) continue;
+    if (typeof v !== 'string' || v === '') continue;
+    out[k] = truncateCodePoints(v, MAX_ATTRIBUTION_VALUE);
+  }
+  return out;
+}
 
 
 export async function POST(req: NextRequest) {
@@ -25,9 +54,13 @@ export async function POST(req: NextRequest) {
   }
 
   let email = '';
+  let attribution: Record<string, string> = {};
+  let consent: string | null = null;
   try {
-    const body = (await req.json()) as { email?: unknown };
+    const body = (await req.json()) as { email?: unknown; attribution?: unknown; consent?: unknown };
     email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    attribution = sanitizeAttribution(body.attribution);
+    consent = typeof body.consent === 'string' ? truncateCodePoints(body.consent, 500) : null;
   } catch {
     // fall through to validation
   }
@@ -38,30 +71,33 @@ export async function POST(req: NextRequest) {
 
   try {
     const sql = getDb();
-    // PLAIN INSERT, and the duplicate is caught below rather than declared with ON CONFLICT.
+    // ONE ROW PER SUBMISSION — the table is an append-only signup log as of migration 130.
     //
-    // WHY (2026-08-02, while applying migration 032). `waitlist` now carries RLS with an
-    // INSERT-only policy, so a compromised runtime credential can add a signup and cannot
-    // enumerate, alter or destroy the list. `ON CONFLICT DO NOTHING` is INCOMPATIBLE with that:
-    // Postgres requires the proposed row to be SELECT-visible under RLS to run the conflict
-    // arbiter, so with no SELECT policy it fails with "new row violates row-level security
-    // policy" — measured, on a throwaway, on a brand-new email with no conflict at all. Keeping
-    // ON CONFLICT would have meant granting app_runtime read access to the whole email list,
-    // which is the exact thing the policy exists to remove. (`RETURNING` fails for the same
-    // reason and is likewise avoided.)
+    // WHAT CHANGED, AND WHY IT IS A REPAIR. `waitlist` used to carry UNIQUE(email), and this
+    // block caught the resulting 23505 to make a repeat signup look like success. That was
+    // friendly to the visitor and silently destructive to the data: the second submission was
+    // discarded WHOLE, including the campaign that produced it. Someone arriving from the
+    // newsletter, signing up, then returning two weeks later via a Twitter ad recorded zero
+    // conversions for Twitter. It was also unfixable in place — 033 revoked UPDATE and 034 grants
+    // no UPDATE policy, so nothing could amend the row it had just refused.
     //
-    // The duplicate is a 23505 unique violation on waitlist_email_key, which is the same
-    // no-op outcome ON CONFLICT DO NOTHING gave, reached by catching instead of declaring.
-    await sql`INSERT INTO waitlist (email, source) VALUES (${email}, 'landing')`;
-    // Observability only. Deliberately NO email in the log (PII stays out of logs).
-    logEvent('waitlist_signup', { domain: email.split('@')[1] ?? 'unknown' });
+    // With no unique constraint there is no conflict to catch, so the 23505 branch is gone.
+    // De-duplication moves to the owner-side export (DISTINCT ON (email)), which is where it
+    // belongs: `app_runtime` cannot read this table at all, by design, and that stays true.
+    //
+    // Still no `RETURNING` and still no `ON CONFLICT`: both need the proposed row to be
+    // SELECT-visible under RLS, and the INSERT-only policy deliberately withholds that.
+    const attributionJson = JSON.stringify(attribution);
+    await sql`INSERT INTO waitlist (email, source, attribution, consent_text)
+              VALUES (${email}, 'landing', ${attributionJson}::jsonb, ${consent})`;
+    // Observability only. Deliberately NO email in the log (PII stays out of logs) — the campaign
+    // is safe to log because it describes the link, not the person.
+    logEvent('waitlist_signup', {
+      domain: email.split('@')[1] ?? 'unknown',
+      utm_source: attribution.utm_source ?? 'none',
+    });
     return NextResponse.json({ message: "You're on the list. We'll be in touch." });
   } catch (e) {
-    // A repeat signup is a SUCCESS to the visitor, not an error: same outcome as the previous
-    // ON CONFLICT DO NOTHING, and it must not reveal whether the address was already on the list.
-    if ((e as { code?: string }).code === '23505') {
-      return NextResponse.json({ message: "You're on the list. We'll be in touch." });
-    }
     // Fail-soft: never leak DB internals to a visitor; keep the message friendly.
     console.error('[waitlist] insert failed:', (e as Error).message);
     return NextResponse.json(

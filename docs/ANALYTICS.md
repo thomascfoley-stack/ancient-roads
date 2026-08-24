@@ -1,12 +1,54 @@
 # ANALYTICS — what is measured, where to look, and what is deliberately not measured
 
+## THE STANDING DECISION (2026-08-24): own the nouns, rent the mouse movements
+
+Stated once, here, so nobody rediscovers it in a panic later.
+
+**OWNED — in our Postgres, forever, vendor-free.** Who signed up and which campaign brought them
+(`waitlist.attribution`), what they asked (`ask_outcomes`), what they searched (`search_outcomes`),
+what matched (`match_outcome`), and **who was active on which day** (`user_active_day`). Every
+retention number the owner asked for — DAU, WAU/MAU, 7-day churn, resurrection — computes from
+these with no vendor involved. `scripts/growth-report.mts` prints the lot.
+
+**RENTED — in PostHog, and its history is DISPOSABLE.** Pageview counts, anonymous pre-signup
+browsing, session paths, device and geography. If PostHog vanished tomorrow we would lose
+historical curiosity and not one fact needed to run the product. **That is the deal. It is not a
+regret to be fixed later.**
+
+**Why not put pageviews in Postgres too**, since "own everything" sounds stricter: this database
+also serves the corpus — the same Neon compute holds the vector index over ~295k sections and
+answers `/ask` at p50 10.5s. A pageview-rate append stream evicts that working set, trading
+measured product latency (under a quality gate) for dashboards this document calls non-load-bearing.
+It also pins the compute out of autosuspend from roughly ten users, and would require a public
+unauthenticated write endpoint whose limiter fails open by design. `user_active_day` gets the same
+answers at one row per user per day — about 13× cheaper — with no public write surface at all.
+
+**Revisit only when ALL THREE hold:** sustained >5k DAU, a named question this split provably
+cannot answer, and analytics moved to its OWN Neon project — never the database serving the corpus.
+
+
+
 Built 2026-08-24 to the owner's directive: **DAU**, **churn (no visit in 7 days)**, and **UTM
 attribution** for newsletter and social campaigns. This is the reference; the build narrative is
 WORKLOG 2026-08-24, and the privacy posture is `web/src/instrumentation-client.ts`'s own header.
 
 ## Where to look
 
-PostHog project **561364**. Dashboard: **Ancient Paths — Growth & Retention** (`2025202`).
+**First, our own database** — this answers the questions that matter and needs no vendor:
+
+```bash
+DATABASE_URL=<owner-url> npx tsx scripts/growth-report.mts --days 30
+DATABASE_URL=<owner-url> npx tsx scripts/waitlist-export.mts --campaign jan-newsletter > list.csv
+```
+
+`growth-report` prints signups, campaign breakdown, DAU/WAU/MAU, churn, ask and search volume, and
+the searches that found NOTHING — the last of which is the most useful list in the report, because
+every row is either a corpus gap or a retrieval bug. `waitlist-export` writes the list as CSV,
+deduplicated to first touch and with suppressed addresses excluded at source (there is deliberately
+no flag to include them).
+
+**Then PostHog** — project **561364**, dashboard **Ancient Paths — Growth & Retention** (`2025202`)
+— for the rented half: pageviews and anonymous browsing.
 
 | Tile | Answers |
 |---|---|

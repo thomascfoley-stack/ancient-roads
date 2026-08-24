@@ -1,4 +1,5 @@
 import { getAuth } from './auth/neon-auth';
+import { markActiveDay } from './active-day';
 
 // Sessions now resolve against Neon Auth (ADR-107/108, docs/AUTH_CUTOVER_V2_NEON.md). Both
 // functions keep their old signatures on purpose: 18 files call them, and a cutover that also
@@ -10,6 +11,18 @@ async function session() {
   // reads the request cookie itself (via next/headers under the hood) and returns `{ data }`,
   // not the session directly.
   const { data } = await getAuth().getSession();
+  // THE ONE CHOKE POINT FOR "was this person here today" (migration 130). Every authenticated API
+  // route and every page that asks who the reader is comes through here, so one call gives
+  // complete coverage -- including the reader who spends an hour in Scripture and never searches,
+  // whom the ask/search logs would score as absent.
+  //
+  // Deliberately here rather than in requireUser/currentUser separately: those are two doors to
+  // the same room, and instrumenting one of them is how coverage silently becomes partial.
+  //
+  // markActiveDay never throws, never awaits, and writes at most once per user per day per warm
+  // instance. If it ever costs a reader their request, that is a bug in active-day.ts, not a
+  // tuning question.
+  if (data?.user?.id) markActiveDay(data.user.id);
   return data;
 }
 
