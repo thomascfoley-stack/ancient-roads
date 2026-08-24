@@ -1194,3 +1194,21 @@ searched, indexed, or read by anyone else").
 
 DK-021/022 (highlight/annotation sync between reader and Desk pane) both marked FAIL, referencing the
 already-filed F-099 — same root cause, not re-investigated separately.
+
+## Batch 52 — SE (Study editor, third pass), live signed-in production testing (1 significant finding)
+
+### F-105 · SE-027 · **P1/B1** · Study export (Word .docx) fails with a 503, completely silently
+Clicking Export → "Word (.docx)" fires a real GET to `/studies/[id]/export?format=docx`, which returned
+**HTTP 503** — reproduced twice, consistently. The UI gives the user **zero feedback**: no error toast,
+no "export failed" message, the dropdown just sits there as if nothing happened. A user has no way to
+know their export didn't work short of noticing no file downloaded. This is a real server-side outage
+on a real feature, not a UI bug — worth checking server logs/dependencies for the docx export path.
+PDF export (print-based) not fully re-verified after this — the dropdown didn't reliably reopen for a
+second check; worth a clean follow-up.
+
+**Also confirmed PASS this batch:** SE-023 (emoji/Greek/English round-trip) — the earlier "spaces
+vanished" observation in the same block was traced to the `type` tool dropping characters during
+Unicode-heavy input, not a product bug; retested with a clean JS `value` + `input` event and confirmed
+perfect fidelity, including combining diacritics on Greek text.
+
+Cleaned up: disposable test study deleted via the confirmed "Delete?" flow, confirmed gone.
