@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { deleteThread } from '@/lib/research';
 
@@ -40,8 +40,9 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
+  } catch (e) {
+    // D43: an auth-SERVICE outage is 503, not "you are signed out".
+    return authFailureResponse(e);
   }
   const { id } = await ctx.params;
   // IDEMPOTENT: 204 whether a row was removed, the id never existed, or it belongs to someone

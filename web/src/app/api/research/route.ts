@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { listThreads } from '@/lib/research';
 
@@ -14,8 +14,9 @@ export async function GET(req: NextRequest) {
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
+  } catch (e) {
+    // D43: an auth-SERVICE outage is 503, not "you are signed out".
+    return authFailureResponse(e);
   }
   const raw = Number(req.nextUrl.searchParams.get('limit') ?? '20');
   const limit = Number.isFinite(raw) ? raw : 20; // listThreads caps to [1, 50]

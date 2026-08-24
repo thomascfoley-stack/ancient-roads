@@ -233,13 +233,22 @@ export async function teach(
   // was never defeatable this way (independently re-measured 2026-08-18 — the claim that it was
   // is REFUTED). It changes only the count shown, from a number nothing computed against to the
   // same number the gate uses.
+  const voices = selectVoices(retrieval, COMPOSE_VOICES);
+
+  // D46 (DEEP_SWEEP): this event used to be built from `retrieval` (RETRIEVE_K = 6) while the
+  // composer and verifier only ever see `voices` (COMPOSE_VOICES = 5). Two claims the answer
+  // could not honour: "across N traditions" counted a tradition present ONLY in the dropped
+  // chunk, and the preview showed that chunk's full text as a "source" the answer can never
+  // cite, because the composer was never shown it. The 2026-08-18 fix normalised the NUMBER the
+  // way the verifier counts and stopped one layer short — it kept computing it over the wrong
+  // set. Emitted after selectVoices for that reason; the normalisation it added is kept.
   const traditions = new Set(
-    retrieval.map((r) => normalizeForMatch(r.metadata.tradition ?? 'unknown')),
+    voices.map((r) => normalizeForMatch(r.metadata.tradition ?? 'unknown')),
   );
   emit({
     stage: 'retrieved',
     traditions: traditions.size,
-    sources: retrieval.map((r) => ({
+    sources: voices.map((r) => ({
       sourceId: r.sourceId,
       author: r.metadata.author,
       sourceTitle: r.metadata.sourceTitle,
@@ -249,7 +258,6 @@ export async function teach(
     })),
   });
 
-  const voices = selectVoices(retrieval, COMPOSE_VOICES);
   const voiceTraditions = new Set(voices.map((r) => r.metadata.tradition ?? 'unknown'));
   const metaBase = { voices: voices.length, traditions: voiceTraditions.size };
   const systemPrompt = buildSystemPrompt();

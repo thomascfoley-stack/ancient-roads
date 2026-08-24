@@ -19,7 +19,12 @@ const getChannels = vi.fn(), createChannel = vi.fn();
 const getChats = vi.fn(), createChat = vi.fn();
 const getMessages = vi.fn(), addMessage = vi.fn();
 
-vi.mock('@/lib/session', () => ({ requireUser: () => requireUser() }));
+vi.mock('@/lib/session', async () => {
+  // authFailureResponse lives in lib/auth-failure, which imports nothing but api-error — so the
+  // real one can be used here without loading the Neon Auth SDK.
+  const real = await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure');
+  return { requireUser: () => requireUser(), authFailureResponse: real.authFailureResponse };
+});
 vi.mock('@/lib/chat', () => ({
   getChannels: (...a: unknown[]) => getChannels(...a),
   createChannel: (...a: unknown[]) => createChannel(...a),
@@ -123,5 +128,20 @@ describe('A1-16 / D13 — auth failure is distinguishable from server failure', 
     const res = await POST(post('http://t/api/messages', { channelId: 'ch1', chatId: 'c1', content: 'hi' }) as never);
     expect(res.status).toBe(400);
     expect(addMessage).not.toHaveBeenCalled();
+  });
+
+  // D43 — an auth-SERVICE outage is not "you are signed out". Telling a signed-in reader they
+  // are signed out sends them to a sign-in page that also cannot work.
+  it('D43: an auth-service outage is 503, not 401', async () => {
+    const { GET } = await import('@/app/api/chats/route');
+    const { AuthServiceUnavailableError } = await import('@/lib/auth-failure');
+    requireUser.mockRejectedValue(new AuthServiceUnavailableError(new Error('fetch failed')));
+    expect((await GET()).status).toBe(503);
+  });
+
+  it('D43: a genuinely missing session is still 401', async () => {
+    const { GET } = await import('@/app/api/chats/route');
+    requireUser.mockRejectedValue(new Error('Unauthorized'));
+    expect((await GET()).status).toBe(401);
   });
 });

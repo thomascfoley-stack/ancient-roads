@@ -136,11 +136,26 @@ export async function findByChecksum(userId: string, sum: string): Promise<UserD
  * the insert lands. A refusal throws QuotaExceeded with the same message the pre-flight check
  * always returned; checkUploadQuota keeps that wording via the shared quotaVerdict.
  */
+/**
+ * D8: thrown when the in-transaction checksum re-check found the file already uploaded — i.e.
+ * this caller LOST a dedupe race it could not have seen from outside the lock. Carries the
+ * existing document so the route can answer with the same "already uploaded" body its pre-flight
+ * `findByChecksum` path returns; the two answers must not disagree.
+ */
+export class DuplicateDocument extends Error {
+  readonly existing: UserDocument;
+  constructor(existing: UserDocument) {
+    super('document with this checksum already exists');
+    this.name = 'DuplicateDocument';
+    this.existing = existing;
+  }
+}
+
 export async function createDocument(
   userId: string,
   meta: { title: string; filename: string; byteSize: number; checksum: string; mimeType: string },
 ): Promise<UserDocument> {
-  const [, usageRows, rows] = await runAsUser(userId, (sql) => [
+  const [, usageRows, rows, twinRows] = await runAsUser(userId, (sql) => [
     sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`,
     // Same COALESCE-both-ways read as checkUploadQuota; kept as its own statement so a refusal
     // can name the live usage in the message.
@@ -151,10 +166,31 @@ export async function createDocument(
         SELECT ${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued'
         WHERE (SELECT count(*) FROM user_documents WHERE user_id = ${userId}) + 1 <= ${MAX_DOCUMENTS_PER_USER}
           AND (SELECT COALESCE(sum(byte_size), 0) FROM user_documents WHERE user_id = ${userId}) + ${meta.byteSize} <= ${MAX_BYTES_PER_USER}
+          -- D8 (DEEP_SWEEP): dedupe was CHECK-THEN-ACT across two transactions — findByChecksum in
+          -- its own txn, then this insert in another. B11's advisory lock serialised the QUOTA but
+          -- never re-checked the checksum, so two concurrent uploads of the same file (double-tap,
+          -- retry-after-timeout — the exact pattern this repo already found in prod for highlights)
+          -- both missed dedupe and both inserted: duplicate documents, double blob, double PAID
+          -- embedding batch, double quota bytes. Re-checked here, inside the lock, where it holds.
+          -- The route's comment already presupposed a constraint the schema does not have
+          -- (migration 100 declares checksum TEXT with no unique index); this closes the race
+          -- without a migration, which would need an owner-gated production apply.
+          AND NOT EXISTS (
+            SELECT 1 FROM user_documents WHERE user_id = ${userId} AND checksum = ${meta.checksum}
+          )
         RETURNING *`,
+    // The twin, if one already existed. ORDER BY is deliberate: findByChecksum has none, so once
+    // duplicates exist it returns an ARBITRARY one (D8's related finding). Oldest wins here.
+    sql`SELECT * FROM user_documents
+         WHERE user_id = ${userId} AND checksum = ${meta.checksum}
+         ORDER BY created_at ASC, id ASC LIMIT 1`,
   ]);
   const inserted = (rows as Row[])[0];
   if (!inserted) {
+    // D8: a lost dedupe race is NOT a quota refusal. Distinguish them before reading the verdict,
+    // or the loser of the race is told their library is full.
+    const twin = (twinRows as Row[])[0];
+    if (twin) throw new DuplicateDocument(toDocument(twin));
     const u = (usageRows as { documents: number; bytes: string | number }[])[0];
     if (!u) throw new Error('quota query returned no row');
     const verdict = quotaVerdict(u.documents, Number(u.bytes), meta.byteSize);

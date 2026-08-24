@@ -1,4 +1,6 @@
 import { getAuth } from './auth/neon-auth';
+import { AuthServiceUnavailableError, isAuthServiceUnavailable, authFailureResponse } from './auth-failure';
+export { AuthServiceUnavailableError, isAuthServiceUnavailable, authFailureResponse };
 
 // Sessions now resolve against Neon Auth (ADR-107/108, docs/AUTH_CUTOVER_V2_NEON.md). Both
 // functions keep their old signatures on purpose: 18 files call them, and a cutover that also
@@ -9,8 +11,11 @@ async function session() {
   // NOT `.api.getSession({ headers })` -- that was Better Auth's shape. Neon Auth's `getSession()`
   // reads the request cookie itself (via next/headers under the hood) and returns `{ data }`,
   // not the session directly.
-  const { data } = await getAuth().getSession();
-  return data;
+  const { data, error } = (await getAuth().getSession()) as { data: unknown; error?: unknown };
+  // D43: an errored call is NOT an absent session. Surface it so callers can answer 503 rather
+  // than telling a signed-in reader they are signed out.
+  if (error) throw new AuthServiceUnavailableError(error);
+  return data as { user?: { id: string; email: string } } | null;
 }
 
 export async function requireUser(): Promise<{ id: string; email: string }> {

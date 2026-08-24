@@ -3,7 +3,7 @@ import { after } from 'next/server';
 import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { putUserDocument } from '@/lib/user-corpus/blob';
-import { createDocument, findByChecksum, setBlobPathname } from '@/lib/user-corpus/documents';
+import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
 import { QuotaExceeded } from '@/lib/user-corpus/quota';
 import { assertWithinSizeCap, checksum, sniffType } from '@/lib/user-corpus/sniff';
@@ -77,13 +77,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // The row is created BEFORE the bytes are stored: a failure between the two leaves a visible
     // row in 'queued' with no blob, which the drain turns into a stated failure. The reverse order
     // can leave a stored file that no row names.
-    const doc = await createDocument(user.id, {
+    // D8: the pre-flight findByChecksum above is a CHECK-THEN-ACT — two concurrent uploads of the
+    // same bytes both pass it. createDocument now re-checks inside its lock and returns a
+    // DuplicateDocument when this caller LOST that race; answer with the SAME body the pre-flight
+    // path returns, so the two answers cannot disagree. Carried as a VALUE rather than a catch
+    // block so the type of `doc` is never in doubt below.
+    const created = await createDocument(user.id, {
       title: file.name.replace(/\.[^.]+$/, '') || file.name,
       filename: file.name,
       byteSize: bytes.byteLength,
       checksum: sum,
       mimeType: type,
+    }).catch((e: unknown) => {
+      if (e instanceof DuplicateDocument) return e;
+      throw e;
     });
+    if (created instanceof DuplicateDocument) {
+      return NextResponse.json(
+        { document: created.existing, duplicateOf: created.existing.id, message: 'You have already uploaded this file.' },
+        { status: 200 },
+      );
+    }
+    const doc = created;
+
 
     const pathname = await putUserDocument(user.id, doc.id, bytes);
     await setBlobPathname(user.id, doc.id, pathname);

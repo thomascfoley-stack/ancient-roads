@@ -29,7 +29,26 @@ export function buildCorpusLookup(retrieval: RetrievedChunk[]): CorpusLookup {
           },
           // The verse range this chunk is indexed to — the verifier grounds voice-block
           // anchors against it (LONG_NIGHT H2), so a fabricated cross-book anchor is rejected.
-          verses: { start: r.metadata.verseId, end: r.metadata.verseEnd },
+          //
+          // D5 (DEEP_SWEEP): `verseEnd` arrives as 0 for a row with no anchor
+          // (register-writer.ts:248 writes `a?.verseIdEnd ?? 0`), and unanchored SERVED rows
+          // exist by design. v1.ts:141 tests `anchor.start <= section.verses.end`, so a section
+          // with a REAL verseId and verseEnd 0 had an INVERTED range that rejected every anchor
+          // as anchor_offbase — a voice that could never satisfy passages_grounded, and a
+          // retrieval set full of them forced the retry loop into the fallback. routing.ts:457
+          // already defends against exactly this ("verseEnd can be 0/null/invalid under data
+          // drift"); this path did not. Same fallback, same reason.
+          //
+          // NOT extended to skip grounding when the row is FULLY unanchored (verseId 0). That
+          // would fail OPEN: a fabricated anchor on an unanchored source would stop being
+          // rejected. Rejection there is the correct outcome and stays.
+          verses: {
+            start: r.metadata.verseId,
+            end:
+              typeof r.metadata.verseEnd === 'number' && r.metadata.verseEnd >= r.metadata.verseId
+                ? r.metadata.verseEnd
+                : r.metadata.verseId,
+          },
         },
       ];
     }),

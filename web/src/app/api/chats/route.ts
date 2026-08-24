@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { getChats, createChat } from '@/lib/chat';
 
@@ -27,7 +27,7 @@ const PERSONA_MAX = 64; // a persona is a short discriminator ('general', 'ask')
 // Behavioural exit test: test/invariants/a1-16-chat-routes.test.ts.
 export async function GET() {
   let user;
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   try {
     return NextResponse.json(await getChats(user.id));
   } catch (e) {
@@ -38,7 +38,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   let user;
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   let body: { title?: unknown; persona?: unknown };
   try { body = (await req.json()) as { title?: unknown; persona?: unknown }; } catch { return apiError('INVALID_REQUEST'); }
 

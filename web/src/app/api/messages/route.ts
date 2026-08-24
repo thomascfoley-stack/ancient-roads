@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { getMessages, addMessage } from '@/lib/chat';
 
@@ -44,7 +44,7 @@ function parseLimit(raw: string | null): number | null {
 
 export async function GET(req: NextRequest) {
   let user;
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
   const { searchParams } = new URL(req.url);
   const channelId = searchParams.get('channelId');
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   let user;
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   let body: { channelId?: unknown; chatId?: unknown; content?: unknown; sources?: unknown };
   try {
     body = (await req.json()) as { channelId?: unknown; chatId?: unknown; content?: unknown; sources?: unknown };
