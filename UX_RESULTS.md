@@ -74,3 +74,67 @@ ago. A hard reload of the identical URL renders the full answer correctly — so
 this is specifically a client-side Back-navigation bug, the same class K-6 was on the reader (Back
 not restoring view state), unfixed here. For a surface whose whole value is "come back to your
 answer", this reads as "my answer is gone."
+
+## Batch 5 — History search (production, signed in)
+
+HS-002 ✅ "council of nicea" → relevant, attributed result (Andrew Miller, "Short Papers on Church
+  History", Ch.11), with the matched passage quoted and "Open in book →".
+HS-005/disambiguation ✅ "No known people or places matched — showing text matches" — an honest,
+  specific fallback message, not a silent empty state.
+HS-008 ✅ author + work on every result.
+HS-010/LD-007/B9 ✅ progressive honesty: "Searching the historians…" then "Still searching the
+  historians…" past ~4s. Real latency was ~13s end to end — slow, but honestly narrated throughout,
+  which is exactly the standard the plan asks for.
+HS-014 ✅ a thread was created, URL became `/ask/[id]?mode=history`.
+NV-016 addendum: History-mode threads do NOT get a distinct tab title (stayed "Ask · Ancient
+  Paths"), while Voices-mode threads DO ("Research thread · Ancient Paths"). Same class as F-004,
+  narrower: the title logic checks thread type inconsistently.
+
+### Method note, recorded because it nearly produced a false finding
+Synthetic `keydown: Enter` on a real `<input type="search">` inside a `<form>` does NOT trigger the
+browser's native submit-on-Enter — that only fires for a genuine user keypress. `form.requestSubmit()`
+is the correct test primitive going forward for every Enter-submits assertion in this plan (AS-016,
+MK-019, SR, HS, and any other "press Enter" test). Filed so the pattern isn't repeated 20 more times.
+
+## Batch 6 — Search (production, signed in)
+
+SR-002 ✅ "shepherd" → results, fast (near-instant, unlike history search).
+SR-015 ✅ query is shareable in the URL (`?q=shepherd`).
+SR-004/L-2 🔴 confirmed still open (known, not new): "John 3:16" as a query returns 935 commentary
+  text matches, no "go to the verse" jump affordance. Matches the ratified plan's L-2 exactly.
+
+### F-010 · **P2** · The literal string "unassigned" is shown to users, 20 times on one results page
+Every commentary card shows `Author · era · Chapter`. When `era` is unset in the DB (F-007: two
+thirds of works), the UI does not omit the field or say something like "date unknown" — it prints
+the enum's raw value: **"Calvin, John · unassigned · Chapter 11"**. This is the internal database
+state leaking directly into the reading experience, and it reads as broken rather than merely
+incomplete. Same root data gap as F-007, sharper presentation-layer symptom.
+
+## Batch 7 — Desk, the owner's own core journey (production, signed in) — the most important finding this run
+
+DK-002 ✅ empty desk offers "Open the Bible" and "Browse the library".
+DK-003 ✅ add a Scripture pane via the book/chapter picker → URL becomes `?p=scripture:jhn/3`,
+  renders correctly.
+DK-015 ✅ confirmed deliberate: "This desk is not saved to your account. It lives in the page
+  address" — state is URL-only, not account-persisted. Documented in-app, not a bug.
+
+### F-011 · J-C / DK-004 · **P0 — the owner's own described core journey is not reachable from the UI**
+Journey J-C asks: open Scripture, bring a commentary alongside it, read both, swap for a sermon,
+swap for a historian. **None of that is reachable from within the desk itself.**
+
+Verified precisely: with a Scripture pane open, the ONLY add-pane control anywhere in the UI is
+"Add a Bible chapter" — it opens the book/chapter picker and nothing else; there is no "add
+commentary/sermon/historian" option, with 1 pane open or with 2. Verse numbers inside a Scripture
+pane are **plain, non-interactive `<span>` text** — no `role`, no `onClick`, no `cursor-pointer` —
+so there is no tap-to-open-commentary the way the main reader has. "Browse the library" just links
+to `/library`, a separate page with no apparent path back onto an open desk.
+
+The ONLY way a commentary pane reaches the desk is an "Open on desk →" link surfaced elsewhere (seen
+on Ask answers) — and that link is `/desk?p=work:<slug>` with no Scripture leg, so clicking it from
+an already-open desk **replaces the arrangement**, it does not add to it.
+
+**The grid itself works perfectly** — manually constructing `/desk?p=scripture:jhn/3&p=work:barnes-crosswire-nt`
+renders "Your desk, 2 panes open" with Scripture and Commentary correctly side by side. This is not
+a broken feature; it is a **finished feature with no door into it**. No real user will ever hand-type
+a `p=` query string. This is the single highest-value finding of the run: it is the exact journey
+the product exists for, and it currently requires URL knowledge a user cannot have.
