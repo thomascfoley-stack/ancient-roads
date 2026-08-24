@@ -3,7 +3,7 @@
 // (SLICE_1_DATA_MODEL test 1: "verify with two accounts, not by reading policy").
 
 import { runAsUser } from '@/lib/db';
-import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './queue';
+import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './claim-constants';
 import { deleteUserDocument } from './blob';
 import { MAX_BYTES_PER_USER, MAX_DOCUMENTS_PER_USER, QuotaExceeded, quotaVerdict } from './quota';
 import type { DocStatus, DocType, UserDocument } from './types';

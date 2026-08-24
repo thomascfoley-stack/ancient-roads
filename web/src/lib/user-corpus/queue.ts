@@ -18,12 +18,13 @@
 // as a specification.
 
 import { runAsUser } from '@/lib/db';
+import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './claim-constants';
+export { CLAIMED_STATUSES, STALE_CLAIM_MINUTES };
 import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
 import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
-import {} from './readings-store';
 import { embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
 import { extractSermonMetadata } from './metadata-extract';
@@ -38,7 +39,6 @@ export const MAX_ATTEMPTS = 3;
  * maxDuration, so the reclaim window has to exceed the longest legitimate parse; 5 minutes is well
  * past a 25 MB PDF and short enough that a user retrying by hand is not waiting on it.
  */
-export const STALE_CLAIM_MINUTES = 5;
 
 /**
  * The statuses a worker holds a claim in — everything `processOne` can be interrupted mid-way
@@ -54,7 +54,6 @@ export const STALE_CLAIM_MINUTES = 5;
  * ONE definition, used by both predicates, so they cannot drift apart again — and so adding a
  * status to the walk means adding it here rather than remembering two call sites.
  */
-export const CLAIMED_STATUSES = ['parsing', 'chunking', 'embedding'] as const;
 
 /** The same set as a plain array, because a `readonly` tuple is not a bindable SQL parameter. */
 const CLAIMED_SQL: string[] = [...CLAIMED_STATUSES];
