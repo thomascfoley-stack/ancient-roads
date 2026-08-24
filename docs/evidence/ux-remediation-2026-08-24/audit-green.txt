@@ -19,12 +19,18 @@
 
   env -u DATABASE_URL -u DATABASE_URL_UNPOOLED DEEPINFRA_API_KEY=<from web/.env.local> npm run audit
 
-1. THE SHELL CARRIES A PRODUCTION CONNECTION STRING. The audit refused to run and said so:
-   "shell DATABASE_URL points at ep-odd-fog-atnykudm — not on the audit allow-list".
-   ep-odd-fog IS production. It is inherited from the session environment, not from any file in
-   this worktree (root .env.local is NEON_BRANCH=dev / ep-tiny-hat). The guard did exactly its job.
-   Worth the owner knowing: any tool inheriting this shell's env is one careless command away from
-   production, and only this allow-list is standing in the way.
+1. RETRACTED — I MISREAD A PASSING TEST'S OUTPUT AS THE ENVIRONMENT. I originally recorded here
+   that the shell carried a production connection string, on the strength of this line in the log:
+     "FAIL: shell DATABASE_URL points at ep-odd-fog-atnykudm — not on the audit allow-list"
+   That line is STDOUT FROM A PASSING TEST. `test/invariants/target-guard.test.ts` deliberately
+   spawns `scripts/assert-ingest-env-dev.mjs` with forbidden URLs — all of them `.invalid`
+   hostnames that cannot resolve — to prove the guard fires. A later line in the same run named
+   `ep-fresh-fork-at000000`, which is visibly synthetic and should have stopped me on the spot.
+   `DATABASE_URL` is not set in that shell at all: checked directly afterwards.
+   The `env -u DATABASE_URL` in the command above was therefore unnecessary and changed nothing.
+   Recorded rather than deleted because it is the same error three times in one night — reading log
+   text as measurement — and the cure is the same each time: check the thing itself, not the
+   output of something near it.
 
 2. DEEPINFRA_API_KEY is not picked up from web/.env.local by vitest (Next loads it, vitest does
    not), so test/user-corpus/blob-round-trip.test.ts fails its pipeline leg with
