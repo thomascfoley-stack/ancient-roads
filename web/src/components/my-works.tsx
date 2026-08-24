@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { errorMessage } from '@/lib/api-error-message';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 // The cap is the SERVER's constant, imported — not mirrored. sniff.ts is a pure module (bytes
@@ -144,16 +145,6 @@ async function readJson<T>(r: Response): Promise<T | null> {
  * throws, and the root boundary replaced the entire page. Read both shapes, and fall back to a
  * sentence rather than to `undefined`.
  */
-function errorMessage(body: unknown, fallback: string): string {
-  const e = (body as { error?: unknown } | null)?.error;
-  if (typeof e === 'string' && e.trim()) return e;
-  if (e && typeof e === 'object') {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return fallback;
-}
-
 /**
  * Markdown syntax out of the search excerpt.
  *

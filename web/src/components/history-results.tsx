@@ -25,8 +25,16 @@ export interface HistoryPayload {
 const era = (y: number): string => (y < 0 ? `${-y} B.C.` : `A.D. ${y}`);
 const periodBadge = (p: [number, number] | null): string | null =>
   p ? (p[0] === p[1] ? era(p[0]) : `${era(p[0])}–${era(p[1])}`) : null;
-const century = (p: [number, number] | null): number | null =>
-  p ? Math.ceil(((p[0] + p[1]) / 2) / 100) : null;
+// D29 (DEEP_SWEEP): Math.ceil rounds NEGATIVE fractions toward zero, so every B.C. bucket was
+// wrong. century([-200,-101]) gave -1 ("1c B.C.") for what is the 2nd century B.C., and
+// century([-100,-1]) gave -0, which rendered as the nonsense label "0c". A.D. is unaffected
+// (ceil is correct for positives), so this only ever looked right. Exported for the unit test —
+// the bug is arithmetic and needs no DOM to prove.
+export const century = (p: [number, number] | null): number | null => {
+  if (!p) return null;
+  const mid = (p[0] + p[1]) / 2;
+  return mid < 0 ? Math.floor(mid / 100) : Math.ceil(mid / 100);
+};
 
 // `fq` beside `from=hist:` is what lets the reader's return strip name the study — see
 // HistoryContextBar. Same URL, no extra fetch, and links minted without it still work.
@@ -73,7 +81,11 @@ export function HistoryResults({ data, query, threadId }: {
     // a false confirmation on an attribution control — the wrong direction for this product
     // (deep-audit client finding 7).
     try {
-      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')} (CCEL)`);
+      // D45: this hard-coded "(CCEL)" onto EVERY citation, misattributing any work that did not
+      // come from CCEL. A citation that names the wrong source is worse than one that names none,
+      // and this product's whole claim is accurate attribution — so the suffix is dropped rather
+      // than guessed. If a per-work source label is wanted it belongs on the work record.
+      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')}`);
       setCopied(r.sectionId);
       setTimeout(() => setCopied(null), 1500);
     } catch {

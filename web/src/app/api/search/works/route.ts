@@ -19,6 +19,7 @@
 import { CATALOG_IDS, CATALOGS, isCatalogId, isSubFilterOf, type CatalogId } from '@/lib/catalog';
 import { searchSections } from '@/lib/search-sections';
 import { apiError } from '@/lib/api-error';
+import { truncateCodePoints } from '@/lib/text';
 import { publicReadThrottle } from '@/lib/public-read-limit';
 
 /** Upper bound on filter cardinality. A URL cannot be used to build an unbounded IN-list. */
@@ -46,7 +47,11 @@ export async function GET(req: Request): Promise<Response> {
   const throttled = await publicReadThrottle(req, 'search-works');
   if (throttled) return throttled;
   const url = new URL(req.url);
-  const query = (url.searchParams.get('q') ?? '').trim();
+  // D48: the sibling /api/search/commentaries caps q at 200 code points ("an unbounded string
+  // reaches a query parameter"); this route bound the raw string into websearch_to_tsquery three
+  // times plus ts_headline per row. Same cap, same reason. truncateCodePoints, not slice — see
+  // BUG_SWEEP B2: slice() splits surrogate pairs.
+  const query = truncateCodePoints((url.searchParams.get('q') ?? '').trim(), 200);
   if (!query) return Response.json({ results: [], total: 0, totalCapped: false });
 
   // Catalogs: `catalog` (single, legacy) and `catalogs` (pooled) normalise to one list.

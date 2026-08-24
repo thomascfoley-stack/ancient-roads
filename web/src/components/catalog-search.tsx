@@ -20,6 +20,7 @@
 // server refused. Errors now render as an error.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { errorMessage } from '@/lib/api-error-message';
 import Link from 'next/link';
 import type { CatalogId } from '@/lib/catalog';
 import { sanitizeSnippet } from '@/lib/snippet';
@@ -81,8 +82,13 @@ export function CatalogSearch({
         const res = await fetch(`/api/search/works?${params.toString()}`);
         if (!res.ok) {
           // Surface it. Do NOT fall through to an empty result set.
-          const body = (await res.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(body?.error ?? `search failed (${res.status})`);
+          // D28: this route answers its OWN 400s as { error: "string" }, but the shared
+          // publicReadThrottle at the top of the same route answers 429 with the apiError
+          // envelope { error: { code, message } }. Reading `body.error` blindly coerced the
+          // object and showed the reader "[object Object]" in place of the throttle copy.
+          // Dual-shape read, same as my-works.tsx:147.
+          const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
+          throw new Error(errorMessage(body, `search failed (${res.status})`));
         }
         const page = (await res.json()) as Page;
         if (mine !== seq.current) return;
