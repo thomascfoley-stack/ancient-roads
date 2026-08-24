@@ -92,6 +92,30 @@ on the delight layer instead of the trust layer.
   (`/`, `/about`, `/features`, `/why`).
 - **Blocked on:** owner copy. Everything else can be pre-built behind the routes 404ing.
 
+### ROOT CAUSE FOUND WHILE IMPLEMENTING K-4/K-5 — they are one bug, not two (Claude-10)
+
+**Both symptoms come from the same defect, and a third (worse) one came with it.** Every
+`authClient.*` call **throws** on 4xx and never populates the `{ error }` it resolves on success — so
+every `const { error: err } = await …; if (err) …` in `auth-forms.tsx` was **unreachable**, and raw
+auth-server text went to the screen. Proven by execution against the installed
+`@neondatabase/auth@0.5.0-beta`, not by reading.
+
+Consequences, in severity order:
+1. **P1, new: bug #110's account-existence fix never ran.** Duplicate sign-up answers *"User already
+   exists. Use another email."* — an existence oracle, in a repo whose SEC-1 problem is account
+   takeover. Filed as **Claude-10** in `UX_SWEEP.md`. **Needs independent verification against a real
+   auth server — I am both finder and fixer here.**
+2. **K-5**: the unverified-sign-in message was never the plan's "That email and password do not
+   match an account" — the curated sentence was dead too. Readers saw the shim's raw text. (Kimi's
+   test-first line "not raw `EMAIL_NOT_VERIFIED`" was the accurate observation; the reconciled
+   record's framing was not.)
+3. **K-4**: sign-up had no way to *know* it should say anything, because the branch that inspected
+   the response was dead.
+
+**Fix shape:** delete the dead destructures; curate per-surface in the `catch`, where the rejection
+actually lands. Detection uses the **shim's** normalized code (`email_not_confirmed`), not
+better-auth's wire code — the two are different vocabularies and mixing them is what hid this.
+
 ### K-4 Sign-up gives zero feedback (Kimi-10/F07)
 - **Fix:** after sign-up, render an explicit state: "Check your inbox — we've sent a verification
   link" (matching the actual enforced behavior, K-5). Duplicate-signup keeps the non-oracle
@@ -172,6 +196,13 @@ home "Evening" label (DeepSeek-F13).
 2. **K-4 + K-5 together** (same files, one auth-UX PR) → unblocks ~120 signed-in ledger tasks for
    all three runners simultaneously. Moved ahead of K-2 at ratification: every hour it stays broken,
    all three runners keep re-deriving "blocked, no verified account" instead of finding new defects.
+   ✅ **CODE LANDED** (7 test legs, all red-proofed first; typecheck + lint clean). Carries the
+   Claude-10 oracle fix with it. **NOT yet browser-verified — cannot be, locally:** sign-up and
+   sign-in need a reachable Neon Auth server, and `NEON_AUTH_BASE_URL` is absent from every local
+   env file by deliberate posture (Vercel forbids Sensitive vars in Development). The component
+   tests drive the real client against a stubbed network, which is honest about the branch logic and
+   says nothing about the live server's actual codes. **The verifier must run AU-01/AU-02 plus an
+   unverified sign-in on a preview deploy.**
 3. **K-2 adapter + sizing query** (content corruption, needs evidence before re-ingest). Safe to
    wait — it is already in the DB, stable, and nothing is re-ingesting, so it is not getting worse.
 4. **K-6** (small, self-contained).

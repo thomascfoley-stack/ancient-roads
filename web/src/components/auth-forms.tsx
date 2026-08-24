@@ -63,10 +63,37 @@ const MIN_PASSWORD = 12;
 // new addresses and fails for taken ones, so its behaviour alone leaks existence. Closing it
 // means always claiming success and emailing the address's real owner — a much larger change,
 // deliberately not taken here. Do not read this as a guarantee.
-const ACCOUNT_EXISTENCE_CODES = new Set([
-  'USER_ALREADY_EXISTS',
-  'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL',
-]);
+// THE PATTERN THIS REPLACES WAS DEAD CODE, and its deadness is the whole of bug #110 reopening.
+//
+// Every `authClient.*` call resolves `{ data, error }` on SUCCESS but **throws** on 4xx — it never
+// populates `error`. Verified by execution against the installed @neondatabase/auth 0.5.0-beta, not
+// inferred: a 422 sign-up rejects the promise with `AuthApiError`, so `const { error: err } = await
+// ...; if (err) …` cannot run, and the curated message it guarded was never reachable. The raw
+// server sentence went straight to the outer catch and onto the screen, which for a duplicate
+// address is the literal words "User already exists. Use another email." — the exact account-
+// existence oracle the old comment here claimed to have narrowed.
+//
+// (Why it looked fine: `@neondatabase/auth` is a Supabase-shaped shim over better-auth. Its
+// `BETTER_AUTH_ERROR_MAP` translates the bare `USER_ALREADY_EXISTS` into its own safe message — but
+// better-auth's sign-up route actually throws `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`, which is NOT
+// in that map, so it falls through to the branch that forwards `betterError.message` verbatim.)
+//
+// Codes below are the SHIM's normalized values (`AuthErrorCode`, snake_case), not better-auth's
+// wire codes. Written as literals rather than imported: the enum lives behind a hashed internal
+// module path (`better-auth-helpers-*.mjs`) with no public export, and pinning a literal that a
+// test exercises beats importing a path that a patch release can rename.
+const EMAIL_NOT_CONFIRMED = 'email_not_confirmed';
+
+/**
+ * An auth-server failure, as opposed to one of our own curated `throw new Error(...)` messages.
+ * Discriminated structurally (`code` + `status`) rather than by class name, because the thrown type
+ * comes from `@supabase/auth-js` via the shim and is not ours to depend on.
+ */
+function authFailure(e: unknown): { code?: string; status?: number } | null {
+  return e instanceof Error && 'code' in e && 'status' in e
+    ? (e as unknown as { code?: string; status?: number })
+    : null;
+}
 
 // PRD §6 inputs: parchment surface, 1px vellum hairline (`edge`, which also flips the color in
 // dark mode — a layered `dark:border-*` pair cannot be trusted to, per globals.css:226). Focus is
@@ -115,6 +142,11 @@ export function AuthForm({ path }: { path: AuthMode }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  // K-4/K-5 — the address we are waiting on a verification click for. One state serves both
+  // entrances (a fresh sign-up held pending verification, and a sign-in by an unverified account)
+  // because the reader's situation and the way out of it are identical in both.
+  const [verifyFor, setVerifyFor] = useState<string | null>(null);
+  const [resend, setResend] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
   // GOOGLE, AND WHAT IT COSTS — stated once, here, where someone would remove it.
   //
@@ -132,12 +164,13 @@ export function AuthForm({ path }: { path: AuthMode }) {
     setError(null);
     setBusy(true);
     try {
-      const { error: err } = await authClient.signIn.social({
+      // Throws on failure rather than returning `{ error }` — the `if (err)` this replaces could
+      // never fire. The catch below already produces the right sentence for every cause.
+      await authClient.signIn.social({
         provider: 'google',
         callbackURL: FIRST_RUN_DESTINATION,
         errorCallbackURL: '/auth/sign-in',
       });
-      if (err) throw new Error(err.message ?? 'Google sign-in could not be started.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Google sign-in could not be started.');
       setBusy(false);
@@ -154,11 +187,11 @@ export function AuthForm({ path }: { path: AuthMode }) {
 
     try {
       if (path === 'sign-in') {
-        const { error: err } = await authClient.signIn.email({ email, password });
-        // Deliberately does not distinguish "no such account" from "wrong password": that
-        // difference is an account-existence oracle, and this app's whole SEC-1 problem was an
-        // account-takeover class.
-        if (err) throw new Error('That email and password do not match an account.');
+        // No `if (error)` check: this call THROWS on failure (see the note above the codes).
+        // The catch below curates every server failure into one generic sentence, which is what
+        // keeps "no such account" and "wrong password" indistinguishable — an account-existence
+        // oracle, and this app's whole SEC-1 problem was an account-takeover class.
+        await authClient.signIn.email({ email, password });
         router.push('/home');
         router.refresh();
         return;
@@ -168,22 +201,34 @@ export function AuthForm({ path }: { path: AuthMode }) {
         if (password.length < MIN_PASSWORD) {
           throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
         }
-        const { error: err } = await authClient.signUp.email({
+        // Throws on failure; the catch curates it to one generic sentence for every cause.
+        const { data: created } = await authClient.signUp.email({
           email,
           password,
           name: String(data.get('name') ?? '').trim() || email.split('@')[0],
         });
-        if (err) {
-          throw new Error(
-            err.code && ACCOUNT_EXISTENCE_CODES.has(err.code)
-              ? 'That account could not be created.'
-              : (err.message ?? 'That account could not be created.'),
-          );
+
+        // K-4 — DOES THIS ACCOUNT HAVE A SESSION YET? The server answers, so we do not have to
+        // guess. The sign-up response is a union: `token: string` when a session was issued, and
+        // `token: null` when the server is holding the account pending email verification
+        // (@neondatabase/auth types, adapter-core-*.d.mts:1715-1737).
+        //
+        // Reading it is what lets this UI stay correct while "is verification required for beta?"
+        // is still an open owner decision. Hardcoding either answer would be wrong the moment that
+        // decision is made, and wrong silently.
+        if (!created?.token) {
+          setVerifyFor(email);
+          return;
         }
+
         // T1 — a new reader's first screen is the PRODUCT, not a dashboard. `/home` shows a
         // devotional feed that teaches nothing about what makes this app different; the verse
         // drawer is the one idea that does. Sign-IN keeps `/home` deliberately: a returning
         // reader has already met the idea and wants their own place.
+        //
+        // Reached only WITH a session. Sending an unverified, session-less reader here was K-4:
+        // they landed in the reader with nothing saved, nothing explained, and no idea an email
+        // was waiting for them.
         router.push(FIRST_RUN_DESTINATION);
         router.refresh();
         return;
@@ -203,14 +248,94 @@ export function AuthForm({ path }: { path: AuthMode }) {
       if (password.length < MIN_PASSWORD) {
         throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
       }
-      const { error: err } = await authClient.resetPassword({ newPassword: password, token });
-      if (err) throw new Error('That reset link has expired or has already been used.');
+      // Throws on failure; curated per-path in the catch (same dead-`error` mechanism as above).
+      await authClient.resetPassword({ newPassword: password, token });
       router.push('/auth/sign-in');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      // K-5 — an unverified reader supplied the RIGHT password and was told it was wrong. That
+      // message is protective for a bad password and simply false here, and it sent people to
+      // reset a password that was never broken. This branch is not an existence leak: the server
+      // only reaches EMAIL_NOT_VERIFIED after the credentials CHECK OUT, so anyone who sees it
+      // already knew the account existed.
+      if (authFailure(e)?.code === EMAIL_NOT_CONFIRMED) {
+        setVerifyFor(email);
+        return;
+      }
+      // Server failures are curated to one sentence per surface; only our own thrown Errors (which
+      // carry no `code`/`status`) are shown as written. Without this, raw auth-server text reaches
+      // the screen — which is how "User already exists. Use another email." shipped.
+      // One curated sentence per surface. `reset-password` needs its own or an expired link reads
+      // as a credentials failure; `forgot-password` must stay silent about outcomes for the same
+      // existence reason it always claims success.
+      const CURATED: Record<AuthMode, string> = {
+        'sign-up': 'That account could not be created.',
+        'sign-in': 'That email and password do not match an account.',
+        'forgot-password': 'That request could not be sent. Please try again.',
+        'reset-password': 'That reset link has expired or has already been used.',
+      };
+      setError(
+        authFailure(e)
+          ? CURATED[path]
+          : e instanceof Error
+            ? e.message
+            : 'Something went wrong. Please try again.',
+      );
     } finally {
       setBusy(false);
     }
+  }
+
+  async function resendVerification(): Promise<void> {
+    if (!verifyFor || resend === 'sending') return;
+    setResend('sending');
+    try {
+      await authClient.sendVerificationEmail({ email: verifyFor });
+      setResend('sent');
+    } catch {
+      // Deliberately not surfacing the server's words: this button is reachable pre-auth, and a
+      // detailed failure here would describe an account to whoever typed the address.
+      setResend('failed');
+    }
+  }
+
+  // K-4/K-5 — the state that did not exist. Sign-up used to redirect into the reader saying
+  // nothing; an unverified sign-in used to claim the password was wrong.
+  if (verifyFor) {
+    return (
+      <div className="bg-paper px-6 pb-8 pt-4 dark:bg-stone-900">
+        <h2 className="font-serif text-lg text-stone-900 dark:text-stone-100">Confirm your email</h2>
+        {/* The address is interpolated into the same paragraph rather than wrapped in its own
+            element: readers scan this for THEIR address to check for a typo, and a mis-typed
+            address is the single most common reason the link never arrives. */}
+        <p className="mt-3 font-serif text-stone-700 dark:text-stone-300">
+          We have sent a verification link to {verifyFor}. Open it and you will be signed in.
+        </p>
+        <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
+          If it has not arrived, check the spam folder before requesting another.
+        </p>
+
+        <button type="button" onClick={resendVerification} disabled={resend === 'sending'} className={`mt-6 ${button}`}>
+          {resend === 'sending' ? 'Sending...' : 'Resend the link'}
+        </button>
+
+        {/* role=status, not role=alert: this is a confirmation, and alert would interrupt a screen
+            reader mid-sentence for good news. Same reasoning as the write-path fixes in A7b. */}
+        {resend === 'sent' && (
+          <p role="status" className="mt-3 text-sm text-stone-600 dark:text-stone-400">
+            Sent. It can take a minute to arrive.
+          </p>
+        )}
+        {resend === 'failed' && (
+          <p role="alert" className="mt-3 text-sm text-red-800 dark:text-red-200">
+            That could not be sent just now. Please try again in a moment.
+          </p>
+        )}
+
+        <p className="mt-5">
+          <Link href="/auth/sign-in" className={quiet}>Back to sign in</Link>
+        </p>
+      </div>
+    );
   }
 
   if (path === 'forgot-password' && sent) {

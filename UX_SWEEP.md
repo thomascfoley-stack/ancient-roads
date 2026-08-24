@@ -268,3 +268,52 @@ MASTER.md describes at length, not error autocapture — for however long this C
 (not dated tonight). `web/next.config.ts`'s CSP header needs `us-assets.i.posthog.com` added to
 `script-src` (or `script-src-elem`) to restore this. Given how much of this repo's own programme sheet
 leans on PostHog data being real, this is worth checking first thing, not filed-and-forgotten.
+
+---
+
+## Claude-10 — 🔴 **P1 — bug #110's account-existence fix is DEAD CODE; the oracle is open**
+
+*(Found 2026-08-24 while implementing K-4/K-5. Not in the reconciled record — this is a NEW finding,
+and it is the root cause of both K-4 and K-5 rather than a separate defect.)*
+
+**Narrative:** Someone probing for registered addresses types an email into sign-up. The app answers,
+in these words: **"User already exists. Use another email."** That is a clean account-existence
+oracle — the exact class `auth-forms.tsx` carries a 12-line comment claiming to have narrowed, and
+the class SEC-1 exists to close.
+
+**Mechanism (proven by execution, not by reading):** every `authClient.*` call **throws** on 4xx; it
+resolves `{ data, error }` only on success and never populates `error`. So this shape —
+
+    const { error: err } = await authClient.signUp.email({...});
+    if (err) throw new Error(ACCOUNT_EXISTENCE_CODES.has(err.code) ? 'That account could not be created.' : ...);
+
+— is unreachable. The rejection skips it entirely and lands in `catch (e) { setError(e.message) }`,
+which puts the **raw auth-server sentence** on screen. Verified against the installed
+`@neondatabase/auth@0.5.0-beta` by driving the real client with a stubbed 422.
+
+**Why it was invisible:** `@neondatabase/auth` is a Supabase-shaped shim over better-auth. Its
+`BETTER_AUTH_ERROR_MAP` *does* translate the bare `USER_ALREADY_EXISTS` into a safe message — so a
+reviewer checking that map concludes it is handled. But better-auth's sign-up route actually throws
+`USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`, which is **not in the map**, so it falls through to the
+branch that forwards `betterError.message` verbatim. The repo's own comment names that longer code —
+it was right about the wire code and wrong about who consumes it.
+
+**Blast radius — the same dead pattern, three more places in the one file:**
+`signIn.email` (the "do not match an account" generic never fired — readers saw the shim's raw
+`Invalid email or password`, which is harmlessly generic *by luck*), `resetPassword` (an expired link
+read as `Invalid or expired session token`), and `signIn.social`.
+
+**Expected vs actual:** expected one generic sentence per surface, chosen by us. Actual: whatever the
+auth vendor happened to write, including an existence oracle.
+
+**Status: FIXED in this branch** as part of K-4/K-5 (they share this root cause — the missing
+verification UI and the false "wrong password" are both this bug). Red-proofed at 5/6 legs before
+the fix; `web/test/auth-verification-feedback.test.tsx`. Curation is now path-aware and applied in
+the catch, where the rejection actually lands.
+
+**Needs independent verification (I am the finder AND the fixer — this cannot be self-certified):**
+the sign-up duplicate-address path against a **real** Neon Auth server. My proof that the branch is
+unreachable is by execution; my claim about *which sentence* the live server sends is inferred from
+better-auth's source and the repo's own prior verification note. A verifier should sign up twice with
+one address on preview/prod and read the screen.
+
