@@ -455,3 +455,22 @@ self-marked, per CLAUDE.md UX remediation rules). This batch represents the prac
 for this pass: every reachable signed-out surface has had at least one agent pass, every core signed-in
 journey has been walked, and the two open generators (Ask, History-search) have representative, honest,
 clearly-labeled partial samples rather than silent truncation.
+
+## Batch 24 — SE (Study editor), tracker-driven pass, signed-out slice
+
+Full detail: `/tmp/ap-uxsweep/agent-results/tracker_SE.txt` (mirrored into `UX_TRACKER.csv`).
+
+### F-042 · SE-002 · **P2/B6** · `/study/[id]` and `/studies/[id]` are two unrelated, similarly-named routes
+`/study/[id]` (singular) renders a static "Study spaces… coming soon" stub for ANY id including
+invalid ones — dead UI, CTA to `/ask`. `/studies` (plural) is the real, fully-built study editor.
+The near-identical naming next to a real, shipped feature reads as broken/half-built to a newcomer
+who lands on the wrong one. Recommend renaming or removing the coming-soon stub, not merging code.
+
+### F-043 · SE-003 · **P2** · `/studies` signed out is a hard redirect, not an invitation
+307 to `/auth/sign-in` with zero context — generic sign-in form, no "sign in to build a study" copy.
+Confirmed via `curl -D -` and a fresh browser tab, desktop and 390px. Same pattern as PL-001 (`/plans`
+signed out), which correctly shows inviting copy instead of a bare redirect — `/studies` should match
+that pattern rather than differ from it (B6/B7 consistency).
+
+Remaining 26 of 32 SE IDs: PENDING-SIGNIN, as expected — none of the editor's core behavior is
+observable without the one real production account.
