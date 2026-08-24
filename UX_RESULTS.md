@@ -482,3 +482,30 @@ flagged by the agent as likely cache-warmed, not cold-cache numbers — recorded
 resets the browser's internal focus-navigation starting point to that click — silently invalidating
 a "first Tab" test. Test cold, with zero clicks, for any KB-016-style "what's the very first stop"
 assertion.
+
+## Batch 19 — mobile viewport re-run (parallel agent, 375px/320px/820px tablet, signed out)
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/mobile.md`.
+
+MOB-001/002/003 ✅ **10/10 page×width combos clean** — `/`, `/about`, `/read/jhn/3`, `/search`,
+`/library/notes` at both 375px and 320px, `scrollWidth === innerWidth` every time, zero horizontal
+overflow anywhere tested. Sign-in form fields all sit in the top 60% of the viewport, no plausible
+keyboard-coverage conflict. Reader header controls (Aa/HL/אα/KJV) stay inside 375px with 18px to
+spare, before and after toggling both HL and interlinear. Tablet (820×1180) renders genuinely
+different, designed breakpoints on both `/` and the reader — not a stretched phone or squeezed
+desktop view.
+
+### F-031 · AX-019, exact source pinned · **P2** · The footer is the "known 16-target" failure, precisely
+Measured every visible tap target on `/` at 375px. **The entire footer — 10 author links + 5 nav
+links, 15 targets — is uniformly 40px tall**, 4px under the 44px minimum, a systemic sizing choice
+in the footer link component rather than 15 one-off mistakes. Two top-nav text links ("Home" 35px
+wide, "Why" 25px wide) are 44px tall but too narrow. This is very likely the exact same "16" the
+plan's own pre-registered finding (C3) refers to — now with a precise location and a single
+component to fix, rather than a vague count.
+
+**Tooling note, useful for future parallel runs:** `computer.left_click` timed out repeatedly with
+"Browser pane is currently hidden" — the automated pane is shared across concurrent agent tabs, and
+contention from other agents' tabs blocked click-based interaction. Worked around with `form_input`
++ JS `.click()` instead, and measured everything via live `getBoundingClientRect()`/`scrollWidth`
+rather than screenshots. Confirms the shared-pane risk flagged before dispatch was real, not
+hypothetical — JS-based interaction was the correct fallback and produced clean results anyway.
