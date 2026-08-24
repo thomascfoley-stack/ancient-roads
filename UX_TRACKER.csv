@@ -597,18 +597,18 @@ x,"PF-012 Font loading: FOUT/FOIT behaviour, no layout shift (B5).","PASS — li
 ,"PF-013 Image loading: correct sizes, no oversized downloads on mobile.","FAIL — live-verified: the homepage hero background (`/marketing/hero-ground.jpg`, CSS `background-image`, not a Next.js optimized `<Image>`) has `decodedBodySize` 845,650 bytes (~826KB) and this exact same file/size is served identically at a 375px mobile viewport and at desktop width — no responsiv"
 ,PF-014 Repeat-visit performance (warm cache) vs first visit.,"PARTIAL — not isolated cleanly: keyboard-performance.md's numbers were flagged by its own author as likely already cache-warm rather than true first-visit numbers, so a genuine first-visit-vs-repeat-visit comparison was not performed this pass either."
 x,"PL-001 Enumerate the plans surface, the day list, and the toggle.","PASS — Live: plan list, day list, checkmark toggle, progress bar, all enumerated"
-,PL-002 Browse available plans → each has a clear description and length.,PENDING-SIGNIN — no browsable list of available plans exists signed out; nothing to compare descriptions/lengths against.
-,PL-003 Start a plan → confirmation; it appears on home.,PENDING-SIGNIN — starting a plan requires an account.
+x,PL-002 Browse available plans → each has a clear description and length.,"PASS — Custom ""New plan"" builder is discoverable and clear: One book/A collection/A topic, book selector, weeks/days-per-week/starting date, live preview (""15 readings, about 1 chapter a day, Mon Aug 24 -> Fri Sep 11"")"
+x,PL-003 Start a plan → confirmation; it appears on home.,"PASS — Created a real custom plan (Romans, 3 weeks); confirmed real navigation to a new /plans/[id] URL"
 x,PL-004 Day toggle both directions → persists across reload.,"PASS — Day toggle both directions confirmed live (mark read: 1/40->2/40, un-mark: back to 1/40), the historic C2/C3 outage (permission denied on plan_days) stays fixed"
 ,PL-005 Day toggle by keyboard → works (known pointer-only suspect).,PENDING-SIGNIN — keyboard toggle not testable without a started plan.
 x,PL-006 Day toggle by assistive click → works.,"PASS — Toggle worked via computer-tool click (assistive-style click), correct state change both directions"
 ,"PL-007 Toggle while offline → honest failure, not a silently reverted checkbox (B4).",PENDING-SIGNIN — offline toggle behavior needs an active plan/account.
-,PL-008 Plan content links → into the reader; Back returns to the plan at the same position.,PENDING-SIGNIN — no plan content links exist signed out to test reader nav/back.
+x,PL-008 Plan content links → into the reader; Back returns to the plan at the same position.,"PASS — Reading-day rows open an inline preview panel by design (not a bug); ""Open in full reader"" link has a correct href (/read/rom/1) and Back correctly returns to the plan detail page"
 x,PL-009 Progress indicator accurate (days read / total) — does it share the fake-100% computation? Check explicitly.,"PASS — Progress indicator (days read/total, days-behind count) updated accurately on each toggle"
 ,PL-010 Progress persists across refresh and sign-out/in.,PENDING-SIGNIN — progress persistence needs sign-out/in with an account.
 ,PL-011 Finish a plan → celebrated or at least acknowledged; no broken state.,PENDING-SIGNIN — finishing a plan requires an account.
 ,"PL-012 Abandon/restart a plan → possible, confirmed, honest.",PENDING-SIGNIN — abandon/restart requires an account.
-,PL-013 Delete a plan → confirmed; gone; home updates.,PENDING-SIGNIN — delete requires an account.
+,PL-013 Delete a plan → confirmed; gone; home updates.,"FAIL — Clicking ""Delete plan"" freezes the entire tab/renderer - reproduced 3 times independently, including a pure JS .click() dispatch that bypasses all mouse/CDP event pathways and still hung Runtime.evaluate itself for 45+ seconds. Filed as F-108, P1"
 ,"PL-014 A plan day with a multi-chapter reading → all chapters reachable, progress sensible.",PENDING-SIGNIN — multi-chapter day content requires an active plan.
 x,PL-015 A plan day in the past → clearly marked as missed or catch-up.,"PASS — ""20 days behind"" banner clearly marks catch-up state with honest, non-shaming copy and two explicit resume options"
 ,PL-016 Two plans at once → both tracked independently.,PENDING-SIGNIN — concurrent plans requires an account.

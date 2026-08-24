@@ -1269,3 +1269,40 @@ A returning user with substantial history gets no sense of "pick up where you le
 whose whole job is to be the front door. Earlier signed-out testing already confirmed `/home` correctly
 *omits* account-gated content when there's no account (HM-005/006/011, appropriately) — this finding is
 that the omission continues even once there's plenty of real activity to show.
+
+## Batch 57 — PL (Reading Plans, custom-plan builder), live signed-in production testing
+
+Discovered and tested a previously-untested feature: the "New plan" custom builder (One book / A
+collection / A topic, book picker, weeks/days-per-week/start-date, with a live preview of exactly what
+will be created). Created a real disposable plan (Romans, 3 weeks) to test it end to end.
+
+**Confirmed PASS:** the builder itself (PL-002), plan creation with real navigation to a new
+`/plans/[id]` (PL-003), and the reading-day interaction — each day opens an inline preview panel (not
+a full-page navigation, a legitimate design choice, initially misread as a dead link before checking
+the DOM), with a working "Open in full reader" link (correct href, correct destination, Back returns
+cleanly to the plan) (PL-008).
+
+### F-108 · PL-013 · **P1** · "Delete plan" freezes the entire tab/renderer — reproduced 3 independent ways
+Clicking "Delete plan" on the disposable test plan hung the tab completely, three separate times:
+
+1. A real mouse click via the browser-automation tool — `Input.dispatchMouseEvent` timed out after 30s.
+2. A second real mouse click, same result.
+3. A **pure JS `.click()` dispatch**, which bypasses mouse/CDP input handling entirely — this froze
+   `Runtime.evaluate` itself for 45+ seconds, meaning the freeze happens synchronously inside the
+   click handler's own execution, not in event dispatch. This rules out a testing-tool artifact.
+
+Each freeze took 20-50+ seconds to clear, and full recovery needed a fresh `navigate()` call (a page
+reload) rather than the tab recovering on its own. No confirmation dialog, no error, no partial state
+change was ever observed — the button click itself locks the renderer.
+
+This is a P1: deleting something you created is one of the most basic, expected actions in the app,
+and it currently locks up the page for anyone who tries it on a custom-built reading plan (the two
+pre-seeded template plans were never tested for this specific failure, since neither was deleted in
+this session — worth checking whether the bug is custom-plan-specific or the delete path in general).
+
+**Known incomplete cleanup:** the disposable test plan (`/plans/959dc6bc-d3b4-471c-8bdb-c034c8d4719a`,
+"Romans · 3 weeks") could not be deleted through the UI because of this exact bug, and was left in the
+account rather than risk another 45+ second freeze retrying it. Flagging for manual cleanup once F-108
+is fixed, or via direct DB access if someone with that access wants to clear it sooner — it is inert
+test data (0 of 15 days read, never touched again after this batch) and poses no functional risk left
+as-is.
