@@ -1,5 +1,75 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — DEPLOYED: `ffab67d` live on ancientpaths.app
+
+Owner said "get it all shipped". Union candidate built, audited, deployed, verified.
+
+**Live:** `ffab67d` · `dpl_8cwLjYyww82Dha5bJzGwwtGyFVWJ` · receipt
+`docs/evidence/deploys/deploy-ffab67d-2026-08-24T16-07-11Z.txt`.
+
+### The candidate is a UNION, because no single ref contained both halves
+
+My branch was 36 commits behind the live lineage and 43/36 diverged from `origin/main`, and
+**`origin/main` does not contain the live sha `ca433a6`** (the merge-to-main gap MASTER keeps
+flagging). Deploying my branch alone would have reverted whatever shipped at 05:15Z. So:
+merged `origin/fix/q1-signed-out-state` (9a77fb4, contains live) **and** `origin/main`, then
+verified by ancestry that the result contains all three. Only conflict was `WORKLOG.md`; both
+entries kept, mine on top per the convention.
+
+`npm run audit` on the union: **1 failed / 1891 passed**, the failure being
+`test/user-corpus/draft-check.test.ts` timing out at 5s. Re-run in isolation **twice**, passes both
+times at 2.5s — it exceeds the budget only under full-suite parallel load against the shared dev
+branch, which is the contention another session had already flagged. Not a merge regression.
+
+### The rootDirectory decision — owner-ruled, and reversed as promised
+
+`deploy.sh` died on `The provided path ".../web/web" does not exist` — the blocker a peer reported
+and `docs/pm/orders/2026-08-24-revisit.md` §Blocker 2 escalated unruled. It is genuinely mutually
+exclusive: CLI production deploys need `rootDirectory` empty, GitHub builds need `"web"`. Three
+sessions declined to flip it, correctly.
+
+**Owner ruled: flip → deploy → flip back.** Recorded `'web'` before touching it, flipped to `null`,
+deployed, restored to `'web'` — the restore ran from a shell `trap` so it would fire even if the
+deploy died, and it did fire on the first attempt, which failed. **Verified restored: `'web'`.**
+
+Worth knowing for next time: **all production deploys are CLI.** The GitHub-triggered builds in the
+revisit doc are PREVIEW builds — `vercel ls --prod` shows every production deployment authored by
+`thomascfoley-7284`. So the two paths are not symmetric, and "GitHub builds need web" costs previews,
+not production.
+
+One provisional receipt from the failed first attempt was deleted rather than committed. It was
+honest — `state: upload started, outcome unknown`, no url, no deployment id — which is the script's
+own guard working, but it records an upload that never landed.
+
+### Verified LIVE, independently of the script's own "Done!"
+
+| | Evidence on ancientpaths.app |
+|---|---|
+| **K-1 PostHog** | `script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com` in the served header; and in-page `__PosthogExtensions__`, `_POSTHOG_REMOTE_CONFIG`, `extendPostHogWithSurveys` all defined — the SDK loads AND completed a round-trip. **Analytics is capturing in production for the first time.** |
+| **P0 floor** | `/auth/forgot-password` form now `method="post"` — an un-hydrated submit POSTs instead of writing the password into the URL |
+| **L-1 OG card** | `og:image` present; `/marketing/og-image.jpg` returns 200 to an un-gated request, so crawlers can actually fetch it |
+| **K-3** | `/about` serves the shared footer |
+
+### STILL BROKEN IN PRODUCTION — the deploy did not fix this
+
+**`formHydrated: false` on the live `/auth/forgot-password` right now.** The Suspense boundary
+wrapping `AuthForm` still does not hydrate, so sign-in and sign-up still have no JavaScript
+attached and **still do not work**. All the deploy changed is that failing at them no longer leaks
+the password into the URL. The floor is shipped; the door is still shut.
+
+That is the top of the queue. Suspects, unchased: the `useSearchParams()` + `<Suspense>` +
+`dynamic = 'force-dynamic'` combination on `/auth/[path]`, or `generateStaticParams` +
+`dynamicParams = false` on a force-dynamic route.
+
+### Not done
+
+- **The pre-deploy `deep-audit` swarm (CLAUDE.md) was NOT run** — this session is configured not to
+  spawn agents unasked. `npm run audit` green plus per-fix red-proofs and live browser checks is
+  what this shipped on. Saying so rather than letting a green audit imply the full gate.
+- K-2's 1,937 damaged sections are **not repaired** — the adapter fix only stops new damage.
+- `main` still does not contain the live sha. This deploy did not close that gap; it merged main IN
+  rather than pushing to it.
+
 ## 2026-08-24 — UX remediation: work order ratified, P1s landed (branch `fix/ux-overnight-sweep`)
 
 Owner ratified `UX_REMEDIATION_PLAN.md` "as-is, with the review amendments incorporated" after all
