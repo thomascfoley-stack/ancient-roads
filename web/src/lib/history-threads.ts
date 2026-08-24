@@ -8,6 +8,7 @@
 // FTS over CORPUS sections. Separate files make the invariant checkable: THIS file may never
 // contain a tsquery; that one may never touch messages.
 import { runAsUser } from './db';
+import { truncateCodePoints } from './text';
 import type { HistoryResponse } from './history-search-db';
 
 // research.ts owns persona 'ask' with the StoredAnswer contract; history stores a different
@@ -18,18 +19,23 @@ import type { HistoryResponse } from './history-search-db';
 export const HISTORY_PERSONA = 'history';
 
 export async function createHistoryThread(userId: string, query: string, payload: HistoryResponse): Promise<string> {
-  const title = query.length > 80 ? `${query.slice(0, 77)}…` : query;
+  const title = query.length > 80 ? `${truncateCodePoints(query, 77)}…` : query;
+  // One transaction, one statement — research.ts's I1-L2 on the same tables, with TWO message
+  // rows (UNION ALL over the chat CTE). A failed message insert rolls the chat row back with
+  // it: no orphan empty history chats (#113), which listing/delete fence out and
+  // getHistoryThread reports as null. `NULL::jsonb` keeps `sources` typed across the union.
   const [rows] = await runAsUser(userId, (sql) => [
-    sql`INSERT INTO chats (user_id, title, persona) VALUES (${userId}, ${title}, ${HISTORY_PERSONA}) RETURNING id`,
+    sql`WITH c AS (
+          INSERT INTO chats (user_id, title, persona) VALUES (${userId}, ${title}, ${HISTORY_PERSONA})
+          RETURNING id
+        )
+        INSERT INTO messages (user_id, chat_id, role, content, sources)
+        SELECT ${userId}, c.id, 'user', ${query}, NULL::jsonb FROM c
+        UNION ALL
+        SELECT ${userId}, c.id, 'assistant', 'history-results', ${JSON.stringify(payload)}::jsonb FROM c
+        RETURNING chat_id`,
   ]);
-  const threadId = (rows as { id: string }[])[0]!.id;
-  await runAsUser(userId, (sql) => [
-    sql`INSERT INTO messages (user_id, chat_id, role, content)
-        VALUES (${userId}, ${threadId}, 'user', ${query})`,
-    sql`INSERT INTO messages (user_id, chat_id, role, content, sources)
-        VALUES (${userId}, ${threadId}, 'assistant', 'history-results', ${JSON.stringify(payload)}::jsonb)`,
-  ]);
-  return threadId;
+  return (rows as { chat_id: string }[])[0]!.chat_id;
 }
 
 export async function getHistoryThread(

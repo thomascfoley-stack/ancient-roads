@@ -186,8 +186,19 @@ function decodeEntities(s: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+    // Out-of-range code points keep the original entity text rather than throwing a RangeError
+    // that the upload queue would retry three times on a deterministic input. Same guard as
+    // web/src/verifier/normalize.ts's decodeHtmlEntities, which predates this parser.
+    .replace(/&#(\d+);/g, (m, d: string) => {
+      const cp = Number(d);
+      if (!Number.isFinite(cp) || cp < 1 || cp > 0x10ffff) return m;
+      return String.fromCodePoint(cp);
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (m, h: string) => {
+      const cp = parseInt(h, 16);
+      if (!Number.isFinite(cp) || cp < 1 || cp > 0x10ffff) return m;
+      return String.fromCodePoint(cp);
+    })
     .replace(/&amp;/g, '&'); // last, so &amp;lt; does not become <
 }
 

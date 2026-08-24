@@ -66,10 +66,29 @@ function extractText(content: (string | Record<string, unknown>)[]): string {
   return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
-async function fetchJson(url: string): Promise<unknown> {
+export async function fetchJson(url: string): Promise<unknown> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
   return res.json();
+}
+
+// A 200 is not enough — validate the shape before iterating, and fail LOUD
+// (naming the URL and the missing field) rather than trusting a cast: a
+// wrong-shaped body inside the retry loop used to die as a bare TypeError and
+// the chapter was silently never written.
+export function parseChapterResponse(
+  url: string,
+  data: unknown,
+): { number: number; content: ApiVerse[] } {
+  const chapter = (data as { chapter?: unknown } | null)?.chapter;
+  if (!chapter || typeof chapter !== 'object') {
+    throw new Error(`Unexpected response shape from ${url}: missing "chapter" object`);
+  }
+  const content = (chapter as { content?: unknown }).content;
+  if (!Array.isArray(content)) {
+    throw new Error(`Unexpected response shape from ${url}: "chapter.content" is not an array`);
+  }
+  return chapter as { number: number; content: ApiVerse[] };
 }
 
 async function sleep(ms: number) {
@@ -117,12 +136,11 @@ async function ingestTranslation(apiId: string) {
       for (let attempt = 0; attempt < 3 && !fetched; attempt++) {
         try {
           if (attempt > 0) await sleep(1000 * attempt);
-          const data = await fetchJson(url) as {
-            chapter: { number: number; content: ApiVerse[] };
-          };
+          const data = await fetchJson(url);
+          const chapter = parseChapterResponse(url, data);
 
           const verses: { verse: number; text: string }[] = [];
-          for (const item of data.chapter.content) {
+          for (const item of chapter.content) {
             if (item.type === 'verse' && typeof item.number === 'number') {
               const text = extractText(item.content);
               if (text) {
@@ -165,22 +183,24 @@ async function ingestTranslation(apiId: string) {
 }
 
 // --- Main ---
-const translationIds = process.argv.slice(2);
-if (translationIds.length === 0) {
-  console.log('Usage: tsx src/ingest/ingest-api.ts <translation_id> [...]');
-  console.log(`Available: ${Object.keys(TRANSLATION_SLUGS).join(', ')}`);
-  process.exit(0);
-}
+if (process.argv[1] && /ingest-api/.test(process.argv[1])) {
+  const translationIds = process.argv.slice(2);
+  if (translationIds.length === 0) {
+    console.log('Usage: tsx src/ingest/ingest-api.ts <translation_id> [...]');
+    console.log(`Available: ${Object.keys(TRANSLATION_SLUGS).join(', ')}`);
+    process.exit(0);
+  }
 
-console.log(`Pulling ${translationIds.length} translation(s) from ${API_BASE}`);
+  console.log(`Pulling ${translationIds.length} translation(s) from ${API_BASE}`);
 
-const results: { slug: string; totalVerses: number; totalChapters: number; errors: number }[] = [];
-for (const id of translationIds) {
-  results.push(await ingestTranslation(id));
-}
+  const results: { slug: string; totalVerses: number; totalChapters: number; errors: number }[] = [];
+  for (const id of translationIds) {
+    results.push(await ingestTranslation(id));
+  }
 
-console.log('\n=== Summary ===');
-for (const r of results) {
-  console.log(`  ${r.slug}: ${r.totalVerses} verses, ${r.totalChapters} chapters${r.errors ? `, ${r.errors} errors` : ''}`);
+  console.log('\n=== Summary ===');
+  for (const r of results) {
+    console.log(`  ${r.slug}: ${r.totalVerses} verses, ${r.totalChapters} chapters${r.errors ? `, ${r.errors} errors` : ''}`);
+  }
+  console.log('Done.');
 }
-console.log('Done.');

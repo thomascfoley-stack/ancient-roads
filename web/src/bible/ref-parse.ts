@@ -496,6 +496,20 @@ const MULTIWORD_SCAN_RE =
 const ORDINAL_BOOK_SCAN_RE =
   /\b([1-3]|i{1,3}|first|second|third)\s+([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
 
+// Digit-ATTACHED ordinals — "1Cor 13", "2tim 3:16" — are invisible to both passes above:
+// SCAN_RE's optional ordinal requires `\s+` after it, and its book group `[a-z]{2,}` cannot
+// start on a digit, so the attached form formed no candidate at all and never reached parseRef —
+// which already normalises it ("1john" → "1 john", normalizeBookInput above). The /ask routing
+// path (resolveIntent) is one of the callers that lost the span. Same shape and same constraint
+// as the period fix: the ordinal prefix is REQUIRED and digit-only ([1-3] — roman/word forms are
+// indistinguishable from the book word without a separator), one optional trailing period on the
+// book word, additive pass (dedupe by display, overlap by source span), and parseRef validates
+// every candidate. Precision holds for the same reason ORDINAL_BOOK_SCAN_RE's does: "3rd 4"
+// yields the candidate "3 rd 4", which dies on the unknown book; "21cor 13" never matches at
+// all — there is no word boundary between the "2" and the "1" for `\b([1-3])` to start at.
+const DIGIT_ATTACHED_SCAN_RE =
+  /\b([1-3])([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+
 // Find scripture references embedded in prose — "1 Corinthians 13 the greatest
 // of these…", "Isaiah 53", "John 3:16" — and return the resolved refs. Unlike
 // parseRef (whole-string typeahead), this scans candidate spans anywhere in the
@@ -518,6 +532,9 @@ export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedR
     consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
   }
   for (const m of text.matchAll(ORDINAL_BOOK_SCAN_RE)) {
+    consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
+  }
+  for (const m of text.matchAll(DIGIT_ATTACHED_SCAN_RE)) {
     consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
   }
   if (MULTIWORD_SCAN_RE) {

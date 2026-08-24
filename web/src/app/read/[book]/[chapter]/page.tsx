@@ -160,12 +160,23 @@ export default function ReaderPage() {
     }
     // Wait for the stored translation to land, so this fires once with the right one.
     if (!hydrated) return;
+    // B4 (#118): rapid chapter navigation starts a second fetch while the first is in flight;
+    // without the cancelled flag the SLOWER stale fetch resolves last and overwrites the newer
+    // chapter on screen. The same pattern desk-pane.tsx carries for its chapter fetch.
+    let cancelled = false;
     setData(null);
     setError(null);
     setStudy(null);
     fetchChapter(fetchSlug, chapterNum, translation.id)
-      .then(setData)
-      .catch(() => setError('Failed to load chapter'));
+      .then((d) => {
+        if (!cancelled) setData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Failed to load chapter');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [book, fetchSlug, chapterNum, translation, hydrated]);
 
   // A040 — REMEMBER WHERE THE READER IS, so closing the tab does not send them back to John 1.

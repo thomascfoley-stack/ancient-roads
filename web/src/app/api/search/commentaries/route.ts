@@ -20,6 +20,7 @@
 import { searchCommentaries } from '@/lib/commentary-search';
 import { apiError } from '@/lib/api-error';
 import { publicReadThrottle } from '@/lib/public-read-limit';
+import { truncateCodePoints } from '@/lib/text';
 
 /** Bible book ordinal — 1..66, and a smallint column downstream. */
 const MAX_BOOK = 66;
@@ -59,11 +60,14 @@ export async function GET(req: Request): Promise<Response> {
   // nothing rather than 400ing against a list this route would have to keep in sync — the
   // hand-maintained-expected-set trap. Length is still bounded: an unbounded string reaches a
   // query parameter.
-  const str = (name: string): string | undefined => sp.get(name)?.slice(0, 100) || undefined;
+  const str = (name: string): string | undefined => {
+    const v = sp.get(name);
+    return v ? truncateCodePoints(v, 100) : undefined;
+  };
 
   try {
     const data = await searchCommentaries({
-      query: q.slice(0, 200),
+      query: truncateCodePoints(q, 200),
       book: book ?? undefined,
       tradition: str('tradition'),
       author: str('author'),

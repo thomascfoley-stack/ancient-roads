@@ -1,5 +1,49 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-23 — Bug sweep execution: all 15 Detail findings resolved (14 fixed, 1 not-a-bug)
+
+**Context.** `BUG_SWEEP.md` (c7a41b9) triaged 15 Detail findings with per-bug plans and exit-test
+designs. This session executed the fixes in worktree `/tmp/ap-bugsweep` (detached at c7a41b9).
+Owner rulings up front: full board in scope; B11 Option B (quota enforcement inside
+`createDocument` + `pg_advisory_xact_lock(hashtext(userId))`); B13 test narrowing permitted via
+the honest sequence; B12 code fix + read-only prod count authorized, delete NOT authorized.
+
+**How it ran.** Fourteen delegated fix agents in three batches (disjoint file sets; B2+B6 shared
+`history-threads.ts` so one agent took both; the byte-sync twins B1/B15 each went to a single
+agent). Every bug ran the loop: exit test written first, watched RED against unfixed code, fix,
+GREEN, named neighbor suites. Evidence is in `BUG_SWEEP.md`'s new Resolution log section; audit
+log lands in `docs/evidence/bug-sweep-2026-08-23/`.
+
+**Outcomes worth reading.**
+* B13: the ruled sequence's step (b) REFUTED its premise — the old "EXACT prior spans" assertion
+  and the new concurrency tests both pass under the fixed code, so NO test was narrowed. Recorded
+  in the Resolution log.
+* B9: the report's Better Auth error codes were guesses and don't exist; the shipped codes were
+  verified against `better-auth@1.4.18` / `better-call@1.1.8` in `node_modules`.
+* B8: the zdt slice the report guessed would "fail loudly in zlib" actually fails SILENTLY
+  (clamped slice is still a complete deflate stream) — check shipped for both sites.
+* B3 second-order question answered: `src/evals/run-bait.mts` counts HTTP errors as FAITHFUL
+  (`faithful = total - breaches`) — a 100/100 could hide a hole. Owner decision, filed F-1.
+* B12: Easter is already inside the lane-F4 out-of-scope population (not re-filed); a read of all
+  81 gazetteer labels found 8 more same-shape collisions (Caesar, Herod, Antony, Titus, Agrippa,
+  Wesley, the temple, alias Nice) — report only, nothing changed.
+
+**NOT DONE / UNVERIFIED.**
+* `npm run audit` re-run: sole red is the PRE-EXISTING publish-flip/thayers evidence-gate failure
+  (verified identical on the clean main tree at c7a41b9 — a tracked evidence file the test
+  expects absent; predates the batch, owner's to adjudicate). All batch gates green, incl. strict
+  tsc after a one-char fix to `test/screens.test.ts:38`. Evidence
+  `docs/evidence/bug-sweep-2026-08-23/audit-rerun.log`.
+* B12 prod data count BLOCKED on `NEON_API_KEY` (not available to the session; read-only path and
+  SQL documented in the Resolution log). Cleanup itself was never authorized and not touched.
+* B15 `interpretation_bait` re-run owed before ship (compose-loop behaviour change).
+* B1 /ask accuracy-diagnostic call owed before merge (retrieval-behaviour change).
+* B14 BROWSER leg owed (agent may not mark rendered checks).
+* F-1 (bait harness misclassification), F-2 (queue retries deterministic parser failures),
+  F-3 (gazetteer collision labels) filed, not fixed.
+* Nothing committed; the batch sits dirty in `/tmp/ap-bugsweep` pending the audit verdict and the
+  owner's merge call.
+
 ## 2026-08-22 — History search: the in-flight signal, and the tab that looked ignored
 
 **Owner report, two symptoms.** (1) "History search needs a loading bar because it seems like it's

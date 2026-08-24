@@ -5,6 +5,7 @@ import { parsePlanSpec } from '@/lib/plan/spec';
 import { resolveCanonicalGroup } from '@/lib/plan/canonical-groups';
 import { createPlan, listPlans, topicTitle } from '@/lib/plan/store';
 import { defaultPlanTitle } from '@/lib/plan/title';
+import { truncateCodePoints } from '@/lib/text';
 
 export const runtime = 'nodejs';
 
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
       title = defaultPlanTitle(parsed.spec);
     }
   }
-  title = title.slice(0, 200);
+  title = truncateCodePoints(title, 200);
 
   try {
     const result = await createPlan(user.id, title, parsed.spec);

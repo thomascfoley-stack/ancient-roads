@@ -84,6 +84,8 @@ export function ReaderHeader({
         <button
           onClick={onToggleInterlinear}
           title="Greek / Hebrew interlinear"
+          aria-label="Greek and Hebrew interlinear"
+          aria-pressed={interlinear}
           className={`min-h-[44px] min-w-[44px] px-3 text-xs font-semibold sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
             interlinear
               ? // The ON state wears antique gold (the link/accent colour), never

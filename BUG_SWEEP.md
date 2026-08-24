@@ -17,21 +17,21 @@ pasted) · `CONFIRMED BY READ` (defect visible in source; no runtime repro yet) 
 
 | # | Issue | Bug | Files | Sev | Status |
 |---|---|---|---|---|---|
-| B1 | #108 | `scanReferences` misses attached-digit ordinals (`1Cor 13`) | `src/bible/ref-parse.ts` + `web/` twin | P2 | **REPRODUCED** |
-| B2 | #120 | Title truncation splits surrogate pairs → U+FFFD written to DB | `web/src/lib/research.ts`, `history-threads.ts` (+ wider class) | P3 | **REPRODUCED** |
-| B3 | #119 | `/api/eval/bait` raw 500 on `teach()` throw — no envelope, no log | `web/src/app/api/eval/bait/route.ts` | P3 | **CONFIRMED BY READ** |
-| B4 | #118 | Reader: stale chapter fetch overwrites the fresh one | `web/src/app/read/[book]/[chapter]/page.tsx` | P3 | **CONFIRMED BY READ** |
-| B5 | #117 | Bible API ingest trusts response shape; crashes or skips chapters | `src/ingest/ingest-api.ts` | P3 | **CONFIRMED BY READ** |
-| B6 | #113 | History thread create is two transactions — orphan empty chats | `web/src/lib/history-threads.ts` | P3 | **CONFIRMED BY READ** |
-| B7 | #112 | `embedded` counted before persistence — inflated ingest logs | `src/retrieval/ingest.ts` | P3 | **CONFIRMED BY READ** |
-| B8 | #111 | `decodeZld` missing `.dat` bounds check — silent truncation | `src/ingest/sword-ld.ts` | P3 | **CONFIRMED BY READ** |
-| B9 | #110 | Sign-up leaks account existence; sign-in does not | `web/src/components/auth-forms.tsx` | P3 | **CONFIRMED BY READ** |
-| B10 | #106 | `.docx` entity decode throws `RangeError` on out-of-range code point | `web/src/lib/user-corpus/parse-docx.ts` | P3 | **CONFIRMED BY READ** |
-| B11 | #116 | Upload quota TOCTOU — concurrent uploads exceed the cap | `web/src/lib/user-corpus/quota.ts` + upload route | P2 | **CONFIRMED BY READ** |
-| B12 | #115 | Gazetteer label `Easter` anchors every Easter mention to the controversy | `src/ingest/history-gazetteer.ts` | P2 | **CONFIRMED BY READ** |
-| B13 | #114 | Annotation rollback overwrites newer highlights/notes after a failed retry | `web/src/lib/use-annotation-writes.ts` | P2 | **CONFIRMED BY READ** |
-| B14 | #109 | Interlinear toggle exposes no pressed state to screen readers | `web/src/components/reader-header.tsx` | P2 | **CONFIRMED BY READ** |
-| B15 | #107 | `runScreens` reports only the first hit per pattern — incomplete regen feedback | `src/verifier/screens.ts` + `web/` twin | P2 | **CONFIRMED BY READ** |
+| B1 | #108 | `scanReferences` misses attached-digit ordinals (`1Cor 13`) | `src/bible/ref-parse.ts` + `web/` twin | P2 | **CLOSED** — evidence in Resolution log |
+| B2 | #120 | Title truncation splits surrogate pairs → U+FFFD written to DB | `web/src/lib/research.ts`, `history-threads.ts` (+ wider class) | P3 | **CLOSED** — evidence in Resolution log |
+| B3 | #119 | `/api/eval/bait` raw 500 on `teach()` throw — no envelope, no log | `web/src/app/api/eval/bait/route.ts` | P3 | **CLOSED** — evidence in Resolution log |
+| B4 | #118 | Reader: stale chapter fetch overwrites the fresh one | `web/src/app/read/[book]/[chapter]/page.tsx` | P3 | **CLOSED** — evidence in Resolution log |
+| B5 | #117 | Bible API ingest trusts response shape; crashes or skips chapters | `src/ingest/ingest-api.ts` | P3 | **NOT-A-BUG** + hygiene guard shipped — see Resolution log |
+| B6 | #113 | History thread create is two transactions — orphan empty chats | `web/src/lib/history-threads.ts` | P3 | **CLOSED** — evidence in Resolution log |
+| B7 | #112 | `embedded` counted before persistence — inflated ingest logs | `src/retrieval/ingest.ts` | P3 | **CLOSED** — evidence in Resolution log |
+| B8 | #111 | `decodeZld` missing `.dat` bounds check — silent truncation | `src/ingest/sword-ld.ts` | P3 | **CLOSED** — evidence in Resolution log |
+| B9 | #110 | Sign-up leaks account existence; sign-in does not | `web/src/components/auth-forms.tsx` | P3 | **CLOSED** — evidence in Resolution log |
+| B10 | #106 | `.docx` entity decode throws `RangeError` on out-of-range code point | `web/src/lib/user-corpus/parse-docx.ts` | P3 | **CLOSED** — evidence in Resolution log |
+| B11 | #116 | Upload quota TOCTOU — concurrent uploads exceed the cap | `web/src/lib/user-corpus/quota.ts` + upload route | P2 | **CLOSED** — evidence in Resolution log |
+| B12 | #115 | Gazetteer label `Easter` anchors every Easter mention to the controversy | `src/ingest/history-gazetteer.ts` | P2 | **FIXED (code)** — data count BLOCKED on `NEON_API_KEY`, see Resolution log |
+| B13 | #114 | Annotation rollback overwrites newer highlights/notes after a failed retry | `web/src/lib/use-annotation-writes.ts` | P2 | **CLOSED** — evidence in Resolution log; test-lock resolved WITHOUT narrowing, see log |
+| B14 | #109 | Interlinear toggle exposes no pressed state to screen readers | `web/src/components/reader-header.tsx` | P2 | **FIXED** — red→green evidence in Resolution log; BROWSER leg still owed |
+| B15 | #107 | `runScreens` reports only the first hit per pattern — incomplete regen feedback | `src/verifier/screens.ts` + `web/` twin | P2 | **FIXED** — red→green evidence in Resolution log; bait re-run owed before ship |
 
 **Nothing here is a licensing, attribution, or interpretation breach** — the three existential
 classes are untouched by this sweep. B12 is the only one that has already written wrong data.
@@ -657,3 +657,268 @@ honest check before this ships, and its result belongs in this file.
 ## Intake queue
 
 _(more bugs land here as they are pasted)_
+
+---
+
+## Resolution log — 2026-08-23 (orchestrated fix batch, worktree `/tmp/ap-bugsweep`)
+
+Owner rulings before code: full board in scope · B11 **Option B** (enforce inside `createDocument`,
+advisory lock inside) · B13 test narrowing permitted via the honest sequence (outcome below: not
+needed) · B12 code fix + read-only prod count authorized, delete NOT authorized.
+
+Execution: 14 parallel/sequential delegated fix agents, each ran the loop (exit test → watched RED
+→ fix → GREEN → named neighbors). Full-suite `npm run audit` verdict (re-run 2026-08-23, evidence
+`docs/evidence/bug-sweep-2026-08-23/audit-rerun.log`, first run `audit.log`): **the only red is
+the PRE-EXISTING publish-flip/thayers evidence-gate failure** — `publish-flip-toolchain.test.ts:473`
+asserts `THAYERS_EVIDENCE_PATH` is absent, but `docs/evidence/thayers-source-verification.md` has
+been tracked since `abe5252` (ancestor of `c7a41b9`), so it fails identically on the clean main
+tree (verified: 1 failed | 38 passed there). Not caused by this batch; root cause is repo state,
+owner to adjudicate. Everything else green: strict `tsc` (after a one-character
+`noUncheckedIndexedAccess` fix at `test/screens.test.ts:38`), root vitest 873/874, web vitest
+1655 passed / 128 skipped, all four typechecks, both lints, knip, deps advisory (expected-red
+matches), deploy.sh gate harness 59/59, Gate B license (917 entries), and the verse-key
+distribution gate RAN (2 tests, real timings) once the corpus assets were cloned in.
+
+### B1 — FIXED+GREEN
+Files: `src/bible/ref-parse.ts` (new additive `DIGIT_ATTACHED_SCAN_RE` pass + comment block;
+`SCAN_RE` untouched), `web/src/bible/ref-parse.ts` (byte-identical, `diff -q` verified),
+`test/ref-parse.test.ts` (new describe: 2 reported tests + 2 overlap tests + dedupe + 4 precision
+guards).
+Red (unfixed): `finds attached-digit ordinals (1Cor 13)` → `expected [] to deeply equal
+['1 Corinthians 13']`; mid-prose, `1John 4:8` epistle-only, and non-overlapping survival — 4
+failed / 70 passed; precision guards (`3rd 4`, `1st 3`, `21cor 13`, `1 in 3`) green as designed.
+Green: `ref-parse` 74/74; neighbors `bible-sync` (9), `routing-orchestration` (21),
+`topical-refs` (11), `reference-intent` (8) all pass; web `user-corpus/anchor` 20/20.
+Note: the regex keeps the plan's `\.?` after the book word (admitted only behind the required
+digit, same constraint as `ORDINAL_BOOK_SCAN_RE`). **Owner call still open:** retrieval-behaviour
+change under the DoD — whether the /ask accuracy diagnostic runs before merge.
+
+### B2 — FIXED+GREEN
+Files: `web/src/lib/text.ts` (new `truncateCodePoints`, code-point spread; ZWJ/grapheme limitation
+recorded in a comment — the explicit decision: spread closes the reported bug, Segmenter is a new
+API surface on a hot path), applied at `history-threads.ts:21`, `research.ts:67`, and the seven
+group-1 persisted sites (`api/plans/route.ts:61`, `api/annotations/route.ts:129,154`,
+`api/search/commentaries/route.ts:62,66`, `ask-outcomes.ts:93,139`, `readings-job.ts:64`).
+Display-only and array-slice sites untouched. Call-site length guards still count UTF-16 units
+deliberately (trigger conditions byte-identical; only the slice became pair-safe).
+Red (unfixed): title truncated on a surrogate pair round-trips to U+FFFD at both named sites.
+Green: `text-truncate` (4), `history-threads-create` (4), `research-title-boundary` (2),
+`history-threads-db` (2, real dev DB — boundary title stores no U+FFFD); swept-file neighbors
+green: ask-outcome-persist (11), ask-outcome-discriminator (6), annotations-routes (12),
+plans-routes (13, real DB), readings-reentrancy (8), readings-stale-running (4), licensing (6).
+`tsc -p web` exit 0.
+
+### B3 — FIXED+GREEN
+Files: `web/src/app/api/eval/bait/route.ts` (try/catch around `teach()` matching `/api/ask`:
+`console.error` + `logEvent('error', { where: 'api/eval/bait' })` + `apiError('INTERNAL')`;
+rate-limiter comment untouched), `web/test/regression/bait-route-teach-error-envelope.test.ts` (new).
+Red (unfixed): `Error: embedQuery exploded` escapes `POST` at `route.ts:44` — raw throw, no envelope.
+Green: exit test 1/1 (500 + `error.code === 'INTERNAL'` + no internal-message leak + error log
+line); `bait-route-production-gate` + `bait-harness-uses-shipped-pipeline` 13/13; root
+`api-error` 6/6, `ask-max-duration-literal` 5/5.
+**Second-order finding (the section's question, answered): the harness DOES misclassify.**
+`src/evals/run-bait.mts:60-63` counts a non-ok HTTP response as `errors++; continue`, and at
+`run-bait.mts:85` `faithful = total - breaches` — so an HTTP-error case is silently counted as
+FAITHFUL. A 100/100 could have been a 99/100 with one silent hole. The route fix does not change
+that classification (a 500 envelope is still `!res.ok`). Fixing the harness math is an owner
+decision — faithfulness-score semantics — and is NOT in this batch. Filed as follow-up F-1.
+
+### B4 — FIXED+GREEN
+Files: `web/src/app/read/[book]/[chapter]/page.tsx` (cancelled flag + cleanup copied from
+`desk-pane.tsx:201-218`, comment naming the precedent), `web/test/components/reader-stale-chapter-fetch.test.tsx` (new).
+Red (unfixed): rapid chapter navigation — second fetch resolves first, first resolves last —
+rendered text is `chapter one STALE-ONE` instead of the fresh chapter. Test written against the
+common trigger (chapterNum change), not the report's translation-switch framing.
+Green: exit test 1/1; neighbors rendering `ReaderPage` — bible-position (22),
+chapter-param-no-dispatch (2), study-panel-verse-sequence (15), settings-close-on-study (3),
+annotation-write-failure (8), t1-t3-first-run (6) — 56/56. `tsc` exit 0.
+
+### B5 — NOT-A-BUG + hygiene guard shipped
+Triage grade stands: nothing is broken; the API has not changed shape. Guard per the plan:
+`src/ingest/ingest-api.ts` gains exported `parseChapterResponse(url, data)` throwing LOUD
+(`Unexpected response shape from <url>: missing "chapter" object` / `"chapter.content" is not an
+array`); the `as`-cast at former lines 120-125 is gone. `fetchJson` exported and the CLI main
+wrapped in the repo-conventional `process.argv[1]` guard so the module is importable (CLI smoke:
+usage banner + exit 0, unchanged). `test/ingest-api-shape.test.ts` (new): both bad-shape cases
+throw naming the URL. Red-proof note: the predicted `TypeError` red lives in the CLI retry loop
+with no importable seam, so the watched red manifested as module-not-importable/missing exports —
+the test still cannot pass unfixed. Neighbors: none import this file (grep-verified).
+
+### B6 — FIXED+GREEN
+Files: `web/src/lib/history-threads.ts` — `createHistoryThread` is now ONE `runAsUser` / ONE
+statement: `WITH c AS (INSERT INTO chats … RETURNING id) INSERT INTO messages … SELECT …
+NULL::jsonb FROM c UNION ALL SELECT … ::jsonb FROM c`. The `sources` jsonb cast across the UNION
+ALL (the section's warning) is explicit on both branches and verified against the real dev DB:
+`history-threads-db.test.ts` executes the statement and reads the payload back deep-equal.
+Red (unfixed): failing message insert leaves 1 orphan `chats` row; chat and messages written in 2
+transactions. Green: mocked exit suite 4/4 (zero orphans, one transaction, happy path, B2 title
+boundary on the same file) + real-DB 2/2; history/research neighbors 59/59 incl.
+research-store-edges (14, real DB) and research-tenancy (6, real DB).
+
+### B7 — FIXED+GREEN
+Files: `src/retrieval/ingest.ts` (increment moved below the successful `upsert`; comment records
+the counter semantics), `test/retrieval-ingest.test.ts` (new, 3 cases).
+Red (unfixed): failed batch still counted — `expected { embedded: 4, upserted: 0, … } to deeply
+equal { embedded: 0, upserted: 0, … }`. Green: 3/3; neighbors embedder-model-guard (5), teacher
+(6).
+Decision recorded in code comment: `embedded` counts all rows of a PERSISTED batch,
+`upserted` (`res.inserted`) counts net new rows; `embedded − upserted` stays the re-run progress
+signal the batch log already prints. Matching register-writer exactly would deaden that signal —
+this is the "write down why they diverge" option the plan offered.
+
+### B8 — FIXED+GREEN
+Files: `src/ingest/sword-ld.ts` (`decodeRawLd`-style `overruns .dat` check in `decodeZld`, plus
+the same check at the `.zdx`→`.zdt` slice in `getBlock` — the site the section flagged), 
+`test/sword-ld.test.ts` (new).
+Red (unfixed): both overrun tests fail by NOT throwing — silent truncation. The zdt red disproves
+the section's guess that zlib would fail loudly: the clamped slice is still a complete deflate
+stream, so `inflateSync` succeeds. Both checks shipped.
+Green: 3/3 (well-formed module decodes; `.dat` overrun throws `/overruns \.dat/`; `.zdt` overrun
+throws `/overruns \.zdt/`); neighbors content-sanity (7), license-manifest (20).
+
+### B9 — FIXED+GREEN
+Files: `web/src/components/auth-forms.tsx` (`ACCOUNT_EXISTENCE_CODES` + the required
+"narrow, does not close the oracle" comment; sign-up throws the generic message for existence
+codes, passes validation errors through), `web/test/components/auth-sign-up-oracle.test.tsx` (new).
+**Code strings VERIFIED against the installed packages, not the report's guess:** the report's
+`user_already_exists` / `email_exists` do not exist. Reality: client is
+`@neondatabase/auth@0.4.2-beta` proxying hosted better-auth; `better-auth@1.4.18`
+`sign-up.mjs:160` → `APIError("UNPROCESSABLE_ENTITY", "User already exists. Use another email.")`;
+`better-call@1.1.8` derives the wire code from the message →
+`USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`; bare `USER_ALREADY_EXISTS` exists in `@better-auth/core`
+base codes (admin plugin). Both shipped, derivation documented in the comment.
+Red (unfixed): duplicate-email response shows `/already exists/i` to the user. Green: 3/3
+(incl. PASSWORD_TOO_SHORT passthrough control); neighbors ask-signed-out (3), sign-out-arming
+(2), auth-session-dedupe (4). Line-123 Google passthrough checked per the section: provider/
+config/token failures only, none conditioned on account existence — not an oracle, unchanged.
+
+### B10 — FIXED+GREEN
+Files: `web/src/lib/user-corpus/parse-docx.ts` (the `normalize.ts:43` guard on both numeric-entity
+decodes, returning the original entity text), `web/test/user-corpus/parse-docx.test.ts` (one new
+test in the existing suite).
+Red (unfixed): `RangeError: Invalid code point 1114112` at `parse-docx.ts:189` — the exact
+red-proof the plan named. Green: 14/14; ReDoS invariant neighbor `docx-extract-redos` 5/5.
+**Follow-up F-2 (filed, not fixed — the plan said file it):** the upload queue retries any
+non-`UploadRefused` parser throw 3× on bytes that fail deterministically. Malformed-document
+errors should classify as permanent. Separate commit, owner-visible.
+
+### B11 — FIXED+GREEN (Option B, owner-ruled)
+Files: `web/src/lib/user-corpus/quota.ts` (pure `quotaVerdict` extracted — pre-existing comparison
+logic and message strings untouched; `QuotaExceeded` error; `checkUploadQuota` kept exported as a
+documented pre-flight-only wrapper so the H5b suite still pins it), `web/src/lib/user-corpus/documents.ts`
+(`createDocument`: one `runAsUser` transaction = `pg_advisory_xact_lock(hashtext(userId))` +
+usage read + conditional `INSERT … SELECT … WHERE count+1 <= MAX AND bytes+incoming <= MAX
+RETURNING *`; zero rows ⇒ `QuotaExceeded` with the shared verdict), `web/src/app/api/user-corpus/upload/route.ts`
+(pre-flight call removed; catch maps `QuotaExceeded` to the byte-identical refusal the route
+returns today: 403 `{ error, code: 'quota_exceeded' }`), `web/test/user-corpus/quota-toctou.test.ts`
+(new, real dev DB).
+Red (unfixed, both legs): two concurrent `createDocument` calls at byte cap−1024 (2×1024B racers)
+and at document cap−1 → `expected [{ok:true},{ok:true}] to have a length of 1 but got 2`.
+Green: exit test 2/2 (exactly one succeeds per leg, refusal wording, final usage within caps);
+neighbors upload-quota (8), queue-never-drops (14+1 pre-existing skip), draft-check,
+blob-round-trip, search (31), tradition-gap (15/15 solo — its 120s timeout in the parallel run is
+DB contention, not the fix), pipeline-to-ready (4), routes (14, incl. a real 201 upload through
+the new path). `tsc -p web` exit 0.
+Precedent accuracy note: `queue.ts`/`reingest-guard.ts` use `SKIP LOCKED`/`FOR UPDATE`, not
+advisory locks; the ruling's `pg_advisory_xact_lock` was followed and comments say "same TOCTOU
+shape", not "same mechanism".
+
+### B12 — code FIXED+GREEN · data count BLOCKED (handed back)
+Files: `src/ingest/history-gazetteer.ts:78` (one line: label `'Easter controversy'`,
+`aliases: ['Quartodeciman', 'Synod of Whitby']`), `test/history-gazetteer.test.ts` (new, 4 tests).
+Red (unfixed): bare-`'Easter'` label anchors `'He rose on Easter morning.'`; both alias tests
+fail on the unfixed entry. Green: 4/4; neighbors dev-only-target (15), explicit-citation (21),
+reingest-guard-wiring (7).
+**(a) F4 overlap:** Easter IS already inside the lane-F4 out-of-scope population — census at
+`docs/evidence/swarm-2026-08-22/W-HISTSCOPE/out-of-scope-population.log` on branch
+`swarm/W-HISTSCOPE-history-scope-db` (18 staged historian works). Not re-filed.
+**(b) Class read — all 81 labels (the "42" in this file's B12 section is stale):** the exact
+holiday-vs-event class is exhausted by Easter. Same-shape collisions remaining, REPORT ONLY:
+`Caesar` (title, every emperor — highest-frequency), `Herod` (four Herods → the Great),
+`Antony` (Mark vs of Egypt), `Titus` (emperor vs Paul's companion), `Agrippa` (three referents),
+`Wesley` (John vs Charles), `the temple` (pagan temples → Jerusalem), alias `Nice`→`nicaea`
+(18th-c. "subtle" sense + the French city). Nothing beyond the Easter entry was changed.
+**(c) Data count — BLOCKED, needs the owner:** the established safe read-only prod path exists
+(`scripts/lib/neon-connection.mjs` `resolveInstrumentConnection()` + `assertReadOnlySession()`),
+but its only credential source is `NEON_API_KEY`, which is set nowhere usable — every local
+credential points at dev (`ep-tiny-hat`), and the library deliberately refuses DATABASE_URL
+fallbacks. Stopped rather than improvise. The two authorized counts, for whoever holds the key,
+inside that read-only pattern:
+```sql
+SELECT count(*) FROM section_history_anchors WHERE entity_slug = 'easter-controversy';
+SELECT count(*) FROM section_history_anchors a JOIN sections s ON s.id = a.section_id
+WHERE a.entity_slug = 'easter-controversy'
+  AND s.heading||' '||s.body !~* '\m(Quartodeciman|Synod of Whitby|Easter controversy|paschal (controversy|question)|\weaster\s+(controversy|question|dispute))';
+```
+(The controversy-term list needs an owner definition before the second number means anything.
+Note: the F4 census measured DEV; whether prod has any such rows at all is unknown — the first
+query answers that.)
+
+### B13 — FIXED+GREEN · test-lock resolved WITHOUT narrowing
+Files: `web/src/lib/use-annotation-writes.ts` (`clearVerse`/`saveVerseNote`/`deleteVerseNote`
+rollbacks now revert only their own paint, per the file's `addHighlight` pattern),
+`web/test/invariants/annotation-write-failure.test.tsx` (+3 concurrent-write tests; no existing
+test changed).
+Red (unfixed): failed clear drops a blue span added during the retry window; failed save erases a
+newer save (`'second'` → `undefined`); failed delete resurrects `'old'` over `'new'`.
+Green: 11/11 (8 pre-existing + 3 new); neighbors persist-write-retry (7), highlight-bloom (3),
+chapter-param-no-dispatch (2).
+**Step (b) of the ruled sequence was run and REFUTED THE PREMISE:** the old line-103 assertion
+("restores its EXACT prior spans on failure") and the new concurrency tests BOTH pass under the
+fixed code — a correct concurrency-safe rollback reduces to blind-restore when no concurrent
+write exists. What encoded the bug was the test title's universal phrasing, never its assertion;
+the assertion guards a real property the fix preserves. Narrowing it would have been exactly the
+quiet test edit the rules forbid, so the old test stands byte-identical. Recorded here per the
+owner's ruling.
+Design reasoning (for the record): "only revert what I changed" = each rollback is the exact
+inverse of its own paint, evaluated against current state. `clearVerse` re-adds exactly the
+members of `previous` still missing (identity filter) and keeps anything painted since — the
+report's "don't restore if `current.length > 0`" snippet is wrong: a concurrent span would
+suppress the restore entirely, silently losing cleared spans even though the DELETE never landed.
+`saveVerseNote` reverts only if the entry still holds this write's body; `deleteVerseNote`
+restores only while the verse is still empty. All three stay consistent under `runPersist`
+retries, since each retry's paint re-establishes the condition the rollback checks.
+
+### B14 — FIXED+GREEN · BROWSER leg owed
+Files: `web/src/components/reader-header.tsx` (`aria-label="Greek and Hebrew interlinear"` +
+`aria-pressed={interlinear}` on the interlinear toggle — both attributes, not just
+`aria-pressed`), `web/test/components/reader-header-interlinear.test.tsx` (new, real component
+under jsdom).
+Red (unfixed): no element with that accessible name exists; button carries no `aria-pressed` —
+3/3 red. Green: 3/3; neighbors settings-close-on-study, s2-translation-explainer,
+work-header-save-shelf, study-editor — 20/20 across 4 files.
+**Not agent-closable:** the rendered check (390px + desktop, no console errors) is BROWSER work
+under UX_REMEDIATION. Owed before this row closes.
+
+### B15 — FIXED+GREEN · bait re-run owed
+Files: `src/verifier/screens.ts` + `web/src/verifier/screens.ts` (byte-identical, `diff -q`;
+`g` on all ten patterns, `matchAll`, case-insensitive duplicate-span dedupe, and the prescribed
+comment: the `g` is load-bearing — `.test()`/`.exec()` on the shared module-level RegExps would
+carry `lastIndex` between calls), `test/screens.test.ts` (new, 5 tests).
+Red (unfixed): three distinct prescriptives → `expected [...] to have a length of 3 but got 1`;
+same at the `verifyV1` level. Green: screens (5) + verifier (31) + verifier-origin (9) +
+verifier-unassigned (3) = 48/48; sync guard `web-core-sync` (9) passes; web consumer
+bait-harness-uses-shipped-pipeline (7).
+Dedupe decision (the section asked for an explicit call): identical repeated spans dedupe
+CASE-INSENSITIVELY (`"You should"` vs `"you should"` is one fix). Reject/pass behavior unchanged
+either way — this is feedback noise, not safety.
+**Owed before ship:** the section calls for an `interpretation_bait` re-run (compose-loop
+behaviour change). Not run in this batch — needs the eval harness, owner-visible.
+
+### Follow-ups filed this batch (not fixed here)
+- **F-1 (owner decision — faithfulness-score semantics):** `src/evals/run-bait.mts` counts HTTP
+  errors as faithful (`errors++; continue` then `faithful = total - breaches`). Found while
+  answering B3's second-order question. See B3 above.
+- **F-2:** upload queue retries deterministic parser failures 3×; classify malformed-document
+  errors as permanent. From B10.
+- **F-3 (report only):** eight remaining gazetteer collision-class labels. From B12(b) above.
+
+### Still owed before this board clears
+1. ~~`npm run audit` green on the whole batch~~ — DONE (re-run 2026-08-23): sole red is the
+   pre-existing publish-flip/thayers evidence-gate failure (fails identically on the clean main
+   tree at `c7a41b9`; root cause is repo state, not this batch). All batch gates green.
+2. B12 data count + owner decision on cleanup (BLOCKED on `NEON_API_KEY`; SQL above).
+3. B15 bait re-run (compose-loop change) — owner-visible eval.
+4. B1 accuracy-diagnostic call (retrieval-behaviour change) — owner call before merge.
+5. B14 BROWSER leg — owner or browser-permitted agent.
+6. F-1 owner ruling (harness misclassification — faithfulness-score semantics).

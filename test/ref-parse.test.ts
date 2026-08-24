@@ -432,3 +432,43 @@ describe('scanReferences — overlap dedupe (the 1/2/3-John residual)', () => {
     expect(books('What does John 4:8 mean?')).toEqual(['John 4:8']);
   });
 });
+
+describe('scanReferences — attached-digit ordinals (1Cor 13, #108)', () => {
+  // SCAN_RE's ordinal group requires `\s+` after the ordinal and its book group `[a-z]{2,}`
+  // cannot start on a digit, so "1Cor 13" formed no candidate at all and never reached
+  // parseRef — which already normalises the attached form ("1john" → "1 john"). The fix is a
+  // third additive pass (DIGIT_ATTACHED_SCAN_RE), same shape as ORDINAL_BOOK_SCAN_RE; the
+  // [1-3] prefix is required and parseRef validates every candidate, so precision holds.
+  const scan = (t: string) => scanReferences(t).map((r) => r.display);
+
+  // ── the two reported forms (issue #108's failing tests, verbatim) ──────────────────────────
+  it('finds attached-digit ordinals (1Cor 13)', () => {
+    expect(scan('1Cor 13')).toEqual(['1 Corinthians 13']);
+  });
+  it('finds attached-digit ordinals mid-prose', () => {
+    expect(scan('turn to 1Cor 13:4-7 for the reading')).toEqual(['1 Corinthians 13:4–7']);
+  });
+
+  // ── the third pass and the overlap resolver ────────────────────────────────────────────────
+  it('a prefixed attached-digit 1 John query yields ONLY the epistle', () => {
+    // Same winner rule as the spaced form: the digit-attached span covers the characters the
+    // wrong "John 4:8" (Gospel) would come from, so only the epistle may survive.
+    expect(scan('What does 1John 4:8 mean?')).toEqual(['1 John 4:8']);
+  });
+  it('non-overlapping references all survive beside the new pass', () => {
+    expect(scan('Ephesians 2:8-9 and 2tim 3:16')).toEqual(['Ephesians 2:8–9', '2 Timothy 3:16']);
+  });
+  it('the same reference in attached and spaced form dedupes by display', () => {
+    expect(scan('see 1Cor 13 and 1 Cor 13')).toEqual(['1 Corinthians 13']);
+  });
+
+  // ── precision guards: every one measured [] before the fix, and must stay [] ───────────────
+  it.each([
+    ['suffixed ordinal + bare number', '3rd 4'],
+    ['1st + bare number', '1st 3'],
+    ['multi-digit prefix', '21cor 13'],
+    ['digit word digit', '1 in 3'],
+  ])('yields nothing for %s', (_label, text) => {
+    expect(scan(text)).toEqual([]);
+  });
+});

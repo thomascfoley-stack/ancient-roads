@@ -204,6 +204,117 @@ describe('useAnnotationWrites — Retry replays the whole action, not just the r
   });
 });
 
+describe('useAnnotationWrites — a failed rollback must not clobber a newer write', () => {
+  it('clearVerse restores the cleared spans WITHOUT dropping one added during the retry window', async () => {
+    // First write (the highlight itself) must succeed so there's something to clear.
+    const stub = stubAnnotationsFetch({ writeSucceedsAfter: 1 });
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await flushInitialLoad();
+    act(() => result.current.addHighlight(16, { start: 0, end: 4 }, 'green'));
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(result.current.highlights.get(16)).toHaveLength(1);
+
+    // The clear's DELETE keeps failing; a highlight POSTed meanwhile succeeds.
+    stub.mock.mockImplementation((_input: string | URL | Request, init?: RequestInit) => {
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'DELETE') {
+        return Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({}) } as Response);
+      }
+      return Promise.resolve({ ok: true, status: 201, json: () => Promise.resolve({}) } as Response);
+    });
+
+    act(() => result.current.clearVerse(16));
+    expect(result.current.highlights.has(16)).toBe(false); // clear painted
+
+    // A new highlight lands while the clear's DELETE is still retrying.
+    act(() => result.current.addHighlight(16, { start: 5, end: 9 }, 'blue'));
+    expect(result.current.highlights.get(16)).toHaveLength(1); // only the new span painted
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    // SEED: restore the blind `new Map(cur).set(verse, previous!)` rollback in clearVerse ->
+    // the rollback overwrites the verse with only the pre-clear spans and the blue span is gone.
+    expect(result.current.highlights.get(16)).toEqual([
+      { start: 0, end: 4, color: 'green', translation: 'kjv' },
+      { start: 5, end: 9, color: 'blue', translation: 'kjv' },
+    ]);
+    expect(result.current.writeError?.message).toBe("Couldn't clear the highlight");
+  });
+
+  it('a failed note save does not roll back a NEWER save that landed during the retry window', async () => {
+    const stub = stubAnnotationsFetch({ writeSucceedsAfter: 1 });
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await flushInitialLoad();
+
+    // The first save's POST keeps failing; the second one's succeeds.
+    stub.mock.mockImplementation((_input: string | URL | Request, init?: RequestInit) => {
+      const body = init?.body ? (JSON.parse(String(init.body)) as { body?: string }) : {};
+      const fail = body.body === 'first';
+      return Promise.resolve({
+        ok: !fail,
+        status: fail ? 500 : 201,
+        json: () => Promise.resolve({}),
+      } as Response);
+    });
+
+    act(() => result.current.saveVerseNote(16, 'first'));
+    expect(result.current.notes.get(16)).toBe('first');
+    // A newer save lands while the first one's POST is still retrying.
+    act(() => result.current.saveVerseNote(16, 'second'));
+    expect(result.current.notes.get(16)).toBe('second');
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    // SEED: restore the unconditional rebuild-from-`previous` in saveVerseNote's rollback ->
+    // the first save's rollback deletes the entry (its `previous` was undefined), erasing 'second'.
+    expect(result.current.notes.get(16)).toBe('second');
+    expect(result.current.writeError?.message).toBe("Couldn't save your note");
+  });
+
+  it('a failed note delete does not resurrect the old note over one re-saved meanwhile', async () => {
+    // Seed a note (the save succeeds).
+    const stub = stubAnnotationsFetch({ writeSucceedsAfter: 1 });
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await flushInitialLoad();
+    act(() => result.current.saveVerseNote(16, 'old'));
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(result.current.notes.get(16)).toBe('old');
+
+    // The delete's DELETE keeps failing; a note POSTed meanwhile succeeds.
+    stub.mock.mockImplementation((_input: string | URL | Request, init?: RequestInit) => {
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'DELETE') {
+        return Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({}) } as Response);
+      }
+      return Promise.resolve({ ok: true, status: 201, json: () => Promise.resolve({}) } as Response);
+    });
+
+    act(() => result.current.deleteVerseNote(16));
+    expect(result.current.notes.has(16)).toBe(false); // delete painted
+
+    // The reader re-saves the note while the delete's DELETE is still retrying.
+    act(() => result.current.saveVerseNote(16, 'new'));
+    expect(result.current.notes.get(16)).toBe('new');
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    // SEED: restore the blind `new Map(cur).set(verse, previous!)` rollback in deleteVerseNote ->
+    // the delete's rollback resurrects 'old' over the newer 'new'.
+    expect(result.current.notes.get(16)).toBe('new');
+    expect(result.current.writeError?.message).toBe("Couldn't delete your note");
+  });
+});
+
 describe('useAnnotationWrites — bookmark double-tap safety survives the refactor', () => {
   it('two rapid toggles send POST then DELETE, never POST twice', async () => {
     // SEED: read `bookmarks.has(verse)` from the hook's closure instead of inside the `setBookmarks`

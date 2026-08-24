@@ -23,7 +23,6 @@ export async function ingestCorpus(
   const flush = async (): Promise<void> => {
     if (batch.length === 0) return;
     const vectors = await deps.embedder.embed(batch.map((d) => d.text));
-    embedded += vectors.length;
 
     const rows: EmbeddingRow[] = batch.map((d, i) => {
       const embedding = vectors[i];
@@ -44,6 +43,13 @@ export async function ingestCorpus(
     });
 
     const res = await deps.store.upsert(rows);
+    // Count only batches that actually persisted: a failed upsert lands in
+    // `failedBatches` and is re-filled by a later re-run, so its vectors must
+    // not inflate `embedded` (B7). `embedded` (rows embedded into the store)
+    // still diverges from `upserted` on purpose: ON CONFLICT DO NOTHING skips
+    // count as embedded but not as upserted, so embedded - upserted is the
+    // re-run progress signal.
+    embedded += vectors.length;
     upserted += res.inserted;
     batch = [];
   };

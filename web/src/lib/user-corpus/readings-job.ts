@@ -6,6 +6,7 @@
 // recompute it to render a count.
 
 import { LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
+import { truncateCodePoints } from '../text';
 import { getDocument } from './documents';
 import { replaceReadings, setReadingsState } from './readings-store';
 import {
@@ -61,7 +62,7 @@ export async function runReadingsJob(
     await setReadingsState(userId, documentId, {
       status: 'failed',
       step: null,
-      error: message.slice(0, 300),
+      error: truncateCodePoints(message, 300),
     }).catch(() => undefined);
   }
 }

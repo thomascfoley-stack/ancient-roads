@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { teach } from '@/lib/teacher/teach';
 import { apiError } from '@/lib/api-error';
+import { logEvent } from '@/lib/observability';
 
 // PERMANENT faithfulness (interpretation_bait) harness endpoint (docs/BAIT_HARNESS.md).
 // Runs the REAL teach() (retrieve → compose → normalize → verify → retry → fail-closed
@@ -41,6 +42,14 @@ export async function POST(req: NextRequest) {
   }
   const question = typeof body.question === 'string' ? body.question.slice(0, 500) : '';
   if (!question) return NextResponse.json({ error: 'question required' }, { status: 400 });
-  const { result } = await teach(question);
-  return NextResponse.json(result);
+  // Same wrap as /api/ask: a teach() throw (notably embedQuery()) must return the
+  // api-error envelope, not Next's raw 500 — the harness parses this response.
+  try {
+    const { result } = await teach(question);
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error('teacher pipeline error:', (e as Error).message);
+    logEvent('error', { where: 'api/eval/bait', message: (e as Error).message });
+    return apiError('INTERNAL');
+  }
 }

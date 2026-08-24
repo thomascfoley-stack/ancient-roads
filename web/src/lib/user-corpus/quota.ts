@@ -32,24 +32,11 @@ export type QuotaVerdict =
 const MB = 1024 * 1024;
 
 /**
- * May this user accept `incomingBytes` more? Called AFTER the size cap and dedupe, BEFORE
- * createDocument. Throws on a DB fault — the upload route's catch turns that into a 500 with
- * nothing accepted, which is the fail-closed direction for a spend gate.
+ * The verdict for a given live usage, pure so the pre-flight check below and the enforced check
+ * inside createDocument's transaction cannot drift into two different quotas (B11). The messages
+ * are the route's user-facing refusal text — the upload route returns them verbatim.
  */
-export async function checkUploadQuota(userId: string, incomingBytes: number): Promise<QuotaVerdict> {
-  const [rows] = await runAsUser(userId, (sql) => [
-    // COALESCE both ways: sum() over zero rows is NULL, and sum() skips NULL byte_size rows —
-    // either surfacing as NULL here would compare as "under quota" forever (the watchlist's
-    // three-valued-logic lesson).
-    sql`SELECT count(*)::int AS documents, COALESCE(sum(byte_size), 0)::bigint AS bytes
-          FROM user_documents
-         WHERE user_id = ${userId}`,
-  ]);
-  const r = (rows as { documents: number; bytes: string | number }[])[0];
-  if (!r) throw new Error('quota query returned no row');
-  const documents = r.documents;
-  const bytes = Number(r.bytes); // bigint arrives as a string; exact well past 100 MB
-
+export function quotaVerdict(documents: number, bytes: number, incomingBytes: number): QuotaVerdict {
   if (documents + 1 > MAX_DOCUMENTS_PER_USER) {
     return {
       ok: false,
@@ -69,4 +56,45 @@ export async function checkUploadQuota(userId: string, incomingBytes: number): P
     };
   }
   return { ok: true };
+}
+
+/**
+ * Thrown by createDocument when the in-transaction quota check refuses the insert (B11). The
+ * upload route catches it and returns the same 403 `{ error, code: 'quota_exceeded' }` shape the
+ * pre-flight check produced before enforcement moved inside the transaction.
+ */
+export class QuotaExceeded extends Error {
+  readonly limit: 'documents' | 'bytes';
+  readonly documents: number;
+  readonly bytes: number;
+  constructor(verdict: Extract<QuotaVerdict, { ok: false }>) {
+    super(verdict.message);
+    this.name = 'QuotaExceeded';
+    this.limit = verdict.limit;
+    this.documents = verdict.documents;
+    this.bytes = verdict.bytes;
+  }
+}
+
+/**
+ * PRE-FLIGHT ONLY — may this user accept `incomingBytes` more right now? The enforced check is
+ * inside createDocument's transaction (B11: a check and an insert in separate transactions are a
+ * TOCTOU — two concurrent uploads both passed this and both inserted). This remains for callers
+ * that want the verdict without inserting; it must never be treated as the gate.
+ *
+ * Throws on a DB fault — the fail-closed direction for a spend gate.
+ */
+export async function checkUploadQuota(userId: string, incomingBytes: number): Promise<QuotaVerdict> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    // COALESCE both ways: sum() over zero rows is NULL, and sum() skips NULL byte_size rows —
+    // either surfacing as NULL here would compare as "under quota" forever (the watchlist's
+    // three-valued-logic lesson).
+    sql`SELECT count(*)::int AS documents, COALESCE(sum(byte_size), 0)::bigint AS bytes
+          FROM user_documents
+         WHERE user_id = ${userId}`,
+  ]);
+  const r = (rows as { documents: number; bytes: string | number }[])[0];
+  if (!r) throw new Error('quota query returned no row');
+  // bigint arrives as a string from the driver; Number is exact well past 100 MB.
+  return quotaVerdict(r.documents, Number(r.bytes), incomingBytes);
 }

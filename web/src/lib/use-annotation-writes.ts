@@ -274,9 +274,18 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           return next;
         });
       };
+      // Identity, not value, restoration — the inverse of addHighlight's rollback: this op
+      // removed the SET of spans in `previous`, so it re-adds exactly the members still missing
+      // and leaves anything painted since (a newer highlight on the same verse) untouched. A
+      // blind `set(verse, previous)` would restore the prior spans at the cost of that newer one.
       const rollback = () => {
-        if (!previous) return;
-        setHighlights((cur) => new Map(cur).set(verse, previous!));
+        if (!previous?.length) return;
+        setHighlights((cur) => {
+          const existing = cur.get(verse) ?? [];
+          const next = new Map(cur);
+          next.set(verse, [...previous!.filter((s) => !existing.includes(s)), ...existing]);
+          return next;
+        });
       };
       const request = () =>
         fetch('/api/annotations', {
@@ -298,8 +307,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           return new Map(prev).set(verse, body);
         });
       };
+      // Revert only if the value on screen is still the one THIS write painted: a newer save
+      // landing during the retry window owns the entry now, and rolling this failure back over
+      // it would erase it.
       const rollback = () => {
         setNotes((cur) => {
+          if (cur.get(verse) !== body) return cur;
           const restored = new Map(cur);
           if (previous == null) restored.delete(verse);
           else restored.set(verse, previous);
@@ -328,9 +341,15 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           return next;
         });
       };
+      // Restore the deleted note only while the verse is still empty: an entry present at
+      // rollback time is a NEWER note saved during the retry window, not something this op
+      // removed — resurrecting `previous` over it would clobber it.
       const rollback = () => {
         if (previous == null) return;
-        setNotes((cur) => new Map(cur).set(verse, previous!));
+        setNotes((cur) => {
+          if (cur.has(verse)) return cur;
+          return new Map(cur).set(verse, previous!);
+        });
       };
       const request = () =>
         fetch('/api/annotations', {

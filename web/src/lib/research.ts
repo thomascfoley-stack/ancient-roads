@@ -15,6 +15,7 @@
 // id and owner; a re-ask always runs the live pipeline and APPENDS. There is no content index
 // and there must never be one.
 import { runAsUser, getDb } from './db';
+import { truncateCodePoints } from './text';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 import type { TeacherResult } from './teacher/teach';
 
@@ -64,7 +65,7 @@ export async function createThreadWithQuestion(
   userId: string,
   question: string,
 ): Promise<{ threadId: string; qid: string }> {
-  const title = question.length > TITLE_MAX ? `${question.slice(0, TITLE_MAX - 1)}…` : question;
+  const title = question.length > TITLE_MAX ? `${truncateCodePoints(question, TITLE_MAX - 1)}…` : question;
   const [rows] = await runAsUser(userId, (sql) => [
     sql`WITH c AS (
           INSERT INTO chats (user_id, title, persona) VALUES (${userId}, ${title}, ${THREAD_PERSONA})
