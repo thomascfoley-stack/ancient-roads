@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from './sidebar';
 import { MobileNav } from './mobile-nav';
 import { Omnibox } from './omnibox';
+import { AnalyticsIdentity } from './analytics-identity';
 
 // The app chrome (sidebar + mobile nav + omnibox) wraps the gated app, but NOT the public
 // tier. The marketing landing (/) and the password gate (/gate) render full-bleed and
@@ -17,6 +18,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Renders nothing; binds analytics to the signed-in reader so churn is measurable.
+          Inside this branch on purpose — the public tier above has no session to read. */}
+      <AnalyticsIdentity />
       {/* Without this, reaching page content by keyboard means tabbing through the entire
           library rail (Home, Bible, every catalog, Passage search, Word study, Settings)
           on every single navigation. First focusable element in the document, visible only

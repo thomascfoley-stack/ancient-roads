@@ -23,28 +23,74 @@
 //   4. `autocapture` shipped `$el_text` — the user's own study titles and the filenames of
 //      documents they uploaded privately under Lane B. Off.
 //
-// WHAT IS LEFT is the smallest thing that is still analytics: explicit events, sent to PostHog's
-// own host, carrying no product text. Nothing here reads a page, a selection, a query or a title.
+// WHAT IS LEFT is the smallest thing that is still analytics: pageviews and explicit events, sent
+// to PostHog's own host, carrying no product text. Nothing here reads a selection or a title.
 //
 // If it does not work — blocked by an ad-blocker, a missing key, a CSP the owner later narrows —
-// the product is unaffected by design. `posthog-js` is loaded for its side effect only; no product
-// code imports it, and nothing awaits it.
+// the product is unaffected by design. `posthog-js` is loaded for its side effect only; product
+// code reaches it ONLY through lib/analytics.ts's closed event union, and nothing awaits it.
+//
+// ── PAGEVIEWS ARE ON AGAIN (2026-08-24, owner directive) ───────────────────────────────────────
+// The owner asked for DAU, 7-day churn, and campaign attribution (newsletter / social → app).
+// All three need one thing this file had switched off: an event per visit. So `capture_pageview`
+// is back — but NOT as it was. Defect 3 above was real: `$current_url` shipped the reader's
+// question verbatim. What changed is the MECHANISM, not the appetite for risk.
+//
+// The old fix dropped the whole query string. That was safe and it was also why campaign
+// attribution could never work from the URL. The new fix is an ALLOWLIST: campaign parameters
+// survive, everything else is dropped — `q` included, on every event, forever. An allowlist fails
+// in the SAFE direction by construction: a parameter nobody thought about is dropped, not kept,
+// so the worst case of an incomplete list is a missing dashboard breakdown, never a leaked
+// question. A denylist would fail the other way, which is why this is not one.
 import posthog from 'posthog-js';
 
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
+/** Campaign parameters that may survive into a URL property.
+ *
+ *  This mirrors posthog-js's own campaign-params list (it already sends these as SEPARATE
+ *  top-level properties, which is what the UTM dashboards actually read) plus `mc_eid` for
+ *  Mailchimp. Keeping them in the URL too is belt-and-braces: it makes "Current URL" breakdowns
+ *  meaningful without adding a second source of truth.
+ *
+ *  It is HAND-TYPED, and that is a deliberate exception to this repo's rule against hand-kept
+ *  expected sets, because it is a POLICY list rather than a guard: an entry missing here loses a
+ *  breakdown, and can never leak anything. Nothing is asserted against it. */
+const CAMPAIGN_PARAMS = new Set([
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+  'gclid', 'gad_source', 'gclsrc', 'dclid', 'gbraid', 'wbraid',
+  'fbclid', 'msclkid', 'twclid', 'li_fat_id', 'igshid', 'ttclid', 'rdt_cid',
+  'epik', 'qclid', 'sccid', 'irclid', 'mc_cid', 'mc_eid',
+]);
+
+/** Keep the path and the campaign parameters; drop every other parameter, and the fragment. */
+export function sanitizeUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    const kept = new URLSearchParams();
+    for (const [k, v] of u.searchParams) if (CAMPAIGN_PARAMS.has(k.toLowerCase())) kept.append(k, v);
+    u.search = kept.toString();
+    u.hash = '';
+    return u.toString();
+  } catch {
+    // `$pathname` is relative, so `new URL` throws on it. Same policy, textually: no query at all.
+    // (A relative path carries no campaign params worth keeping — the absolute URL beside it does.)
+    return raw.split('?')[0]!.split('#')[0]!;
+  }
+}
+
 /** Strip anything that could carry product text off an event before it leaves the browser.
  *
- *  `$current_url` is attached to EVERY event, not only pageviews — turning `capture_pageview` off
- *  is necessary and not sufficient. The query string is where the reader's question lives
- *  (`/ask?q=…`, `/search?q=…`, and `/gate?next=%2Fask%3Fq%3D…`), so it is dropped rather than
- *  trusted, on every event, including ones added later by someone who has not read this file. */
-function stripProductText(properties: Record<string, unknown>): Record<string, unknown> {
+ *  `$current_url` is attached to EVERY event, not only pageviews, so this runs on all of them —
+ *  including events added later by someone who has not read this file. The reader's question
+ *  lives in the query string (`/ask?q=…`, `/search?q=…`, `/gate?next=%2Fask%3Fq%3D…`) and never
+ *  survives `sanitizeUrl`. */
+export function stripProductText(properties: Record<string, unknown>): Record<string, unknown> {
   const out = { ...properties };
   for (const k of ['$current_url', '$referrer', '$pathname', '$initial_current_url', '$initial_referrer']) {
     const v = out[k];
-    if (typeof v === 'string') out[k] = v.split('?')[0]!.split('#')[0]!;
+    if (typeof v === 'string') out[k] = sanitizeUrl(v);
   }
   // Autocapture is off, so these should never appear; deleted anyway, because "should never" is
   // not a mechanism and a future config change is exactly how they would come back.
@@ -57,13 +103,20 @@ if (key) {
     // PostHog's OWN origin. Not '/ingest' — see the header. Cross-origin means our cookies stay ours.
     api_host: POSTHOG_HOST,
     ui_host: POSTHOG_HOST,
-    // Anonymous stays anonymous: no person record until identify(), which nothing in this tree calls.
+    // Anonymous stays anonymous: no person record until identify(), which now happens on sign-in
+    // only (components/analytics-identity.tsx), with the OPAQUE user id and never an email.
+    // A visitor who never signs in is still counted — trends count distinct ids, profile or not —
+    // so DAU works without creating a person record for every stranger who reads the landing page.
     person_profiles: 'identified_only',
-    // The three product-content channels, all explicitly off rather than left at their defaults —
-    // every one of them defaults to ON in posthog-js.
+    // The two product-content channels stay off, explicitly rather than by default (both default
+    // to ON in posthog-js). These were the real leaks: autocapture shipped `$el_text` (study
+    // titles, uploaded filenames) and recording shipped the screen.
     autocapture: false,
-    capture_pageview: false,
     disable_session_recording: true,
+    // ON as of 2026-08-24 (see the header): DAU, churn and campaign attribution all need an event
+    // per visit. `history_change` also fires on App Router client-side navigation, which a plain
+    // `true` would miss — this is a SPA, so most navigations never reload the document.
+    capture_pageview: 'history_change',
     // Error tracking is the one thing the observability gap actually asked for. Kept, and still
     // filtered by the sanitiser below, because an exception message can quote user input.
     capture_exceptions: true,

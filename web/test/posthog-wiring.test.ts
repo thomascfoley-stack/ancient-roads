@@ -58,19 +58,61 @@ describe('posthog wiring — analytics must not be embedded in the product', () 
     }
   });
 
-  it('the client sends no product text: autocapture, pageviews and replay are all off', () => {
+  it('the client sends no product text: autocapture and replay stay off', () => {
     // Each of these defaults to ON in posthog-js, so absence is not safety — the explicit
-    // `false` is the mechanism, and this is what pins it.
+    // `false` is the mechanism, and this is what pins it. These two were the real leaks:
+    // autocapture ships `$el_text` and replay ships the rendered screen.
     expect(CLIENT, 'autocapture ships $el_text — study titles, uploaded filenames').toMatch(/autocapture:\s*false/);
-    expect(CLIENT, '$current_url carries /ask?q=<the reader\'s question>').toMatch(/capture_pageview:\s*false/);
     expect(CLIENT, 'replay records rendered page text, not just inputs').toMatch(/disable_session_recording:\s*true/);
   });
 
-  it('the client strips query strings off every event, not just pageviews', () => {
-    // `$current_url` rides EVERY event, so capture_pageview:false is necessary and not sufficient.
+  // THE PAGEVIEW ASSERTION WAS RETIRED HERE, 2026-08-24, and it is worth stating why rather than
+  // just deleting a line. This file used to require `capture_pageview: false`, and its stated
+  // reason was "$current_url carries /ask?q=<the reader's question>". The owner then asked for
+  // DAU, 7-day churn, and campaign attribution — none of which can exist without an event per
+  // visit. So the REQUIREMENT changed, by directive, and a guard that outlives its requirement is
+  // just a green check standing in the way of the thing it was protecting against.
+  //
+  // What did NOT change is the property that reason names. It moved to a stronger mechanism: the
+  // allowlist in `sanitizeUrl`, which drops `q` (and everything else unrecognised) off EVERY
+  // event, and which is tested directly and adversarially in test/analytics-url-sanitizer.test.ts
+  // — including the `/gate?next=%2Fask%3Fq%3D…` nesting the original audit named. A denylist
+  // seeded in its place turns three of those tests red, that leak included.
+  //
+  // This is the same move this file's header records from 2026-08-18: rewritten to protect the
+  // property, not adjusted to keep passing.
+  it('the client sanitizes every event by ALLOWLIST — the mechanism that replaced pageviews-off', () => {
     expect(CLIENT).toMatch(/sanitize_properties:\s*stripProductText/);
     expect(CLIENT).toMatch(/\$current_url/);
     expect(CLIENT).toMatch(/\$el_text/);
+    // An allowlist membership test, not a denylist comparison. If someone "fixes" a missing
+    // parameter by switching to `k !== 'q'`, this goes red before the leak ships.
+    expect(CLIENT, 'the URL filter must be an allowlist (CAMPAIGN_PARAMS.has), never a denylist')
+      .toMatch(/CAMPAIGN_PARAMS\.has\(/);
+    expect(CLIENT, 'a denylist on the query string is the exact defect the allowlist replaced')
+      .not.toMatch(/k\s*!==\s*['"]q['"]/);
+  });
+
+  it('identity is bound by opaque user id — never an email', () => {
+    // Churn cohorts need a stable person; they do not need PII, and this repo's standing rule is
+    // that PII stays out of third-party systems. `identify(email)` would satisfy the first and
+    // breach the second, silently.
+    const raw = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '../src/lib/analytics.ts'),
+      'utf8',
+    );
+    // COMMENTS STRIPPED FIRST — the same rule the migration-shape suites use. Without it this
+    // asserts against prose: the file's own header explains that no `$set` is sent, and a
+    // negative match would read that sentence as the very code it forbids. (Measured: it did.)
+    const analytics = raw
+      .replace(/\/\*[\s\S]*?\*\//g, '') // JSDoc blocks FIRST — the `$set` mention lives in one
+      .split('\n')
+      .map((line) => { const i = line.indexOf('//'); return i === -1 ? line : line.slice(0, i); })
+      .join('\n');
+    expect(analytics).toMatch(/posthog\.identify\(userId\)/);
+    expect(analytics, 'no email may be passed to identify or set as a person property')
+      .not.toMatch(/identify\([^)]*email/i);
+    expect(analytics, 'no $set of personal data alongside identify').not.toMatch(/\$set\b/);
   });
 
   it('the client dials PostHog directly, never through our origin', () => {

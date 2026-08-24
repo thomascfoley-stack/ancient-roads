@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { track } from '@/lib/analytics';
 
 type State = 'idle' | 'submitting' | 'done' | 'error';
 
@@ -20,6 +21,10 @@ export function WaitlistForm() {
     e.preventDefault();
     if (state === 'submitting') return;
     setState('submitting');
+    // The conversion half of campaign attribution: posthog-js attaches utm_source/medium/campaign
+    // (and gclid/fbclid/mc_cid) to these automatically, so "signups by campaign" is a breakdown
+    // rather than a join. The EMAIL IS NEVER SENT — only that a submit happened.
+    track({ name: 'waitlist_form_submitted' });
     try {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
@@ -28,13 +33,19 @@ export function WaitlistForm() {
       });
       const data = (await res.json().catch(() => ({}))) as { message?: string };
       if (res.ok) {
+        track({ name: 'waitlist_signup_succeeded' });
         setState('done');
         setMessage(data.message ?? '');
       } else {
+        track({
+          name: 'waitlist_signup_failed',
+          reason: res.status === 400 ? 'validation' : res.status === 429 ? 'rate_limited' : 'error',
+        });
         setState('error');
         setMessage(data.message ?? 'Something went wrong. Please try again.');
       }
     } catch {
+      track({ name: 'waitlist_signup_failed', reason: 'error' });
       setState('error');
       setMessage('Network error. Please try again.');
     }
