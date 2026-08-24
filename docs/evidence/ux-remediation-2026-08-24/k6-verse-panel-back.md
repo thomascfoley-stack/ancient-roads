@@ -40,3 +40,40 @@ re-ran and the panel never re-opened. Re-tested properly (navigate away first) t
 harmless. The strip was still removed — least code, and it sits one ordering step from the effect
 that reads the hash — but the comment now says only what was measured, and tells the next person how
 to test it if they re-add it.
+
+---
+
+# K-3 (unblocked half) — `/about` had no footer
+
+`/about` was the one public marketing surface rendering no `<footer>` at all — so it had no way
+back to Features/Why, and no legal column for the owner's Privacy/Terms copy to land in when it
+exists. Fixed by using the shared `MarketingFooter` the other three already use.
+
+Verified against **served HTML**, not source (all four pages, dev):
+
+    /          footer marker occurrences: 1
+    /about     footer marker occurrences: 1
+    /features  footer marker occurrences: 1
+    /why       footer marker occurrences: 1
+
+Rendered at 375×812: `/about` scrollWidth 375 === viewport, no horizontal overflow, footer links
+present (Ancient Paths, Home, Features, Why, About, Log in).
+
+**Not fixed, and not fixable by an agent:** the LEGAL column (Privacy, Terms) is still absent. The
+footer component's own comment says why, and it is a deliberate decision rather than an oversight —
+the pages are owner-authored content that does not exist, and dead `#` links would be worse. That is
+K-3 and MK-13, and it stays blocked on the owner's copy. The census test asserting privacy/terms
+links on every marketing page should land WITH those routes, not before: written now it would go red
+in CI for a reason nobody can fix.
+
+## Incidental mobile check (375×812), no findings
+
+| Surface | scrollWidth vs viewport | Overflowing elements |
+|---|---|---|
+| `/` | 375 = 375 | none |
+| `/about` | 375 = 375 | none |
+| `/read/jhn/3` (36 verses) | 375 = 375 | none |
+
+One measurement note for whoever repeats this: an overflow check run while the browser pane is
+hidden reports `window.innerWidth === 0` and therefore "overflow: true" for everything. Set the
+viewport explicitly before believing any layout assertion.

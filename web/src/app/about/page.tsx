@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MarketingFooter } from '@/components/marketing/footer';
 
 // PUBLIC about page, outside the SITE_PASSWORD wall (gate.ts isPublicPath,
 // app-shell.tsx CHROME_FREE). Kept short; the marketing landing is `/`.
@@ -29,7 +30,8 @@ const PRINCIPLES = [
 
 export default function About() {
   return (
-    <main id="main" className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-14 sm:px-8 sm:py-20">
+    <>
+      <main id="main" className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-14 sm:px-8 sm:py-20">
       <p className="font-display text-lg italic leading-relaxed text-stone-600 dark:text-stone-400">
         &ldquo;Ask for the ancient paths, where the good way is, and walk in it.&rdquo;
         <span className="ml-2 text-sm not-italic uppercase tracking-[0.2em] text-stone-500">Jeremiah 6:16</span>
@@ -68,6 +70,11 @@ export default function About() {
           Log in
         </Link>
       </div>
-    </main>
+      </main>
+      {/* DeepSeek-F03 / K-3: this page was the one public marketing surface with no footer, so it
+          was also the one with no way back to Features/Why and no legal column to add copy to when
+          the owner's Privacy/Terms text lands. */}
+      <MarketingFooter />
+    </>
   );
 }
