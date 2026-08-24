@@ -730,3 +730,29 @@ uses `user-select:none` correctly, doesn't fight text selection, works at 375px.
 left/sidebar rather than anchored to the selected text — worth a follow-up visual check, not scored
 as a finding this pass. 18 of 26 items PENDING-SIGNIN as expected (persisted-highlight behavior needs
 the one real account).
+
+## Batch 33 — MK (Marketing), tracker-driven, signed-out (24/32 PASS)
+
+### F-069 · MK-009 · **P1, beta blocker per the plan's own severity rule** · No privacy policy or terms of service exist anywhere
+`/privacy`, `/terms`, `/privacy-policy`, `/terms-of-service` all 404 — unlinked anywhere in the app.
+The plan itself calls this out: "Absent today = P1, beta blocker." This should be treated as a launch
+gate item, not routine polish.
+
+### F-070 · MK-018 · **P2, L4 lens** · Waitlist form defaults to GET with JS disabled
+No explicit `method`/`action` on the waitlist `<form>` — defaults to `GET action="/"`. With JS
+disabled, a submitted email would leak into the URL, browser history, and server access logs. The
+JS-enabled path (fetch POST) is correct; only the no-JS fallback is wrong.
+
+### F-071 · MK-006 · **P3** · `/about` has no header nav, and its one "Log in" link is inconsistent
+`/about` drops the header nav/logo present on every other marketing page, and its inline "Log in"
+link points to `/home` while every other "Log in" on the site points to `/auth/sign-in`.
+
+### F-072 · MK-021 · **P2/B1** · "Request access" gives zero feedback during a slow request
+No disabled state, no spinner — a slow network leaves the button looking dead and invites a
+double-submit.
+
+**24 of 32 PASS cleanly**, including: footer-presence regression fix confirmed on all four marketing
+pages, waitlist validation/dedup/double-submit-guard/unicode handling, responsive layout at 390px,
+browser zoom 80-150%, scroll-position-on-refresh, utm-param handling, manifest sanity, reduced-motion
+CSS. Several PARTIALs are genuinely PENDING on external resources this pass didn't have (a real inbox
+for the confirmation email, real device for add-to-home-screen) rather than app defects.

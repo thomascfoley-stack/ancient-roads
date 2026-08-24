@@ -461,38 +461,38 @@ x,LD-019 Spinner/progress honours `prefers-reduced-motion`.,"PASS — (code-veri
 ,LD-020 Long operation in a background tab → still completes; state correct on return.,"PARTIAL — not directly tested (would need a long-running op plus a real tab-visibility switch); code shows ask-client.tsx's stream-reading loop has no visibilitychange-based pause, so it should keep running in a background tab, but this wasn't observed live."
 ,LD-021 A wait that finishes instantly → no flash of a skeleton (worse than none).,"PARTIAL — no minimum-display-time/anti-flash guard was found for library/loading.tsx or any of the ""Loading…"" text states, so an instantly-resolved fetch could still flash a skeleton or the word ""Loading…"" for one frame; not conclusively observed live either way."
 x,LD-022 Optimistic UI that later fails → the reversal is visible and explained (B4).,"PASS — (code-verified) — web/src/lib/use-annotation-writes.ts implements optimistic paint + typed rollback + visible error message (""Couldn't save your highlight"" etc.) for every annotation write, retried via web/src/lib/persist-write.ts before finally rolling back and surfacing the failure."
-,MK-001 Enumerate every control on all four pages; append anything this list misses.,
-,"MK-002 `/` desktop cold load: complete render, no layout shift after settle (B5).",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-003 `/` at 390px: no horizontal scroll, hero legible, every tap target ≥44px.",
-,MK-004 `/` at 320px (smallest real phone) — does anything clip or overlap?,
-,MK-005 Every nav link goes where its label says; Back returns.,
-,MK-006 Logo click from each of the four pages → same destination every time.,
-,MK-007 Footer present on all four (regression guard — `/about` lacked it).,SEE UX_RESULTS.md / evidence — needs status confirm
-,MK-008 Footer links all resolve; none 404.,
-,"MK-009 Privacy + terms present and linked. Absent today = P1, beta blocker.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-010 No lorem, no placeholder, no TODO visible on any of the four.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-011 Every image loads; none stretched, none pixelated on retina.",SEE UX_RESULTS.md / evidence — needs status confirm
-,MK-012 Hero image has a sensible `alt` or is correctly decorative.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-013 Waitlist: valid email → confirmation in human words, not a code.",SEE UX_RESULTS.md / evidence — needs status confirm
-,MK-014 Waitlist: same email twice → no leak of whether it was already there.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-015 Waitlist: `a@b`, empty, spaces-only, 300-char address → inline guidance, input preserved.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-016 Waitlist: unicode/emoji address → no crash, no mangled echo.",SEE UX_RESULTS.md / evidence — needs status confirm
-,MK-017 Waitlist: double-click submit → one submission (L1: confirm the handler is attached at all).,SEE UX_RESULTS.md / evidence — needs status confirm
-,MK-018 Waitlist: submit with JS disabled → check `method` (L4); nothing sensitive in the URL.,
-,MK-019 Waitlist: press Enter in the field → submits.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-020 Waitlist: submit offline → honest failure, input preserved, retry works.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-021 Waitlist while the API is slow (throttle) → button disabled, progress shown (B1/B9).",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-022 Waitlist confirmation email: arrives? renders? sender legible? If none is sent, that's a product decision to file, not a bug.",
-,MK-023 CTA path `/` → sign-up in ≤2 clicks and obvious at a glance.,
-,MK-024 Refresh mid-scroll → no jump to top mid-read.,
-,"MK-025 `?utm_source=test` → identical behaviour, no param visible in the UI.",
-,"MK-026 Visit all four while signed in → offered the app, not a cold pitch.",
-,"MK-027 OG/meta on all four: title, description, image; unfurl each in a real chat app.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-028 `/manifest.webmanifest`: name, icons, theme sane.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-029 Add to home screen on a real phone → correct icon, opens correctly, no browser chrome surprise.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MK-030 Print `/` — does it produce anything sane, or a wall?",SEE UX_RESULTS.md / evidence — needs status confirm
-,MK-031 Browser zoom 80%/125%/150% on all four → layout holds.,
-,MK-032 `prefers-reduced-motion` on → hero/scroll animations subdued or off (B5).,
+x,MK-001 Enumerate every control on all four pages; append anything this list misses.,"PASS — Enumerated all controls on /, /features, /why, /about (nav, logo, waitlist form, 10-voice tab list, footer links); About page is missing the header nav/logo entirely (see MK-006)."
+x,"MK-002 `/` desktop cold load: complete render, no layout shift after settle (B5).","PASS — Desktop cold load clean, no console errors/warnings, fonts (woff2) and CSS load fine."
+x,"MK-003 `/` at 390px: no horizontal scroll, hero legible, every tap target ≥44px.","PASS — 390px: no horizontal scroll (scrollWidth==clientWidth==390), hero legible, nav/CTA/waitlist tap targets all comfortably sized."
+,MK-004 `/` at 320px (smallest real phone) — does anything clip or overlap?,"PARTIAL — Could not force a true 320px viewport (browser tooling enforced a ~500px minimum window width); layout is fully fluid with no fixed-width elements at 390px so 320px is likely fine, but not directly observed."
+x,MK-005 Every nav link goes where its label says; Back returns.,PASS — Home/Features/Why/Log in/About all resolve to the correct routes with 200 status.
+,MK-006 Logo click from each of the four pages → same destination every time.,"FAIL — /about has no header logo/nav at all (only a footer logo, href=""/""), unlike Home/Features/Why which all share an identical header. Also /about's inline ""Log in"" link points to /home while every other ""Log in"" link (footer, other pages) points to /auth/sign-in — inconsistent destination for th"
+x,MK-007 Footer present on all four (regression guard — `/about` lacked it).,PASS — Footer present and identical on all four pages (Home/Features/Why/About); the earlier /about regression is fixed.
+x,MK-008 Footer links all resolve; none 404.,"PASS — All footer links (Home, Features, Why, About) return 200."
+,"MK-009 Privacy + terms present and linked. Absent today = P1, beta blocker.","FAIL — (P1, beta blocker) — No privacy policy or terms of service exist anywhere: /privacy, /terms, /privacy-policy, /terms-of-service all 404, and none are linked from footer or nav on any page."
+x,"MK-010 No lorem, no placeholder, no TODO visible on any of the four.","PASS — Read full visible text of all four pages; no lorem ipsum, placeholder, or TODO text found."
+x,"MK-011 Every image loads; none stretched, none pixelated on retina.","PASS — Hero image (a CSS background-image, not an <img>) loads cleanly and renders crisply at desktop, 390px, 80%/150% zoom; no stretching or pixelation observed."
+x,MK-012 Hero image has a sensible `alt` or is correctly decorative.,"PASS — Hero image is a pure CSS background-image conveying no unique information (decorative), so no alt text is required; correctly decorative."
+x,"MK-013 Waitlist: valid email → confirmation in human words, not a code.","PASS — Valid email submit returns ""REQUEST RECEIVED / Your name is on the list."" with the submitted address echoed back in human words, not a code."
+x,MK-014 Waitlist: same email twice → no leak of whether it was already there.,"PASS — Submitting the same email twice returns an identical 200 ""You're on the list. We'll be in touch."" both times — no leak of prior-registration state."
+x,"MK-015 Waitlist: `a@b`, empty, spaces-only, 300-char address → inline guidance, input preserved.","PASS — a@b, empty, spaces-only, and a 290+-char local part are all rejected: browser-native HTML5 email validation shows inline guidance (red indicator + native validation message) before submit, and the API also independently 400s with ""Please enter a valid email address.""; input value is preserved"
+x,"MK-016 Waitlist: unicode/emoji address → no crash, no mangled echo.","PASS — Unicode/emoji address (tëst+😀émoji@example.com) is caught by native email-input validation with a clear message (""...should not contain the symbol 'ë'""), no crash, no mangled echo; server-side API also accepts a unicode local-part gracefully via direct POST (200, no crash)."
+x,MK-017 Waitlist: double-click submit → one submission (L1: confirm the handler is attached at all).,"PASS — Rapid double-click on ""Request access"" produced exactly one POST to /api/waitlist (confirmed via network log), so the handler guards against duplicate submission once the response returns."
+,MK-018 Waitlist: submit with JS disabled → check `method` (L4); nothing sensitive in the URL.,"FAIL — The <form> has no explicit method/action set, so it defaults to method=""get"" action=""/"". With JS disabled/failed, submitting would GET to ""/"" with the email address appended as a URL query parameter — exposed in the address bar, browser history, and server access logs. JS-enabled behavior (fe"
+x,MK-019 Waitlist: press Enter in the field → submits.,"PASS — Pressing Enter in the email field submits the form (confirmed ""REQUEST RECEIVED"" state after Enter)."
+,"MK-020 Waitlist: submit offline → honest failure, input preserved, retry works.","PARTIAL — Simulated a failed network request (patched fetch to reject): input value was preserved and the submit button remained enabled/clickable (retry is possible), but no visible error/failure message is shown anywhere on the page — the UI just silently does nothing, which is not ""honest failure"
+,"MK-021 Waitlist while the API is slow (throttle) → button disabled, progress shown (B1/B9).","FAIL — With a simulated 4s+ slow API response, the ""Request access"" button stays fully enabled with no disabled state, spinner, or any progress indicator during the pending request — a user has no feedback that anything is happening and could easily click again."
+,"MK-022 Waitlist confirmation email: arrives? renders? sender legible? If none is sent, that's a product decision to file, not a bug.","PENDING — Could not verify actual confirmation-email delivery/rendering/sender in this local environment (no test inbox available). Per instructions, if no email is actually sent this is a product decision to file, not necessarily a bug — needs owner input."
+x,MK-023 CTA path `/` → sign-up in ≤2 clicks and obvious at a glance.,"PASS — The waitlist ""Request access"" form is the de facto sign-up path (product is invite/waitlist-gated, no separate /auth/sign-up is linked from marketing pages); it's prominently placed and reachable via the hero ""See it answered"" anchor or by scrolling, and submits in one click — obvious at a gl"
+x,MK-024 Refresh mid-scroll → no jump to top mid-read.,"PASS — Scrolled to y=2000, reloaded the page, scroll position was preserved at y=2000 (no jump to top)."
+x,"MK-025 `?utm_source=test` → identical behaviour, no param visible in the UI.","PASS — Visiting with ?utm_source=test renders identically to a plain visit; the param is not shown anywhere in the UI, only in the address bar."
+,"MK-026 Visit all four while signed in → offered the app, not a cold pitch.",PENDING-SIGNIN — No test credentials were available to verify the signed-in-visitor experience on marketing pages.
+,"MK-027 OG/meta on all four: title, description, image; unfurl each in a real chat app.","PARTIAL — og:title, og:description, og:image (1200x630, with alt), og:site_name, twitter:card/title/description/image are all present and populated with real copy; could not perform an actual unfurl test in a real chat app from this environment."
+x,"MK-028 `/manifest.webmanifest`: name, icons, theme sane.","PASS — /manifest.webmanifest returns valid JSON: name ""Ancient Paths"", short_name, sane theme/background colors, and all three icons (192, 512, 512-maskable) return 200 image/png."
+,"MK-029 Add to home screen on a real phone → correct icon, opens correctly, no browser chrome surprise.","PENDING-DEVICE — Requires a real phone to verify ""Add to Home Screen"" icon/launch behavior."
+,"MK-030 Print `/` — does it produce anything sane, or a wall?","PARTIAL — No @media print stylesheet exists anywhere in the CSS, but base heading/body text uses dark-on-light colors (not white-on-photo) so a print-background-stripped render would likely stay legible rather than producing a blank/illegible wall; not verified via an actual print preview."
+x,MK-031 Browser zoom 80%/125%/150% on all four → layout holds.,PASS — Tested 80% and 150% browser zoom on the home page; no horizontal overflow at either (scrollWidth == clientWidth in both cases).
+x,MK-032 `prefers-reduced-motion` on → hero/scroll animations subdued or off (B5).,"PASS — Stylesheet contains dedicated `@media (prefers-reduced-motion)` rule blocks (2 found), indicating hero/scroll animations are meant to be subdued when the user prefers reduced motion."
 ,"MOB-001 Re-run every surface's mobile test at 390×844 on a real device, not just a viewport.",SEE UX_RESULTS.md / evidence — needs status confirm
 ,MOB-002 Same at 320px (small phone). MOB-003 Same at 430px (large phone).,
 ,MOB-003 Same at 430px (large phone).,
