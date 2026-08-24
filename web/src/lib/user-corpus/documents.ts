@@ -3,6 +3,7 @@
 // (SLICE_1_DATA_MODEL test 1: "verify with two accounts, not by reading policy").
 
 import { runAsUser } from '@/lib/db';
+import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './queue';
 import { deleteUserDocument } from './blob';
 import { MAX_BYTES_PER_USER, MAX_DOCUMENTS_PER_USER, QuotaExceeded, quotaVerdict } from './quota';
 import type { DocStatus, DocType, UserDocument } from './types';
@@ -211,6 +212,55 @@ export async function setBlobPathname(userId: string, id: string, pathname: stri
  * Move a document to a new state. `error` is cleared on every non-failure transition so a retry
  * that succeeds does not leave last time's message sitting under a green status.
  */
+/**
+ * D9 (DEEP_SWEEP): requeue a document for retry, atomically, and only if no worker is holding it.
+ *
+ * The retry route used to call setDocStatus('queued') and resetAttempts as TWO transactions on a
+ * row a worker might be actively processing, then kick a drain — so the same document went to a
+ * second worker. Both parse and embed it (double paid embedding), and their storeSections
+ * DELETE+INSERT pairs are not mutually exclusive under READ COMMITTED, leaving both generations
+ * of user_sections until a later re-index heals it.
+ *
+ * ONE statement, and the claim predicate is the same shape claimNext uses to reclaim a stale row,
+ * built from the queue's own CLAIMED_STATUSES so the two lists cannot drift apart. A row whose
+ * claim is still fresh is simply not matched, and the caller reports "already running" rather
+ * than silently seizing it.
+ *
+ * Returns false when nothing was requeued.
+ */
+/**
+ * D11 (DEEP_SWEEP): can re-uploading these bytes REPAIR this existing document, rather than
+ * bouncing off dedupe?
+ *
+ * Two cases, and both are dead ends today:
+ *  - `blobUrl` null — the row was created before putUserDocument and the put threw. It counts
+ *    against quota, the drain fails it with "Please upload it again", and re-uploading returns
+ *    the same broken row. The retry route 409s because there is no blob to re-parse.
+ *  - `status === 'failed'` — re-uploading the bytes returned the failed row unchanged, so the
+ *    natural retry gesture silently no-opped.
+ *
+ * Exported so the route's branch is the same predicate the tests assert, rather than one typed
+ * again in a test file — which would test the test.
+ */
+export function isHealable(doc: { blobUrl: string | null; status: string }): boolean {
+  return !doc.blobUrl || doc.status === 'failed';
+}
+
+export async function requeueForRetry(userId: string, id: string): Promise<boolean> {
+  const claimed: string[] = [...CLAIMED_STATUSES];
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`UPDATE user_documents
+           SET status = 'queued', parse_error = NULL, attempts = 0,
+               claimed_at = NULL, updated_at = now()
+         WHERE user_id = ${userId} AND id = ${id}
+           AND NOT (status = ANY(${claimed})
+                    AND claimed_at IS NOT NULL
+                    AND claimed_at > now() - (${STALE_CLAIM_MINUTES} || ' minutes')::interval)
+        RETURNING id`,
+  ]);
+  return (rows as unknown[]).length > 0;
+}
+
 export async function setDocStatus(
   userId: string,
   id: string,

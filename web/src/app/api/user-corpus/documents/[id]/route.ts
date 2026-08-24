@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
-import { deleteDocument, getDocument, getDocumentSections, setDocStatus } from '@/lib/user-corpus/documents';
+import { deleteDocument, getDocument, getDocumentSections, requeueForRetry } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
 
 export const runtime = 'nodejs';
@@ -79,8 +79,18 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
     );
   }
 
-  await setDocStatus(user.id, id, 'queued', null);
-  await resetAttempts(user.id, id);
+  // D9 (DEEP_SWEEP): this was setDocStatus + resetAttempts as TWO transactions on a row a worker
+  // might be actively holding, followed by a drain kick — so the same document went to a second
+  // worker: double parse, double PAID embedding, and two storeSections DELETE+INSERT pairs that
+  // are not mutually exclusive under READ COMMITTED. The UI invites it, offering Retry on any doc
+  // stuck >5 min, which is also STALE_CLAIM_MINUTES — and a live worker on a large PDF is
+  // legitimately past 5 minutes with a fresh claim. One atomic CAS now, refusing a fresh claim.
+  if (!(await requeueForRetry(user.id, id))) {
+    return NextResponse.json(
+      { error: 'That document is being processed right now. Give it a moment and try again.' },
+      { status: 409 },
+    );
+  }
   // Best-effort, for the same reason as the upload route: the retry has already reset the row, so
   // a scheduling failure must not report the retry as failed.
   try {
@@ -109,13 +119,3 @@ export async function DELETE(_req: NextRequest, ctx: Ctx): Promise<NextResponse>
   return NextResponse.json({ deleted: true });
 }
 
-// Kept beside its only caller rather than exported from documents.ts: resetting the attempt
-// counter is meaningless outside a retry, and a general-purpose setAttempts() would be a way to
-// defeat MAX_ATTEMPTS from anywhere.
-async function resetAttempts(userId: string, id: string): Promise<void> {
-  const { runAsUser } = await import('@/lib/db');
-  await runAsUser(userId, (sql) => [
-    sql`UPDATE user_documents SET attempts = 0, claimed_at = NULL, updated_at = now()
-        WHERE user_id = ${userId} AND id = ${id}`,
-  ]);
-}
