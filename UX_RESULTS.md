@@ -1306,3 +1306,21 @@ account rather than risk another 45+ second freeze retrying it. Flagging for man
 is fixed, or via direct DB access if someone with that access wants to clear it sooner — it is inert
 test data (0 of 15 days read, never touched again after this batch) and poses no functional risk left
 as-is.
+
+## Batch 58 — PL, CH-024, NT-019, live signed-in production testing (0 new findings)
+
+PL-021 confirmed PASS: invalid plan id shows a clean, human "This plan could not be opened. It may
+have been removed." message (the doubled-title bug on this same route is already filed separately as
+F-044). PL-016 confirmed PASS: this account's 2 real plans track independently with separate progress.
+
+CH-024 (Unicode bidi-override safety) confirmed PASS: a note title containing RLO/PDF control
+characters rendered the marked span visually reversed (expected — the app doesn't strip bidi control
+characters) but the reversal stayed correctly scoped, never leaking into or corrupting surrounding UI
+text or controls.
+
+Bonus confirmation of F-106's exact mechanism: with the account's note count now at a real 1 (from
+this test), `/library/notes` correctly rendered a full "NOTES (1)" section with the note and its
+reference — confirming the section really is conditionally hidden at zero count, not broken outright.
+
+NT-019 confirmed PASS: the note's `/library/notes` reference chip correctly jumped back to the reader
+at the right verse. Test note cleaned up via Delete, confirmed removed.
