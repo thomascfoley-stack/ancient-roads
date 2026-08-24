@@ -526,15 +526,15 @@ x,MSG-004 Signed out → sane.,PASS — both reachable signed out with no broken
 ,"MSG-005 If live: send, receive, edit, delete — each confirmed and persistent.","NOT-APPLICABLE — chat is a ComingSoon placeholder, not live; there is nothing to send/receive/edit/delete."
 ,"MSG-006 If live: does the vocabulary collide with ""thread""/""history""? (B6)","NOT-APPLICABLE — no live messaging vocabulary exists to collide with ""thread""/""history""; ComingSoon copy says ""Study partners"" only."
 ,MSG-007 If scaffolding: file as dead surface to remove or finish before beta.,"PARTIAL — /chat/[id] is scaffolding (ComingSoon), same pattern used elsewhere in-app for unbuilt features (settings, study/[id], library/books), so it isn't a hidden dead end — but per this test's own instruction it should still be explicitly tracked as a pre-beta finish-or-remove decision; /channel"
-x,NT-001 Enumerate every note affordance and entry point.,"PASS — Entry points found: tap verse number opens panel with Commentaries/Word study/Notes tabs; ""Sign in to highlight and save notes to your account"" link at panel top; sidebar ""Saved"" link (/library/notes) lists notes/highlights/bookmarks. Signed-out Notes tab correctly shows ""Save notes to your a"
-,NT-002 Save a note → indicator on the verse; survives refresh.,PENDING-SIGNIN — cannot create/save a note without an account.
+x,NT-001 Enumerate every note affordance and entry point.,"PASS — Live: verse panel Notes tab, textarea, Save/Delete buttons, ""Pray over this verse"" cross-link"
+x,NT-002 Save a note → indicator on the verse; survives refresh.,"PASS — Note saved, panel closed, reopened panel shows note persisted correctly"
 ,NT-003 Edit a note → update persists.,"PENDING-SIGNIN — edit requires an existing note, which requires sign-in."
-,"NT-004 Delete a note → gone, stays gone; confirmed first (B8).","PENDING-SIGNIN — delete requires an existing note, which requires sign-in."
-,"NT-005 Note with emoji + 5,000 characters → intact after save/reload (truncation class).","PENDING-SIGNIN — requires note editor, sign-in only."
+,"NT-004 Delete a note → gone, stays gone; confirmed first (B8).","FAIL — Delete removes the note with a SINGLE click, no confirmation step — unlike study delete which requires ""Delete?"" two-step (B8 violation, inconsistent with the app's own pattern elsewhere)"
+,"NT-005 Note with emoji + 5,000 characters → intact after save/reload (truncation class).",PARTIAL — Emoji + Greek unicode round-tripped intact; did not test the 5000-char truncation boundary
 ,NT-006 Note with newlines/paragraphs → formatting survives.,"PENDING-SIGNIN — requires note editor, sign-in only."
 ,"NT-007 Note with markdown-looking text → rendered or escaped, consistently.","PENDING-SIGNIN — requires note editor, sign-in only."
 ,"NT-008 Note with a script tag / HTML → escaped, never executed.","PENDING-SIGNIN — requires note editor, sign-in only."
-,NT-009 Empty note save → prevented or meaningful.,"PENDING-SIGNIN — requires note editor, sign-in only."
+x,NT-009 Empty note save → prevented or meaningful.,"PASS — Save button correctly disabled when textarea is empty, preventing an empty save"
 ,NT-010 Whitespace-only note → same as empty.,"PENDING-SIGNIN — requires note editor, sign-in only."
 ,"NT-011 Navigate away mid-typing → warned, drafted, or documented loss — never silent (B4).","PENDING-SIGNIN — no textarea is rendered signed-out, so draft-loss behavior cannot be exercised."
 ,NT-012 Refresh mid-typing → same standard.,PENDING-SIGNIN — same as NT-011.

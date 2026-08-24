@@ -1028,3 +1028,18 @@ polish note for someone doing a visual-contrast pass, but not a functional defec
 Corrected two earlier tracker entries in the same edit: HL-005 ("multiple highlights persist
 independently") and HL-006 ("same verse highlighted twice, no duplicate") had been marked PASS from
 testing only a single highlight — reverted to NOT RUN rather than let an inaccurate claim stand.
+
+## Batch 43 — NT (Notes), live signed-in production testing, real account (1 finding)
+
+### F-098 · NT-004 · **P2/B8** · Deleting a note has no confirmation step, unlike study delete
+Clicking "Delete" on a verse note removes it with a single click and no "Delete?" confirmation —
+confirmed persisted-gone after a reload. This is directly inconsistent with the app's own pattern
+elsewhere: study delete (tested in Batch 41, SE-026) requires an explicit "Delete?" confirm click
+before anything is removed. Same destructive-action class (B8: "every destructive act is confirmed or
+undoable, and says which"), two different standards.
+
+**Confirmed PASS:** verse panel Notes tab has a real textarea + Save/Delete; a saved note persists
+correctly across a panel close/reopen (via navigating away and back to the same verse); emoji and
+Greek unicode round-trip intact; Save is correctly disabled when the textarea is empty, preventing an
+accidental empty save (the actual removal path is the separate Delete button, which is the right
+design — just missing its confirmation step).
