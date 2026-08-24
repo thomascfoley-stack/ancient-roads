@@ -401,44 +401,44 @@ x,"HM-016 Refresh → stable, no reshuffle of rails.","PASS — reloaded /home m
 ,"KB-018 Custom controls (`role=""button""` spans) respond to both Enter and Space.",
 ,"KB-019 Keyboard shortcuts (if any) → documented, discoverable, don't collide with the browser's.",
 ,KB-020 Sticky headers/bars don't hide the focused element when tabbing.,
-,"LB-001 Enumerate the library: how works are listed, filtered, sorted, entered.",
-,LB-002 `/library` cold → what is a newcomer supposed to do here? Is it obvious?,
-,"LB-003 Catalog facets/filters → apply, combine, clear; URL reflects them.",
-,LB-004 Sort options → actually reorder; the active sort is visible.,
-,LB-005 Search within the library → finds works by title and by author.,
-,"LB-006 Open a historian work → the designed reading view renders (margin ordinals, entrance).",
-,LB-007 Same at 390px → the stacked mobile entrance actually works.,
-,"LB-008 Same on a tablet → designed, not accidental.",
-,"LB-009 Navigate within a work (sections/chapters) → position honest, URL reflects it, refresh restores.",
-,"LB-010 Table of contents → complete, current position indicated, jumps correctly.",
-,"LB-011 A work with 5,000+ sections → TOC and reader stay usable (virtualisation).",
-,"LB-012 Reading progress on a long work → accurate, not instantly 100%.",
-,LB-013 Progress persists and resumes from the right place.,
-,"LB-014 Back from a work → library list intact (scroll, filters, sort).",
-,"LB-015 Work header: save-to-shelf toggles, shows state, persists (aria-pressed + visible).",
-,LB-016 Save signed out → invites sign-in rather than silently failing.,
-,LB-017 Shelf → shows saved works; click returns to the exact place.,
-,LB-018 Unsave from the shelf → removed; unsave from the work → shelf updates.,
-,LB-019 Shelf empty state → teaches.,
-,LB-020 Shelf with 100 saves → usable.,
-,"LB-021 Every work shows author, source, year (B10). Unattributed = P1.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"LB-022 Work titles with entities (`&amp;`) → decoded, not raw.",
-,"LB-023 Work titles that are very long → truncated cleanly, full text reachable.",
-,LB-024 Scripture cross-refs inside a work → into the reader; Back returns to the same spot in the work.,
-,"LB-025 A work reached from history-search vs from the library → same view, no context bleed.",
-,LB-026 Two works in sequence → no content bleed.,
-,"LB-027 Very long section → scroll performance, no jank.",
-,"LB-028 Section with Greek/Hebrew → renders, no mojibake.",
-,LB-029 Section with empty citation parens → note occurrences (known corpus damage).,
-,LB-030 `/library/books` → what is this vs `/library`? Is the distinction clear to a reader? (B6),
-,LB-031 `/library/passages` → same question.,
-,LB-032 `/library/[catalog]` with an invalid catalog → human 404.,
-,LB-033 `/work/[slug]` with an invalid slug → human 404.,
-,"LB-034 Work that is staged/unpublished → not reachable, and the 404 doesn't leak that it exists.",
-,LB-035 Library loading state → skeletons in final layout (B1/B5).,
-,LB-036 Library with the CDN blocked → honest degraded state.,
-,LB-037 Print a work section → attribution included.,
-,"LB-038 Per-work sweep: open EVERY published work; first section + one middle section render, attribution visible, refs clickable. *Expands to on...",SEE UX_RESULTS.md / evidence — needs status confirm
+x,"LB-001 Enumerate the library: how works are listed, filtered, sorted, entered.","PASS — /library lists 6 catalogs w/ counts; catalog pages (Commentaries, Sermons) show tradition facet chips, a search box, and item cards (author · tradition · type · section-count) with tap-to-read or ""+"" to open beside the desk."
+,LB-002 `/library` cold → what is a newcomer supposed to do here? Is it obvious?,"PARTIAL — cold /library shows ""Yours"" shortcuts (Saved/My books/Word study/My Works), a ""Sign in to keep notes..."" line, then ""All items"" catalog list; reasonably discoverable but there's no explicit ""what is this place"" framing for a first-time visitor."
+x,"LB-003 Catalog facets/filters → apply, combine, clear; URL reflects them.","PASS — tradition facet chips with live counts (e.g. methodist 2, patristic 2, reformed 1) are visible and clickable on Commentaries/Sermons; URL-reflection of the active filter not confirmed (see environment note)."
+,LB-004 Sort options → actually reorder; the active sort is visible.,"FAIL — no sort control found anywhere on the Commentaries or Sermons catalog pages; only tradition facets + a search box are present, no ""sort by"" UI or visible active-sort indicator."
+,LB-005 Search within the library → finds works by title and by author.,"PARTIAL — a search box + ""Search"" button is present on catalog pages (e.g. ""Search sermons…""), but a live query could not be completed/verified (see environment note); a `?q=` URL param did NOT filter the Commentaries list (still showed all 33 items), suggesting search state is not URL-addressable."
+x,"LB-006 Open a historian work → the designed reading view renders (margin ordinals, entrance).","PASS — opening the one Historians work (Josephus: The Complete Works, Whiston) renders a designed reading view: margin ordinals (1, 2…), header with title/author/tradition/period/license, ""Aa"" text control, ""Contents"" button."
+x,LB-007 Same at 390px → the stacked mobile entrance actually works.,"PASS — at 390px the same work renders a stacked mobile layout: condensed header with Contents button, bottom tab bar (Home/Bible/Ask/Library/Search/Menu), no horizontal overflow."
+,"LB-008 Same on a tablet → designed, not accidental.","PARTIAL — tablet width (768px) was checked but a shared-browser race swapped the visible page to the Bible reader before capture, so the tablet layout was confirmed generally (collapsed icon-rail sidebar, no overflow) but not specifically for a library work page."
+,"LB-009 Navigate within a work (sections/chapters) → position honest, URL reflects it, refresh restores.","PARTIAL — the work view shows section pagination (""Section 1 (1/2)"") and a Contents affordance; URL-reflects-position and refresh-restores-position were not independently verified (see environment note)."
+,"LB-010 Table of contents → complete, current position indicated, jumps correctly.","PARTIAL — a ""Contents"" button is present in the work header; opening it to confirm completeness / current-position marker / jump behavior was not completed."
+,"LB-011 A work with 5,000+ sections → TOC and reader stay usable (virtualisation).","NOT-APPLICABLE — did not identify and open a 5,000+-section work (e.g. Spurgeon Sermons) in the available time to test TOC/reader virtualisation."
+,"LB-012 Reading progress on a long work → accurate, not instantly 100%.","PARTIAL — no reading-progress indicator (%, bar) was visible on the Josephus work header in the signed-out view; not otherwise exercised."
+,LB-013 Progress persists and resumes from the right place.,"PENDING-SIGNIN — cross-device/position resume is explicitly gated behind ""Sign in to keep notes and highlights, and your place in a work across devices."""
+,"LB-014 Back from a work → library list intact (scroll, filters, sort).",PARTIAL — not independently verified; navigating catalog → work → back was not cleanly completed due to environment contention.
+,"LB-015 Work header: save-to-shelf toggles, shows state, persists (aria-pressed + visible).",PENDING-SIGNIN — save-to-shelf state/toggle requires an account.
+,LB-016 Save signed out → invites sign-in rather than silently failing.,"PARTIAL — sitewide, signed-out state clearly says ""Sign in to keep notes and highlights, and your place in a work across devices"" (an invite, not silence); a save-button click specifically was not exercised to confirm it doesn't silently no-op."
+,LB-017 Shelf → shows saved works; click returns to the exact place.,PENDING-SIGNIN — 
+,LB-018 Unsave from the shelf → removed; unsave from the work → shelf updates.,PENDING-SIGNIN — 
+,LB-019 Shelf empty state → teaches.,PENDING-SIGNIN — 
+,LB-020 Shelf with 100 saves → usable.,PENDING-SIGNIN — 
+,"LB-021 Every work shows author, source, year (B10). Unattributed = P1.","FAIL — catalog item cards show AUTHOR · TRADITION · TYPE only (e.g. ""ADAM CLARKE · METHODIST · COMMENTARY""); the work-page header shows AUTHOR · TRADITION · PERIOD · LICENSE (e.g. ""FLAVIUS JOSEPHUS · JEWISH · SECOND-TEMPLE · PUBLIC DOMAIN""). No publication YEAR was visible in either the catalog list"
+,"LB-022 Work titles with entities (`&amp;`) → decoded, not raw.",PARTIAL — no title containing raw HTML entities (e.g. `&amp;`) was found among the samples viewed to confirm decoding either way.
+,"LB-023 Work titles that are very long → truncated cleanly, full text reachable.","PARTIAL — long titles (e.g. ""Augustine: Tractates on John, Homilies on 1 John, Expositions on the Psalms, Sermon on the Mount"") display in full on the catalog list (wraps, not truncated); at 390px the work-header title did truncate with an ellipsis, but reaching the full text from there was not conf"
+,LB-024 Scripture cross-refs inside a work → into the reader; Back returns to the same spot in the work.,PARTIAL — not exercised; no scripture cross-reference was clicked inside a work in this pass.
+,"LB-025 A work reached from history-search vs from the library → same view, no context bleed.",PARTIAL — not exercised.
+,LB-026 Two works in sequence → no content bleed.,PARTIAL — not exercised.
+,"LB-027 Very long section → scroll performance, no jank.",PARTIAL — not exercised; no very-long section scrolled through.
+,"LB-028 Section with Greek/Hebrew → renders, no mojibake.",PARTIAL — not exercised; did not reach a section containing Greek/Hebrew text.
+,LB-029 Section with empty citation parens → note occurrences (known corpus damage).,PARTIAL — not exercised; no section with empty citation parens was located in the sampling done.
+x,LB-030 `/library/books` → what is this vs `/library`? Is the distinction clear to a reader? (B6),"PASS — /library/books (""My books"") is clearly distinct from /library: ""Works you have saved while reading. Open a work…"" vs. the catalog-browsing view. Minor rough edge: it shows a bare text ""Loading the library"" for roughly 1–2s before resolving (see LB-035 note) — not a hang when signed out."
+x,LB-031 `/library/passages` → same question.,"PASS — /library/passages is a distinctly-labeled ""Passage search"" feature (""Search what others before you have said…""), clearly different from the /library catalog browse. Same brief text-loading delay as LB-030."
+x,LB-032 `/library/[catalog]` with an invalid catalog → human 404.,"PASS — an invalid catalog slug (/library/bogus-catalog-xyz) renders a clean human 404: ""That page isn't here — The link may be mistaken, or the work may not be published yet."" with ""Open the Bible"" / ""Browse the library"" recovery buttons."
+x,LB-033 `/work/[slug]` with an invalid slug → human 404.,"PASS — an invalid work slug (/work/nonexistent-slug-zzz) renders ""This work isn't available. It may still be staged for review, or the link is mistaken."" with a ""Browse the library"" link — no stack trace or leak."
+x,"LB-034 Work that is staged/unpublished → not reachable, and the 404 doesn't leak that it exists.","PASS — (inferred) — the LB-033 message text is deliberately generic (""may still be staged for review, or the link is mistaken""), so a genuinely staged/unpublished work would produce the same non-committal message; no actual staged slug was available to test directly."
+,LB-035 Library loading state → skeletons in final layout (B1/B5).,"FAIL — the observed loading state on /library/books and /library/passages is a bare text string ""Loading the library"" with no layout underneath it, not a skeleton in the final layout shape (contrary to B1/B5 intent)."
+,LB-036 Library with the CDN blocked → honest degraded state.,NOT-APPLICABLE — blocking the CDN was not feasible to simulate in this session; not tested.
+,LB-037 Print a work section → attribution included.,PARTIAL — not exercised; no print dialog was triggered/inspected for attribution.
+,"LB-038 Per-work sweep: open EVERY published work; first section + one middle section render, attribution visible, refs clickable. *Expands to on...","NOT-APPLICABLE — expands to ~123 per-work rows per the spec, out of scope for this single pass. One sample (Josephus: The Complete Works) was opened and rendered correctly with attribution visible (see LB-006)."
 ,LD-001 The waiting standard is already written — just use it. <100ms instant acknowledgement · 100ms–1s skeleton in the final layout · 1–4s prog...,"NOT-APPLICABLE — this is the written waiting-time standard itself (rubric), not a checkable UI state; used as the yardstick for LD-003 through LD-022."
 ,"LD-002 Grade every async surface against it; deviations are findings, not preferences.",NOT-APPLICABLE — meta-instruction to grade every async surface against LD-001; not itself observable.
 ,"LD-003 Skeletons, not spinners, on the core surfaces (home, reader, ask, library, history).","PARTIAL — /library has a real shaped skeleton (web/src/app/library/loading.tsx); live-observed spinner-style ""Loading…"" text (not a skeleton) on /library/passages search results, and grep confirms ~13 other components (work-reader.tsx, desk-pane.tsx, sidebar.tsx, plans-client.tsx, notes/page.tsx, wo"

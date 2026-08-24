@@ -685,3 +685,29 @@ Environment caveat carried from the agent: shared browser-tab contention made se
 multi-step checks (rapid pane switching, full keyboard add/close sequences, live highlight sync)
 unreliable to attribute cleanly — marked NOT VERIFIED rather than guessed at, left for a re-run in
 isolation.
+
+## Batch 31 — LB (Library catalog), tracker-driven, signed-out
+
+### F-064 · LB-021 · **P1** · No publication year shown anywhere on catalog cards or the work header
+Only author/tradition/type or author/tradition/period/license are shown — never a publication year.
+The test plan itself flags this as P1-severity if truly unattributed: knowing *when* a commentary was
+written is core to using it responsibly (a 1710 Puritan reading vs. a 1990s critical one).
+
+### F-065 · LB-004 · **P2** · No sort control anywhere in the Commentaries/Sermons catalog
+A reader can filter/search but cannot sort a catalog by any axis (date, author, alphabetical).
+
+### F-066 · LB-035 · **P3** · Library loading state is bare text, not a skeleton
+"Loading the library" as a plain text string rather than a skeleton in final layout — same class of
+issue as F-055 (LD-018's three incompatible loading idioms).
+
+**Confirmed PASS:** catalog listing/facets/search UI, a full historian work reading view (Josephus,
+correct margin ordinals), 390px mobile layout with no overflow, `/library/books` vs `/library/passages`
+correctly read as distinct features, invalid catalog → clean human 404, invalid work slug → a
+non-leaking "not available" message.
+
+**Coverage gap, stated honestly:** roughly half of LB (LB-005, LB-008–012, LB-014, LB-016, LB-022–029,
+LB-037) is genuinely PARTIAL/untested — the agent's browser session was heavily contended by other
+concurrent sweep agents and several checks got clobbered mid-flight rather than completed. This is the
+largest remaining real gap in this pass; worth a dedicated re-run in an isolated browser session before
+calling LB done. LB-038 (the ~123-work sweep generator) has one sample (Josephus, PASS) out of ~123 —
+not expanded this pass.
