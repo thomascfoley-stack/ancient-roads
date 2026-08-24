@@ -1,5 +1,72 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — First-party growth data: own the nouns, rent the mouse movements (migration 130)
+
+**Directive.** "i don't want to be tool dependent… should be ancient paths dependent", "i want to
+move off of posthog next week", "All user data should be referenceable, its mine and belongs to
+ME", "I don't care about gdpr, don't build for that or ccpa", "simple simple simple setups that
+scale". Then: "build it."
+
+**Six adversarial reviews before a line was written** (4 on the schema, 2 on the revised design).
+They killed two of MY proposals, and both deaths were earned:
+
+1. **`posthog_distinct_id` — DROPPED.** Three of four reviewers rejected it independently: it makes
+   a Postgres row a re-identification key into PostHog's behavioural record; it decays (ITP expires
+   the cookie weekly, ad-blockers suppress it, and `person_profiles:'identified_only'` means an
+   anonymous visitor has NO profile to point at); and it puts a vendor's identifier in the schema as
+   load-bearing. No vendor id appears anywhere in this migration.
+2. **A generic `events` table + `POST /api/events` — DROPPED.** I proposed it to "own everything".
+   It would have been the THIRD logging system (the "9 systems" outcome wearing the costume of
+   avoiding it), and worse: **this database also serves the corpus.** The same Neon compute holds
+   the vector index over ~295k sections and answers /ask at p50 10.5s; a pageview-rate append stream
+   evicts that working set — trading a measured product gate for dashboards ANALYTICS.md calls
+   non-load-bearing. It also pins compute out of autosuspend from ~10 users (≈$65-70/mo) on a public
+   endpoint whose limiter fails OPEN by design.
+
+**Built instead — one migration, three changes.**
+* `user_active_day (user_id, day)` — ONE ROW PER USER PER DAY. Scales with people, not page loads
+  (~13× cheaper than pageviews). Yields DAU/WAU/MAU, 7-day churn, retention and resurrection,
+  vendor-free. Written from `lib/session.ts` — the single choke point every authenticated route and
+  page passes through, so a reader who spends an hour in Scripture without searching still counts.
+* **`waitlist` is now APPEND-ONLY** (`UNIQUE(email)` dropped) + `attribution JSONB` + `consent_text`.
+  This is a REPAIR: the 23505 catch made a repeat signup look like success while discarding the
+  campaign that produced it — newsletter signup, then a Twitter ad two weeks later, and Twitter
+  recorded zero conversions, invisibly. Unfixable in place (033 revoked UPDATE, 034 grants no UPDATE
+  policy). Dedupe moved to the owner-side export where it belongs.
+* `email_suppression` — hash-keyed (`sha256(lower(email))`), so a person can be deleted from
+  `waitlist` and STILL never be mailed again. Corrects my own false claim that "Resend is a
+  rebuildable mirror": unsubscribes and complaints originate AT the provider and exist nowhere in
+  Postgres, so a rebuild-from-DB would re-mail people who opted out.
+* Attribution captured **on arrival, not at submit** (`lib/attribution.ts`): the campaign is on the
+  URL when the reader lands and gone once they read /about. Submit-time capture records "no
+  campaign" for most real signups WHILE APPEARING TO WORK.
+* `scripts/growth-report.mts` + `scripts/waitlist-export.mts` — the whole analytics stack until
+  ~1k users, owner-run, no vendor. Export excludes suppressed addresses at source, with no flag to
+  include them.
+
+**Verified as the real `app_runtime` role on dev, not assumed:**
+GUC-bound activity INSERT ALLOWED · same-day duplicate REFUSED 23505 (which the writer treats as
+"already active") · writing ANOTHER user's activity REFUSED by policy · SELECT sees 0 rows ·
+**two signups on one email with different campaigns BOTH recorded** (the defect, fixed) · UPDATE on
+waitlist still REFUSED (033/034 posture intact). Probe rows deleted after. `growth-report` and
+`waitlist-export` both run clean against dev (7 signups, 62 searches by surface).
+
+**Also fixed, and it was silent:** `scripts/lib/user-data-invariant.mjs` hand-declares waitlist's
+columns. Its header says a DROPPED column errors — but an ADDED one just stays outside the digest
+and the gate keeps reporting clean. `attribution`/`consent_text` added to the digest body;
+`user_active_day` and `email_suppression` registered as excluded telemetry with reasons.
+
+**NOT DONE / UNVERIFIED.**
+* NOT applied to prod, NOT deployed (Root Directory conflict still blocks every deploy).
+* Unsubscribe ROUTE not built — table and grants only. When it is: the runtime holds INSERT and
+  nothing else, so unsubscribe must INSERT a suppression row, never UPDATE the waitlist.
+* The landing copy still promises "your email is used for the invitation alone"; `consent_text` now
+  records that promise per row, but the copy itself is an owner decision and is unchanged.
+* Resend has never sent from `ancientpaths.app` (DNS records prepared 2026-08-06, never added per
+  `docs/evidence/resend-dns-records.txt`). Current domain status UNVERIFIED — `MAIL_FROM` and
+  `RESEND_API_KEY` are Vercel `sensitive` vars and cannot be read back via API; check the Resend
+  dashboard before any send.
+
 ## 2026-08-24 — DEPLOY BLOCKED, and the "seat block" diagnosis was WRONG
 
 **Correction first, because it was repeated to the owner and acted on.** The blocked builds were
