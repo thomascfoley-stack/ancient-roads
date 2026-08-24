@@ -57,19 +57,45 @@ three form paths went red).
 credential-in-URL class for *any* reason JS fails to run — hydration bug, chunk 404, CSP change, JS
 disabled. It does NOT make sign-up work.
 
+## CONFIRMED ON THE LIVE PRODUCTION SITE — 2026-08-24
+
+Checked in the owner's own Chrome (already past `SITE_PASSWORD` and signed in), so this is the
+deployed build serving a real session, not a local approximation.
+
+`/auth/sign-up` and `/auth/sign-in` redirect a SIGNED-IN reader to `/home` (the `SIGNED_OUT_ONLY`
+guard), so they cannot be inspected from a signed-in session. **`/auth/forgot-password` renders the
+same `AuthForm` inside the same `<Suspense>` boundary and is deliberately reachable while signed in**
+— which makes it the honest probe for the same defect.
+
+    https://ancientpaths.app/auth/forgot-password
+      formMethod:        "(none -> GET)"
+      formHydrated:      false
+      inputHydrated:     false
+      submitButtonHydrated: false
+      submitIntercepted: false      <- nothing prevents the browser's default submit
+      mainHydrated:      true
+      nodes: 292, hydratedNodes: 260
+
+Re-probed after a further 6 seconds: unchanged. The page hydrates; the auth-form subtree never does.
+
+**The visibility caveat is now disproven, not merely argued away.** In the SAME tab, at the SAME
+`document.visibilityState === 'hidden'`, `https://ancientpaths.app/home` hydrated **296 of 319
+nodes**. Hidden-ness does not prevent hydration on this site. The failure is specific to the
+`AuthForm` boundary.
+
+## What this means
+
+On the live site, the sign-in and sign-up forms have no JavaScript attached. Submitting one performs
+the browser's default submit — a **GET to the same URL with every field in the query string,
+including `password`**. No account is created and no session is established, because the handler
+that would call the auth client never runs.
+
 ## NOT resolved — what someone has to do next
 
 - **The hydration failure is the real bug and is untouched.** Sign-up and sign-in do not function in
   the environment measured here. Likely suspects, in order: the `useSearchParams()` +
   `<Suspense>` + `dynamic = 'force-dynamic'` combination on `/auth/[path]`, or the unusual
   `generateStaticParams` + `dynamicParams = false` pairing on a force-dynamic route.
-- **Confirm against the DEPLOYED site.** Everything above is a local production build. I could not
-  reach the live `/auth/sign-up` — it is behind `SITE_PASSWORD` and I do not have it. **If it
-  reproduces there, sign-up is broken in production and this is a launch blocker.** That check is
-  one page load plus the console snippet:
-  `!!Object.keys(document.querySelector('form')).find(k=>k.startsWith('__react'))` — `false` means
-  it reproduces.
-- **One caveat I could not eliminate:** the browser pane reports `document.visibilityState ===
-  'hidden'` throughout, and hydration scheduling can be visibility-sensitive. The same-pane controls
-  above (reader and gate both hydrate) argue against that being the whole story, but a check on a
-  genuinely foregrounded browser would close it.
+- ~~Confirm against the deployed site~~ — **DONE, it reproduces on production.** See above.
+- **The `method="post"` floor is committed but NOT deployed**, so production still writes the
+  password to the URL on every attempted sign-in until something ships.

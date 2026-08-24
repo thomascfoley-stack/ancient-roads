@@ -24,10 +24,16 @@ No account created. Controls, same browser and pane, back-to-back: `/read/jhn/3`
 re-verified in a rebuilt production build that an un-hydrated submit now leaves the URL clean. That
 removes the credential exposure for any cause of JS not running. **It does not make sign-up work.**
 
-**The hydration failure is untouched and is the real bug**, and it needs confirming against the
-DEPLOYED site — I could not reach it (behind `SITE_PASSWORD`). One page load and one line settles it:
-`!!Object.keys(document.querySelector('form')).find(k=>k.startsWith('__react'))` — `false` means it
-reproduces, and sign-up is broken in production. Full evidence, controls and caveats:
+**CONFIRMED ON PRODUCTION 2026-08-24**, in the owner's own Chrome (past the gate, signed in).
+`/auth/sign-up` and `/auth/sign-in` bounce a signed-in reader to `/home`, so the probe used
+`/auth/forgot-password` — same component, same boundary, deliberately reachable while signed in:
+`formHydrated: false`, `inputHydrated: false`, `submitIntercepted: false`, `formMethod: (none -> GET)`,
+while the same page hydrated 260/292 nodes. **The visibility caveat is disproven:** `/home` in the
+same hidden tab hydrated 296/319. So on the live site the auth forms have no JavaScript attached —
+sign-in and sign-up do not work, and submitting one sends the password in the URL.
+
+**The hydration failure itself is untouched and is the real bug.** The `method="post"` floor is
+committed here but NOT deployed, so production still leaks until something ships. Full evidence:
 `docs/evidence/ux-remediation-2026-08-24/auth-form-no-hydration.md`.
 
 ---
