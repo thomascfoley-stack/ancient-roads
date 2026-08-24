@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { HELLOAO_BOOK_MAP } from './helloao-source.js';
 import { BOOKS } from '../bible/books.js';
 import { writeRegisterWork, type RegisterSection, type RegisterWork } from './register-writer.js';
+import { assertNotQuarantined } from './license-manifest.js';
 
 const CACHE = 'data/raw/helloao';
 const arg = (f: string) => process.argv.find((a) => a.startsWith(`${f}=`))?.slice(f.length + 1);
@@ -70,6 +71,12 @@ async function main() {
   const prov = entry.provenance as Record<string, unknown>;
   const acq = prov.acquire as { adapter: string; commentary_id: string; api: string };
   if (acq.adapter !== 'helloao') throw new Error(`${slug} is not a helloao work`);
+  // D25 (DEEP_SWEEP): this path had NO quarantine check at all — the D2 fix wired
+  // assertNotQuarantined into acquireCcel and acquireGutenberg and missed this adapter, and D2's
+  // guard tested the HELPER rather than each mouth, so the gap stayed green. The loop's queue
+  // filter is no cover either: adapter-loop.ts escalates helloao as "not run by this loop", so
+  // the CLI is the only path and it was ungated.
+  assertNotQuarantined(entry);
 
   const booksRes = await fetch(`${acq.api}/c/${acq.commentary_id}/books.json`, { signal: AbortSignal.timeout(60_000) });
   if (!booksRes.ok) throw new Error(`books.json ${booksRes.status}`);
@@ -119,7 +126,12 @@ async function main() {
     authorDied: entry.author_died as number | undefined, year: entry.year_written as number,
     sourceType: 'commentary', register: 'prose', tradition: entry.tradition as string, era: entry.era as string,
     license: entry.license as string, url: prov.url as string, edition: (prov.edition as string) ?? '',
-    publish: true, sections,
+    // D25: this was hardcoded to the literal boolean — the ONLY writeRegisterWork caller in the repo
+    // that hardcoded it; every other caller either consults the manifest or hardcodes false. It
+    // took the serve flag, and with it the owner's gate, out of the decision entirely. helloao is
+    // a top-level main() with no exports, so there is no `opts` to fall back through; the
+    // precedent for a no-opts caller is sword-register-bridge.ts:42.
+    publish: entry.serve !== false, sections,
   };
   const r = await writeRegisterWork(work);
   console.log(`${slug}: ${sections.length} verse entries → ${r.embedded} embedded, ${r.staticEntries} static reader entries`);
