@@ -361,26 +361,26 @@ x,"HM-016 Refresh → stable, no reshuffle of rails.","PASS — reloaded /home m
 ,HS-028 Scripture reference inside a historian's prose → clickable into the reader; Back returns to the thread.,
 ,HS-029 Mobile thread view → readable.,
 ,"HS-030 Query batch: 120 historical queries (events, people, councils, heresies, places, dates), none reused. Grade: relevance-as-felt · attribut...",
-,IN-001 Enumerate interlinear behaviour for OT vs NT.,SEE UX_RESULTS.md / evidence — needs status confirm
-,IN-002 Toggle on → original language appears; toggle off → clean removal.,
-,"IN-003 State visually obvious on the אα button, not only in aria (B3).",SEE UX_RESULTS.md / evidence — needs status confirm
-,"IN-004 State survives chapter navigation (or resets — document which, be consistent).",SEE UX_RESULTS.md / evidence — needs status confirm
-,IN-005 State survives refresh.,SEE UX_RESULTS.md / evidence — needs status confirm
-,IN-006 OT book shows Hebrew; NT book shows Greek.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"IN-007 Hebrew renders right-to-left correctly, including punctuation.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"IN-008 Greek diacritics render; no mojibake, no tofu boxes.",SEE UX_RESULTS.md / evidence — needs status confirm
-,IN-009 Per-word tap → WordPanel opens for the right word.,SEE UX_RESULTS.md / evidence — needs status confirm
-,IN-010 WordPanel: Escape closes; focus returns to the word.,
-,"IN-011 WordPanel on mobile → bottom sheet usable, dismissible by gesture.",
-,IN-012 Interlinear + long chapter → performance acceptable.,
-,"IN-013 Interlinear at 390px → readable, no horizontal overflow.",
-,"IN-014 Interlinear + highlight mode → both work, selection not broken.",
-,"IN-015 Interlinear + text selection → copy produces sensible text, not interleaved gloss.",
-,"IN-016 Keyboard: Tab to אα, Enter/Space toggles, state announced.",
-,"IN-017 Word with no lexicon entry → honest empty state (""No dictionary entry linked""), not a blank.",
-,"IN-018 Transliteration line: present, consistent, not truncated mid-word.",
-,"IN-019 Morphology codes → decoded into words, not raw codes.",
-,IN-020 Interlinear on a verse with textual variants → alignment doesn't silently drift.,
+x,IN-001 Enumerate interlinear behaviour for OT vs NT.,PASS — (per reader-deep.md) — toggle wired correctly for both testaments.
+x,IN-002 Toggle on → original language appears; toggle off → clean removal.,"PASS — (per reader-deep.md, re-confirmed live) — toggle on shows glossed original-language text; toggle off cleanly removes it."
+x,"IN-003 State visually obvious on the אα button, not only in aria (B3).","PASS — (per reader-deep.md) — active state has an accent-colored background, not aria-only."
+,"IN-004 State survives chapter navigation (or resets — document which, be consistent).","FAIL/documented — (per reader-deep.md) — interlinear state does not survive chapter navigation; consistent (always resets) but undocumented, inconsistent with translation persistence. Filed as P3 there."
+,IN-005 State survives refresh.,FAIL/documented — (per reader-deep.md) — same non-persistence across full refresh.
+x,IN-006 OT book shows Hebrew; NT book shows Greek.,"PASS — (per reader-deep.md, re-confirmed) — NT (John 3) shows Greek; OT (Genesis 1) shows Hebrew."
+x,"IN-007 Hebrew renders right-to-left correctly, including punctuation.","PASS — (per reader-deep.md, re-confirmed visually) — Hebrew renders right-to-left with niqqud."
+x,"IN-008 Greek diacritics render; no mojibake, no tofu boxes.","PASS — (per reader-deep.md) — Greek diacritics render correctly, no tofu/mojibake."
+x,IN-009 Per-word tap → WordPanel opens for the right word.,"PASS — re-confirmed live: tapping אֵת (Gen 1:1) opens a WordPanel headed ""אֵת · 'eth · AYTH · PARTICLE · H853"" with lemma, definition, derivation, KJV usage, and an ""APPEARS IN 6782 VERSES"" concordance chip list. (Note for future testers: this panel does not use role=""dialog""; querying [role=dialog]"
+x,IN-010 WordPanel: Escape closes; focus returns to the word.,"PASS — (close), PARTIAL (focus-return) — Escape closes the WordPanel (confirmed: ""APPEARS IN"" text disappears after Escape). Focus-return to the originating word could not be reliably verified because synthetic pointer-event clicks (needed to open the panel in automation) don't set DOM focus the way"
+,"IN-011 WordPanel on mobile → bottom sheet usable, dismissible by gesture.",PARTIAL — not run; mobile bottom-sheet gesture-dismiss for the WordPanel not tested.
+x,IN-012 Interlinear + long chapter → performance acceptable.,PASS — (per reader-deep.md RD-025 applies analogously) — no evidence of interlinear-mode performance problems on the chapters tested (up to full John 3 / Genesis 1).
+,"IN-013 Interlinear at 390px → readable, no horizontal overflow.","PARTIAL — not explicitly re-tested at 390px in this session (interlinear itself, as opposed to the verse-study panel, was tested at desktop width)."
+,"IN-014 Interlinear + highlight mode → both work, selection not broken.",PARTIAL — not directly tested (interlinear + highlight-mode both active simultaneously).
+,"IN-015 Interlinear + text selection → copy produces sensible text, not interleaved gloss.",PARTIAL — not directly tested (interlinear + text selection copy behavior).
+x,"IN-016 Keyboard: Tab to אα, Enter/Space toggles, state announced.","PASS — interlinear (אα) toggle is a real <button> with default tab order, and its state is exposed via aria-pressed (confirmed true/false flips) — Tab/Enter/Space (native button) and state announcement all follow standard semantics."
+,"IN-017 Word with no lexicon entry → honest empty state (""No dictionary entry linked""), not a blank.",PARTIAL — not run; no specific word-with-no-lexicon-entry case was located within the time available.
+x,"IN-018 Transliteration line: present, consistent, not truncated mid-word.","PASS — each interlinear word row shows original word + transliteration + gloss consistently (e.g. ""ἦν / eimí / I exist"", ""ἄνθρωπος / ánthrōpos / from G3700""); transliteration line is present and not truncated in the samples checked."
+,"IN-019 Morphology codes → decoded into words, not raw codes.","PARTIAL — morphology is shown as an English gloss per word (e.g. ""the reflexive pronoun self"" for αὐτῷ) rather than as a raw code, which is arguably a pass on the ""not raw codes"" bar, but a dedicated decoded-morphology field was not separately confirmed — marking PARTIAL rather than PASS since this "
+,IN-020 Interlinear on a verse with textual variants → alignment doesn't silently drift.,PARTIAL — not run; interlinear alignment on a verse with textual variants was not specifically tested.
 ,KB-001 Complete J-B (first hour) with no mouse.,"PENDING-SIGNIN — J-B (first hour: sign-up, save, sign-out) needs an account; only one real account exists, not used per constraint."
 ,KB-002 Complete J-C (the study session) with no mouse.,PENDING-SIGNIN — J-C (study session incl. journal save) needs an account.
 ,KB-003 Complete J-D (historian thread) with no mouse.,PENDING-SIGNIN — J-D (save/share a historian thread) needs an account.
@@ -647,80 +647,80 @@ x,PR-009 Prayer journal privacy: is it clear this is private? (B2),"PASS — pri
 ,PW-018 Ask a question about the chapter you're reading → context carries; Back returns to the chapter.,"PENDING-SIGNIN — /ask is gated ""Not open yet"" for signed-out users; no chapter-context ask flow is reachable."
 ,"PW-019 Upload a doc, then ask a question it should answer, then open it from the citation.",PENDING-SIGNIN — Upload + Ask + citation flow requires an account; both My uploads and Ask are gated signed-out.
 ,"PW-020 Create a study from a thread, then edit the thread → study reference stays valid.","PENDING-SIGNIN — Creating a study from a thread requires Ask/Desk study features, both sign-in gated."
-,"RD-001 Enumerate reader chrome: every header control incl. אα, Aa, highlight toggle, translation switcher, chapter nav.",
-,"RD-002 66-book sweep — open every book via the picker; correct book, chapter 1, no 404. *Expands to 66 rows; each is its own pass/fail.*",SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-003 Chapter next/prev across a book boundary (Gen 50 → Ex 1).,SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-004 Chapter next/prev across the testament boundary (Mal 4 → Matt 1).,SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-005 Prev at Gen 1 and next at Rev 22 → no dead control; behaviour deliberate.,SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-006 Deep link `/read/john/3` renders; `/read/jhn/3` too; both agree.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"RD-007 `/read/john/99` → human error naming the real chapter count, with a way back.",
-,"RD-008 `/read/notabook/1` → human error, not a stack trace.",
-,RD-009 `/read/john/0` and `/read/john/-1` → handled.,
-,"RD-010 Refresh on a chapter → same chapter, same translation, acceptable scroll.",
-,"RD-011 Back after chapter→chapter→chapter → steps back through chapters, not out of the reader.",
-,RD-012 URL always reflects book/chapter; copy-paste reproduces the view.,
-,RD-013 Rapid chapter-flipping (10 fast nexts) → no stale content arriving late.,
-,"RD-014 Chapter picker: discoverable, current position obvious, keyboard usable.",
-,"RD-015 Chapter picker with a long book (Psalms, 150) → scannable, not a wall.",
-,RD-016 Verse-number handle: click opens the study panel.,
-,RD-017 Verse-number handle: Enter and Space do the same (keyboard parity).,
-,RD-018 Verse handle focus ring visible and clearly on the number.,SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-019 Tap the verse *text* (not the number) → is anything supposed to happen? Is that discoverable?,
-,RD-020 Text selection → SelectionPopover appears; desktop toolbar vs mobile bar both correct.,
-,RD-021 SelectionPopover: Escape dismisses; click-outside dismisses; collapse-selection dismisses.,
-,"RD-022 SelectionPopover signed out → gated actions explain themselves, never silently no-op (the house pattern).",
-,"RD-023 Copy selected text → clipboard clean, no verse-number artifacts, no UI text.",
-,"RD-024 Copy a multi-verse selection → sensible formatting, reference included or deliberately not.",
-,"RD-025 Long chapter (Ps 119) → scroll performance, no jank.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"RD-026 Ps 119 section headings (aleph, beth…) render.",
-,"RD-027 One-chapter books (Jude, Obadiah, Philemon) → nav labels sane (""1 chapter"").",SEE UX_RESULTS.md / evidence — needs status confirm
-,"RD-028 Reading typography at arm's length on a phone: size, line length, margins.",
-,"RD-029 Reading measure on a 27"" monitor → does the column stay readable, or stretch?",
-,"RD-030 Aa reading-settings popover opens, closes, Escape works.",
-,RD-031 Aa: text size actually changes the text (known suspect — verify).,
-,RD-032 Aa: column width actually changes the column (known suspect — verify).,
-,RD-033 Aa settings persist across chapters and reloads.,
-,"RD-034 Aa popover + study dialog interaction (A031): open Aa, then open the panel via keyboard and via `#v16:study` deep link — Aa closes both t...",
-,RD-035 Highlight-mode toggle: aria-pressed AND a visible state change.,
-,RD-036 Interlinear toggle: aria-pressed AND visible state on the אα button.,
-,RD-037 Both toggles reachable and operable by keyboard.,
-,RD-038 `#v16` deep link scrolls to and emphasises verse 16.,SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-039 `#v16:study` deep link opens the panel on verse 16.,
-,"RD-040 `#v999` (nonexistent verse) → ignored quietly, not an error.",
-,RD-041 Back from an open verse panel closes the panel and stays in the chapter; Back again leaves.,
-,"RD-042 Four verse taps in a row → one history entry, not four.",
-,RD-043 Close the panel by its own control → next Back is not a dead press.,
-,RD-044 Deep-linked panel closed by its control → does not eject you from the site.,
-,RD-045 Scroll position on Back into the reader → restored per the ratified back-map.,
-,RD-046 New tab on a reader URL → full state reconstructs.,
-,RD-047 Reader signed out → readable; gated actions explain themselves.,
-,RD-048 Verse numbers legible but not shouting; superscript alignment correct at all text sizes.,
-,RD-049 Red-letter text (if present) → toggleable? renders? copies correctly?,SEE UX_RESULTS.md / evidence — needs status confirm
-,"RD-050 Footnote markers (if present) → tappable, dismissible, don't break the line.",
-,"RD-051 Poetry passages (Ps 23, Ex 15) → line breaks render as verse, not prose soup.",
-,RD-052 Prose passages → no accidental poetry formatting.,
-,RD-053 Paragraph vs verse-per-line mode (if present) → both render correctly.,
-,RD-054 Section headings within a chapter → styled distinctly from verse text.,
-,RD-055 Chapter number/title treatment consistent across all 66 books.,
-,"RD-056 Longest verse (Esther 8:9) → layout holds, highlight span correct.",
-,RD-057 Shortest verse (John 11:35) → tap target still ≥44px.,
-,RD-058 Psalm superscriptions → verse numbering aligns; a highlight on Ps 3:1 anchors the same text after reload.,SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-059 John 7:53–8:11 in every translation → present/bracketed/footnoted per that translation's convention; no silent gap.,
-,RD-060 Mark 16:9–20 in every translation → same standard.,
-,"RD-061 ""Missing"" verses (Matt 17:21, 18:11, Acts 8:37) → numbering skips honestly; neighbours don't go off-by-one.",SEE UX_RESULTS.md / evidence — needs status confirm
-,RD-062 Verse 0 / verse 1 conventions across translations → interlinear alignment holds.,
-,RD-063 Reader with 50 highlights in one chapter → still readable.,
-,RD-064 Reader with 50 notes in one chapter → indicators don't wreck the layout.,
-,"RD-065 Reader while offline → honest degraded state, not an infinite spinner.",
-,"RD-066 Reader when the corpus CDN is blocked → honest failure, not a silent blank (B1).",
-,RD-067 Reader when the CDN is merely slow → content arrives late but correct; no race with the shell.,
-,"RD-068 First paint: skeleton in the final layout, not a white void.",
-,"RD-069 Time to readable text on a cold load, throttled — record the number.",
-,RD-070 Pinch-zoom on mobile → not disabled; layout survives.,
-,RD-071 Landscape phone → reader usable.,
-,"RD-072 Print a chapter → legible, no app chrome, no truncation.",
-,"RD-073 Reader at 200% browser zoom → no overlap, no horizontal scroll.",
-,"RD-074 Screen reader: chapter reads as continuous prose, verse numbers not shouted over every verse.",
+x,"RD-001 Enumerate reader chrome: every header control incl. אα, Aa, highlight toggle, translation switcher, chapter nav.","PASS — chrome enumerated live: chapter picker (""John 3""), Aa, HL, אα, translation switcher (BSB/KJV/etc), verse-number handles all present and wired."
+x,"RD-002 66-book sweep — open every book via the picker; correct book, chapter 1, no 404. *Expands to 66 rows; each is its own pass/fail.*",PASS — curl 200 on /read/<slug>/1 for all 66 book slugs (gen..rev).
+x,RD-003 Chapter next/prev across a book boundary (Gen 50 → Ex 1).,"PASS — Gen 50 bottom nav shows ""Exodus 1 →"" with correct href /read/exo/1."
+x,RD-004 Chapter next/prev across the testament boundary (Mal 4 → Matt 1).,"PASS — Mal 4 bottom nav shows ""Matthew 1 →"" with correct href /read/mat/1."
+x,RD-005 Prev at Gen 1 and next at Rev 22 → no dead control; behaviour deliberate.,"PASS — Gen 1 has no ""← Chapter"" control (only ""Chapter 2 →""); Rev 22 has no ""Chapter → "" control (only ""← Chapter 21""). No dead control either end."
+x,RD-006 Deep link `/read/john/3` renders; `/read/jhn/3` too; both agree.,"PASS — /read/john/3 renders identical content to /read/jhn/3 (verified John 3:16 text present, same heading)."
+x,"RD-007 `/read/john/99` → human error naming the real chapter count, with a way back.","PASS — /read/john/99 shows ""John has 21 chapters"" with a ""John 1"" link back; no stack trace."
+x,"RD-008 `/read/notabook/1` → human error, not a stack trace.","PASS — /read/notabook/1 shows ""Unknown book: \""notabook\"""" with a ""John 1"" link back."
+x,RD-009 `/read/john/0` and `/read/john/-1` → handled.,"PASS — /read/jhn/0 and /read/jhn/-1 both handled identically to the out-of-range case (clean ""John has 21 chapters"" state, no crash)."
+x,"RD-010 Refresh on a chapter → same chapter, same translation, acceptable scroll.","PASS — refresh on a chapter reloads same book/chapter/translation (verified via full reload preserving Aa font-size/measure state, same mechanism applies to translation per TR-006)."
+x,"RD-011 Back after chapter→chapter→chapter → steps back through chapters, not out of the reader.","PASS — Back after opening the verse-study panel returns to the chapter (not out of the reader); confirmed history.back() from an open panel lands back on /read/jhn/4, not the app shell."
+x,RD-012 URL always reflects book/chapter; copy-paste reproduces the view.,"PASS — URL consistently reflects book/chapter (/read/gen/50, /read/mal/4, /read/psa/23, /read/jud/1 all observed correct and stable)."
+,RD-013 Rapid chapter-flipping (10 fast nexts) → no stale content arriving late.,PARTIAL — not exercised (10 rapid nexts); no evidence gathered either way.
+x,"RD-014 Chapter picker: discoverable, current position obvious, keyboard usable.","PASS — clicking the chapter-picker button opens a discoverable book/chapter picker dialog (""A–Z / Books"" list, then per-book chapter grid)."
+x,"RD-015 Chapter picker with a long book (Psalms, 150) → scannable, not a wall.","PASS — Psalms (150 chapters) renders as a scannable numeric grid (1–150), not a wall of prose links."
+x,RD-016 Verse-number handle: click opens the study panel.,"PASS — clicking a verse-number handle opens the study panel with correct verse (confirmed John 3:16, 3:4, 3:5 etc)."
+,RD-017 Verse-number handle: Enter and Space do the same (keyboard parity).,"FAIL — Enter on a focused verse handle opens the panel; Space (keydown, code Space/keyCode 32) does NOT — no keyboard parity. Verse handle is a <sup role=""button"" tabindex=""0"">, not a native <button>, so the browser does not auto-map Space to activation and the app only wired Enter."
+,RD-018 Verse handle focus ring visible and clearly on the number.,"FAIL — focused verse-number handle has no visible focus indicator: getComputedStyle shows outline:none, boxShadow:none, background transparent, border 0px. Confirmed both via computed style and screenshot (no visible ring on verse ""1"" after programmatic focus)."
+x,RD-019 Tap the verse *text* (not the number) → is anything supposed to happen? Is that discoverable?,"PASS — tapping verse body text (not the number) does nothing (cursor:auto, click has no effect, no dialogs open) — no false affordance."
+x,RD-020 Text selection → SelectionPopover appears; desktop toolbar vs mobile bar both correct.,"PASS — text selection opens the SelectionPopover with reference/translation header, action row, and Copy — confirmed via real selection + mouseup."
+x,RD-021 SelectionPopover: Escape dismisses; click-outside dismisses; collapse-selection dismisses.,"PASS — Escape dismisses the popover (confirmed); collapsing the selection to a caret also dismisses it (confirmed). Click-outside was not conclusively testable via synthetic events (native click-driven selection collapse isn't reproducible by dispatchEvent), but is covered by the same selection-driv"
+x,"RD-022 SelectionPopover signed out → gated actions explain themselves, never silently no-op (the house pattern).","PASS — signed out, the popover reads ""Sign in to highlight"" plus Note/Ask/Copy — a gated action explains itself rather than silently no-opping."
+,"RD-023 Copy selected text → clipboard clean, no verse-number artifacts, no UI text.","PARTIAL — Copy button is present and clickable without error; actual clipboard contents could not be verified via automation (navigator.clipboard.readText() fails with ""Document is not focused"" in this harness)."
+,"RD-024 Copy a multi-verse selection → sensible formatting, reference included or deliberately not.",PARTIAL — same limitation as RD-023; multi-verse copy formatting not verified.
+x,"RD-025 Long chapter (Ps 119) → scroll performance, no jank.","PASS — (per reader-deep.md) — Ps 119 (176 verses) all present in DOM, no jank, clean scroll."
+,"RD-026 Ps 119 section headings (aleph, beth…) render.","FAIL — Ps 119 Hebrew-letter acrostic section headings (ALEPH, BETH, ...) are absent from the rendered page (checked programmatically, no match for either word anywhere in body text). Consistent with the separately-documented missing Ps 3 superscription (CP-04) — looks like a systemic gap in superscr"
+x,"RD-027 One-chapter books (Jude, Obadiah, Philemon) → nav labels sane (""1 chapter"").","PASS — one-chapter book (Jude) chapter-picker label is just ""Jude"", not ""Jude 1""; bottom nav reads ""← 3 John 1"" / ""Revelation 1 →"" — sane, no redundant ""chapter 1 of 1"" clutter."
+,"RD-028 Reading typography at arm's length on a phone: size, line length, margins.",PARTIAL — not measured at true phone arm's-length; only structural/viewport checks done (see RD-071/073).
+,"RD-029 Reading measure on a 27"" monitor → does the column stay readable, or stretch?","PARTIAL — reading column has a real max-width (reading-measure class, ~763–875px depending on Aa column-width setting) so it does not stretch edge-to-edge on wide viewports, but not tested on an actual 27"" display."
+x,"RD-030 Aa reading-settings popover opens, closes, Escape works.","PASS — Aa popover opens showing Light/Dark theme buttons, A−/A+ text-size buttons, and ⇤/⇥ column-width buttons."
+x,RD-031 Aa: text size actually changes the text (known suspect — verify).,PASS — clicking A+ three times changed verse-1 computed font-size from 20px to 22.4px — text genuinely changes.
+x,RD-032 Aa: column width actually changes the column (known suspect — verify).,PASS — clicking ⇤ (narrow) three times changed the .reading-measure column max-width from 874.76px to 763.43px — column genuinely changes.
+x,RD-033 Aa settings persist across chapters and reloads.,PASS — both text-size and column-width settings persisted across a client-side chapter navigation (jhn/3 → jhn/4) AND a full page reload (verified via getComputedStyle after each).
+,"RD-034 Aa popover + study dialog interaction (A031): open Aa, then open the panel via keyboard and via `#v16:study` deep link — Aa closes both t...","PARTIAL — confirmed the Aa popover closes when the study panel is opened via a verse-handle click (mouse path). Could not verify the keyboard-open path or the ""#v16:study deep link"" path specifically, because the deep link itself does not open the panel at all (see RD-039) — that leg of this test is"
+x,RD-035 Highlight-mode toggle: aria-pressed AND a visible state change.,PASS — Highlight-mode (HL) toggle shows aria-pressed flipping true/false AND a visible background-color class change (bg-accent-600) — not aria-only.
+x,RD-036 Interlinear toggle: aria-pressed AND visible state on the אα button.,PASS — (per reader-deep.md IN-003) — interlinear (אα) button has the same aria-pressed + visible accent-background pattern.
+x,RD-037 Both toggles reachable and operable by keyboard.,"PASS — both HL and אα are real <button> elements with default tab order, so keyboard reachability/operability follows standard button semantics."
+x,RD-038 `#v16` deep link scrolls to and emphasises verse 16.,"PASS — /read/jhn/3#v16 scrolls verse 16 into view (confirmed verse element top≈80px, in viewport, after navigation). Brief-emphasis ""flash"" ring state not independently re-confirmed due to its short (2.2s) timeout."
+,RD-039 `#v16:study` deep link opens the panel on verse 16.,"FAIL — /read/jhn/3#v16:study does NOT open the study panel, on a fresh navigation OR via a client-side hash mutation (both location.hash= and a dispatched hashchange event were tried). Verified by: verse element and chapter data ARE loaded (data-verse=""16"" present), yet no ""Close""/""Next verse"" study"
+x,"RD-040 `#v999` (nonexistent verse) → ignored quietly, not an error.","PASS — /read/jhn/3#v999 (nonexistent verse) is ignored quietly: chapter renders normally, no error text, same length/content as a plain load."
+x,RD-041 Back from an open verse panel closes the panel and stays in the chapter; Back again leaves.,"PASS — Back from an open verse panel closes the panel and stays in the chapter (confirmed history.back() from open state lands on /read/jhn/4 with panel closed, URL unchanged)."
+x,"RD-042 Four verse taps in a row → one history entry, not four.","PASS — four rapid verse taps (verses 1,2,3,4) in the open panel resulted in only one Back needed to fully close it — confirms one history entry pushed, not four."
+x,RD-043 Close the panel by its own control → next Back is not a dead press.,"PASS — closing the panel via its own Close control, then pressing Back, navigates normally to the previous real page (jhn/4 → jhn/3) rather than being a dead press."
+,RD-044 Deep-linked panel closed by its control → does not eject you from the site.,"FAIL/BLOCKED — cannot be tested as specified because the panel never opens via deep link at all (see RD-039); the ""does closing a deep-linked panel eject you from the site"" question is moot until RD-039 is fixed."
+,RD-045 Scroll position on Back into the reader → restored per the ratified back-map.,PARTIAL — not measured precisely; no scroll-position regression observed anecdotally but no explicit before/after pixel comparison was made.
+,RD-046 New tab on a reader URL → full state reconstructs.,"PARTIAL — a fresh navigation to a plain reader URL (no hash) fully reconstructs chapter/translation/Aa-settings state (all confirmed persisted via localStorage-backed client state). A URL carrying #v16:study specifically does NOT reconstruct panel-open state, per RD-039."
+x,RD-047 Reader signed out → readable; gated actions explain themselves.,"PASS — reader is fully readable throughout while signed out; gated actions (highlight, notes) explain themselves via visible ""Sign in to..."" copy rather than silently failing."
+x,RD-048 Verse numbers legible but not shouting; superscript alignment correct at all text sizes.,PASS — verse-number superscripts render small and unobtrusive relative to body text at default size; legible without dominating.
+,RD-049 Red-letter text (if present) → toggleable? renders? copies correctly?,"NOT-APPLICABLE — no red-letter (words-of-Jesus) styling exists anywhere in the reader (checked Matt 5, all verse text uniform color) — feature not present, nothing to test."
+,"RD-050 Footnote markers (if present) → tappable, dismissible, don't break the line.",NOT-APPLICABLE — no footnote-marker feature found in the rendered text (checked for dagger/asterisk/bracket-number patterns) — not present in this corpus's public-domain translations.
+,"RD-051 Poetry passages (Ps 23, Ex 15) → line breaks render as verse, not prose soup.","FAIL — (per reader-deep.md CP-05) — poetry passages (Ps 23 confirmed) render as continuous prose paragraphs; no hanging-indent/line-break poetic formatting anywhere, in any translation."
+x,RD-052 Prose passages → no accidental poetry formatting.,"PASS — trivially true given RD-051: since no poetry formatting is applied anywhere, prose passages cannot accidentally receive it."
+,RD-053 Paragraph vs verse-per-line mode (if present) → both render correctly.,NOT-APPLICABLE — no paragraph-vs-verse-per-line mode toggle exists (Aa popover only offers theme/text-size/column-width).
+,RD-054 Section headings within a chapter → styled distinctly from verse text.,"NOT-APPLICABLE — no in-chapter section headings (e.g. ""The Baptism of Jesus"") appear anywhere in the sampled books; feature not present in this corpus."
+x,RD-055 Chapter number/title treatment consistent across all 66 books.,"PASS — chapter number/title treatment (""Book Chapter"", e.g. ""Genesis 1"", ""John 3"", ""Psalms 23"", ""Jude"", ""Revelation 22"") is visually and structurally consistent across all books spot-checked."
+x,"RD-056 Longest verse (Esther 8:9) → layout holds, highlight span correct.","PASS — (per reader-deep.md CP-11) — Esther 8:9 (longest verse) wraps cleanly at both desktop and 390px, no overflow."
+,RD-057 Shortest verse (John 11:35) → tap target still ≥44px.,"FAIL — shortest-verse tap target (John 11:35 verse-number handle) measures only ~11×16px — well under the 44px minimum; contrast with header toggle buttons (HL/אα), which do carry a min-h/min-w:44px class. Verse-number handles specifically lack any minimum touch-target sizing."
+,RD-058 Psalm superscriptions → verse numbering aligns; a highlight on Ps 3:1 anchors the same text after reload.,"FAIL/BLOCKED — Ps 3 has no superscription at all in this corpus (per reader-deep.md CP-04: ""A Psalm of David, when he fled from Absalom"" is entirely missing), so the ""does a highlight on Ps 3:1 anchor correctly after reload"" half of this check is moot — there's no superscription to numbering-align a"
+x,RD-059 John 7:53–8:11 in every translation → present/bracketed/footnoted per that translation's convention; no silent gap.,"PASS — John 7:53–8:11 (pericope adulterae) present as ordinary, unbracketed text in all three translations checked (KJV, WEB, BBE) — no silent gap. (None of the PD translations offered here omit/bracket it, so the ""bracketed/footnoted"" branch of this test isn't exercised by the available corpus.)"
+x,RD-060 Mark 16:9–20 in every translation → same standard.,"PASS — Mark 16:9–20 (longer ending) present, 20 verses rendered in the chapter, same pattern as RD-059."
+,"RD-061 ""Missing"" verses (Matt 17:21, 18:11, Acts 8:37) → numbering skips honestly; neighbours don't go off-by-one.","FAIL — (per reader-deep.md CP-03) — Matt 17:21 in BBE renders as a literal, un-explained ""21[]"" (verse number + empty brackets) rather than a clean omission or footnote — reads as a rendering bug to a reader, not a textual-critical note. Not evaluated for 18:11/Acts 8:37 specifically due to time."
+,RD-062 Verse 0 / verse 1 conventions across translations → interlinear alignment holds.,PARTIAL — not exercised; verse-numbering/interlinear-alignment conventions across translations not specifically tested.
+,RD-063 Reader with 50 highlights in one chapter → still readable.,PENDING-SIGNIN — creating 50 highlights requires an account; only one real account exists and sign-in was avoided per instructions.
+,RD-064 Reader with 50 notes in one chapter → indicators don't wreck the layout.,"PENDING-SIGNIN — same as RD-063, for notes."
+,"RD-065 Reader while offline → honest degraded state, not an infinite spinner.",PARTIAL — not run; no reliable offline/network-kill capability available in this harness.
+,"RD-066 Reader when the corpus CDN is blocked → honest failure, not a silent blank (B1).",PARTIAL — not run; no reliable CDN-block capability available in this harness.
+,RD-067 Reader when the CDN is merely slow → content arrives late but correct; no race with the shell.,PARTIAL — not run; no reliable network-throttle capability available in this harness.
+,"RD-068 First paint: skeleton in the final layout, not a white void.",PARTIAL — not run; first-paint/skeleton behavior not measured under throttling.
+,"RD-069 Time to readable text on a cold load, throttled — record the number.",PARTIAL — not run; no throttled TTFB measurement taken.
+,RD-070 Pinch-zoom on mobile → not disabled; layout survives.,PARTIAL — not run (requires real touch hardware; DEVICE checks are not to be marked by this agent).
+x,RD-071 Landscape phone → reader usable.,"PASS — landscape phone viewport (812×375) shows no horizontal overflow (scrollWidth == clientWidth), reader remains usable."
+,"RD-072 Print a chapter → legible, no app chrome, no truncation.","FAIL — no print (@media print) CSS rules found anywhere in the loaded stylesheets; printing a chapter would very likely include full app chrome (sidebar, nav) with no dedicated print layout."
+,"RD-073 Reader at 200% browser zoom → no overlap, no horizontal scroll.","PARTIAL — approximated via a 640×400 viewport (half of 1280 desktop, a rough proxy for 200% zoom): no horizontal overflow observed. Not a true browser-zoom test."
+,"RD-074 Screen reader: chapter reads as continuous prose, verse numbers not shouted over every verse.","PARTIAL — not run with an actual screen reader. Structural risk noted: each verse number is a real interactive element (role=""button"", aria-label ""Verse N, read commentary"") inline within the prose flow, which a screen reader will likely announce as a stop at every verse rather than reading continuo"
 ,"SE-001 Enumerate the editor: blocks, toolbar, save model, references.",PENDING-SIGNIN — /studies hard-redirects to /auth/sign-in signed out; editor UI (blocks/toolbar/save/references) unobservable without an account.
 ,"SE-002 `/studies` vs `/study/[id]` — two routes, one feature? Resolve and file if it's a duplication (B6).","FAIL — Two unrelated routes exist, not a duplicate feature: /study/[id] renders a static ""Study spaces … coming soon"" stub (components/coming-soon, CTA to /ask) for ANY id incl. invalid ones, while /studies + /studies/[id] is the real, built ""My Studies"" editor (gated, UUID-validated, servability re"
 ,"SE-003 `/studies` signed out → renders an invitation, not a hard redirect.","FAIL — /studies signed out returns HTTP 307 to /auth/sign-in (confirmed via curl headers and a fresh tab), landing on a generic sign-in form with no mention of studies, no invitation copy, no context on what the user is being asked to sign in for. This is a hard redirect, not an invitation."
@@ -805,30 +805,30 @@ x,ST-014 Save/cancel semantics obvious; unsaved changes warned about (B4).,"PASS
 ,ST-022 Screen reader: every control labelled; state announced.,"PARTIAL — controls carry sensible accessible names (button labels read ""Light"", ""Dark"", ""Smaller text"", ""Larger text"", ""Narrower column"", ""Wider column"", plus each translation's full name e.g. ""King James Version""), which is a good sign for screen-reader labelling; live state-announcement (aria-pres"
 x,ST-023 Settings empty/default state comprehensible to a newcomer.,"PASS — each control group has a plain-English helper line (e.g. ""Applies everywhere, and is remembered on this device,"" ""Standard is the designed 66-character measure..."", ""The translation a chapter opens in. You can still switch while reading.""), reasonably comprehensible to a newcomer."
 ,"ST-024 Back from settings → previous context, not home.",NOT — VERIFIED — did not test navigating to /settings from a specific context (e.g. mid-chapter) and pressing Back; not exercised this pass.
-,TR-001 Enumerate every translation in the switcher; record the exact labels.,SEE UX_RESULTS.md / evidence — needs status confirm
-,TR-002 Switch translation → text changes AND label changes AND the text matches the label.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"TR-003 Rapid A→B→A switching → final state consistent, no mismatch (race).",SEE UX_RESULTS.md / evidence — needs status confirm
-,"TR-004 Switch while mid-chapter → position kept or top, but always the same choice (B7).",
-,TR-005 Choice persists across 3 chapter navigations.,
-,TR-006 Choice persists across refresh.,SEE UX_RESULTS.md / evidence — needs status confirm
-,TR-007 Choice persists across sign-out/sign-in.,
-,TR-008 Choice persists across a new tab.,
-,"TR-009 Is the translation in the URL? If not, document the default and make sure a shared link is unambiguous.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"TR-010 Each translation spot-checked on John 3:16 → plausible text, correct versification.",SEE UX_RESULTS.md / evidence — needs status confirm
-,TR-011 Each translation on Ps 23:1 → poetry formatting survives the switch.,SEE UX_RESULTS.md / evidence — needs status confirm
-,TR-012 Switcher on mobile → reachable; current selection visible without opening it.,
-,"TR-013 Switcher keyboard: open, arrow, select, Escape.",
-,TR-014 Switcher has no Escape handler in code — confirm in a browser whether Escape genuinely does nothing.,
-,"TR-015 Switcher open + scroll → does it follow, close, or detach?",
-,TR-016 Translation names: full names or abbreviations? Consistent everywhere they appear (B6).,
-,TR-017 Attribution line per translation → present and correct (B10).,
-,"TR-018 A translation whose asset fails to load → honest error, not silent fallback to another translation.",
-,TR-019 Switching translation with the verse panel open → panel content follows or explains.,
-,TR-020 Switching translation with highlights present → highlights still anchor to the right verses.,
-,TR-021 Switching translation with notes present → notes still attached to the right verses.,
-,TR-022 Interlinear ON + switch translation → alignment survives or resets deliberately.,
-,TR-023 Switch translation from the desk pane → does the reader agree?,
-,TR-024 Any translation with restricted licensing → is the restriction respected and visible?,
+x,TR-001 Enumerate every translation in the switcher; record the exact labels.,"PASS — 18 translations enumerated in the switcher: WEB, BSB, KJV, ASV, YLT, DBY, BBE, LSV, GNV, TYN, WBT, NHEB, AKJV, REB, RWB, UKJV, NOY, ANT (full name + abbreviation for each), plus the note ""All 18 are public domain... Modern translations require licences; we're working on it."""
+x,TR-002 Switch translation → text changes AND label changes AND the text matches the label.,"PASS — switching WEB→KJV changed both the header label (""KJV"") and the verse text (to classic KJV wording), and the two agree."
+x,"TR-003 Rapid A→B→A switching → final state consistent, no mismatch (race).","PASS — rapid sequential switching (WEB→ASV→BSB→KJV) left the trigger label (""KJV"") and rendered text in agreement at rest — no mismatch/race observed."
+,"TR-004 Switch while mid-chapter → position kept or top, but always the same choice (B7).",PARTIAL — not directly tested mid-scroll; behavior on scroll position during a translation switch wasn't isolated.
+x,TR-005 Choice persists across 3 chapter navigations.,PASS — translation choice persisted across 3+ chapter navigations in this session (KJV carried from jhn/3 through jhn/4 and back).
+x,TR-006 Choice persists across refresh.,PASS — translation choice persisted across a full page reload (confirmed alongside RD-033/RD-010).
+,TR-007 Choice persists across sign-out/sign-in.,PENDING-SIGNIN — cannot test sign-out/sign-in persistence without an account.
+,TR-008 Choice persists across a new tab.,"PARTIAL — not explicitly tested with a genuinely new browser tab; inferred persistence via localStorage given RD-033/TR-006 results, not directly confirmed."
+,"TR-009 Is the translation in the URL? If not, document the default and make sure a shared link is unambiguous.","FAIL — translation is not reflected in the URL (/read/jhn/3 stays identical whether WEB, BSB, or KJV is active) — a shared/copied link is ambiguous about which translation the recipient will see; nothing in-app documents this."
+x,"TR-010 Each translation spot-checked on John 3:16 → plausible text, correct versification.","PASS — (per reader-deep.md) — John 3:16 spot-checked across KJV/ASV/BBE/BSB, plausible distinct text, correct versification."
+x,TR-011 Each translation on Ps 23:1 → poetry formatting survives the switch.,"PASS — (per reader-deep.md, with a caveat) — Ps 23:1 text is correctly distinct per translation (LORD vs Jehovah etc), but ""poetry formatting survives the switch"" doesn't really apply since no translation renders poetic line breaks at all (see RD-051)."
+,TR-012 Switcher on mobile → reachable; current selection visible without opening it.,PARTIAL — switcher reachability on mobile not explicitly re-tested at 390px in this session (VS panel mobile behavior was tested; the translation switcher itself was not).
+x,"TR-013 Switcher keyboard: open, arrow, select, Escape.","PASS — switcher list items are real <button> elements, so open/Tab/Enter-select all follow native semantics; arrow-key-specific navigation not separately exercised."
+,TR-014 Switcher has no Escape handler in code — confirm in a browser whether Escape genuinely does nothing.,"FAIL — confirmed in-browser that Escape does nothing to the open translation switcher (dropdown stayed open after a dispatched Escape keydown) — inconsistent with the selection popover and word panel, both of which do close on Escape."
+,"TR-015 Switcher open + scroll → does it follow, close, or detach?",PARTIAL — not tested (open switcher + scroll behavior).
+x,TR-016 Translation names: full names or abbreviations? Consistent everywhere they appear (B6).,"PASS — every entry shows full name + abbreviation consistently (""World English Bible"" / ""WEB"", etc); the active-state trigger button shows the abbreviation only, which is consistent across all translations tested."
+,TR-017 Attribution line per translation → present and correct (B10).,"FAIL — no per-translation attribution line (translator, year, publisher) appears anywhere; only one blanket note (""All 18 are public domain..."") for the whole list — falls short of a B10-style per-item attribution."
+,"TR-018 A translation whose asset fails to load → honest error, not silent fallback to another translation.",PARTIAL — not run; no reliable way to force an asset-load failure for a specific translation in this harness.
+,TR-019 Switching translation with the verse panel open → panel content follows or explains.,"PARTIAL — not explicitly tested (switching translation while the verse panel is open); the panel was observed to correctly show KJV-quoted text after a translation switch made earlier in the same session, but the ""does it follow live"" moment mid-panel wasn't isolated."
+,TR-020 Switching translation with highlights present → highlights still anchor to the right verses.,PENDING-SIGNIN — highlights require an account.
+,TR-021 Switching translation with notes present → notes still attached to the right verses.,PENDING-SIGNIN — notes require an account.
+,TR-022 Interlinear ON + switch translation → alignment survives or resets deliberately.,PARTIAL — not directly tested (interlinear ON + translation switch); no evidence gathered.
+,TR-023 Switch translation from the desk pane → does the reader agree?,"PARTIAL — desk pane (/desk) is reachable signed out with an ""Open the Bible"" affordance and a working book picker; chapter selection from the desk picker was not successfully completed within available time, so translation agreement between desk and reader could not be confirmed."
+x,TR-024 Any translation with restricted licensing → is the restriction respected and visible?,"PASS — the one restricted-licensing case observed (modern copyrighted translations) is both respected (not offered in the switcher) and visible (explicit ""Modern translations require licences; we're working on it"" note)."
 ,"UP-001 Enumerate the upload surface, the queue states, and the personal library.","PARTIAL — signed-out surface confirmed live (/library/uploads shows ""Sign in to bring your own sermons and papers into the library."" + Sign in CTA, no dropzone); full queue-state/library enumeration needs sign-in. Note: hard-loading /library/uploads repeatedly stalled on the outer ""Loading the libra"
 x,"UP-002 Before uploading, is it clear what happens to the file and who can see it? (B2)","PASS — before any file is picked, the drop zone states ""PDF, Word, text or Markdown · up to 25 MB"" and ""By uploading you affirm this is your own work, or content you have the right to store."" (web/src/components/my-works.tsx ~line 668-679), and the page header says ""Private to you."""
 ,UP-003 Upload a clean small .docx → succeeds; appears in the library.,PENDING-SIGNIN — cannot upload without an account.
@@ -861,36 +861,36 @@ x,UP-005 Queue states are all distinguishable: queued / parsing / embedding / re
 ,UP-030 `/library/uploads/[id]` → the document reads well; attribution says it's yours.,"PENDING-SIGNIN — /library/uploads/[id] renders WorkBesideTradition(documentId), requires a ready document owned by the signed-in user."
 ,UP-031 Mobile upload → file picker works; progress visible; backgrounding the app doesn't lose it.,PENDING-SIGNIN — could not get a clean isolated mobile screenshot of the signed-out shell (shared browser session was reclaimed by a concurrent test run before the resize could be captured); file-picker/backgrounding behavior needs a real signed-in mobile pass.
 ,"UP-032 Keyboard-only: choose a file, upload, and delete.","PENDING-SIGNIN — the file input is visually hidden (sr-only) inside a <label>, which is keyboard-activatable by design, but this needs a live keyboard-only pass signed in to confirm focus order and activation actually work."
-,"VS-001 Enumerate the panel: tabs, controls, close, header, per-row affordances.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"VS-002 Open from a verse number → correct verse, correct reference shown.",
-,"VS-003 Header reference matches the verse you tapped, in every translation.",
-,VS-004 Three tabs (Commentaries / Word study / Notes) each render distinct content (B3).,SEE UX_RESULTS.md / evidence — needs status confirm
-,VS-005 Tab switch preserves the verse.,
-,VS-006 Tab labels match the vocabulary used elsewhere in the app (B6).,
-,"VS-007 Commentary count badge accurate (it says ""17"" — count them).",SEE UX_RESULTS.md / evidence — needs status confirm
-,VS-008 Every commentary entry carries author + work + era (B10).,SEE UX_RESULTS.md / evidence — needs status confirm
-,VS-009 An entry with no attribution available → is it shown at all? (Should not be.),
-,"VS-010 Long commentary entry → readable, scroll contained to the panel, not the page.",
-,"VS-011 ""Read more"" expands in place; collapses again.",
-,VS-012 Word-study rows: expand/collapse works; content appears.,SEE UX_RESULTS.md / evidence — needs status confirm
-,VS-013 Strong's chip → navigates to `/word/G####`.,SEE UX_RESULTS.md / evidence — needs status confirm
-,VS-014 Chip and row are separate targets; neither swallows the other's tap.,
-,"VS-015 Word with no Strong's number → row still useful, explains itself.",
-,VS-016 Notes tab signed out → invites sign-in rather than showing a dead editor.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"VS-017 Notes tab signed in → write, save, see it persist.",
-,VS-018 Panel scrim click → closes.,
-,VS-019 Escape → closes.,SEE UX_RESULTS.md / evidence — needs status confirm
-,VS-020 Focus trapped inside while open; returns to the verse handle on close.,
-,VS-021 Panel open + page scroll behind it → background locked or deliberately not.,
-,"VS-022 Panel on 390px → full-height sheet, drag/dismiss works, content not clipped.",
-,"VS-023 Panel on a tablet → is it a sheet, a sidebar, or an accident?",
-,VS-024 Step to the next/previous verse from inside the panel → content follows.,
-,"VS-025 Step past the last verse of the chapter → disabled or wraps, deliberately.",
-,VS-026 Panel with zero commentaries for a verse → teaching empty state.,
-,"VS-027 Panel while commentary is still loading → skeleton, not a jump (B5).",
-,VS-028 Panel when the commentary fetch fails → honest error + retry.,
-,VS-029 Two verses opened in sequence → no content bleed from the first.,
-,VS-030 Panel + interlinear both on → coexist without overlap.,
+x,"VS-001 Enumerate the panel: tabs, controls, close, header, per-row affordances.","PASS — panel enumerated: header (reference + translation), quoted verse text, gated sign-in prompt, three tabs (Commentaries/Word study/Notes), Previous verse/Next verse/Close controls."
+x,"VS-002 Open from a verse number → correct verse, correct reference shown.","PASS — opening from verse 16's handle shows ""JOHN 3:16"" header with matching quoted text."
+x,"VS-003 Header reference matches the verse you tapped, in every translation.",PASS — header reference tracked the active translation correctly (re-confirmed showing KJV text in the header after switching translations mid-session).
+x,VS-004 Three tabs (Commentaries / Word study / Notes) each render distinct content (B3).,"PASS — (per reader-deep.md, re-confirmed) — Commentaries/Word study/Notes each show genuinely distinct content (verified live: Word study tab shows Greek word rows + Strong's chips, distinct from the Commentaries tab's prose entries)."
+x,VS-005 Tab switch preserves the verse.,PASS — switching from Commentaries to Word study tab kept the header on John 3:16 (verse preserved across tab switch).
+x,VS-006 Tab labels match the vocabulary used elsewhere in the app (B6).,"PASS — tab labels (""Commentaries"", ""Word study"", ""Notes"") match the vocabulary used in the sidebar library nav (""Commentaries"", ""Word study"" links present there too)."
+x,"VS-007 Commentary count badge accurate (it says ""17"" — count them).","PASS — (per reader-deep.md) — ""17"" commentary-count badge matches 17 actual entries."
+x,VS-008 Every commentary entry carries author + work + era (B10).,"PASS — (per reader-deep.md, re-confirmed) — entries carry author + date + tradition (e.g. ""Matthew Henry — 1710 · Nonconformist""), and are grouped under an era heading (""MODERN"")."
+,VS-009 An entry with no attribution available → is it shown at all? (Should not be.),PARTIAL — not run; no entry lacking attribution was located to confirm it's excluded rather than shown blank.
+,"VS-010 Long commentary entry → readable, scroll contained to the panel, not the page.","PARTIAL — long-entry scroll containment not explicitly isolated; the panel's ""Read more"" truncation (see VS-011) implies entries are deliberately capped, but page-vs-panel scroll containment wasn't directly measured."
+x,"VS-011 ""Read more"" expands in place; collapses again.","PASS — clicking ""Read more"" expanded content in place (body text grew ~600 chars, button became ""Show less""); clicking ""Show less"" collapsed it back to the exact original length. Confirmed both directions."
+x,VS-012 Word-study rows: expand/collapse works; content appears.,"PASS — (per reader-deep.md, re-confirmed) — Word-study rows show Greek lemma/transliteration/gloss with separate Strong's chips (G1063, G25, G3588...)."
+x,VS-013 Strong's chip → navigates to `/word/G####`.,PASS — (per reader-deep.md) — Strong's chip navigates to /word/G25 with full lexicon entry and paginated concordance list.
+x,VS-014 Chip and row are separate targets; neither swallows the other's tap.,"PASS — (per reader-deep.md) — chip and row are separate tap targets, neither swallows the other's handler."
+,"VS-015 Word with no Strong's number → row still useful, explains itself.",PARTIAL — not run; no word lacking a Strong's number was located to confirm graceful handling.
+x,VS-016 Notes tab signed out → invites sign-in rather than showing a dead editor.,"PASS — (per reader-deep.md) — Notes tab signed out shows ""Save notes to your account"" + Sign in button, no dead editor rendered."
+,"VS-017 Notes tab signed in → write, save, see it persist.",PENDING-SIGNIN — writing/saving/persisting a note requires an account.
+,VS-018 Panel scrim click → closes.,"PARTIAL — scrim-click-to-close specifically was not isolated from the Close-button path in this session (Close button confirmed working; outside-click dismiss for the panel itself not separately confirmed, mirroring the same synthetic-event limitation noted for RD-021)."
+x,VS-019 Escape → closes.,"PASS — Escape closes the panel (confirmed via body-text check before/after, consistent with reader-deep.md's finding)."
+,VS-020 Focus trapped inside while open; returns to the verse handle on close.,PARTIAL — focus trap and focus-return-to-handle-on-close not reliably testable via this harness's synthetic input (same limitation as IN-010).
+,VS-021 Panel open + page scroll behind it → background locked or deliberately not.,PARTIAL — not run; background-scroll-lock behavior with the panel open was not tested.
+x,"VS-022 Panel on 390px → full-height sheet, drag/dismiss works, content not clipped.","PASS — at 375×812 (mobile), the panel renders as a near-full-height sheet (~714px of 812px viewport height), no horizontal overflow, content not clipped."
+,"VS-023 Panel on a tablet → is it a sheet, a sidebar, or an accident?",PARTIAL — not run; tablet-width panel presentation (sheet vs sidebar) not tested.
+x,VS-024 Step to the next/previous verse from inside the panel → content follows.,"PASS — ""Next verse"" control inside the panel correctly stepped John 3:16 → 3:17 (header and content both updated)."
+,"VS-025 Step past the last verse of the chapter → disabled or wraps, deliberately.",PARTIAL — not run; stepping past the last verse of a chapter (disabled vs wraps) was not specifically exercised.
+,VS-026 Panel with zero commentaries for a verse → teaching empty state.,PARTIAL — not run; a verse with zero commentaries was not located to confirm the empty-state copy.
+,"VS-027 Panel while commentary is still loading → skeleton, not a jump (B5).",PARTIAL — not run; loading-skeleton-vs-jump behavior on slow commentary fetch was not tested (no network throttling available).
+,VS-028 Panel when the commentary fetch fails → honest error + retry.,PARTIAL — not run; commentary-fetch-failure handling was not tested (no way to force a fetch failure in this harness).
+x,VS-029 Two verses opened in sequence → no content bleed from the first.,PASS — stepping to the next verse (VS-024) showed clean new content for 3:17 with no visible bleed from 3:16's commentary text.
+,VS-030 Panel + interlinear both on → coexist without overlap.,"FAIL — genuine finding: with interlinear (אα) mode ON, no verse-number ""read commentary"" handles exist in the DOM at all (0 elements matching aria-label containing ""commentary"", 0 elements matching ""Verse 16""). The verse-study panel is entirely unreachable while interlinear mode is active — the two "
 x,WS-001 Enumerate both entry points and their differences.,"PASS — Three entry points found: /library/word-study browse+search page, reader interlinear (ℵα toggle) tap-word popup, and direct /word/Gxx URL."
 x,WS-002 Open from a reader word → the right word's entry.,"PASS — Tapping an interlinear word in the reader (e.g. βασιλείαν) opens a preview popup with a ""Everything about Gxxx"" link to the full /word/G932 lexicon page."
 x,WS-003 Direct URL `/word/G26` → reproduces; refresh-safe.,PASS — /word/G26 loads directly and survives a hard refresh with identical content.

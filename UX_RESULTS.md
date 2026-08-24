@@ -908,3 +908,51 @@ that assume those features don't apply here.
 this session, so mobile-nav-specific checks (NV-022/023, SR-023) are PARTIAL/untested, not guessed.
 Several Back/forward/scroll/focus items were not exercised this pass for time and are marked PARTIAL
 honestly rather than assumed passing.
+
+## Batch 39 — RD (Reader, full 74), TR (Translations, full 24), IN (Interlinear, full 20), VS (Verse study, full 30), tracker-driven
+
+Full detail: `/tmp/ap-uxsweep/agent-results/tracker_RD_TR_IN_VS.txt`. Closes out the largest remaining
+tracker gap (148 IDs) — cross-referenced against the earlier reader-deep.md pass (Batch 23) to avoid
+duplicating CP-03/CP-04/IN-004/005, then live-tested everything not already answered.
+
+### F-089 · RD-039 · **P2** · `#v16:study` deep link doesn't open the study panel, contradicting the app's own code comment
+Neither fresh navigation to a `#vNN:study`-suffixed URL nor a hash mutation after page load opens the
+verse-study panel — a code comment in `web/src/app/read/[book]/[chapter]/page.tsx` describes this as
+implemented, but it doesn't fire. A shared "look at verse 16's commentary" link silently fails.
+
+### F-090 · VS-030 · **P1** · Verse-study panel is completely unreachable while interlinear mode is on
+With interlinear ON, every verse-number "read commentary" handle disappears from the DOM entirely —
+not just from view. A reader using the interlinear view (Greek/Hebrew word-by-word) loses access to
+commentary/notes/word-study for the whole chapter until they turn interlinear back off, with no
+indication why the handles vanished. Compounds the already-filed HL-015 (interlinear also kills
+highlighting) — interlinear mode silently disables two separate core features at once.
+
+### F-091 · RD-017 · **P2/AX** · Space doesn't activate the verse-study control, only Enter does
+The verse-number handle isn't a native `<button>`, so it gets no automatic Space-key mapping —
+Enter opens the panel, Space does nothing. Half of the expected keyboard-activation pair is missing.
+
+### F-092 · RD-018 · **P2/AX** · Verse-number handles have zero visible focus indicator
+No outline, box-shadow, or background change when a verse-number control receives keyboard focus —
+a keyboard user tabbing through a chapter cannot see where they are.
+
+### F-093 · RD-057 · **P3** · Shortest-verse tap target is far under the 44px minimum
+John 11:35 ("Jesus wept") measures ~11×16px as a tap target — for contrast, the header's own toggle
+buttons correctly carry a `min-h/min-w:44px` class, showing the app knows the standard elsewhere.
+
+### F-094 · RD-026 · **P3** · Psalm 119's Hebrew-letter acrostic headings (ALEPH, BETH...) are entirely absent
+Same class of content gap as the already-filed Ps 3 superscription (F-040) — likely a shared
+source-text gap, not a UI bug.
+
+### F-095 · TR-009/014/017 · **P2/P3** · Translation choice isn't shareable via URL, Escape doesn't close the switcher, and no per-translation attribution exists
+Translation isn't encoded in the URL, so a shared link doesn't reproduce what the sender was reading
+(TR-009). The switcher's Escape key does nothing (TR-014, same root cause as the already-filed F-038
+translation-dropdown finding — referenced, not re-filed). Only one blanket "public domain" note covers
+all 18 translations — no per-translation attribution/copyright line (TR-017).
+
+### F-096 · RD-072 · **P3** · No print stylesheet anywhere — printing a chapter ships full app chrome
+No `@media print` CSS exists in the codebase; printing any reader page would include the sidebar, nav,
+and toolbar rather than a clean reading layout.
+
+**Coverage note:** several IDs remain PARTIAL (network-throttle/offline/print-hardware/screen-reader
+checks the available tooling couldn't run) or correctly PENDING-SIGNIN (highlight/note persistence,
+sign-out/in behavior) — not guessed at.
