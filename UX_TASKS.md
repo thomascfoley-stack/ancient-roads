@@ -906,3 +906,50 @@ write round-trips only (create → verify → delete, net zero), and explicitly 
 or-spend-heavy batches (bulk uploads, the 300+400+~390-query AS/HS/VO batches, HD's heavy-data seeding)
 from this account. Those need a synthetic uxtest+ account, filed as a follow-up, not attempted tonight
 against the owner's real data/quota without a separate explicit go.
+
+## Policy update from owner mid-run: this IS a test account — but still leave it as found
+
+Owner corrected: the account behind the supplied session is a test account, not his primary one — the
+earlier caution about "real personal data" was overcautious on my part. Standing instruction instead:
+**change nothing net** — any setting/state I touch gets reverted to how it was found before moving on.
+Proceeding with more thorough signed-in coverage under that discipline (round-trip, don't leave state
+behind), still economical with ask-quota/spend rather than running the full batched-query sections.
+
+**ST-10 — dark mode — PASS.** Theme toggle in Settings applies instantly and globally (verified: entire
+app incl. sidebar repaints), persists across a hard refresh (confirmed via re-navigation). Reverted to
+Light after confirming, per the above.
+**TR-00 — PASS.** 18 translations enumerated on Settings: WEB, BSB, KJV, ASV, YLT, DBY, BBE, LSV, GNV,
+TYN, WBT, NHEB, AKJV, REB, RWB, UKJV, NOY, ANT.
+**ST-00 — PASS.** Settings enumerated: Reading theme, Text size, Column width, Default translation,
+Account (email/password), Your saved work (highlights/notes/bookmarks) — link-outs, not inline here.
+
+## RD-09, CM-01, HL-01/02/03 — verified live, signed-in, prod — ALL PASS
+
+Tapped verse number (John 3:3) → rich panel opens instantly: verse text, 8-color highlight swatches +
+Bookmark, tabs for Commentaries (12)/Word study/Notes. RD-09 PASS.
+CM-01: Matthew Henry's Commentary shown with attribution "MATTHEW HENRY — 1710 · Nonconformist" and a
+"Matthew Henry's Commentary" source line — attribution clearly visible. PASS (licensing posture holds).
+HL round-trip: clicked yellow swatch → highlight painted instantly (optimistic) → survived a full page
+refresh/re-navigation (screenshot-verified both times) → clicked "clear" → refresh-verified gone. HL-01,
+HL-02, HL-03 all PASS. State restored to exactly how it was found (net-zero, per owner's "change
+nothing" instruction).
+
+## NT-01/03, WS-01/04 — verified live, signed-in, prod
+
+NT round-trip: typed a note on John 3:3, Save note → persisted (confirmed via panel reopen showing
+saved text + a Delete link appearing only once saved) → clicked Delete → textarea empty again
+immediately. NT-01, NT-03 PASS. State restored.
+
+**WS-01/04 — PASS, but via a different path than expected, and a real finding along the way (P2):**
+Double-tapping a word directly in the verse text (e.g. "Jesus" in John 3:3) correctly navigates to
+`/word/[strongs]` with the RIGHT word (Ἰησοῦς / Iēsous / G2424 — definition, KJV rendering, derivation,
+concordance list of 866 occurrences, Thayer's lexicon excerpt). Script renders correctly, no mojibake.
+Browser Back from there returns cleanly to the reader chapter. WS-01/WS-04 PASS via this route.
+**🔴 P2 finding:** the verse panel's own "Word study" TAB (opened by tapping the verse number, not
+double-tapping a word) lists each word with what looks like a clickable row (gloss text + Strong's
+number badge, styled like a link). Clicking a row does nothing productive — it just closes the panel
+(the click falls through to the panel's own backdrop-dismiss). Two entry points to the same feature,
+one live (double-tap in text) and one that looks interactive but is dead (tap the panel list row).
+Confusing: a user who taps the verse number first (the documented, banner-advertised way in) has no
+working path to a word's full entry from that panel — they'd have to close it and go double-tap the
+word in the text instead, which isn't hinted anywhere in that panel.
