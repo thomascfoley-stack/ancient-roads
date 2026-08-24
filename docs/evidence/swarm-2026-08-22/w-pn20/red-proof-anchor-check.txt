@@ -1,0 +1,26 @@
+=== leg 1: anchor-check GREEN at freeze (control) ===
+  ✓ [pn20] anchors: 24 quoted checked, 0 failed, 0 unquoted (no phrase recorded — declared, not checked)
+  ✓ [v4] anchors: 16 quoted checked, 0 failed, 106 unquoted (no phrase recorded — declared, not checked)
+  ✓ [disjoint] pn20 labels vs pilot/v2/v3/v4: 0 collision(s)
+anchor-check OK
+
+=== leg 2a: seed a fabricated anchor phrase -> must go RED ===
+  ✗ [pn20] pn20-12: anchor "Gomer the daughter of Diblaim of Beersheba" NOT in KJV 28/1
+  ✗ [pn20] anchors: 24 quoted checked, 1 failed, 0 unquoted (no phrase recorded — declared, not checked)
+  ✓ [v4] anchors: 16 quoted checked, 0 failed, 106 unquoted (no phrase recorded — declared, not checked)
+  ✓ [disjoint] pn20 labels vs pilot/v2/v3/v4: 0 collision(s)
+anchor-check FAILED (1)
+exit=1
+
+=== leg 2b: seed a label colliding with a burned v3 label (Luke 1) -> must go RED ===
+  ✗ [pn20] pn20-13: label Luke 1 chapter 42:1 has NO anchor in that chapter
+  ✗ [pn20] anchors: 24 quoted checked, 1 failed, 0 unquoted (no phrase recorded — declared, not checked)
+  ✓ [v4] anchors: 16 quoted checked, 0 failed, 106 unquoted (no phrase recorded — declared, not checked)
+  ✗ [disjoint] pn20-13: label chapter 42:1 collides with v3:v3-pc-11 (ADR-118 freshness)
+  ✗ [disjoint] pn20 labels vs pilot/v2/v3/v4: 1 collision(s)
+anchor-check FAILED (2)
+exit=1
+
+=== leg 3: revert -> GREEN, hash back on pin ===
+anchor-check OK
+0c753637556fe7c0d0ced7121171a59df25fa3b02b5a10c9b46460dcaf622a6d  src/scripts/heldout-pn20-queries.mts

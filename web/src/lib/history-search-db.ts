@@ -21,7 +21,7 @@ export interface HistoryResponse {
   results: { work: WorkRef; periodSpan: [number, number] | null; sections: HistoryResult[] }[];
   coverage: { works: number; sections: number };
 }
-interface WorkRef { slug: string; title: string; author: string }
+interface WorkRef { slug: string; title: string; author: string; edition: string | null }
 
 // Entity vocabulary + coverage are DERIVED (never typed) and cached 60s — the invalidation point
 // is a serve flip, and 60s bounds the staleness window (§5 amendment: the 9-vs-10 class).
@@ -30,8 +30,13 @@ let coverageCache: { at: number; works: number; sections: number } | null = null
 const TTL_MS = 60_000;
 
 /** Scope predicate, applied at READ time even though writes enforce it too: a quarantined work
- *  must stop serving instantly even if its vectors still carry served=true. Fail closed. */
-const SCOPE = `he.served AND src.status = 'published' AND src.source_type = 'historian'`;
+ *  must stop serving instantly even if its vectors still carry served=true. Fail closed.
+ *  2026-08-23: widened per the ruled Phase-0 mechanism (2026-08-20-historian-ingestion-plan):
+ *  genre-history works (the NPNF Fathers) join the lane by the per-work DATUM
+ *  sources.provenance.genre — written at register ingest from the manifest entry, never a slug
+ *  list in code. Lane membership stays write-gated (only the historian/annotate pipeline writes
+ *  history_embeddings) and status-gated (staged serves nothing). */
+const SCOPE = `he.served AND src.status = 'published' AND (src.source_type = 'historian' OR src.provenance->>'genre' = 'history')`;
 
 async function vocab(): Promise<{ slug: string; label: string }[]> {
   if (vocabCache && Date.now() - vocabCache.at < TTL_MS) return vocabCache.vocab;
@@ -77,7 +82,7 @@ interface Row {
   // the concordance's one job: open the book THERE.
   id: number; source_id: number; ordinal: number; heading: string; body: string;
   period_start_year: number | null; period_end_year: number | null;
-  slug: string; title: string; author: string;
+  slug: string; title: string; author: string; edition: string | null;
   cosine?: number; fts?: number; entity?: boolean;
 }
 // Exported so the SQL half of the deep-link contract is testable without a DB. The CRITICAL
@@ -85,8 +90,12 @@ interface Row {
 // test can't fail for a regression here: if this reverts to `s.unit_ordinal`, `row.ordinal` is
 // undefined at runtime and a mapper unit test that builds the row by hand never sees it. The
 // invariant test asserts this string selects `s.ordinal` and not `s.unit_ordinal`.
+// `edition` is the source record's own provenance (`sources.provenance->>'edition'`, the
+// ADR-008/010 registry) — carried so a copied citation names THIS work's edition instead of a
+// hardcoded provenance literal (W-SEC-CCEL). Same two-place rule: asserted from this string.
 export const ROW_COLS = `s.id, s.source_id, s.ordinal, s.heading, s.body,
-  s.period_start_year, s.period_end_year, src.slug, src.title, src.author`;
+  s.period_start_year, s.period_end_year, src.slug, src.title, src.author,
+  src.provenance ->> 'edition' AS edition`;
 
 /** Row → result mapper, exported so the ordinal contract (the deep link the reader can resolve)
  *  is unit-testable without a DB — see history-row-to-result.test.ts. `needle` windows the
@@ -160,13 +169,19 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     ).then((r) => r as Row[])
     : Promise.resolve([]);
 
-  // ef_search rides the SAME transaction as the KNN — on the stateless HTTP driver a set_config
+  // Both GUCs ride the SAME transaction as the KNN — on the stateless HTTP driver a set_config
   // in its own call binds nothing (routing.ts:311-315). At the default 40 this lane STARVED
   // through the partial index (measured 2026-08-21: three of four real probes returned empty
   // top-3), which is what left FTS-found rows with no cosine for the floor below.
   const knnP = embedQuery(query).then(async (vec) => {
-    const [, vecRows] = await sql.transaction([
+    const [, , vecRows] = await sql.transaction([
       sql`SELECT set_config('hnsw.ef_search', '120', true)`,
+      // iterative_scan=relaxed_order (pgvector 0.8, measured on dev): the scan continues past
+      // the first ef_search candidates until LIMIT in-scope rows are found. Only 9.2% of the
+      // partial index survives the published+historian join, so a strict scan post-filters to
+      // ZERO for most text-only queries (W-ANN RED, docs/evidence/swarm-2026-08-22/w-ann/;
+      // owner ruled SHIP 2026-08-23 accepting the cold-start tail).
+      sql`SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)`,
       sql.query(
         `SELECT ${ROW_COLS}, 1 - (he.embedding <=> $1::vector) AS cosine
            FROM history_embeddings he
@@ -245,7 +260,7 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
   const groups = new Map<string, { work: WorkRef; sections: (typeof scored)[number][] }>();
   for (const x of scored) {
     const g = groups.get(x.row.slug) ?? {
-      work: { slug: x.row.slug, title: x.row.title, author: x.row.author }, sections: [],
+      work: { slug: x.row.slug, title: x.row.title, author: x.row.author, edition: x.row.edition }, sections: [],
     };
     g.sections.push(x);
     groups.set(x.row.slug, g);

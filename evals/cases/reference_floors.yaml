@@ -1,0 +1,300 @@
+# reference_floors: SCAN_RE false-floor adversarial set + genuine-citation floor
+# controls (W-SCANRE, 2026-08-22; pre-registered at
+# docs/evidence/swarm-2026-08-22/w-scanre/PRE-REG.md).
+#
+# ROUTING-LEVEL suite — measured by scripts/probe-scan-floors.mts through
+# resolveIntent (tier-level, per ADR-115), NOT through the compose->verify
+# loop, so cases carry no `teacher` and no fixture. Grows the 2026-08-21
+# adversarial set (n=10, "should grow") to n=36 non-citations + n=31 controls.
+#
+# expect vocabulary:
+#   - floor_empty: resolveIntent(prompt).floor must be []  (idiomatic non-citation)
+#   - floor_fires: resolveIntent(prompt).floor must be non-empty (genuine citation)
+#
+# Non-citation rules: the gated book word (mark/james/job/acts/numbers/kings)
+# appears with digits in an idiom; no biblical-lexicon token and no pericope
+# alias may appear elsewhere in the prompt (that would be corroboration).
+
+# --- adversarial NON-citations: mark ---
+- id: scanre-nc-001
+  suite: reference_floors
+  prompt: "she is 1 mark 5 points from winning"
+  expect: [floor_empty]
+- id: scanre-nc-002
+  suite: reference_floors
+  prompt: "wide of the mark 9 times out of 10"
+  expect: [floor_empty]
+- id: scanre-nc-003
+  suite: reference_floors
+  prompt: "the mark 2 version of the app keeps crashing"
+  expect: [floor_empty]
+- id: scanre-nc-004
+  suite: reference_floors
+  prompt: "a birth mark 2 cm wide on her shoulder"
+  expect: [floor_empty]
+- id: scanre-nc-005
+  suite: reference_floors
+  prompt: "he hit the mark 3 times in a row"
+  expect: [floor_empty]
+- id: scanre-nc-006
+  suite: reference_floors
+  prompt: "her essay scored a mark 4 out of 5"
+  expect: [floor_empty]
+
+# --- adversarial NON-citations: james ---
+- id: scanre-nc-007
+  suite: reference_floors
+  prompt: "i counted 3 james 2 marys and a paul"
+  expect: [floor_empty]
+- id: scanre-nc-008
+  suite: reference_floors
+  prompt: "james 2 goals in the second half secured the win"
+  expect: [floor_empty]
+- id: scanre-nc-009
+  suite: reference_floors
+  prompt: "my uncle james 4 kids all play chess"
+  expect: [floor_empty]
+- id: scanre-nc-010
+  suite: reference_floors
+  prompt: "ask james 3 times before giving up"
+  expect: [floor_empty]
+- id: scanre-nc-011
+  suite: reference_floors
+  prompt: "james 1 point behind the leader at halftime"
+  expect: [floor_empty]
+- id: scanre-nc-012
+  suite: reference_floors
+  prompt: "saint james 5 stars on the travel site"
+  expect: [floor_empty]
+
+# --- adversarial NON-citations: job ---
+- id: scanre-nc-013
+  suite: reference_floors
+  prompt: "she did a great job 10 out of 10"
+  expect: [floor_empty]
+- id: scanre-nc-014
+  suite: reference_floors
+  prompt: "the job 3 posting expired last week"
+  expect: [floor_empty]
+- id: scanre-nc-015
+  suite: reference_floors
+  prompt: "he works a job 2 days a week"
+  expect: [floor_empty]
+- id: scanre-nc-016
+  suite: reference_floors
+  prompt: "the job 5 interview rounds felt endless"
+  expect: [floor_empty]
+- id: scanre-nc-017
+  suite: reference_floors
+  prompt: "his job 6 months ago paid better"
+  expect: [floor_empty]
+- id: scanre-nc-018
+  suite: reference_floors
+  prompt: "a paint job 4 years old and peeling"
+  expect: [floor_empty]
+
+# --- adversarial NON-citations: acts ---
+- id: scanre-nc-019
+  suite: reference_floors
+  prompt: "the play has acts 3 and 4 merged into one"
+  expect: [floor_empty]
+- id: scanre-nc-020
+  suite: reference_floors
+  prompt: "acts 2 of the treaty was repealed in spring"
+  expect: [floor_empty]
+- id: scanre-nc-021
+  suite: reference_floors
+  prompt: "she acts 12 years younger than she is"
+  expect: [floor_empty]
+- id: scanre-nc-022
+  suite: reference_floors
+  prompt: "the circus acts 5 pm slot sold out"
+  expect: [floor_empty]
+- id: scanre-nc-023
+  suite: reference_floors
+  prompt: "his best acts 3 encores brought the house down"
+  expect: [floor_empty]
+- id: scanre-nc-024
+  suite: reference_floors
+  prompt: "random kind acts 2 times a day"
+  expect: [floor_empty]
+
+# --- adversarial NON-citations: numbers ---
+- id: scanre-nc-025
+  suite: reference_floors
+  prompt: "the numbers 4 and 8 were drawn last night"
+  expect: [floor_empty]
+- id: scanre-nc-026
+  suite: reference_floors
+  prompt: "crunch the numbers 6 ways before deciding"
+  expect: [floor_empty]
+- id: scanre-nc-027
+  suite: reference_floors
+  prompt: "winning numbers 7 14 and 21 were announced"
+  expect: [floor_empty]
+- id: scanre-nc-028
+  suite: reference_floors
+  prompt: "the numbers 9 report is due on friday"
+  expect: [floor_empty]
+- id: scanre-nc-029
+  suite: reference_floors
+  prompt: "her winning numbers 3 times in a row"
+  expect: [floor_empty]
+- id: scanre-nc-030
+  suite: reference_floors
+  prompt: "the numbers 12 percent growth stunned analysts"
+  expect: [floor_empty]
+
+# --- adversarial NON-citations: kings ---
+- id: scanre-nc-031
+  suite: reference_floors
+  prompt: "the chess endgame had 2 kings 4 pawns left"
+  expect: [floor_empty]
+- id: scanre-nc-032
+  suite: reference_floors
+  prompt: "three kings 2 of them crowned in spring"
+  expect: [floor_empty]
+- id: scanre-nc-033
+  suite: reference_floors
+  prompt: "their 1 kings 3 team name made no sense"
+  expect: [floor_empty]
+- id: scanre-nc-034
+  suite: reference_floors
+  prompt: "a hand of kings 2 aces and a jack"
+  expect: [floor_empty]
+- id: scanre-nc-035
+  suite: reference_floors
+  prompt: "the kings 3 peat run ended in defeat"
+  expect: [floor_empty]
+- id: scanre-nc-036
+  suite: reference_floors
+  prompt: "2 kings 5 a side played on the common"
+  expect: [floor_empty]
+
+# --- genuine citations: gated book word WITH biblical corroboration (must KEEP flooring) ---
+- id: scanre-gc-001
+  suite: reference_floors
+  prompt: "2 Kings 5 Naaman healed of leprosy"
+  expect: [floor_fires]
+- id: scanre-gc-002
+  suite: reference_floors
+  prompt: "what does Mark 5 teach about Jesus"
+  expect: [floor_fires]
+- id: scanre-gc-003
+  suite: reference_floors
+  prompt: "the Acts 2 Pentecost sermon"
+  expect: [floor_fires]
+- id: scanre-gc-004
+  suite: reference_floors
+  prompt: "Job 1 and the patience of Job in the bible"
+  expect: [floor_fires]
+- id: scanre-gc-005
+  suite: reference_floors
+  prompt: "Numbers 6:24-26 the Lord bless you"
+  expect: [floor_fires]
+- id: scanre-gc-006
+  suite: reference_floors
+  prompt: "James 1:2 count it all joy in trials of faith"
+  expect: [floor_fires]
+- id: scanre-gc-007
+  suite: reference_floors
+  prompt: "Mark 16 the resurrection of jesus"
+  expect: [floor_fires]
+- id: scanre-gc-008
+  suite: reference_floors
+  prompt: "Acts 17 Paul preaching in Athens"
+  expect: [floor_fires]
+- id: scanre-gc-009
+  suite: reference_floors
+  prompt: "2 Kings 2 Elijah taken up to heaven"
+  expect: [floor_fires]
+- id: scanre-gc-010
+  suite: reference_floors
+  prompt: "Job 38 the Lord answers out of the whirlwind"
+  expect: [floor_fires]
+- id: scanre-gc-011
+  suite: reference_floors
+  prompt: "Numbers 13 Moses sends the spies"
+  expect: [floor_fires]
+- id: scanre-gc-012
+  suite: reference_floors
+  prompt: "James 5 the prayer of a righteous man"
+  expect: [floor_fires]
+- id: scanre-gc-013
+  suite: reference_floors
+  prompt: "Mark 1 the gospel begins with John the Baptist"
+  expect: [floor_fires]
+- id: scanre-gc-014
+  suite: reference_floors
+  prompt: "1 Kings 18 Elijah confronts the prophets"
+  expect: [floor_fires]
+- id: scanre-gc-015
+  suite: reference_floors
+  prompt: "Acts 9 the conversion of Paul"
+  expect: [floor_fires]
+- id: scanre-gc-016
+  suite: reference_floors
+  prompt: "Job 19 I know that my redeemer lives"
+  expect: [floor_fires]
+- id: scanre-gc-017
+  suite: reference_floors
+  prompt: "Mark 5 and Luke 8 the woman healed"
+  expect: [floor_fires]
+- id: scanre-gc-018
+  suite: reference_floors
+  prompt: "Acts 2 and Acts 4 the early church"
+  expect: [floor_fires]
+
+# --- genuine citations: un-gated numerics (unconditional floor, mechanism untouched) ---
+- id: scanre-gc-019
+  suite: reference_floors
+  prompt: "Romans 8 nothing can separate us"
+  expect: [floor_fires]
+- id: scanre-gc-020
+  suite: reference_floors
+  prompt: "John 3:16"
+  expect: [floor_fires]
+- id: scanre-gc-021
+  suite: reference_floors
+  prompt: "Psalm 23"
+  expect: [floor_fires]
+- id: scanre-gc-022
+  suite: reference_floors
+  prompt: "Isaiah 53"
+  expect: [floor_fires]
+- id: scanre-gc-023
+  suite: reference_floors
+  prompt: "1 Corinthians 13"
+  expect: [floor_fires]
+- id: scanre-gc-024
+  suite: reference_floors
+  prompt: "Hebrews 11"
+  expect: [floor_fires]
+- id: scanre-gc-025
+  suite: reference_floors
+  prompt: "Genesis 1:1-3 and Revelation 22:20"
+  expect: [floor_fires]
+- id: scanre-gc-026
+  suite: reference_floors
+  prompt: "Ephesians 2:8-9 and 1 Peter 5:7"
+  expect: [floor_fires]
+- id: scanre-gc-027
+  suite: reference_floors
+  prompt: "What does 1 John 4:8 mean?"
+  expect: [floor_fires]
+- id: scanre-gc-028
+  suite: reference_floors
+  prompt: "Habakkuk 3 the prophet prays"
+  expect: [floor_fires]
+- id: scanre-gc-029
+  suite: reference_floors
+  prompt: "Philippians 2 the mind of Christ"
+  expect: [floor_fires]
+- id: scanre-gc-030
+  suite: reference_floors
+  prompt: "Amos 5 let justice roll down like waters"
+  expect: [floor_fires]
+- id: scanre-gc-031
+  suite: reference_floors
+  prompt: "Nehemiah 8 the reading of the law"
+  expect: [floor_fires]

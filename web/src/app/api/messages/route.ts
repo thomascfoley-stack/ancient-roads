@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { getMessages, addMessage } from '@/lib/chat';
 
 // 2026-08-17 pre-deploy audit (attack lens) #6: `content` had no length cap and `sources` was
@@ -73,6 +74,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   let user;
   try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
+  // Merge 2026-08-24: main added this CSRF floor while this branch restructured the handler.
+  // Both kept — the floor runs before the body is read, as on main.
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
   let body: { channelId?: unknown; chatId?: unknown; content?: unknown; sources?: unknown };
   try {
     body = (await req.json()) as { channelId?: unknown; chatId?: unknown; content?: unknown; sources?: unknown };

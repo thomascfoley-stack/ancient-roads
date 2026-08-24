@@ -1,0 +1,22 @@
+pn18: ef=1000 pool n=20, on-label rows in pool = 4
+    verseId=64001009 Matthew Henry
+    verseId=64001009 John Wesley
+    verseId=64001009 Adam Clarke
+    verseId=64001010 Adam Clarke
+pn16: ef=1000 pool n=20, on-label rows in pool = 4
+    verseId=46016015 John Wesley
+    verseId=46016015 Adam Clarke
+    verseId=46016017 John Wesley
+    verseId=46016015 John Gill
+pn13: ef=1000 pool n=20, on-label rows in pool = 2
+    verseId=42023050 Thomas Aquinas (comp.), trans. J.H. Newman
+    verseId=42023050 Thomas Aquinas (comp.), trans. J.H. Newman
+
+pn13 pericope coverage — served rows anchored to Luke 23:50-56 (Joseph of Arimathaea):
+  commentary   Adam Clarke                                  n=4 verses 50-56
+  commentary   Albert Barnes                                n=4 verses 50-56
+  commentary   John Gill                                    n=1 verses 50-50
+  commentary   Matthew Henry                                n=1 verses 50-50
+  father       Thomas Aquinas (comp.), trans. J.H. Newman   n=7 verses 50-50
+
+DONE — read-only.

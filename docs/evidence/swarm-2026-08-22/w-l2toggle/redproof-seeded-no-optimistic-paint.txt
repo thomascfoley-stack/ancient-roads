@@ -1,0 +1,2349 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-L2TOGGLE/web
+
+ ❯ test/components/plan-day-toggle-optimistic.test.tsx (4 tests | 3 failed) 3127ms
+   × L2 step 2 — the day toggle is optimistic > paints the flip BEFORE the server answers, in both themes 1081ms
+     → Unable to find role="button" and name "Mark day 1 unread"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+                [33mdisabled[39m=[32m""[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                  [33mdisabled[39m=[32m""[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+                [33mdisabled[39m=[32m""[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                  [33mdisabled[39m=[32m""[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+   × L2 step 2 — the day toggle is optimistic > a refused save rolls the paint back and says so 1014ms
+     → Unable to find role="button" and name "Mark day 1 unread"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+   × L2 step 2 — the day toggle is optimistic > a dropped connection rolls the paint back and says so 1016ms
+     → Unable to find role="button" and name "Mark day 1 unread"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/components/plan-day-toggle-optimistic.test.tsx > L2 step 2 — the day toggle is optimistic > paints the flip BEFORE the server answers, in both themes
+TestingLibraryElementError: Unable to find role="button" and name "Mark day 1 unread"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+                [33mdisabled[39m=[32m""[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                  [33mdisabled[39m=[32m""[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+                [33mdisabled[39m=[32m""[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                  [33mdisabled[39m=[32m""[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ test/components/plan-day-toggle-optimistic.test.tsx:104:34
+    102| 
+    103|     // The POST is still hanging. The paint is already there.
+    104|     const painted = await screen.findByRole('button', { name: 'Mark da…
+       |                                  ^
+    105|     expect(painted.className).toContain('bg-accent-700'); // light the…
+    106|     expect(painted.className).toContain('dark:bg-accent-500'); // dark…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/components/plan-day-toggle-optimistic.test.tsx > L2 step 2 — the day toggle is optimistic > a refused save rolls the paint back and says so
+TestingLibraryElementError: Unable to find role="button" and name "Mark day 1 unread"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ test/components/plan-day-toggle-optimistic.test.tsx:130:18
+    128| 
+    129|     // Painted first...
+    130|     await screen.findByRole('button', { name: 'Mark day 1 unread' });
+       |                  ^
+    131|     // ...then reverted when the save was refused, with the standard e…
+    132|     await screen.findByRole('button', { name: 'Mark day 1 read' });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/components/plan-day-toggle-optimistic.test.tsx > L2 step 2 — the day toggle is optimistic > a dropped connection rolls the paint back and says so
+TestingLibraryElementError: Unable to find role="button" and name "Mark day 1 unread"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"w-full px-4 py-8 sm:px-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto lg:flex lg:items-start lg:gap-8 max-w-3xl"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 lg:flex-1 "[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4 flex items-center justify-between gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300"[39m
+            [36m>[39m
+              [0m← All plans[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700"[39m
+            [36m>[39m
+              [0mDelete plan[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mRomans in a month[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-sm text-red-800 dark:text-red-200"[39m
+            [33mrole[39m=[32m"alert"[39m
+          [36m>[39m
+            [0mThat change could not be saved. Please try again.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-[5px]"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-stone-100 dark:bg-stone-800"[39m
+              [36m/>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"h-2.5 w-2.5 bg-accent-600 dark:bg-accent-400"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-micro font-medium text-stone-500 dark:text-stone-400"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [0m1[0m
+              [0m of [0m
+              [0m2[0m
+              [0m days read[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4 border edge px-4 py-3"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mUp next[0m
+              [0m · Thu, Jan 1[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-1 font-serif text-lg text-stone-900 dark:text-stone-100"[39m
+            [36m>[39m
+              [0mRomans 1[0m
+            [36m</p>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mt-2 flex items-center gap-4"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mRead it[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mMark as read[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mAll readings[0m
+          [36m</p>[39m
+          [36m<ol[39m
+            [33mclass[39m=[32m"border-b edge"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 bg-accent-50 dark:bg-accent-950/30"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 1 read"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mThu, Jan 1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-accent-600 dark:text-accent-400"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 1[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"border-t edge px-3 py-2 "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-label[39m=[32m"Mark day 2 unread"[39m
+                  [33mclass[39m=[32m"flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M5 13l4 4L19 7"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2.5"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</button>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mFri, Jan 2[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"rounded text-left underline decoration-dotted decoration-stone-300 underline-offset-4 transition-colors ease-gentle hover:decoration-accent-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:decoration-stone-600  font-serif text-[18px] text-stone-400 line-through"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mRomans 2[0m
+                  [36m</button>[39m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</li>[39m
+          [36m</ol>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ test/components/plan-day-toggle-optimistic.test.tsx:142:18
+    140|     fireEvent.click(await screen.findByRole('button', { name: 'Mark da…
+    141| 
+    142|     await screen.findByRole('button', { name: 'Mark day 1 unread' });
+       |                  ^
+    143|     await screen.findByRole('button', { name: 'Mark day 1 read' });
+    144|     expect(screen.getByText('That change could not be saved. Please tr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  18:43:33
+   Duration  3.96s (transform 88ms, setup 0ms, collect 173ms, tests 3.13s, environment 430ms, prepare 39ms)
+

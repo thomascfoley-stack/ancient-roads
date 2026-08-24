@@ -1,0 +1,27 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-SEC-CSRF/web
+
+ ❯ test/invariants/csrf-content-type-floor.test.ts (28 tests | 1 failed) 7ms
+   × CSRF Content-Type floor — derived route list > POST src/app/api/prayers/route.ts calls requireJsonContentType BEFORE req.json() 2ms
+     → POST src/app/api/prayers/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/prayers/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/prayers/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 27 passed (28)
+   Start at  10:44:14
+   Duration  284ms (transform 40ms, setup 0ms, collect 77ms, tests 7ms, environment 0ms, prepare 42ms)
+

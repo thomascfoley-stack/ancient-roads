@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Backfill history_embeddings from section_embeddings for historian works. NO embedding calls —
+// Backfill history_embeddings from section_embeddings for history-lane works (historians +
+// genre-history by sources.provenance.genre). NO embedding calls —
 // ingest-historian has always written section vectors; this moves them into the history lane's
 // own table (HISTORY_RETRIEVAL_DESIGN §2b step 1). Idempotent: ON CONFLICT DO NOTHING.
 //
@@ -25,11 +26,14 @@ if (serve && host.startsWith('ep-odd-fog')) {
 const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await c.connect();
 try {
+  // Scope = the history lane's write-gated membership: historians + genre-history works (the
+  // per-work datum sources.provenance.genre — the same predicate history-search-db's SCOPE
+  // reads). Widened 2026-08-23 so the genre-history Fathers (npnf201/202/203) backfill too.
   const gap = (await c.query(`
     SELECT count(*)::int n FROM section_embeddings se
       JOIN sections s ON s.id = se.section_id
       JOIN sources src ON src.id = s.source_id
-     WHERE src.source_type = 'historian'
+     WHERE (src.source_type = 'historian' OR src.provenance->>'genre' = 'history')
        AND NOT EXISTS (SELECT 1 FROM history_embeddings h WHERE h.section_id = se.section_id)`)).rows[0].n;
   console.log(`  section vectors not yet in history_embeddings: ${gap.toLocaleString()}`);
   if (!apply) { console.log('  dry-run — nothing written. Re-run with --apply.'); process.exit(0); }
@@ -40,7 +44,7 @@ try {
       FROM section_embeddings se
       JOIN sections s ON s.id = se.section_id
       JOIN sources src ON src.id = s.source_id
-     WHERE src.source_type = 'historian'
+     WHERE (src.source_type = 'historian' OR src.provenance->>'genre' = 'history')
     ON CONFLICT (section_id) DO NOTHING`);
   console.log(`  inserted ${ins.rowCount.toLocaleString()} row(s)`);
 

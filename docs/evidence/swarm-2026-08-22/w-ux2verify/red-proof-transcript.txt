@@ -1,0 +1,5 @@
+# RED-PROOF transcript — UX-2 explainer check CAN fail
+# defect seeded: explainer span removed from web/src/app/library/[catalog]/page.tsx:191
+# command: chrome --headless=new --dump-dom http://localhost:3210/library/commentaries | grep -c '<explainer text>'
+explainer occurrences in rendered DOM: 0
+RESULT: CHECK FAILS (RED) — the check detects the missing explainer

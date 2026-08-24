@@ -13,6 +13,12 @@ const FROZEN_V3 = path.join(__dirname, '../web/src/scripts/heldout-v3-queries.mt
 // sha256 of the frozen v3 set at freeze time. Bump ONLY on a deliberate re-freeze (+ WORKLOG note).
 const PINNED_SHA256 = 'f7a771a5d06b2d1315e1bb40cea357b6063228438154f6bc89d49fac2688f295';
 
+const FROZEN_PN20 = path.join(__dirname, '../web/src/scripts/heldout-pn20-queries.mts');
+// sha256 of the frozen pn20 set (ADR-118's n=20 fresh proper-noun held-out), pinned
+// 2026-08-22 under W-PN20 BEFORE any pn20 accuracy number existed (pre-reg:
+// docs/evidence/swarm-2026-08-22/w-pn20/PRE-REG.md). Same discipline as v3/v4: no
+// relabel path — a correction is a new file + new pin + WORKLOG note.
+const PINNED_SHA256_PN20 = '0c753637556fe7c0d0ced7121171a59df25fa3b02b5a10c9b46460dcaf622a6d';
 const FROZEN_V4 = path.join(__dirname, '../web/src/scripts/heldout-v4-queries.mts');
 // sha256 of the frozen v4 set, pinned 2026-07-18 BEFORE any v4 accuracy number existed
 // (Phase 3 reconcile-measure). v4 has NO relabel path: a label correction is a deliberate
@@ -38,5 +44,15 @@ describe('held-out discipline — the frozen v3 eval set may not drift', () => {
         'new pin + WORKLOG note). If it is a fix tuned to failing queries, STOP — that silently ' +
         're-tunes the launch gate (THE_LOOP.md rule 5).',
     ).toBe(PINNED_SHA256_V4);
+  });
+
+  it('FROZEN_PN20 content-hash matches the pin (never tune the frozen set to failures)', () => {
+    const actual = createHash('sha256').update(readFileSync(FROZEN_PN20)).digest('hex');
+    expect(
+      actual,
+      'frozen pn20 eval set changed. If this is a deliberate re-freeze, mint a new file or ' +
+        'new pin + WORKLOG note. If it is a fix tuned to failing queries, STOP — that silently ' +
+        're-tunes the ADR-118 launch gate (THE_LOOP.md rule 5).',
+    ).toBe(PINNED_SHA256_PN20);
   });
 });

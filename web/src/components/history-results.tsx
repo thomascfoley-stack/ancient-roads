@@ -17,8 +17,8 @@ export interface HistoryResultRow {
 }
 export interface HistoryPayload {
   interpretation: { entities: { slug: string; label: string }[]; period: { start: number; end: number } | null };
-  closest: (HistoryResultRow & { work: { slug: string; title: string; author: string } }) | null;
-  results: { work: { slug: string; title: string; author: string }; periodSpan: [number, number] | null; sections: HistoryResultRow[] }[];
+  closest: (HistoryResultRow & { work: { slug: string; title: string; author: string; edition: string | null } }) | null;
+  results: { work: { slug: string; title: string; author: string; edition: string | null }; periodSpan: [number, number] | null; sections: HistoryResultRow[] }[];
   coverage: { works: number; sections: number };
 }
 
@@ -82,17 +82,23 @@ export function HistoryResults({ data, query, threadId }: {
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
   }, [data.results]);
 
-  const cite = async (r: HistoryResultRow, work: { title: string; author: string }): Promise<void> => {
+  const cite = async (r: HistoryResultRow, work: { title: string; author: string; edition: string | null }): Promise<void> => {
     // Only confirm a copy that happened. navigator.clipboard is undefined on a non-secure context
     // and rejects when the document is unfocused or permission is denied; flashing ✓ regardless is
     // a false confirmation on an attribution control — the wrong direction for this product
     // (deep-audit client finding 7).
+    // The provenance suffix is the work's OWN record (`sources.provenance->>'edition'`, carried
+    // through the payload), never a hardcoded one — this surface once appended the literal
+    // " (CCEL)" to every citation, Josephus and archive.org works included (W-SEC-CCEL).
     try {
       // D45: this hard-coded "(CCEL)" onto EVERY citation, misattributing any work that did not
-      // come from CCEL. A citation that names the wrong source is worse than one that names none,
-      // and this product's whole claim is accurate attribution — so the suffix is dropped rather
-      // than guessed. If a per-work source label is wanted it belongs on the work record.
-      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')}`);
+      // come from CCEL. This branch dropped the suffix rather than guess it; main solved it
+      // BETTER by naming the real edition (WorkRef.edition, from the source record's own
+      // provenance). Main's version wins on merge — it restores the information instead of
+      // removing it, and a citation that names the true edition is what the product claims.
+      await navigator.clipboard.writeText(
+        `${work.author}, ${work.title}, ${r.headingPath.join(' — ')}${work.edition ? ` — ${work.edition}` : ''}`,
+      );
       setCopied(r.sectionId);
       setTimeout(() => setCopied(null), 1500);
     } catch {

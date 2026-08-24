@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { encodeVerseId } from '@bible/verse-id';
 import { truncateCodePoints } from '@/lib/text';
 import {
@@ -90,6 +91,9 @@ export async function POST(req: NextRequest) {
   let user: { id: string };
   try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
+
   let body: AnnotationBody;
   try { body = (await req.json()) as AnnotationBody; } catch { return apiError('INVALID_REQUEST'); }
 
@@ -166,6 +170,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   let user: { id: string };
   try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
+
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let body: AnnotationBody;
   try { body = (await req.json()) as AnnotationBody; } catch { return apiError('INVALID_REQUEST'); }

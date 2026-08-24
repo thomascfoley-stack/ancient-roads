@@ -1,0 +1,60 @@
+ ✓ test/content-sanity.test.ts (7 tests) 4ms
+ ✓ test/heldout-frozen-hash.test.ts (2 tests) 20ms
+ ✓ test/invariants/adapter-archive-ryle.test.ts (7 tests) 10ms
+ ✓ test/web-core-sync.test.ts (9 tests) 23ms
+ ✓ test/deps-audit-expect-red.test.ts (4 tests) 5ms
+ ✓ test/observability.test.ts (2 tests) 4ms
+ ✓ test/invariants/neon-branch-guard.test.ts (4 tests) 6ms
+ ✓ test/bible-sync.test.ts (9 tests) 6ms
+ ✓ test/verse-id.test.ts (5 tests) 6ms
+ ✓ test/evals.test.ts (5 tests) 14ms
+ ❯ test/publish-flip-toolchain.test.ts (39 tests | 1 failed) 22670ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > adjudicates the REAL production census — the positive control 1481ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 4941ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a PUBLISHED cohort — that would mean the flip already ran 1023ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses an empty source list rather than issuing a clean bill of health over nothing 1248ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a census whose row count disagrees with its own declared total 1150ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a census with no rollupDigest — an untraceable verdict 1361ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > a PUBLISHED hymn does not STOP the flip — it is served by SONG_VERSE_CORPUS_FILTER 1509ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > a STAGED hymn reaches the flip list — the consequence no exit code reports 2643ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > a published work in NO served list still STOPS — the fix did not just admit everything 2963ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a DUPLICATE slug, which would inflate the flip list 1603ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a value that is not a slug 2207ms
+   ✓ the pre-connect serve gates refuse without touching any database > a manifest serve:false ruling STOPs a forward flip before any connection 313ms
+   × thayers evidence gate > the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file) 56ms
+     → expected true to be false // Object.is equality
+ ✓ test/invariants/uncited-shingle-parity.test.ts (42 tests) 43884ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: a verbatim quote 3381ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: a quote inside prose 2648ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: prose quoting nothing 2460ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: multiple quotes 4024ms
+   ✓ verse-level parity over the real KJV index > agrees at every K on the trade curve, not only at the frozen K=1 21420ms
+   ✓ verse-level parity over the real KJV index > agrees ON the distinctiveness boundary, where a verse has EXACTLY minVerseShingles 3392ms
+   ✓ verse-level parity over the real KJV index > agrees one BELOW the boundary too — the floor excludes, it does not merely include 6483ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/publish-flip-toolchain.test.ts > thayers evidence gate > the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/publish-flip-toolchain.test.ts:473:67
+    471|   });
+    472|   it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no …
+    473|     expect(fs.existsSync(path.join(ROOT, THAYERS_EVIDENCE_PATH))).toBe…
+       |                                                                   ^
+    474|     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thayers-gate-')…
+    475|     const manifest = path.join(tmp, 'slugs.json');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 69 passed (70)
+      Tests  1 failed | 847 passed (848)
+   Start at  18:46:51
+   Duration  48.29s (transform 1.62s, setup 0ms, collect 10.54s, tests 76.29s, environment 47ms, prepare 12.92s)
+

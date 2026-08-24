@@ -4,11 +4,11 @@
 //
 // THE DEFECT, in two silences the reader meets at the same moment:
 //
-//   1. `/desk?p=a&p=b&p=c&p=d` renders three panes. The fourth is refused by the parser and
-//      nothing on the page mentions it. Desk state lives in the URL precisely so a desk can be
-//      SENT to someone — and the recipient of a four-pane link has no way to know a pane is
-//      missing, because they never saw it there.
-//   2. At three panes both add controls (`+` for a work, the book button for Scripture) simply
+//   1. An over-long `/desk?p=…` link renders only the panes that fit. The rest are refused by the
+//      parser and nothing on the page mentions them. Desk state lives in the URL precisely so a
+//      desk can be SENT to someone — and the recipient of an over-cap link has no way to know
+//      panes are missing, because they never saw them there.
+//   2. At the cap both add controls (`+` for a work, the book button for Scripture) simply
 //      disappear, on `panes.length < MAX_PANES`. A control that vanishes states a rule in
 //      invisible ink: the reader looks for the button they used a minute ago and finds nothing
 //      where it was, with no text anywhere saying the desk is full or what to do about it.
@@ -38,6 +38,10 @@ vi.mock('next/navigation', () => ({
 }));
 
 import DeskPage from '@/app/desk/page';
+
+/** n distinct work panes as a `?p=` query string. */
+const deskQuery = (n: number, from = 0): string =>
+  Array.from({ length: n }, (_, i) => `p=work:w${from + i}`).join('&');
 
 /** Render the desk at a given `?p=` query. */
 function renderDesk(query: string) {
@@ -73,8 +77,8 @@ describe('a desk under the cap says nothing about it', () => {
 });
 
 describe('a full desk states the cap instead of just hiding the buttons', () => {
-  it('three panes: the add controls are gone AND a status line says why', () => {
-    renderDesk('p=work:a&p=work:b&p=work:c');
+  it('sixteen panes: the add controls are gone AND a status line says why', () => {
+    renderDesk(deskQuery(16));
     // The vanishing half — unchanged behaviour, asserted so the notice below is anchored to the
     // moment it is needed rather than tested in isolation from it.
     expect(screen.queryByLabelText('Add a work from the library')).toBeNull();
@@ -82,29 +86,29 @@ describe('a full desk states the cap instead of just hiding the buttons', () => 
 
     const status = screen.getByRole('status');
     expect(status.textContent).toMatch(/full/i);
-    expect(status.textContent).toContain('3');
+    expect(status.textContent).toContain('16');
     // The remedy, not just the state: a rule with no way out reads as a bug.
     expect(status.textContent).toMatch(/close one/i);
   });
 });
 
 describe('a URL that asked for more panes than the desk holds says so', () => {
-  it('four panes requested: three open and the notice names the one that did not', () => {
-    renderDesk('p=work:a&p=work:b&p=work:c&p=work:d');
-    expect(screen.getAllByRole('region')).toHaveLength(3);
+  it('seventeen panes requested: sixteen open and the notice names the one that did not', () => {
+    renderDesk(deskQuery(17));
+    expect(screen.getAllByRole('region')).toHaveLength(16);
     const status = screen.getByRole('status');
     expect(status.textContent).toContain('1 pane');
     expect(status.textContent).toMatch(/did not open/i);
   });
 
-  it('six panes requested: the count is the real one, and it is plural', () => {
-    renderDesk('p=work:a&p=work:b&p=work:c&p=work:d&p=work:e&p=scripture:psa/23');
-    expect(screen.getAllByRole('region')).toHaveLength(3);
+  it('nineteen panes requested: the count is the real one, and it is plural', () => {
+    renderDesk(deskQuery(19));
+    expect(screen.getAllByRole('region')).toHaveLength(16);
     expect(screen.getByRole('status').textContent).toContain('3 panes');
   });
 
   it('a comma-joined URL reports the same as repeated params', () => {
-    renderDesk('p=work:a,work:b,work:c,work:d');
+    renderDesk(`p=${Array.from({ length: 17 }, (_, i) => `work:w${i}`).join(',')}`);
     expect(screen.getByRole('status').textContent).toContain('1 pane');
   });
 });
@@ -115,18 +119,18 @@ describe('the remedy the notice names actually works', () => {
   // because the notice is derived from that URL and not held in state — takes the overflow entries
   // with it. That is the claim; this is the check.
   it('closing a pane rewrites the URL to a desk one pane shorter, dropping the overflow entries', () => {
-    renderDesk('p=work:a&p=work:b&p=work:c&p=work:d');
+    renderDesk(deskQuery(17));
     expect(screen.getByRole('status').textContent).toMatch(/did not open/i);
 
-    // All three work panes are still loading, so all three close buttons carry the same
+    // All sixteen work panes are still loading, so all sixteen close buttons carry the same
     // loading-state label (B011). The first one is the pane being closed.
     fireEvent.click(screen.getAllByLabelText('Close this pane')[0]!);
 
-    // Two panes, and `work:d` is NOT resurrected — the desk it navigates to is built from the
-    // three panes that opened, so the next render is under the cap and silent.
+    // Fifteen panes, and the overflowed `work:w16` is NOT resurrected — the desk it navigates to
+    // is built from the sixteen panes that opened, so the next render is under the cap and silent.
     expect(replace).toHaveBeenCalledTimes(1);
     const href = String(replace.mock.calls[0]?.[0]);
-    expect(href).toBe('/desk?p=work%3Ab&p=work%3Ac');
+    expect(href).toBe(`/desk?${Array.from({ length: 15 }, (_, i) => `p=work%3Aw${i + 1}`).join('&')}`);
   });
 });
 
@@ -140,7 +144,7 @@ describe('the notice never claims a loss that did not happen', () => {
   });
 
   it('a duplicate beyond the cap is a full desk, NOT a lost pane', () => {
-    renderDesk('p=work:a&p=work:b&p=work:c&p=work:a');
+    renderDesk(`${deskQuery(16)}&p=work:w0`);
     const status = screen.getByRole('status');
     expect(status.textContent).toMatch(/full/i);
     expect(status.textContent).not.toMatch(/did not open/i);

@@ -7,7 +7,7 @@ state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than c
 > histories, the A1 blocker narrative, the O-1 corrections, the failure-mode watchlist — moved
 > VERBATIM to [`MASTER_HISTORY.md`](MASTER_HISTORY.md). Rows cite it as `MASTER_HISTORY.md §<anchor>`.
 
-Last verified: 2026-08-21 · **live on `ancientpaths.app`: `d5cfa04`** (receipt
+Last verified: 2026-08-24 · **live on `ancientpaths.app`: `7747f10`** (receipt `dpl_5WBo5kQLqAme4Jgzq9wCa2pT9JAX`, 2026-08-24T00:08Z) — the swarm-closeout candidate: 22 workstream merges + 2 cherry-picks, Wave-7 verified, CI green (the first green audit on this lineage). Live sits on `swarm/closeout-2026-08-22`, which CONTAINS fix/q1-signed-out-state and origin/main; the merge-to-main gap remains. Re-measure rather than read.
 `dpl_C56HPSV59onumHD89PpqcxxhySrP`, 2026-08-21T07:13Z) — the night of three deploys: the union that
 restored the highlighter release, Daily Office Sprint 1 (+ five-lens audit remediation), study
 entrance, desk continuous read, My Works Tier 0, B021. Live sits on `fix/q1-signed-out-state`,
@@ -163,7 +163,7 @@ Full row histories incl. F4: `MASTER_HISTORY.md §lane-f`.
 | F1 | The CI parent predates the corpus | **CLOSED `13eed33`** — repointed to `dev`; trade recorded (green but drifting) |
 | F2 | Migration `011` could not be applied to any fresh branch | **CLOSED `c851c2c`** — the migration set could not replay from zero; proven by execution |
 | F3 | The gate executed ~45% of the time | **CLOSED `a55db09`** — repo-wide concurrency key starved it; re-keyed per-ref. Neon branch cap NOT READ |
-| F4 | Name what remains red, and who owns each | **OPEN** — `history-scope-db` true positive: fix committed on `swarm/W-HISTSCOPE-history-scope-db` (UNVERIFIED, unmerged); the 50-entity out-of-scope population is filed as a historians-lane finding |
+| F4 | Name what remains red, and who owns each | `history-scope-db` **CLOSED 2026-08-23** — W-HISTSCOPE merged into the closeout candidate, Wave-7 verified live (both directions green on dev, 27s real execution); the 50-entity out-of-scope population stays filed as a historians-lane finding (packet A9). `licensing`/`plan-tenancy`/`register-wall-surfaces` still UNCONFIRMED on the repointed parent |
 | F5 | ⚑ First green run | **ACHIEVED 2026-08-22** — run `32562471249` @ `2012e03`, BOTH jobs SUCCESS: the first green `db-invariants` in repo history, every suite truthfully accounted (ADR-119 criterion) |
 
 ## Queued — the `SCAN_RE` false-floor class (filed 2026-08-21, owner: not beta-blocking)
@@ -185,11 +185,11 @@ the thing it guards is not a second opinion.*
 
 ## Index
 
-- Plan: `docs/pm/WORKORDER_V2.md` (six stages) — **NOT YET FILED.** The index previously pointed at
+- Plan: `docs/pm/WORKORDER_V2.md` (six stages) — **FILED 2026-08-22 as a reconstruction (W-FILE3DOCS).** The index previously pointed at
   `AP_WORKORDER_V2.md`, which is not in this repo either. Per bylaw 1 the plan is currently unissued;
   the target path above is where it goes.
-- Programme brief: `docs/pm/PROGRAM_BRIEF.md` — **NOT YET FILED.**
-- Two-lane strategy: `docs/pm/orders/2026-07-31-strategy-two-lanes.md` — **NOT YET FILED.**
+- Programme brief: `docs/pm/PROGRAM_BRIEF.md` — **FILED 2026-08-22 as a reconstruction.**
+- Two-lane strategy: `docs/pm/orders/2026-07-31-strategy-two-lanes.md` — **FILED 2026-08-22 as a reconstruction.**
 - Board history (long-form narrative moved out under A6, 2026-08-23): `docs/pm/MASTER_HISTORY.md`
 - State: `docs/STATE_OF_TRUTH.md`
 - Rulings: `docs/DECISIONS.md`

@@ -25,7 +25,10 @@ import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
-import { embedChunks } from './embed';
+// Merge 2026-08-24: main's EmbeddingUnavailable is kept (used at the permanent-failure branch
+// below). main's `setReadingsState` import is NOT: D1 removed the drain's readings_status write
+// — the only call site — because writing 'pending' here wedged every freshly-ingested document.
+import { EmbeddingUnavailable, embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
 import { extractSermonMetadata } from './metadata-extract';
 import { storeSections } from './sections';
@@ -212,9 +215,19 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
       await setDocStatus(userId, row.id, status, e.message);
       return status;
     }
+    // A permanent error can never succeed on retry. Parking it back at 'queued' would retry a
+    // hopeless document to MAX_ATTEMPTS while it sat indistinguishable from "waiting its turn"
+    // and queueStats reported a healthy-looking depth — a deployment missing DEEPINFRA_API_KEY
+    // parks EVERY upload that way. Fail it now, with the reason shown. Only errors that declare
+    // themselves permanent take this branch: a provider 429/5xx is transient and stays on the
+    // retry path below, which is what the loop exists for.
+    const message = String((e as Error)?.message ?? e);
+    if (e instanceof EmbeddingUnavailable && e.permanent) {
+      await setDocStatus(userId, row.id, 'failed', message);
+      return 'failed';
+    }
     // Anything else may be transient (blob fetch, cold start). Back to 'queued' so the drain
     // retries it, until MAX_ATTEMPTS retires it via the claim predicate + reapExhausted.
-    const message = String((e as Error)?.message ?? e);
     if (row.attempts >= MAX_ATTEMPTS) {
       await setDocStatus(userId, row.id, 'failed', `Gave up after ${row.attempts} attempts. The last error was: ${message}`);
       return 'failed';
@@ -225,7 +238,15 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
 }
 
 export interface DrainResult {
-  processed: number;
+  /** Documents the drain took a claim on — attempted, not necessarily finished. */
+  attempted: number;
+  /**
+   * Documents that reached 'ready' this drain — the only number a caller may read as progress.
+   * Its predecessor `processed` counted every outcome, so a drain that parked a document back at
+   * 'queued' reported `{processed: 1, outcomes: {queued: 1}}`: "attempted once, got nowhere"
+   * asserted as work done, and the test that found this read its own failure as success.
+   */
+  completed: number;
   outcomes: Record<string, number>;
   reaped: number;
 }
@@ -237,19 +258,21 @@ export interface DrainResult {
 export async function drain(userId: string, max = 5): Promise<DrainResult> {
   const reaped = await reapExhausted(userId);
   const outcomes: Record<string, number> = {};
-  let processed = 0;
+  let attempted = 0;
+  let completed = 0;
 
   for (let i = 0; i < max; i++) {
     const row = await claimNext(userId);
     if (!row) break;
     const outcome = await processOne(userId, row);
     outcomes[outcome] = (outcomes[outcome] ?? 0) + 1;
-    processed++;
+    attempted++;
+    if (outcome === 'ready') completed++;
   }
 
   // §5 tripwire: emit once per drain batch that ends over the line, so a bulk import that
   // crosses it says so in the logs the day it happens, not the day search feels slow.
-  if (processed > 0) {
+  if (attempted > 0) {
     const stats = await queueStats(userId).catch(() => null);
     if (stats?.overTripwire) {
       console.warn(
@@ -259,7 +282,7 @@ export async function drain(userId: string, max = 5): Promise<DrainResult> {
     }
   }
 
-  return { processed, outcomes, reaped };
+  return { attempted, completed, outcomes, reaped };
 }
 
 /**

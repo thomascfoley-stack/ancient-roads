@@ -156,34 +156,36 @@ describe.skipIf(!enabled)('@vercel/blob against the live store', () => {
     // the embed stage is real. EXPECTATION UPDATED 2026-08-22: this test predated Slice 1 and
     // asserted `'chunking'` with the comment "steps 3 and 4 do not exist yet" — they exist, and
     // one drain pass runs to 'ready'. Measured before changing (quality-slice rule 0), on the
-    // dev DB against the live store, 2026-08-22: without the key the drain requeues
-    // (status 'queued', parse_error "DEEPINFRA_API_KEY is not set", processed still 1 — the
-    // suite's first-ever CI execution surfaced exactly this); with the key one pass ends
-    // {"processed":1,"outcomes":{"ready":1}} and the row is status='ready', parse_error NULL.
+    // dev DB against the live store, 2026-08-22: without the key the drain now fails the
+    // document PERMANENTLY (status 'failed', parse_error "DEEPINFRA_API_KEY is not set" — a
+    // config error no retry can heal; before the 2026-08-22 failure-semantics fix it requeued,
+    // status 'queued' with the counter still reading 1 — the suite's first-ever CI execution
+    // surfaced exactly that); with the key one pass ends
+    // {"attempted":1,"completed":1,"outcomes":{"ready":1}} and the row is status='ready',
+    // parse_error NULL.
     const result = await drain(USER, 1);
 
     // ── THE FAILURE MESSAGE CARRIES THE CAUSE (2026-08-22) ───────────────────────────────────
     // This assertion used to fail as a bare `expected 'queued' to be 'ready'`, which says a
     // document did not finish and nothing about why — and the two fields that DO say why were
-    // both in hand and discarded. `processOne`'s catch (queue.ts) treats anything that is not an
-    // UploadRefused as transient: it writes the real message to `user_documents.parse_error`,
-    // parks the document back at 'queued', and reports that in `drain().outcomes`. So a CI
-    // failure here was unexplainable from the log — diagnosing it locally took adding a probe,
-    // which is exactly what nobody can do on a runner.
+    // both in hand and discarded. `processOne`'s catch (queue.ts) writes the real message to
+    // `user_documents.parse_error` and reports the outcome in `drain().outcomes`, so the cause
+    // is readable from the log rather than taking a probe nobody can add on a runner.
     //
-    // Note `processed` and `outcomes` disagree by design: `processed++` counts every claimed
-    // document whatever the outcome (queue.ts), so `{processed: 1, outcomes: {queued: 1}}` means
-    // "attempted once, got nowhere". Asserting `processed` alone reads that as progress.
+    // Note `attempted` and `completed` disagree by design: a claimed document that goes nowhere
+    // (parked back at 'queued' after a transient error) is attempted but not completed, so
+    // `{attempted: 1, completed: 0, outcomes: {queued: 1}}` means "attempted once, got nowhere".
+    // Its predecessor `processed` counted every outcome and read that same stall as progress.
     //
     // Secrets: `parse_error` is already user-facing (it renders in the document list) and GitHub
     // masks registered secrets in logs, so surfacing it here adds no exposure.
     const after = await getDocument(USER, doc.id);
     const why =
-      `drain=${JSON.stringify(result.outcomes)} processed=${result.processed} reaped=${result.reaped} `
+      `drain=${JSON.stringify(result.outcomes)} attempted=${result.attempted} completed=${result.completed} reaped=${result.reaped} `
       + `status=${after?.status} attempts=${after?.attempts ?? 0} chars=${after?.extractableChars ?? 0} `
       + `parseError=${after?.parseError ?? '(none)'}`;
 
-    expect(result.processed, why).toBe(1);
+    expect(result.attempted, why).toBe(1);
     expect(after?.status, why).toBe('ready'); // the whole pipeline, not a prefix of it
     expect(after?.parseError ?? null, why).toBeNull();
     expect(after?.extractableChars ?? 0, why).toBeGreaterThan(0);

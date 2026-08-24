@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { deletePlan, getPlan, reschedulePlan, setDayCompleted } from '@/lib/plan/store';
 
 export const runtime = 'nodejs';
@@ -52,16 +53,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'plan id must be a UUID' });
 
-  // CSRF floor for a cookie-authenticated mutation: a cross-origin
-  // <form enctype="text/plain"> is a *simple* request (no preflight) that can
-  // deliver a JSON-shaped body. Requiring application/json forces a preflight
-  // on any cross-origin caller, which the browser then refuses. The session
-  // cookie's SameSite posture is recorded as unaudited (2026-08-02 deep audit);
+  // CSRF floor for a cookie-authenticated mutation — this route's original inline check,
+  // now the shared guard (lib/csrf-floor.ts carries the simple-Content-Type rationale). The
+  // session cookie's SameSite posture is recorded as unaudited (2026-08-02 deep audit);
   // until someone reads the live Set-Cookie, this route does not lean on it.
-  const contentType = req.headers.get('content-type') ?? '';
-  if (!contentType.toLowerCase().includes('application/json')) {
-    return apiError('INVALID_REQUEST', { message: 'Content-Type must be application/json' });
-  }
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let body: { kind?: unknown; dayIndex?: unknown; completed?: unknown; fromDate?: unknown };
   try {

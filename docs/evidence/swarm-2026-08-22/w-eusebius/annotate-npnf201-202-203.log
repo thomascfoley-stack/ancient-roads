@@ -1,0 +1,33 @@
+=== annotate schaff-npnf201 17:09:12Z ===
+
+
+annotate schaff-npnf201 @ ep-tiny-hat-atdgpisx [father] — 588 sections
+  plan: +704 anchors · 0 heading periods · embed 588 sections (window 1500)
+  embedded 48/588  embedded 96/588  embedded 144/588  embedded 192/588  embedded 240/588  embedded 288/588  embedded 336/588  embedded 384/588  embedded 432/588  embedded 480/588  embedded 528/588  embedded 576/588  embedded 588/588
+  OK — history vectors for schaff-npnf201: 588 (all served=false; serving is the owner gate)
+=== annotate schaff-npnf202 17:12:34Z ===
+
+
+annotate schaff-npnf202 @ ep-tiny-hat-atdgpisx [father] — 495 sections
+  plan: +1302 anchors · 0 heading periods · embed 495 sections (window 1500)
+  embedded 48/495  embedded 96/495  embedded 144/495  embedded 192/495  embedded 240/495  embedded 288/495  embedded 336/495  embedded 384/495  embedded 432/495  embedded 480/495  embedded 495/495
+  OK — history vectors for schaff-npnf202: 495 (all served=false; serving is the owner gate)
+=== annotate schaff-npnf203 17:13:32Z ===
+
+
+annotate schaff-npnf203 @ ep-tiny-hat-atdgpisx [father] — 584 sections
+  plan: +816 anchors · 0 heading periods · embed 584 sections (window 1500)
+  embedded 48/584  embedded 96/584  embedded 144/584FAILED (rolled back): embed 400: {"error":{"message":"You passed 513 input tokens and requested 0 output tokens. However, the model's context length is only 512 tokens, resulting in a maximum input length of 512 tokens. Please reduce the length of the input prompt. (parameter=input_tokens, value=513)","type":"invalid_request_error","param":null,"code":null}}
+(node:87998) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+annotate schaff-npnf203 @ ep-tiny-hat-atdgpisx [father] — 584 sections
+  plan: +816 anchors · 0 heading periods · embed 584 sections (window 1500)
+  embedded 48/584  embedded 96/584  embedded 144/584  embedded 192/584  embedded 240/584  embedded 288/584  embedded 336/584  embedded 384/584  embedded 432/584  embedded 480/584  embedded 528/584  embedded 576/584  embedded 584/584
+  OK — history vectors for schaff-npnf203: 584 (all served=false; serving is the owner gate)

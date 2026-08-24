@@ -1,0 +1,59 @@
+# W-DOCRESTATE-finish — independent re-execution of the committed red/red-proof logs
+# Branch: swarm/W-DOCRESTATE-finish-docrestate (from c476a8c = origin/swarm/W-DOCRESTATE-doc-restatement-guard)
+# Worktree: /tmp/swarm-W-DOCRESTATE-finish
+# Captured: 2026-08-23 (UTC), by the W-DOCRESTATE-finish workstream (fresh context; the
+# original fixer session was killed by the 2026-08-22 quota event before audit completed).
+
+## 0. GREEN at branch tip (control before any seeding)
+
+$ corepack pnpm exec vitest run test/invariants/doc-restatement.test.ts
+
+ ✓ test/invariants/doc-restatement.test.ts (16 tests) 4ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+
+## 1. RE-EXECUTED RED — red-live-first-run.txt (live docs at pre-fix base state)
+
+Procedure: `git checkout 9dce273 -- docs/HELDOUT_EVAL_DESIGN.md docs/STATE_OF_TRUTH.md`
+(the two files the original commit fixed), run the guard, restore.
+
+Result — guard fires with EXACTLY the five violations of red-live-first-run.txt:
+
+   × doc-restatement guard > docs/STATE_OF_TRUTH.md points at the ruling instead of carrying values 3ms
+   × doc-restatement guard > docs/HELDOUT_EVAL_DESIGN.md points at the ruling instead of carrying values 1ms
+
++   "docs/STATE_OF_TRUTH.md:71 restates a ruled value with no pointer to ADR-028/ADR-116 (DECISIONS.md) — only CLAUDE.md may carry ruled values; every other doc must point, not carry",
++   "docs/HELDOUT_EVAL_DESIGN.md:90 asserts the proper-noun gate is HIT@1, but HIT@2 is ruled in DECISIONS.md (ADR-116)",
++   "docs/HELDOUT_EVAL_DESIGN.md:164 asserts the proper-noun gate is HIT@1, but HIT@2 is ruled in DECISIONS.md (ADR-116)",
++   "docs/HELDOUT_EVAL_DESIGN.md:90 restates a ruled value with no pointer to ADR-028/ADR-116 (DECISIONS.md) — only CLAUDE.md may carry ruled values; every other doc must point, not carry",
++   "docs/HELDOUT_EVAL_DESIGN.md:164 restates a ruled value with no pointer to ADR-028/ADR-116 (DECISIONS.md) — only CLAUDE.md may carry ruled values; every other doc must point, not carry",
+
+      Tests  2 failed | 14 passed (16)
+
+Restore (`git checkout HEAD -- docs/HELDOUT_EVAL_DESIGN.md docs/STATE_OF_TRUTH.md`) → 16/16 green.
+Working tree clean afterward (`git status --short` empty).
+
+## 2. RE-EXECUTED RED-PROOF — redproof-live-seeds.txt SEED 1 (re-run shape)
+
+Procedure: seed CLAUDE.md line 25's restatement paragraph — flip the assertion
+`the proper-noun gate is **HIT@2** (not HIT@1)` to `**HIT@1** (not HIT@2)` — on the line
+that also names ADR-028/ADR-116/DECISIONS.md (the line-level-exemption hole the original
+run watched red). Run the guard, restore.
+
+Result — fires exactly as the committed transcript shows:
+
+   × doc-restatement guard > CLAUDE.md restatements match DECISIONS.md 4ms
+
++   "CLAUDE.md:25 asserts the proper-noun gate is HIT@1, but HIT@2 is ruled in DECISIONS.md (ADR-116)",
+
+      Tests  1 failed | 15 passed (16)
+
+Restore → 16/16 green. Working tree clean afterward.
+
+## 3. In-test red-proof fixtures
+
+The eight `red-proof fixtures` tests inside test/invariants/doc-restatement.test.ts
+(seeded-defect strings asserted to FIRE, compliant controls asserted NOT to fire) ran as
+part of every green run above — the check's ability to fail is itself under test, so it
+is re-proven on every suite execution, not only in these transcripts.

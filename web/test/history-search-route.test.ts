@@ -13,7 +13,13 @@ import { checkHistorySearchRateLimit } from '@/lib/rate-limit';
 import { searchHistory } from '@/lib/history-search-db';
 
 const post = (body: unknown): Promise<Response> =>
-  POST(new Request('http://x/api/history/search', { method: 'POST', body: JSON.stringify(body) }));
+  POST(new Request('http://x/api/history/search', {
+    method: 'POST',
+    // The CSRF floor (lib/csrf-floor.ts) requires this header; a bare string body would
+    // arrive as text/plain and 400 before any of the behavior under test runs.
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  }));
 
 beforeEach(() => {
   vi.mocked(requireUser).mockResolvedValue({ id: 'u1' } as never);

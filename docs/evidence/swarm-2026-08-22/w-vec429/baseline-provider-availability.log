@@ -1,0 +1,11 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-VEC429/web
+
+ ✓ test/invariants/provider-availability.test.ts (8 tests) 2ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  10:32:18
+   Duration  193ms (transform 17ms, setup 0ms, collect 13ms, tests 2ms, environment 0ms, prepare 34ms)
+

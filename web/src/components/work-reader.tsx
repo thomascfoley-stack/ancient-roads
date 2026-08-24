@@ -26,6 +26,13 @@ import { WorkHeader } from './work-header';
 import { WorkSection } from './work-section';
 
 // Render window around the active section: 12 behind / 28 ahead ≈ 40 mounted sections max.
+//
+// THE DESK PANE CARRIES AN ADAPTED COPY (desk-pane.tsx, WorkPaneView — UX-3): 8 behind / 16
+// ahead, keyed to the pane's OWN scroll container instead of the window/main scroller, with its
+// prefetch branch guarded on error. Deliberately a copy, not an extraction — the math below is
+// entangled with the header line, progress reporting, the pending-scroll restore and the
+// selection popover, so sharing it would couple the desk to all four. The chase/convergence
+// logic is the shared contract: a fix to it in EITHER file is owed to the other.
 const WINDOW_BEHIND = 12;
 const WINDOW_AHEAD = 28;
 // Fetch the next page when the active section comes within this many of the loaded tail.

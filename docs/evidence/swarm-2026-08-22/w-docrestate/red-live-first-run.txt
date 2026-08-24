@@ -1,0 +1,61 @@
+
+ RUN  v2.1.9 /private/tmp/swarm-W-DOCRESTATE
+
+ ❯ test/invariants/doc-restatement.test.ts (14 tests | 2 failed) 11ms
+   × doc-restatement guard > docs/STATE_OF_TRUTH.md points at the ruling instead of carrying values 5ms
+     → expected [ Array(1) ] to deeply equal []
+   × doc-restatement guard > docs/HELDOUT_EVAL_DESIGN.md points at the ruling instead of carrying values 1ms
+     → expected [ …(4) ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/doc-restatement.test.ts > doc-restatement guard > docs/STATE_OF_TRUTH.md points at the ruling instead of carrying values
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "docs/STATE_OF_TRUTH.md:71 restates a ruled value with no pointer to ADR-028/ADR-116 (DECISIONS.md) — only CLAUDE.md may carry ruled values; every other doc must point, not carry",
++ ]
+
+ ❯ test/invariants/doc-restatement.test.ts:166:53
+    164|   it.each(POINTER_ONLY_DOCS)('%s points at the ruling instead of carry…
+    165|     expect(ruled).not.toBeNull();
+    166|     expect(checkDoc(rel, read(rel), ruled!, false)).toEqual([]);
+       |                                                     ^
+    167|   });
+    168| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/invariants/doc-restatement.test.ts > doc-restatement guard > docs/HELDOUT_EVAL_DESIGN.md points at the ruling instead of carrying values
+AssertionError: expected [ …(4) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "docs/HELDOUT_EVAL_DESIGN.md:90 asserts the proper-noun gate is HIT@1, but HIT@2 is ruled in DECISIONS.md (ADR-116)",
++   "docs/HELDOUT_EVAL_DESIGN.md:164 asserts the proper-noun gate is HIT@1, but HIT@2 is ruled in DECISIONS.md (ADR-116)",
++   "docs/HELDOUT_EVAL_DESIGN.md:90 restates a ruled value with no pointer to ADR-028/ADR-116 (DECISIONS.md) — only CLAUDE.md may carry ruled values; every other doc must point, not carry",
++   "docs/HELDOUT_EVAL_DESIGN.md:164 restates a ruled value with no pointer to ADR-028/ADR-116 (DECISIONS.md) — only CLAUDE.md may carry ruled values; every other doc must point, not carry",
++ ]
+
+ ❯ test/invariants/doc-restatement.test.ts:166:53
+    164|   it.each(POINTER_ONLY_DOCS)('%s points at the ruling instead of carry…
+    165|     expect(ruled).not.toBeNull();
+    166|     expect(checkDoc(rel, read(rel), ruled!, false)).toEqual([]);
+       |                                                     ^
+    167|   });
+    168| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 12 passed (14)
+   Start at  10:41:33
+   Duration  239ms (transform 26ms, setup 0ms, collect 21ms, tests 11ms, environment 0ms, prepare 36ms)
+

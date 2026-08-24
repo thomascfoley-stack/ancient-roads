@@ -3,6 +3,7 @@ import { requireUser, authFailureResponse } from '@/lib/session';
 import { isTeacherAllowed } from '@/lib/teacher-access';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent, type LaneFlags } from '@/lib/teacher/teach';
 import { randomUUID } from 'node:crypto';
@@ -53,6 +54,11 @@ export async function POST(req: NextRequest) {
   // before any spend: a refused caller must cost nothing. The site password gate does not
   // cover this — a beta user has the password by definition.
   if (!isTeacherAllowed(user)) return apiError('FORBIDDEN');
+
+  // Merge 2026-08-24: main added this CSRF floor while this branch reordered the rate limiter to
+  // after validation (D42). Both kept — the floor still runs before the body is read.
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let body: { question?: unknown; lanes?: unknown };
   try {
@@ -121,7 +127,7 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const { result, meta } = await teach(question, { onEvent: write, lanes });
+        const { result, meta } = await teach(question, { onEvent: write, lanes, userId: user.id });
         const latencyMs = Date.now() - startedAt;
         logAskOutcome(result.kind, latencyMs, meta);
         // One durable row per completed ask (migration 116, Phase-D substrate). Off the

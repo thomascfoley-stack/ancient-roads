@@ -1,0 +1,260 @@
+{
+  "set": "FROZEN_PN20",
+  "expected": 20,
+  "captured": 20,
+  "complete": true,
+  "config": {
+    "K": 6,
+    "pool": 20,
+    "ef": 64,
+    "cap": 2,
+    "noRerank": false,
+    "cats": null,
+    "rerankModel": "Qwen/Qwen3-Reranker-0.6B"
+  },
+  "startedAt": "2026-08-24T00:28:12.292Z",
+  "finishedAt": "2026-08-24T00:28:47.354Z",
+  "records": [
+    {
+      "id": "pn20-01",
+      "cat": "proper-noun",
+      "query": "Abimelech king of Gerar who took Sarah",
+      "expected": [
+        "Genesis 20"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-02",
+      "cat": "proper-noun",
+      "query": "Korah and the rebellion that the earth swallowed up",
+      "expected": [
+        "Numbers 16"
+      ],
+      "hit1": false,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-03",
+      "cat": "proper-noun",
+      "query": "Ehud the lefthanded man who slew Eglon king of Moab",
+      "expected": [
+        "Judges 3"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-04",
+      "cat": "proper-noun",
+      "query": "Gideon and the fleece of wool, wet and dry",
+      "expected": [
+        "Judges 6"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-05",
+      "cat": "proper-noun",
+      "query": "Abigail who interceded with David for Nabal her husband",
+      "expected": [
+        "1 Samuel 25"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 4,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-06",
+      "cat": "proper-noun",
+      "query": "Micaiah the prophet who saw the LORD sitting on his throne",
+      "expected": [
+        "1 Kings 22"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-07",
+      "cat": "proper-noun",
+      "query": "Absalom caught by his head in the oak as his mule went on",
+      "expected": [
+        "2 Samuel 18"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-08",
+      "cat": "proper-noun",
+      "query": "Adonijah who exalted himself saying I will be king",
+      "expected": [
+        "1 Kings 1"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-09",
+      "cat": "proper-noun",
+      "query": "Jehu who drove furiously and cut off the house of Ahab",
+      "expected": [
+        "2 Kings 9",
+        "2 Kings 10"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 3,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-10",
+      "cat": "proper-noun",
+      "query": "Uzziah the king who burned incense and was smitten with leprosy",
+      "expected": [
+        "2 Chronicles 26"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-11",
+      "cat": "proper-noun",
+      "query": "Mordecai who would not bow to Haman",
+      "expected": [
+        "Esther 3"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-12",
+      "cat": "proper-noun",
+      "query": "Gomer, the wife of Hosea the prophet",
+      "expected": [
+        "Hosea 1"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-13",
+      "cat": "proper-noun",
+      "query": "Joseph of Arimathaea who begged the body of Jesus",
+      "expected": [
+        "Luke 23"
+      ],
+      "hit1": false,
+      "hit2": false,
+      "voices": 1,
+      "code": "<2-voices"
+    },
+    {
+      "id": "pn20-14",
+      "cat": "proper-noun",
+      "query": "Malchus the high priest’s servant whose ear Peter cut off",
+      "expected": [
+        "John 18"
+      ],
+      "hit1": false,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-15",
+      "cat": "proper-noun",
+      "query": "Pilate who washed his hands before the multitude",
+      "expected": [
+        "Matthew 27"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-16",
+      "cat": "proper-noun",
+      "query": "Stephanas and his household, the firstfruits of Achaia",
+      "expected": [
+        "1 Corinthians 16"
+      ],
+      "hit1": false,
+      "hit2": false,
+      "voices": 0,
+      "code": "wrong-passage"
+    },
+    {
+      "id": "pn20-17",
+      "cat": "proper-noun",
+      "query": "Jezebel of Thyatira who calls herself a prophetess",
+      "expected": [
+        "Revelation 2"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-18",
+      "cat": "proper-noun",
+      "query": "Diotrephes who loveth to have the preeminence",
+      "expected": [
+        "3 John 1"
+      ],
+      "hit1": false,
+      "hit2": false,
+      "voices": 0,
+      "code": "wrong-passage"
+    },
+    {
+      "id": "pn20-19",
+      "cat": "proper-noun",
+      "query": "Felix the governor who trembled as Paul reasoned of righteousness",
+      "expected": [
+        "Acts 24"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    },
+    {
+      "id": "pn20-20",
+      "cat": "proper-noun",
+      "query": "Hymenaeus and Alexander whom Paul delivered unto Satan",
+      "expected": [
+        "1 Timothy 1"
+      ],
+      "hit1": true,
+      "hit2": true,
+      "voices": 2,
+      "code": "pass"
+    }
+  ]
+}

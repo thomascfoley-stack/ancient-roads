@@ -20,7 +20,7 @@
 //     inject but never seize the top, so a mis-detection can't hijack a topical
 //     query.
 
-import { parseRef, scanReferences, type VerseRange } from './ref-parse';
+import { parseRef, scanReferenceSpans, type VerseRange } from './ref-parse';
 
 export interface Intent {
   inject: VerseRange[]; // all named ranges — soft-boost the reranker pool
@@ -141,6 +141,35 @@ function pericopesCorroborated(norm: string, matched: Array<{ alias: string }>):
   return stripped.trim().split(/\s+/).some((tok) => BIBLICAL_LEXICON.has(tok));
 }
 
+// Book words that are ALSO ordinary English nouns. ADR-015 floors numerics unconditionally
+// because "a chapter number is explicit intent" — true of "1 Corinthians 13", false of
+// "1 mark 5 points from winning". Measured on the n=36 adversarial set: 33 of 36 idiomatic
+// non-citations floored on shipped code, and a false floor RESERVES the top two answer slots,
+// so it displaces a correct voice rather than merely adding a wrong one. These words therefore
+// follow the pericope rule instead: always inject, floor only when corroborated.
+// NOT tuned to the eval set — it is the intersection of the book aliases with common English
+// nouns, and every member is a book whose name is an everyday word.
+const AMBIGUOUS_BOOK_WORDS: ReadonlySet<string> = new Set([
+  'mark', 'james', 'job', 'acts', 'numbers', 'kings',
+]);
+
+// Does the query carry biblical context BEYOND the ambiguous numeric matches themselves?
+// Mirrors pericopesCorroborated: a second scanned reference corroborates, otherwise a lexicon
+// token must survive once the matched spans are cut out of the source text.
+function numericsCorroborated(
+  query: string,
+  ambiguous: Array<{ start: number; end: number }>,
+  confidentCount: number,
+): boolean {
+  if (confidentCount > 0) return true;
+  if (ambiguous.length >= 2) return true;
+  let stripped = query;
+  for (const a of [...ambiguous].sort((x, y) => y.start - x.start)) {
+    stripped = stripped.slice(0, a.start) + ' ' + stripped.slice(a.end);
+  }
+  return normalize(stripped).trim().split(/\s+/).some((tok) => BIBLICAL_LEXICON.has(tok));
+}
+
 const dedup = (ranges: VerseRange[]): VerseRange[] => {
   const seen = new Set<string>();
   return ranges.filter((r) => { const k = `${r.start}-${r.end}`; if (seen.has(k)) return false; seen.add(k); return true; });
@@ -154,8 +183,21 @@ export function resolveIntent(query: string): Intent {
   const inject: VerseRange[] = [];
   const floor: VerseRange[] = [];
 
-  // Numeric references — high precision (a chapter/verse number is explicit intent).
-  for (const r of scanReferences(query)) { inject.push(...r.ranges); floor.push(...r.ranges); }
+  // Numeric references — high precision (a chapter/verse number is explicit intent),
+  // EXCEPT where the book word is an ordinary English noun. Those follow the pericope
+  // corroboration rule. An explicit ordinal does NOT rescue them: "2 Kings 4" and
+  // "2 kings 4 pawns left" are the same shape, and Kings is a numbered book whose name is
+  // also a countable noun. Genuine citations still floor via corroboration — "1 Kings 18
+  // Elijah confronts the prophets" carries two lexicon tokens.
+  const spans = scanReferenceSpans(query);
+  const ambiguous = spans.filter((s) => AMBIGUOUS_BOOK_WORDS.has(s.bookWord));
+  const confident = spans.filter((s) => !ambiguous.includes(s));
+  for (const s of confident) { inject.push(...s.ref.ranges); floor.push(...s.ref.ranges); }
+  const floorAmbiguous = ambiguous.length > 0 && numericsCorroborated(query, ambiguous, confident.length);
+  for (const s of ambiguous) {
+    inject.push(...s.ref.ranges);
+    if (floorAmbiguous) floor.push(...s.ref.ranges);
+  }
 
   // Named pericopes — always inject; floor only when biblically corroborated.
   const norm = normalize(query);

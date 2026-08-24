@@ -1,5 +1,6 @@
 import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { saveReadingProgress } from '@/lib/library';
 import { publishedSourceId } from '@/lib/work';
 import { parseProgressBody } from '@/lib/work-reader';
@@ -41,6 +42,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   try {
     user = await requireUser();
   } catch (e) { return authFailureResponse(e); }
+
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
 
   let raw: unknown;
   try {

@@ -11,6 +11,7 @@ import { formatVerseId } from '../../bible/verse-id';
 import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
+import { retrieveUserVoices, formatUserLibrarySources, type UserVoice } from './user-voices';
 import {
   MAX_RETRIES,
   ASK_MAX_DURATION_MS,
@@ -143,7 +144,7 @@ const instance = { served: 0 };
 
 export async function teach(
   query: string,
-  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags } = {},
+  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags; userId?: string } = {},
 ): Promise<TeachRun> {
   const emit = opts.onEvent ?? (() => {});
   const maxDurationMs = opts.maxDurationMs ?? ASK_MAX_DURATION_MS;
@@ -193,11 +194,15 @@ export async function teach(
   // inversion of the standalone ruling. Nothing sends true anymore; the lane is dormant until the
   // §2b data retirement (owner-gated) removes its rows.
   const historianPromise = lanes.historians === true ? retrieveHistorianLane(queryVec, ranges) : Promise.resolve([]);
+  // Slice 4: the asker's own uploads as an ADDITIVE voice set (SERMON_SEARCH_DESIGN §7). Fires
+  // only for an identified asker — the eval harness (/api/eval/bait) passes no userId, so the
+  // lane is inert there and eval reproducibility is unchanged. Fail-soft inside the lane.
+  const userVoicesPromise = opts.userId ? retrieveUserVoices(opts.userId, queryVec) : Promise.resolve([] as UserVoice[]);
   stageStart = Date.now();
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
   stageMs.retrieve = Date.now() - stageStart;
   stageStart = Date.now();
-  const [songVerse, sermons, theology, historians] = await Promise.all([songVersePromise, sermonPromise, theologyPromise, historianPromise]);
+  const [songVerse, sermons, theology, historians, userVoices] = await Promise.all([songVersePromise, sermonPromise, theologyPromise, historianPromise, userVoicesPromise]);
   stageMs.lanes = Date.now() - stageStart;
   const withRegister = <T extends TeacherResult>(r: T): T => {
     if (r.kind === 'empty') return r;
@@ -261,15 +266,33 @@ export async function teach(
   const voiceTraditions = new Set(voices.map((r) => r.metadata.tradition ?? 'unknown'));
   const metaBase = { voices: voices.length, traditions: voiceTraditions.size };
   const systemPrompt = buildSystemPrompt();
-  const userPrompt = buildUserPrompt(query, voices);
-  const corpusLookup = buildCorpusLookup(voices);
-  const sectionAttributions = voices.map((r) => ({
-    author: r.metadata.author,
-    work: r.metadata.sourceTitle,
-    slug: r.metadata.work,
-    tradition: r.metadata.tradition ?? 'unknown',
-    body: r.content,
-  }));
+  // User voices are APPENDED to the composer's source list (prompt-local ids continue after
+  // the corpus voices), never merged into `voices`: the traditions count, the diversity
+  // floors, and RetrievalContext are all judged on CORPUS availability only — sectionIds and
+  // traditions below stay corpus-only (the RetrievalContext.traditions caveat, DESIGN.md;
+  // appending user ids would raise requiredVoices on sparse retrieval past what corpus
+  // sections can clear).
+  const userLibraryBlock = formatUserLibrarySources(userVoices, voices.length + 1);
+  const userPrompt = userLibraryBlock
+    ? `${buildUserPrompt(query, voices)}\n\n${userLibraryBlock}`
+    : buildUserPrompt(query, voices);
+  const corpusLookup = buildCorpusLookup(voices, userVoices);
+  const sectionAttributions = [
+    ...voices.map((r) => ({
+      author: r.metadata.author,
+      work: r.metadata.sourceTitle,
+      slug: r.metadata.work,
+      tradition: r.metadata.tradition ?? 'unknown',
+      body: r.content,
+    })),
+    ...userVoices.map((v) => ({
+      author: 'You',
+      work: v.title,
+      tradition: 'unknown',
+      body: v.text,
+      origin: 'user_library' as const,
+    })),
+  ];
   const retrievalContext = {
     sectionIds: voices.map((_, i) => i + 1),
     traditions: [...voiceTraditions],

@@ -9,10 +9,15 @@
 // back-button-correct, and restores exactly. It also means the pane list is server-readable, which
 // is what lets the page label every pane's register without a round trip per pane.
 //
-// THREE PANES, MAX. Not arbitrary: below ~360px of width a column of prose stops being readable,
-// and three is what fits a 1280px desktop with the reading measure intact. The cap is enforced HERE
-// rather than in the UI, because a URL is user-editable input — `?p=` repeated ten times must be
-// truncated by the parser, not by whatever the layout happens to do with ten columns.
+// THE CEILING IS A 4x4 GRID, SIXTEEN PANES (UX-3). It was three, enforced here for a prose
+// measure ("below ~360px a column of prose stops being readable"). The owner's grid ruling
+// (order 2026-08-02: "we're gonna have to go to a 4x4, not a side-by-side aspect") replaced the
+// measure argument with a SHAPE argument: the ceiling is now the largest grid that stays a grid.
+// The cap is still enforced HERE rather than in the UI, because a URL is user-editable input —
+// `?p=` repeated a hundred times must be truncated by the parser, not by whatever the layout
+// happens to do with a hundred grid cells. It is a ceiling, not an invitation: the DOM cost of a
+// full desk is bounded per pane (each pane windows its sections — see desk-pane.tsx), and sixteen
+// windowed panes is the budget that keeps the whole desk bounded.
 //
 // THE REGISTER WALL APPLIES. A desk that puts a hymn beside a commentary is exactly the adjacency
 // the wall governs: lane content may sit ALONGSIDE exegesis, labelled, and may never be presented
@@ -20,7 +25,7 @@
 // decides what a pane is called. There is no unlabelled pane, and no pane whose label is inferred
 // from its position.
 
-export const MAX_PANES = 3;
+export const MAX_PANES = 16;
 
 /** A Scripture pane: one chapter. */
 export interface ScripturePane {
@@ -87,12 +92,12 @@ export function decodePane(raw: string): Pane | null {
 /**
  * What the parser did with a desk URL: the panes that fit, and how many did not.
  *
- * A078 — THE CAP WAS ENFORCED IN SILENCE. `?p=a&p=b&p=c&p=d` rendered three panes and said nothing
- * about the fourth, so a reader who shared or hand-edited a four-pane desk got a page that looked
- * complete and was not. The rule at the top of this file — "a missing pane is visibly missing" —
- * holds when you know how many you asked for; the person opening a link someone else sent does
- * not. The cap stays exactly as it is; what changes is that it now REPORTS, and the surface says
- * so (see app/desk/page.tsx).
+ * A078 — THE CAP WAS ENFORCED IN SILENCE. An over-long desk URL rendered the panes that fit and
+ * said nothing about the rest, so a reader who shared or hand-edited an over-cap desk got a page
+ * that looked complete and was not. The rule at the top of this file — "a missing pane is visibly
+ * missing" — holds when you know how many you asked for; the person opening a link someone else
+ * sent does not. The cap itself moves with the layout model (3, then the UX-3 4x4 ceiling of 16);
+ * what A078 changed is that the cap now REPORTS, and the surface says so (see app/desk/page.tsx).
  *
  * `overflow` counts ONLY panes that parsed AND were not already on the desk, because those are the
  * only ones the reader actually lost. A malformed `p=` was never a pane (that is `decodePane`'s
@@ -109,9 +114,10 @@ export interface DeskDecodeReport {
 /**
  * Parse the whole desk from `?p=` values (repeated, or comma-joined), reporting the overflow.
  *
- * Deduped, so the same work cannot occupy two panes — that is always a mistake and it wastes one of
- * three slots. Truncated to MAX_PANES *after* dedupe, so `a,a,b,c` yields three panes rather than
- * two: deduping first is what makes the cap mean "three distinct things".
+ * Deduped, so the same work cannot occupy two panes — that is always a mistake and it wastes one
+ * of the desk's slots. Truncated to MAX_PANES *after* dedupe, so `a,a,b,c,…` fills the desk with
+ * distinct panes rather than spending slots on duplicates: deduping first is what makes the cap
+ * mean "sixteen distinct things".
  */
 export function decodeDeskReport(values: readonly string[]): DeskDecodeReport {
   const seen = new Set<string>();
@@ -153,6 +159,26 @@ export function deskHref(panes: readonly Pane[]): string {
 }
 
 /**
+ * The grid a desk of `count` panes lays out in, as { cols, rows } (UX-3).
+ *
+ * Pure and total by design: the desk's state is a shareable URL, so a desk must place its panes
+ * the same way on every screen that opens it — a CSS `auto-fill` grid would reflow with viewport
+ * width and the recipient of a link would not see the desk the sender sent. The shape is a table,
+ * not a heuristic: columns grow with ceil(sqrt(n)) up to the 4x4 ceiling (the owner's stated
+ * shape), rows follow, and every cell count ≥ the pane count. Out-of-range input clamps into the
+ * table rather than producing a shape the grid cannot be (the parser already bounds real input to
+ * MAX_PANES; this function does not trust that it is only ever called from there).
+ *
+ * The same function drives the page's grid classes (app/desk/page.tsx) — one definition of the
+ * shape, so the notice that says "16" and the grid that places 16 can never disagree.
+ */
+export function deskGridShape(count: number): { cols: number; rows: number } {
+  const n = Number.isFinite(count) ? Math.min(Math.max(1, Math.floor(count)), MAX_PANES) : 1;
+  const cols = Math.min(Math.ceil(Math.sqrt(n)), 4);
+  return { cols, rows: Math.ceil(n / cols) };
+}
+
+/**
  * Add a pane, returning the new desk. At the cap the OLDEST pane is evicted, not the newest: the
  * reader just asked for the new thing, so dropping it would make the button appear broken. Adding
  * a pane that is already open is a no-op rather than a reshuffle — the thing they asked for is
@@ -160,14 +186,14 @@ export function deskHref(panes: readonly Pane[]): string {
  *
  * A078, THE HALF THIS FUNCTION CANNOT FIX. That eviction is silent at its one real call site:
  * `app/library/[catalog]/page.tsx` builds the "+" href as `deskHref(withPane(openDesk, work))`, so
- * a reader who adds a fourth work from a full desk lands on a desk with their FIRST pane quietly
- * gone. (Note that it does ADD — the QA claim that "+" REPLACES the desk is false, and a second
- * session already contradicted it.) The desk page cannot detect this after the fact: by the time
- * the URL arrives the evicted pane is simply absent, indistinguishable from never having been
- * there. Fixing it means the library's "+" saying so at the moment of the click, which is a change
- * to a file this pass does not own. Filed rather than smuggled in through a brand or a side
- * channel on the returned array — a desk URL that means something different depending on which
- * function produced it is worse than the defect.
+ * a reader who adds a work to a full desk lands on a desk with their FIRST pane quietly gone.
+ * (Note that it does ADD — the QA claim that "+" REPLACES the desk is false, and a second session
+ * already contradicted it.) The desk page cannot detect this after the fact: by the time the URL
+ * arrives the evicted pane is simply absent, indistinguishable from never having been there.
+ * Fixing it means the library's "+" saying so at the moment of the click, which is a change to a
+ * file this pass does not own. Filed rather than smuggled in through a brand or a side channel on
+ * the returned array — a desk URL that means something different depending on which function
+ * produced it is worse than the defect.
  */
 export function withPane(panes: readonly Pane[], pane: Pane): Pane[] {
   const key = encodePane(pane);

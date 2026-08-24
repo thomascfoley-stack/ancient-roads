@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { encodeVerseId } from '@bible/verse-id';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { createPrayer, deletePrayer, listPrayers, updatePrayer, PRAYER_MAX_LENGTH } from '@/lib/prayers';
 
 // The prayer journal — block `PR1a`.
@@ -40,7 +41,11 @@ export async function GET(): Promise<Response> {
 
 export async function POST(req: NextRequest): Promise<Response> {
   let user: { id: string };
+  // Merge 2026-08-24: this branch made the catch answer through authFailureResponse (D43 — an
+  // auth-SERVICE outage is 503, not "signed out"); main added the CSRF floor. Both kept.
   try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
+  const csrfFloor = requireJsonContentType(req);
+  if (csrfFloor) return csrfFloor;
   let body: { kind?: unknown; id?: unknown; body?: unknown; verseId?: unknown };
   try { body = await req.json(); } catch { return apiError('INVALID_REQUEST'); }
 

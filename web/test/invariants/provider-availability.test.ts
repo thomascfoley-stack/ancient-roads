@@ -103,4 +103,27 @@ describe('probeProvider — bounded retry, then NOT RUN', () => {
     }, { sleep: noSleep })).rejects.toThrow(/cosine mismatch/);
     expect(calls).toBe(2);
   });
+
+  // WHY JITTER (the order's third requirement): every retrier on the same fixed exponential
+  // schedule re-collides with the others — the thundering-herd case a 429 already is. Each
+  // backoff is scaled by a jitter factor in [0.5, 1), so concurrent runs spread out.
+  it('JITTER scales each backoff by the jitter factor — a fixed schedule is not jittered', async () => {
+    const sleeps: number[] = [];
+    const r = await probeProvider(async () => { throw err('429 engine_overloaded'); },
+      { attempts: 3, baseDelayMs: 100, sleep: async (ms) => { sleeps.push(ms); }, jitter: () => 0.75 });
+    expect(r.present).toBe(false);
+    expect(sleeps).toEqual([75, 150]); // 100·2⁰·0.75, 100·2¹·0.75
+  });
+
+  it('the DEFAULT jitter keeps every delay inside [0.5, 1) of the exponential schedule', async () => {
+    const sleeps: number[] = [];
+    const r = await probeProvider(async () => { throw err('503 Service Unavailable'); },
+      { attempts: 3, baseDelayMs: 100, sleep: async (ms) => { sleeps.push(ms); } });
+    expect(r.present).toBe(false);
+    expect(sleeps).toHaveLength(2);
+    expect(sleeps[0]).toBeGreaterThanOrEqual(50);
+    expect(sleeps[0]).toBeLessThan(100);
+    expect(sleeps[1]).toBeGreaterThanOrEqual(100);
+    expect(sleeps[1]).toBeLessThan(200);
+  });
 });

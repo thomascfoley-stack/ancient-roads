@@ -16,7 +16,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   const afterParam = sp.get('after');
   const after = afterParam === null ? 0 : Number(afterParam);
-  if (!Number.isInteger(after) || after < 0) {
+  // 2147483647 is int4 max: `sections.ordinal` is INT (migration 006), and `after=1e21` passed
+  // Number.isInteger, reached SQL as "1e+21" and 500ed (WORKLOG 2026-08-21, W-SEC-CURSOR).
+  if (!Number.isInteger(after) || after < 0 || after > 2_147_483_647) {
     return apiError('INVALID_REQUEST', { message: '`after` must be a non-negative integer ordinal.' });
   }
 

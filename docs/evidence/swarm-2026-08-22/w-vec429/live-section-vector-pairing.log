@@ -1,0 +1,15 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-VEC429/web
+
+stdout | test/invariants/section-vector-pairing.test.ts > §B0 class 2 — every section body matches its own stored vector > re-embedding the body reproduces the stored vector, and discriminates against a neighbour
+§B0 class 2 — pairing probed on 98/129 published works; NOT COVERED: 31 — vectorless (no section_embeddings): 0; no section of sampleable length: 31 [baxter-saints-rest, bett-methhymns, calvin-calcom03, calvin-calcom07, calvin-calcom14, calvin-calcom15, calvin-calcom16, calvin-calcom17, calvin-calcom18, calvin-calcom19, calvin-calcom20, calvin-calcom21, calvin-calcom24, calvin-calcom25, calvin-calcom26, calvin-prayer, easton-ebd2, jowett-mattermost, lawrence-practice-presence, luther-largecatechism, manning-wesleyhymns, reeves-hymnlit, ryle-expository, ryle-holiness, schaff-npnf213, scougal-life-of-god, smith-w-bibledict, spurgeon-comment, spurgeon-faiths-checkbook, spurgeon-morning-evening, tolstoy-confession]
+
+ ✓ test/invariants/section-vector-pairing.test.ts (1 test) 40986ms
+   ✓ §B0 class 2 — every section body matches its own stored vector > re-embedding the body reproduces the stored vector, and discriminates against a neighbour 40986ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:33:05
+   Duration  41.18s (transform 30ms, setup 0ms, collect 39ms, tests 40.99s, environment 0ms, prepare 26ms)
+

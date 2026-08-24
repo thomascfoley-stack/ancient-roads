@@ -1,0 +1,46 @@
+=== RED LEG 2026-08-23T17:35:49Z — wiring seed: lane fed USER_B while asserting only-A rows (weakens both bindings at the wiring level: wrong runAsUser scope + wrong explicit predicate) ===
+
+ RUN  v2.1.9 /private/tmp/swarm-slice4/web
+
+ ❯ test/ask-user-voices-rls.test.ts (3 tests | 1 failed) 11602ms
+   × the /ask user-voices lane: two-account RLS > user A retrieval returns ONLY user A rows (K bound respected) 174ms
+     → expected false to be true // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/ask-user-voices-rls.test.ts > the /ask user-voices lane: two-account RLS > user A retrieval returns ONLY user A rows (K bound respected)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/ask-user-voices-rls.test.ts:144:93
+    142|     expect(hits.length).toBeGreaterThan(0);
+    143|     expect(hits.length).toBeLessThanOrEqual(USER_VOICE_K);
+    144|     expect(hits.every((h) => h.documentId === docA && h.title === 'Com…
+       |                                                                                             ^
+    145|   }, 60_000);
+    146| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  10:35:50
+   Duration  11.88s (transform 74ms, setup 0ms, collect 96ms, tests 11.60s, environment 0ms, prepare 36ms)
+
+
+=== GREEN LEG 2026-08-23T17:36:18Z — seed reverted, correct user scope restored ===
+
+ RUN  v2.1.9 /private/tmp/swarm-slice4/web
+
+ ✓ test/ask-user-voices-rls.test.ts (3 tests) 11511ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  10:36:19
+   Duration  11.80s (transform 71ms, setup 0ms, collect 94ms, tests 11.51s, environment 0ms, prepare 37ms)
+

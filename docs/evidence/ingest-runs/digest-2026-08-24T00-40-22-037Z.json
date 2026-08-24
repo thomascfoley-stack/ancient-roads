@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "startedAt": "2026-08-24T00:40:22.037Z",
+    "endedAt": "2026-08-24T00:40:30.535Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 0,
+    "skipped": 0,
+    "quarantined": 1,
+    "escalated": 1
+  },
+  "staged": [],
+  "escalations": [
+    {
+      "slug": "pascal-provincial",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    }
+  ],
+  "quarantined": [
+    {
+      "slug": "pascal-memorial",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "quarantined",
+      "code": "parse",
+      "reason": "parse: 1/1 named volumes parsed to 0 sections — structure not recognized: pascal/memorial"
+    }
+  ]
+}

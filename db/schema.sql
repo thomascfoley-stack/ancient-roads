@@ -180,11 +180,10 @@ CREATE TABLE embeddings (
 -- also serves (source_type, source_id) prefix lookups.
 CREATE UNIQUE INDEX idx_embeddings_source ON embeddings(source_type, source_id, chunk_index);
 CREATE INDEX idx_embeddings_user ON embeddings(user_id) WHERE user_id IS NOT NULL;
--- Prod is HNSW (verified via pg_indexes 2026-07-13): USING hnsw (embedding vector_cosine_ops).
--- The earlier ivfflat/lists=100 line was stale — HNSW gives better recall/latency at this
--- corpus size and is what production actually runs. Query-time knobs: hnsw.ef_search (default
+-- The full-table HNSW was DROPPED by migration 127 (2026-08-22, W-RELVOICE): its only shipped
+-- consumer was related-voices.ts, whose sweeps now carry source_type conjuncts and plan the
+-- served partial HNSW indexes (migrations 044 + 114). Query-time knobs: hnsw.ef_search (default
 -- 40) and hnsw.iterative_scan (see docs/PHASE_A_DIAGNOSIS.md for the recall/latency tradeoff).
-CREATE INDEX idx_embeddings_vector ON embeddings USING hnsw (embedding vector_cosine_ops);
 
 -- BM25 full-text search index
 ALTER TABLE embeddings ADD COLUMN tsv tsvector

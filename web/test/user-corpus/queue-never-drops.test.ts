@@ -82,7 +82,7 @@ describeDb('the queue never silently drops a document', () => {
     // for the drain to skip it and leave it queued forever, which looks like "still working".
     const doc = await seedQueued(USER_A, 'no-blob');
     const result = await drain(USER_A, 5);
-    expect(result.processed).toBeGreaterThanOrEqual(1);
+    expect(result.attempted).toBeGreaterThanOrEqual(1);
 
     const after = await getDocument(USER_A, doc.id);
     expect(after?.status).toBe('failed');
@@ -126,7 +126,7 @@ describeDb('the queue never silently drops a document', () => {
           ),
         ),
       ]);
-      expect(result.processed).toBe(1);
+      expect(result.attempted).toBe(1);
     } finally {
       await holder.query('ROLLBACK').catch(() => undefined);
       await holder.end().catch(() => undefined);
@@ -153,9 +153,9 @@ describeDb('the queue never silently drops a document', () => {
     const first = await drain(USER_A, 10);
     const second = await drain(USER_A, 10);
 
-    expect(first.processed).toBe(docs.length);
+    expect(first.attempted).toBe(docs.length);
     // Nothing left to do, and nothing re-claimed: these are terminal failures, not retryable.
-    expect(second.processed).toBe(0);
+    expect(second.attempted).toBe(0);
 
     const all = await listDocuments(USER_A);
     const mine = all.filter((d) => docs.some((s) => s.id === d.id));
@@ -205,7 +205,7 @@ describeDb('the queue never silently drops a document', () => {
           WHERE user_id = ${USER_A} AND id = ${doc.id}`,
     ]);
     const result = await drain(USER_A, 5);
-    expect(result.processed).toBe(1);
+    expect(result.attempted).toBe(1);
     const after = await getDocument(USER_A, doc.id);
     expect(after?.attempts).toBe(2);
     expect(after?.status).toBe('failed');
@@ -221,7 +221,7 @@ describeDb('the queue never silently drops a document', () => {
           WHERE user_id = ${USER_A} AND id = ${doc.id}`,
     ]);
     const result = await drain(USER_A, 5);
-    expect(result.processed).toBe(0);
+    expect(result.attempted).toBe(0);
     const after = await getDocument(USER_A, doc.id);
     expect(after?.status).toBe('parsing');
     expect(after?.attempts).toBe(1);
@@ -268,7 +268,7 @@ describeDb('the queue never silently drops a document', () => {
   // 'embedding' for 3.66 days with attempts = 1.
   for (const stuck of ['chunking', 'embedding'] as const) {
     it(`a worker killed during ${stuck} is reclaimed, not stranded`, async () => {
-      // SEED: revert claimNext's stale branch to `status = 'parsing'` only -> RED, processed 0.
+      // SEED: revert claimNext's stale branch to `status = 'parsing'` only -> RED, attempted 0.
       await cleanup();
       const doc = await seedQueued(USER_A, `stuck-${stuck}`);
       await runAsUser(USER_A, (sql) => [
@@ -279,7 +279,7 @@ describeDb('the queue never silently drops a document', () => {
       ]);
 
       const result = await drain(USER_A, 5);
-      expect(result.processed).toBe(1);
+      expect(result.attempted).toBe(1);
       const after = await getDocument(USER_A, doc.id);
       expect(after?.attempts).toBe(2);
       // It reached a TERMINAL state. Which one does not matter here — the seeded document has no
@@ -319,7 +319,7 @@ describeDb('the queue never silently drops a document', () => {
             WHERE user_id = ${USER_A} AND id = ${doc.id}`,
       ]);
       const result = await drain(USER_A, 5);
-      expect(result.processed).toBe(0);
+      expect(result.attempted).toBe(0);
       expect(result.reaped).toBe(0);
       const after = await getDocument(USER_A, doc.id);
       expect(after?.status).toBe(stuck);
