@@ -9,6 +9,7 @@
 //     --tradition='Puritan'
 
 import { readFileSync, readdirSync, writeFileSync, statSync } from 'node:fs';
+import { chapterLocalVerseEnd } from './chapter-local-range.js';
 import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
 
@@ -37,7 +38,7 @@ function main() {
     const k = `${book}:${chapter}`;
     const list = incoming.get(k) ?? [];
     list.push({
-      verseStart: e.verseId % 1000, verseEnd: (e.verseEnd ?? e.verseId) % 1000,
+      verseStart: e.verseId % 1000, verseEnd: chapterLocalVerseEnd(e.verseId, e.verseEnd),
       author, year, tradition, sourceTitle: title, sourceUrl: url, text: e.content,
     });
     incoming.set(k, list);
