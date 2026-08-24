@@ -8,6 +8,8 @@
 // FTS over CORPUS sections. Separate files make the invariant checkable: THIS file may never
 // contain a tsquery; that one may never touch messages.
 import { runAsUser, getDb } from './db';
+import { HISTORY_PERSONA } from './thread-personas';
+export { HISTORY_PERSONA };
 import { truncateCodePoints } from './text';
 import type { HistoryResponse } from './history-search-db';
 
@@ -16,7 +18,6 @@ import type { HistoryResponse } from './history-search-db';
 // contorting research.ts's types. Same tables, same RLS path (runAsUser).
 
 
-export const HISTORY_PERSONA = 'history';
 
 export async function createHistoryThread(userId: string, query: string, payload: HistoryResponse): Promise<string> {
   const title = query.length > 80 ? `${truncateCodePoints(query, 77)}…` : query;
