@@ -1093,3 +1093,67 @@ way.
 **From here forward:** relying on navigate + get_page_text + read_page + real `.click()` calls via
 javascript_tool, which all continue to work without needing active compositing. Anything that
 specifically needs simulated typing/Enter-to-submit is being marked UNVERIFIED rather than guessed at.
+
+## SM — Sermons — verified live, signed-in, prod (continuing overnight sweep, 2026-08-24)
+
+`/library/sermons`: Spurgeon is ingested as 63 per-year volumes (`spurgeon-sermons01`..`63`, 1855–1917)
+PLUS one umbrella `spurgeon-sermons` (63 vols) entry — two separate catalog rows for what's really one
+collection; not tested whether the umbrella entry actually resolves to readable content or is a stub
+(out of scope tonight, flagging for whoever does LB-07-style entry-point-convergence work).
+Opened `/work/spurgeon-sermons01` (Volume 01: 1855), Sermon 1 "The Immutability of God": text renders
+readably, full attribution near the top both structurally (header: "SPURGEON, CHARLES HADDON ·
+UNASSIGNED · UNASSIGNED · PUBLIC DOMAIN") and in-body ("Delivered on Sabbath Morning, January 7th,
+1855... REV. C.H. SPURGEON, At New Park Street Chapel, Southwark") — preacher/collection/year all
+genuinely visible, PASS, though via body text rather than a structured metadata field.
+**🔴 P3 finding:** the structured attribution header shows "UNASSIGNED · UNASSIGNED" (tradition AND
+era both unset) for this Spurgeon volume, unlike Matthew Henry's commentary (CM-01, already verified:
+"MATTHEW HENRY — 1710 · Nonconformist" — proper era+tradition). Sermons category (105 items) may have
+a broader tradition/era classification gap than commentaries; untested whether this is all 63 Spurgeon
+volumes or wider.
+
+**🔴 P2 finding — scripture references in sermon body text are NOT clickable, contra this task's own
+prediction.** Confirmed programmatically, not just by eyeballing: the API response for
+`/api/work/spurgeon-sermons01/sections` DOES carry structured verse metadata per sermon
+(`"verseStart":39003006,"verseEnd":39003006"` — Malachi 3:6, the sermon's own text), so the data model
+supports it. But the rendered DOM has **zero `<a>` tags anywhere inside `<main>`**
+(`main.querySelectorAll('a').length === 0`), confirmed after the *entire* volume was mounted (see perf
+note below) — not a lazy-load artifact. Sermon prose is plain `<p>` tags, no verse-reference
+autolinking, no click-to-jump-to-reader anywhere in the body. This blocks the "click a reference → land
+on the right verse → Back returns to the sermon at the same position" round-trip entirely; there's
+nothing to click. Contrast with the verse-panel/word-study features already verified elsewhere in this
+ledger (RD-09, WS-01) — those exist for the *Bible reader* surface, not for prose (sermon/commentary)
+bodies quoting or alluding to verses.
+
+**Long-sermon scroll — PASS but flagging the underlying architecture as a standing risk, not a new
+one.** `/work/spurgeon-sermons01` is NOT paginated/virtualized in the way COV/MASTER's UX-3 note
+anticipates: the sections API returned all 50 sermons in the volume in one `after=0&limit=50` call, and
+the DOM mounted the entire volume at once — confirmed via JS: `main.scrollHeight` = **2,041,057px**,
+`main.innerText.length` = **1,396,180 characters**, all under 2016 DOM nodes (few nodes, huge text —
+mitigates some of the risk). Programmatic scrollTop jumps (100k px, then 1.5M px) each resolved in
+1-3ms on this environment — no measurable jank here, but this is a fast automation environment, not a
+proof point for low-end mobile. This directly corroborates the MASTER.md UX-3 caveat ("`spurgeon-
+sermons` makes this a virtualisation problem before a layout one") — not the umbrella 118,371-section
+work, but confirms the SAME unpaginated-mount pattern exists at the per-volume level too (50
+full-length sermons in a single DOM mount, per volume, ×63 volumes for the full collection).
+
+**Side-effect note (transparency, not a defect):** opening `/work/spurgeon-sermons01` and
+`/work/edersheim-lifetimes` triggered `POST .../progress` calls, i.e. reading-position tracking. Per
+the ledger's own "Continue Reading" precedent (a partially-read work was already showing pre-sweep) and
+prior verified entries (RD-09/CM-01 etc.) that didn't revert this, treating this as inherent/unavoidable
+browsing side effect, not something to revert — flagging here for visibility rather than silently
+leaving state changed.
+
+## SE-00 enumeration + 🔴 P2 finding escalated: empty citation parens are systemic, not an Ask-only glitch
+
+Peeked (read-only — did not edit, save, pin, export, or delete anything) at the existing study
+"Something wild" (`/studies/fac7e477-...`). Controls present: "← All studies", Pin, Export, Library,
+"+ Insert". SE-00 enumerated.
+**This significantly strengthens the earlier AS finding.** The same empty-parenthetical-citation defect
+appears here too, repeatedly, in inserted library content (a 19th-century commentary excerpt on
+Matthew/Mark's Passion narrative): "( = ; ; )", "( , )", "( )" — several per paragraph. This is the
+SAME defect class seen in the Ask answer's Moule/Calvin quotes earlier tonight, now confirmed in a
+completely different surface (a saved study's inserted library content, not a live Ask response).
+**Escalating from "content-rendering nit" to "a real cross-reference/citation-interpolation bug
+somewhere upstream in how library content is stored or rendered"** — worth a source-level look (grep
+the commentary ingestion pipeline for how cross-reference placeholders are meant to be filled) rather
+than treating each sighting as an isolated cosmetic issue.
