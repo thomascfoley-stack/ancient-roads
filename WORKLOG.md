@@ -1,5 +1,48 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-23 — search_outcomes: every search surface now logs its queries (owner directive)
+
+**Directive.** "When users run queries searches etc we need to see all of that." Recon first:
+/ask was already durable (`ask_outcomes`, 116) and history persisted per-user threads, but the
+five search surfaces logged nothing durable — /api/search/works, /api/search/commentaries,
+/api/studies/library-search, /api/user-corpus/search, /api/history/search all evaporated at the
+route boundary. (Same recon settled the sibling questions: waitlist emails land in the prod
+`waitlist` table, INSERT-only RLS, owner-read only, no notification; PostHog is live but by the
+2026-08-18 ruling captures exceptions only — no behavioral events exist anywhere in the tree.)
+
+**Built, on `feat/search-outcomes`.**
+* Migration `127_search_outcomes.sql` — 116's exact shape: append-only, INSERT-only RLS policy
+  (NULL user or GUC-bound), grant-verified DO tail. Row = surface + typed query (≤500) + validated
+  params JSONB + result_count/total + latency_ms. Never corpus text, never snippets.
+* `web/src/lib/search-outcomes.ts` — ask-outcomes.ts verbatim contract: after()/fire-and-forget,
+  fails open, runAsUser when attributed. Public surfaces (works/commentaries) log user_id NULL
+  deliberately — no session resolution on the hottest public read path (the D4 latency lesson).
+* All five routes wired; user-corpus logs its mode (verse/keyword/fused/keyword-degraded).
+* `scripts/query-log.mts` — the owner read side: one UNION view over ask_outcomes +
+  search_outcomes, newest first, --limit/--since/--surface. Read-only, owner role.
+* Tests: `web/test/search-outcome-persist.test.ts` (8) + `web/test/invariants/`
+  `search-outcomes-migration.test.ts` (8, incl. a both-ways surface-vocabulary check between the
+  CHECK constraint and the TS union). Both RED-PROVED: seeded the dropped catch → fail-open test
+  red; seeded the dropped NULL-user policy branch → policy test red; restored, green.
+* `search_outcomes` registered in `USER_TABLE_EXCLUDED` (telemetry, digest would churn — the
+  ask_outcomes exclusion shape), completeness invariant green.
+
+**Verified, not assumed.**
+* 127 applied to DEV (ledger sha 4a10b11ffb17…), DO tail passed.
+* End-to-end on the dev server: real HTTP GETs to works + commentaries → rows read back via
+  `query-log.mts` as owner ("good shepherd"/catalogs:[sermons]/20r/1020ms; "grace"/book:43/20r).
+* RLS semantics proven as the real `app_runtime` role on dev: GUC-bound authed insert lands;
+  mismatched user_id REJECTED by the policy; SELECT sees 0 rows (proof row deleted after).
+
+**NOT DONE / UNVERIFIED.**
+* NOT applied to prod (owner go + `MIGRATE_ALLOW_PROD=1` required), NOT deployed — until both,
+  production searches still evaporate. The writer fails open by design, so deploying before the
+  prod migration costs only lost rows + one error line per search, not availability.
+* The three authed surfaces verified by unit tests + the RLS proof, not by a signed-in browser
+  session end-to-end.
+* Full `npm run audit` result recorded below in this entry's amendment if red; branch-level web
+  checks (new tests, typecheck, eslint on touched files) all green at write time.
+
 ## 2026-08-23 — Bug sweep execution: all 15 Detail findings resolved (14 fixed, 1 not-a-bug)
 
 **Context.** `BUG_SWEEP.md` (c7a41b9) triaged 15 Detail findings with per-bug plans and exit-test
@@ -41,8 +84,12 @@ log lands in `docs/evidence/bug-sweep-2026-08-23/`.
 * B14 BROWSER leg owed (agent may not mark rendered checks).
 * F-1 (bait harness misclassification), F-2 (queue retries deterministic parser failures),
   F-3 (gazetteer collision labels) filed, not fixed.
-* Nothing committed; the batch sits dirty in `/tmp/ap-bugsweep` pending the audit verdict and the
-  owner's merge call.
+* MERGED 2026-08-23: owner said "merge it". `fix/bug-sweep-batch` (`08b08c6`) merged into
+  `fix/q1-signed-out-state` as `1e76f28` (ort, zero conflicts — the two Wave-7 commits touched no
+  batch file). Merged tree audited: root vitest 873/874 (sole red = the pre-existing
+  publish-flip/thayers failure), web 1655/1655 green on re-run (`tradition-gap` live test is
+  timing-marginal under parallel load — 120s timeout vs ~56-89s runtime; passes solo 15/15,
+  passed in both worktree full audits; not caused by the batch), rate-limit 23/23.
 
 ## 2026-08-22 — History search: the in-flight signal, and the tab that looked ignored
 
