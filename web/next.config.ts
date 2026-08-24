@@ -45,7 +45,11 @@ const CSP = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // PostHog's SDK assets must be loadable or the whole integration is dead on arrival: this
+  // omission (while `connect-src` below already named the host) made the policy contradict itself
+  // and blacked out analytics entirely in production. Same posture as `connect-src` — the host is
+  // NAMED, not tunnelled, and the entry is inert when the key is unset because the SDK never dials.
+  `script-src 'self' 'unsafe-inline' ${POSTHOG_ASSETS}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",

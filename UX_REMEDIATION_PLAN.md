@@ -1,11 +1,33 @@
 # UX_REMEDIATION_PLAN.md — the Kimi plan (for Claude + DeepSeek review)
 
-**Status:** DRAFT v1, written by Kimi, 2026-08-24. Not yet ratified.
+**Status: RATIFIED WORK ORDER, 2026-08-24.** Owner accepted "as-is, with the review amendments
+incorporated" after all three runners signed. The amendments are folded into the body below; the
+Review blocks at the bottom are kept verbatim as the record of how each was decided.
 **Source of truth for what we're fixing:** `UX_SWEEP_RECONCILED.md` (findings record — frozen).
 This file is the action plan — it changes as fixes land.
-**Review protocol:** Claude and DeepSeek review independently, in the Review blocks at the
-bottom. Disagreements get resolved the same way the reconciler resolved findings — by checking
-live or checking source, not by argument. When all three sign, this becomes the work order.
+
+**Owner's ratification, verbatim (the five amendments):**
+1. **L-5 deleted** — owner re-verified personally rather than taking any runner's word: the empty
+   desk *does* render "Open the Bible" + "Browse the library". DeepSeek's F12 was a selector miss,
+   and the owner's own earlier endorsement of it was withdrawn ("I read the head of my census file,
+   not all of it"). Claude's "unearned green by construction" argument accepted.
+2. **L-8 rewritten** around `scanReferenceSpans()` (offsets), with the SCAN_RE false-positive
+   question flagged as an owner decision — "linking the wrong phrase in a preacher's prose would cut
+   against the product's core promise."
+3. **K-1 sharpened** to the existing `POSTHOG_ASSETS` constant, plus the damning detail that
+   `posthog-wiring.test.ts` asserted seven things about PostHog and never whether it could load.
+   **That watchlist line is part of the deliverable, not a footnote.**
+4. **Sequencing swapped** — K-4/K-5 second: it unblocks ~120 signed-in tasks for all three runners
+   at once, and K-2's corruption is stable and waits safely.
+5. **Verification assignments:** owner takes K-2 and K-6 (Claude's findings — fixer≠verifier);
+   DeepSeek settles U1 on prod.
+
+**On the "delightful polish" goal, owner's framing:** this plan is the unglamorous half of it — it
+removes the things that make users distrust the product (silent sign-ups, invisible verification,
+fake progress, Back dumping you out of reading, analytics that aren't watching). The polish baseline
+is already genuinely high (typography, attribution, dark mode, verse sheet, works TOC all tested
+well). Once K-1…K-6 land and the signed-in sections get a real test pass, the next sweep can focus
+on the delight layer instead of the trust layer.
 
 ## Ground rules (inherited from repo discipline)
 
@@ -29,9 +51,23 @@ live or checking source, not by argument. When all three sign, this becomes the 
 - **Fix:** add `https://us-assets.i.posthog.com` to `script-src` (or `script-src-elem`) in
   `web/next.config.ts` headers (confirm the header isn't assembled in `middleware.ts`).
 - **Test-first:** a header assertion test (or extend an existing security-headers test) that
-  fails while the host is absent; plus a live check that `window.posthog` initializes and a
-  pageview event fires on a preview deploy.
-- **Verify:** second agent loads preview, confirms zero CSP violations + network hit to posthog.
+  fails while the host is absent. **LANDED** — `web/test/posthog-wiring.test.ts`, red-proof and
+  green-proof in WORKLOG 2026-08-24. Pins `script-src` AND both `connect-src` hosts (DeepSeek's
+  both-directions point).
+- **Verify — DO NOT USE `window.posthog`. It is `undefined` even when PostHog is fully working.**
+  `instrumentation-client.ts:45` imports the SDK as an ES module (`import posthog from 'posthog-js'`)
+  and never assigns it to `window`. A verifier who checks `window.posthog` will report the fix
+  failed, forever — an unearned RED, and the mirror image of the unearned green that let this bug
+  ship. **This also retires one leg of my own original finding:** I cited
+  `window.posthog === undefined` as evidence of the blackout; it was never evidence of anything.
+  The finding stands on the other leg (zero requests to the posthog hostname), which was sound.
+  **Use instead** — the previously-blocked scripts' own side effects, which a blocked script cannot
+  produce: `Object.keys(window)` contains `__PosthogExtensions__`, `_POSTHOG_REMOTE_CONFIG`,
+  `extendPostHogWithSurveys`, `posthogErrorWrappingFunctions`. Observed all four locally after the
+  fix (dev server, key present). `_POSTHOG_REMOTE_CONFIG` additionally proves an outbound
+  round-trip to PostHog succeeded, not merely that a file parsed.
+  Note `transferSize: 0` on those three resource timings is normal cross-origin opacity, not a
+  failed load — do not read it as one.
 - **Cost:** one line. Do first. It's been silently losing data for an unknown period.
 
 ### K-2 CCEL ingestion strips inline scripture references (Claude-1)
@@ -96,10 +132,10 @@ live or checking source, not by argument. When all three sign, this becomes the 
 | L-2 | `/search` vs Omnibox disagree on typed references (R3) | give `/search` the Omnibox's reference-jump: detect parseable ref, offer "Go to John 3:16" above results | search "John 3:16" → jump affordance present |
 | L-3 | Offline search fails silently (Kimi-F16) | catch fetch failure → "You're offline" state with retry | devtools-offline journey test |
 | L-4 | `/studies` hard-redirects signed-out (DeepSeek-F11) | render signed-out "sign in to create studies" state instead of raw redirect | signed-out `/studies` renders, no redirect |
-| L-5 | `/desk` empty state has no add-affordance (DeepSeek-F12) | add "Open the Bible / browse library" CTA to empty desk | empty desk census has ≥1 CTA |
+| ~~L-5~~ | **DELETED at ratification — retracted finding.** The empty desk already renders both CTAs; owner re-verified. Its test-first assertion ("empty desk census has ≥1 CTA") passes on unfixed code, i.e. an unearned green by construction. Do not re-file; retires DeepSeek-F12 from P3 too. | — | — |
 | L-6 | Translation not in URL (DeepSeek-F16, TR-05) | `?t=kjv` param, restored on load; share copies URL | deep link with `?t=` reproduces translation |
 | L-7 | Waitlist CTA ~4,500px below fold (DeepSeek-F06) | surface a waitlist CTA in hero or nav 👤 design call | CTA bounding rect < viewport height |
-| L-8 | Sermon body scripture refs not clickable (Claude-3) | use existing `verseStart/End` metadata to link refs | sermon section has `/read/` anchors |
+| L-8 | Sermon body scripture refs not clickable (Claude-3) | **REWRITTEN at ratification.** NOT "use existing `verseStart/End` metadata" — that metadata (`section_anchors`, `db/migrations/006_sources_sections.sql:48-53`) records *which verses a section is about*, never *where in the prose a reference appears*, so it cannot place a link. Correct primitive is **`scanReferenceSpans()` (`web/src/bible/ref-parse.ts:534`)**, which returns offsets: scan section bodies at render or ingest and wrap the matched spans. Bigger than the one-liners around it, and it touches the render path for **every** work, not just sermons. 👤 **Owner decision required before build:** it inherits the `SCAN_RE` false-floor class queued in `docs/pm/MASTER.md` — a false positive turns an ordinary phrase in a preacher's prose into a wrong scripture link, inside a product whose whole guarantee is precise attribution. Either wait behind the queued W-SCANRE corroboration work, or ship explicit-citations-only via the existing `explicit-citation.ts`. | sermon section has `/read/` anchors **and** a no-false-positive fixture: the queued SCAN_RE cases (`1 mark 5`, `3 james 2 marys`) must NOT become links |
 | L-9 | Reading progress instant-100% on unpaginated works (Claude-4) | compute from sections-read, not sections-fetched | open long work → progress ≠ 100% |
 | L-10 | Verse panel Word-study rows look clickable, aren't (Claude-5) | make rows link to `/word/[strongs]` or look inert | row click navigates |
 | L-11 | Settings Text Size + Column Width do nothing (Claude-6) | wire to reader styles + localStorage like Theme does | font-size changes + persists reload |
@@ -129,9 +165,15 @@ home "Evening" label (DeepSeek-F13).
 
 ## Suggested sequencing
 
-1. **K-1** (one line, stops data loss) → deploy same day.
-2. **K-2 adapter + sizing query** (content corruption, needs evidence before re-ingest).
-3. **K-4 + K-5 together** (same files, one auth-UX PR) → unblocks signed-in re-testing.
+**RATIFIED ORDER (amendment 4 — swapped from the draft):**
+
+1. **K-1** (one line, stops data loss) → deploy same day. ✅ **LANDED** (red-proof + green-proof +
+   live browser verification; see WORKLOG 2026-08-24).
+2. **K-4 + K-5 together** (same files, one auth-UX PR) → unblocks ~120 signed-in ledger tasks for
+   all three runners simultaneously. Moved ahead of K-2 at ratification: every hour it stays broken,
+   all three runners keep re-deriving "blocked, no verified account" instead of finding new defects.
+3. **K-2 adapter + sizing query** (content corruption, needs evidence before re-ingest). Safe to
+   wait — it is already in the DB, stable, and nothing is re-ingesting, so it is not getting worse.
 4. **K-6** (small, self-contained).
 5. **K-3** the moment owner copy exists.
 6. P2 batch by surface: reader/reader-settings (L-6, L-10, L-11), marketing (L-1, L-7, K-3

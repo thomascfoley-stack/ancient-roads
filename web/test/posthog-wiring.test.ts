@@ -119,4 +119,44 @@ describe('posthog wiring — analytics must not be embedded in the product', () 
     expect(CLIENT, "api_host must be PostHog's own origin, not '/ingest'").toMatch(/api_host:\s*POSTHOG_HOST/);
     expect(CLIENT).not.toMatch(/api_host:\s*['"]\/ingest/);
   });
+
+  // K-1 (UX_REMEDIATION_PLAN.md) — the assertion this file spent seven `it()` blocks NOT making.
+  //
+  // Every other guard here checks something ABOUT the integration: that it is gated, not proxied,
+  // not autocapturing, allowlist-sanitized, opaquely identified, direct-dialled. None of them
+  // asked whether the browser is ALLOWED TO LOAD THE SCRIPT AT ALL — so this file was fully green
+  // while PostHog was 100% dark in production: `script-src` omitted the assets host that
+  // `connect-src` already named, i.e. the policy contradicted itself, and every SDK asset
+  // (config.js, exception-autocapture.js, surveys.js) was blocked before `posthog.init` could run.
+  //
+  // "It silently dies" is an accepted outcome for the BEACON (see this file's header — owner
+  // ruling). It is NOT an accepted outcome for the policy to forbid what it simultaneously
+  // permits: that is a self-contradiction, not a trade-off, and it cost an unknown number of days
+  // of data. Both directions are pinned below so it cannot regress either way.
+  it('the CSP permits the PostHog SDK to LOAD, and still permits it to CONNECT', async () => {
+    vi.resetModules();
+    delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
+    const cfg = (await import('../next.config')).default;
+    const headers = await cfg.headers!();
+    const csp = headers
+      .flatMap((h) => h.headers)
+      .find((h) => h.key === 'Content-Security-Policy')?.value;
+    expect(csp, 'no Content-Security-Policy header is emitted at all').toBeTruthy();
+
+    const directive = (name: string) =>
+      csp!.split(';').map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? '';
+
+    // The defaults, spelled out rather than recomputed from the source under test — recomputing
+    // them here would let a wrong host in next.config make this test agree with it.
+    const ASSETS = 'https://us-assets.i.posthog.com';
+    const API = 'https://us.i.posthog.com';
+
+    // The bug: assets host absent from script-src. This is the leg that goes RED on unfixed code.
+    expect(directive('script-src'), `script-src must name ${ASSETS} or the SDK cannot load`)
+      .toContain(ASSETS);
+    // The other direction (DeepSeek's addition): connect-src must keep BOTH, so a future "tidy-up"
+    // cannot fix the contradiction by deleting the connect entries instead.
+    expect(directive('connect-src'), `connect-src must keep ${API}`).toContain(API);
+    expect(directive('connect-src'), `connect-src must keep ${ASSETS}`).toContain(ASSETS);
+  });
 });

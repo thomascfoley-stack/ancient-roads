@@ -330,6 +330,33 @@ idiomatic phrasing, not a wrong-book defect on genuine citations.
 
 ## Failure-mode watchlist
 
+**Instance nineteen — A SUITE THAT VALIDATED EVERYTHING *ABOUT* AN INTEGRATION EXCEPT WHETHER IT
+COULD RUN** (2026-08-24, found by the overnight UX sweep; fixed under K-1 of
+`UX_REMEDIATION_PLAN.md`). `web/test/posthog-wiring.test.ts` asserted **seven** properties of the
+PostHog integration — that no route is gate-exempted for analytics, that nothing is proxied to a
+third party, that every rewrite points at our own store, that autocapture and replay stay off, that
+events are allowlist-sanitized, that identity is an opaque id and never an email, that the client
+dials PostHog directly rather than through our origin. Every one of them green, continuously, while
+PostHog was **100% dark in production**: the CSP's `script-src` omitted the assets host that
+`connect-src` already named, so every SDK asset was blocked before `posthog.init` could run. The
+file guarded the integration's *posture* and never its *existence*.
+Falsifiable form: *a suite whose assertions are all conditioned on the subject running, with no
+assertion that it runs.* Cure: one assertion that the subject can execute at all — here, that the
+CSP permits the script to load, pinned in both directions so the self-contradiction cannot regress
+by deleting the `connect-src` entries instead.
+**Two second-order lessons worth more than the fix:**
+(a) The policy was *self-contradictory*, not merely restrictive — it forbade what it simultaneously
+permitted. A contradiction between two directives in one artefact is a distinct smell from a
+too-tight setting, and nothing was reading the two lines against each other.
+(b) **The obvious verification method for this bug is itself broken**, and would have produced an
+unearned RED to match the unearned green: `window.posthog` is `undefined` even when PostHog works
+perfectly, because `instrumentation-client.ts:45` imports the SDK as an ES module and never assigns
+it to `window`. The finder (me) cited `window.posthog === undefined` as one of two evidence legs for
+the blackout; that leg was never evidence of anything and has been retired. Sound verification uses
+the previously-blocked scripts' own side effects — `__PosthogExtensions__`, `_POSTHOG_REMOTE_CONFIG`,
+`extendPostHogWithSurveys` — which a blocked script cannot define. *Check that your negative
+indicator can ever go positive.*
+
 **Instances seventeen and eighteen — one shape, found twice in one morning (2026-08-21), by two
 sessions, in each other's work: an INSTRUMENT WHOSE MATCH SET IS WIDER THAN THE PROPERTY BEING
 COUNTED, read as if it were the property.** (17) `history-scope-db.test.ts`'s probe drew its
