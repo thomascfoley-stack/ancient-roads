@@ -1157,3 +1157,74 @@ completely different surface (a saved study's inserted library content, not a li
 somewhere upstream in how library content is stored or rendered"** — worth a source-level look (grep
 the commentary ingestion pipeline for how cross-reference placeholders are meant to be filled) rather
 than treating each sighting as an isolated cosmetic issue.
+
+## WK-01 spot check (5 works, sampling not exhaustive) — verified live, signed-in, prod
+
+Sampled one work per category beyond LB/SM's Edersheim/Spurgeon picks. For each: first section
+renders, attribution visible near top, no crash. All 5 PASS:
+- Commentary — `/work/adam-clarke` (Adam Clarke's Commentary on the Bible): "ADAM CLARKE · METHODIST ·
+  MODERN · PUBLIC DOMAIN", Genesis 1:1 renders incl. Hebrew script correctly.
+- Hymnal — `/work/watts-hymns` (Hymns and Spiritual Songs, Isaac Watts): "ISAAC WATTS · NONCONFORMIST ·
+  PURITAN · PUBLIC DOMAIN", Hymn 1 renders with verse numbering intact.
+- Devotional — `/work/kempis-imitation` (The Imitation of Christ): "THOMAS À KEMPIS · CATHOLIC ·
+  MEDIEVAL · PUBLIC DOMAIN", Chapter 1 renders.
+- Theology — `/work/calvin-institutes` (Institutes of the Christian Religion): "JOHN CALVIN · REFORMED
+  · REFORMATION · PUBLIC DOMAIN", prefatory material renders.
+- Confession/Creed — `/work/schaff-creeds` (The Creeds of Christendom): "PHILIP SCHAFF · REFERENCE ·
+  MODERN · PUBLIC DOMAIN", § 1 renders.
+
+**🔴 P2 finding, generalizes AS-01/AS-04's earlier finding beyond AI answers into source text itself:**
+`/work/kempis-imitation` Chapter 1 body text reads "says the Lord ( )." — an **empty parenthetical
+scripture citation in the stored source text**, confirmed via `innerHTML` (not a copy artifact): the
+DOM literally contains `says the Lord ( ). By these words...`. The quote is John 8:12 ("He who follows
+me shall not walk in darkness") and the reference is simply missing from the ingested text. AS-01/AS-04
+already found this pattern in AI-answer-quoted excerpts ("compare with )", "( e.g. , )"); this confirms
+the same defect exists directly in at least one work's stored `body` text, independent of the Ask
+pipeline — meaning it's likely an ingestion/source-formatting issue (original texts probably used
+footnote/superscript-style verse markers that were stripped without capturing the reference), not
+something introduced downstream. Worth a corpus-wide grep for `\( \)` / `\(\s*\)` empty-parens patterns
+in `sections.body` across all 374 works — this was found in the very first devotional sampled, not
+after searching for it.
+
+**Formal WK-01 status: NOT DONE.** This is a 5-work spot check across 5 categories (of 374 live items
+per tonight's `/library` count), not the full one-task-per-work sweep the ledger's WK-01 numbering
+implies. No crashes found in the sample; the two content-quality findings above (double-encoded title
+entity, empty-paren citations) both surfaced from ordinary browsing, not adversarial probing — a full
+sweep would likely find more of the same class.
+
+## Post-sweep account-state check — Continue Reading rail, transparency note + one more finding
+
+Re-checked `/library` after the LB/SM/WK-01 checks above. "Continue Reading" now lists all 6 works
+opened tonight (Schaff Creeds, Calvin Institutes, Kempis, Watts, Adam Clarke, Spurgeon vol 01), each at
+0% except **Spurgeon's Sermons Volume 01: 1855, which shows 100%.** The pre-existing item from before
+this sweep ("Short Papers on Church History," 1%) has been bumped off the rail entirely (list appears
+capped at ~6 most-recent). Per the "change nothing net" instruction: this is a side effect of the core
+test action itself (opening a work to verify it renders) — consistent with how RD-09/CM-01/etc. earlier
+in this ledger left reading-position state touched without reverting it, since there's no user-facing
+"un-open a work" control and attempting to game the ordering back would just cause more churn. Flagging
+for transparency rather than silently leaving it. HL/NT/PL round-trips (the actually-reversible actions:
+highlights, notes, plan-progress toggles) were NOT touched tonight — no `role="dialog"` write surfaces,
+Save buttons, or edit affordances were clicked in this session, only `navigate`/`GET`/read-only JS.
+
+**🔴 P2 finding (WK-progress-fake-100):** Spurgeon Vol 01 jumped straight to **100% "read"** on the
+Continue Reading rail after a single page load that scrolled roughly 0.3% of the way into sermon 1 —
+consistent with the SM section's finding that the entire 50-sermon volume mounts in the DOM in one shot
+(no virtualization/pagination beyond the initial fetch). If progress is computed from "sections
+fetched/mounted" rather than "sections actually scrolled past," any unpaginated work will always show
+100% the instant it's opened, regardless of how much the user actually read — a materially misleading
+progress indicator. Every other opened work correctly shows 0% (they're presumably paginated/lazy
+enough that mounting ≠ reading). Worth checking whether this also affects reading-PLAN completion
+tracking for works ingested the same unpaginated way.
+
+## NV-00 back-map row CONFIRMED live: 🔴 P1/P2 — Back from an open verse panel exits the reader entirely
+
+The draft flagged this as "likely gap, UNKNOWN — needs live verification." Verified live tonight:
+opened the verse panel on John 3:3 (commentary tab visible, confirmed via DOM check), then triggered
+browser Back. **Expected:** panel closes, stays on John 3. **Actual:** navigated all the way back to
+the previous PAGE (My Studies), skipping past the reader entirely — because opening the panel creates
+no history entry (client `useState`, no push/replace), so Back has nothing reader-related to consume
+and falls through to whatever was in history before the reader visit. This will read as "I tapped a
+verse, tapped Back, and got yanked off Scripture entirely" — genuinely disorienting, especially on
+mobile where Back is a physical/gesture button pressed reflexively to dismiss an overlay. Confirmed via
+`window.location`/document title before and after, not just a screenshot (screenshots were unreliable
+tonight — see the tooling-limitation note above).
