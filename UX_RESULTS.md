@@ -782,3 +782,43 @@ not independently confirmed against source data.
 losing session state, pane going "not displayed") — CM-006/007/009/010/012/013/016/017/021 and full
 confirmation of CM-019/022 are genuinely NOT VERIFIED, not silently marked pass. Flagged for a
 dedicated re-run.
+
+## Batch 35 — AU (Auth forms), tracker-driven, signed-out (6 findings, one significant)
+
+### F-075 · AU-027 · **P1** · "Sign in with Google" gets stuck in permanent loading state, never redirects
+Clicking the Google OAuth button never redirects and never resolves — leaves the user stuck. This is
+a complete dead end on one of the two advertised sign-in methods.
+
+### F-076 · AU-038 · **P1** · Deep authenticated routes don't redirect to sign-in when signed out, and lose the return path
+Navigating directly to a deep authenticated route (e.g. `/prayers`) while signed out doesn't redirect
+to sign-in at all in some cases; where a sign-in link does appear, it carries no `next=`/return-path
+param, so a user who does sign in lands back at a generic page, not where they were trying to go.
+
+### F-077 · AU-041 · **P2** · No visible/effective rate-limiting on the site gate
+5 rapid wrong-password attempts against the site gate produced no lockout/backoff — same class as the
+already-filed F-051 (`/api/gate`, 8 attempts, zero throttling), now confirmed at the gate itself too.
+
+### F-078 · AU-013 · **P2** · Blank Name on sign-up fails silently/ambiguously
+No default name applied, no error message shown — the user has no idea why nothing happened.
+
+### F-079 · AU-036 · **P3** · Sign-in error message doesn't clear when the user retypes the password
+A stale "wrong password" message persists on screen after the user starts correcting their input,
+reading as if the new attempt already failed.
+
+### F-080 · AU-010 · **P3** · No password visibility toggle anywhere in the auth flow
+Standard "show password" eye-icon affordance is absent from sign-up/sign-in/reset forms.
+
+**Also flagged, not filed as a numbered finding (intermittent, not reliably reproduced):** navigating
+to `/auth/sign-up` immediately after completing a signup (account pending email verification)
+triggered a full server-render crash once ("Something went wrong", 503s on `/auth/sign-in?_rsc=...`
+around the same time) but did not reproduce on a second attempt — worth a follow-up look by someone
+who can isolate it from concurrent-session noise.
+
+**Solid PASSes:** hydration confirmed wired (the F-0xx hydration bug fixed earlier this session stays
+fixed), `method="post"` on all auth forms, password-rule enforcement, Enter-to-submit, double-submit
+guards, sign-in/unverified-account messaging, forgot-password oracle-safety (no existence leak),
+malformed reset-token handling, gate correct/wrong-password behavior and `next=` param handling on
+the gate itself, error-message tone.
+
+Remaining ~15 of 52 IDs PENDING-SIGNIN/PARTIAL — need either a verified signed-in session (constraint:
+the one real account) or a real inbox for throwaway test addresses, neither available this pass.
