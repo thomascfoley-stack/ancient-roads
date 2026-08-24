@@ -40,8 +40,10 @@ route boundary. (Same recon settled the sibling questions: waitlist emails land 
   prod migration costs only lost rows + one error line per search, not availability.
 * The three authed surfaces verified by unit tests + the RLS proof, not by a signed-in browser
   session end-to-end.
-* Full `npm run audit` result recorded below in this entry's amendment if red; branch-level web
-  checks (new tests, typecheck, eslint on touched files) all green at write time.
+* Full `npm run audit` (amendment, same day): every stage green EXCEPT qa — 1670/1671, sole red
+  = `tradition-gap.test.ts` "REAL EXECUTION" (ran 164s under parallel load vs its 120s timeout;
+  passes solo 15/15, re-verified). The same load-marginal red the bug-sweep entry below already
+  documents; not caused by this branch, which touches no user-corpus retrieval path.
 
 ## 2026-08-23 — Bug sweep execution: all 15 Detail findings resolved (14 fixed, 1 not-a-bug)
 
