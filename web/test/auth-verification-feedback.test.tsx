@@ -37,9 +37,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace: vi.fn(), prefetch: vi.fn(), refresh: vi.fn() }),
-  // a token is present so the reset-password leg reaches the server call rather than
-  // short-circuiting on the client-side "link is incomplete" guard.
-  useSearchParams: () => new URLSearchParams('token=tok_123'),
+  // AuthForm no longer calls useSearchParams (it reads window.location.search in the submit
+  // handler, so it needs no Suspense boundary — see the note in the component). The reset-password
+  // leg below sets the real URL instead.
 }));
 
 import { AuthForm } from '@/components/auth-forms';
@@ -89,7 +89,11 @@ function fillAndSubmit(email = 'reader@example.com', password = 'a-long-enough-p
   fireEvent.click(submit);
 }
 
-beforeEach(() => { calls = []; routes = {}; push.mockClear(); installFetch(); });
+beforeEach(() => {
+  calls = []; routes = {}; push.mockClear(); installFetch();
+  // Default: no token in the URL. The reset-password case sets one.
+  window.history.replaceState({}, '', '/auth/sign-in');
+});
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe('K-4 — sign-up tells the reader what just happened', () => {
@@ -184,6 +188,8 @@ describe('the same dead-`error` mechanism on the other auth surfaces', () => {
   // an `error` that is never populated, so both forwarded raw auth-server text to the reader.
   it('an expired reset link says so — not "email and password do not match"', async () => {
     routes['reset-password'] = { status: 400, body: { code: 'INVALID_TOKEN', message: 'invalid token' } };
+    // The token now comes from the real URL, which is what the component reads.
+    window.history.replaceState({}, '', '/auth/reset-password?token=tok_123');
     render(<AuthForm path="reset-password" />);
     // this surface labels the field "New password"
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'a-long-enough-password' } });

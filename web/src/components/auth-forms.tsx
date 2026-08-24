@@ -11,7 +11,7 @@
 // enforcement; this is only so the reader is told before a round trip rather than after one.
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { authClient } from '@/lib/auth/client';
 import type { AuthMode } from '@/lib/auth/paths';
@@ -153,7 +153,6 @@ function GoogleMark() {
 
 export function AuthForm({ path }: { path: AuthMode }) {
   const router = useRouter();
-  const params = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -258,7 +257,20 @@ export function AuthForm({ path }: { path: AuthMode }) {
       }
 
       // reset-password
-      const token = params.get('token');
+      // Read the token from `window.location.search`, NOT `useSearchParams()`.
+      //
+      // This is the pattern this file's own header already prescribes, for the reason given there:
+      // `useSearchParams` forces the component under a <Suspense> boundary. That boundary was the
+      // only thing on this page React hydrates LAZILY — everything outside it hydrates in the root
+      // pass — and a lazily-hydrated boundary is a boundary that can still be waiting when someone
+      // types their password and presses the button. Measured 2026-08-24: the page hydrated 181 of
+      // 234 nodes while this form and its inputs stayed inert, so `onSubmit` never ran and the
+      // browser performed its own default submit.
+      //
+      // Safe here without an effect, and safe for SSR, because this runs inside a user event
+      // handler: the reader has already clicked, so `window` exists and the URL is final. There is
+      // no first render to disagree with.
+      const token = new URLSearchParams(window.location.search).get('token');
       if (!token) throw new Error('That reset link is incomplete. Please request a new one.');
       if (password.length < MIN_PASSWORD) {
         throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);

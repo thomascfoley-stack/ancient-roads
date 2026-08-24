@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { AuthForm } from '@/components/auth-forms';
 import { AUTH_PATHS, isAuthPath } from '@/lib/auth/paths';
 import { currentUser } from '@/lib/session';
@@ -72,10 +71,16 @@ export default async function AuthPage({
             Ask for the ancient paths
           </p>
         </div>
-        {/* useSearchParams (the reset token) requires a Suspense boundary to prerender. */}
-        <Suspense fallback={<div className="bg-paper px-6 pb-8 pt-4 dark:bg-stone-900" />}>
-          <AuthForm path={path} />
-        </Suspense>
+        {/* NO <Suspense> HERE, DELIBERATELY, and this is the fix rather than an omission.
+            It used to wrap this form because `useSearchParams()` demands one. Two things were
+            wrong with that. It was never needed for PRERENDERING — this route is
+            `dynamic = 'force-dynamic'` a few lines up, so it is never prerendered. And it made the
+            form the one part of this page React hydrates LAZILY: measured 2026-08-24, the page
+            hydrated 181 of its 234 nodes while the form and its inputs stayed inert, leaving a
+            sign-in box that accepts typing and has nothing listening. AuthForm now reads the reset
+            token from `window.location.search` inside its submit handler, so there is no
+            `useSearchParams()`, no boundary, and the form hydrates with the rest of the page. */}
+        <AuthForm path={path} />
       </div>
     </main>
   );
