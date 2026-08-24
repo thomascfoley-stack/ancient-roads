@@ -23,6 +23,10 @@ const PUBLIC_PATHS = new Set([
   // The 2026-08-08 marketing redesign's photography. hero-path.jpg is iStock #1337429689
   // (owner-purchased, standard license, no credit required — see app/page.tsx). The
   // other three are AI-generated. Exact-match entries, same rule as above.
+  // The Open Graph card (L-1). Unfurl requests come from crawlers with no gate cookie, so this
+  // must be public or every shared link renders an empty card — and dev, being gate-free, would
+  // never show it. Guarded by middleware-gate.test.ts.
+  '/marketing/og-image.jpg',
   '/marketing/hero-path.jpg',
   '/marketing/hero-ground.jpg',
   '/marketing/steps-fog.jpg',

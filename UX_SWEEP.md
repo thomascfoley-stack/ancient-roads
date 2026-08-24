@@ -355,3 +355,30 @@ NOT separately confirmed and should not be cited as confirmed until a per-work q
 damaged until a re-ingest, which is an owner-approved step. That remains the most important sentence
 in K-2 and it is unchanged by this correction.
 
+---
+
+## Claude-4 (L-9) — ⛔ **HELD: stated root cause already fixed and live for three weeks**
+
+**What I filed:** reading progress reads 100% immediately on unpaginated works.
+
+**Why it cannot be what the plan says.** The plan's fix — "compute from sections-read, not
+sections-fetched" — is precisely what commit `79494d4` did on **2026-08-02**. The denominator was
+`work.toc.length`, which meant "however many rows survived the 5,000 cap", so a reader 40% through
+john-gill's 28,843 sections saw a full bar. It is now `toc[last].lastOrdinal`, the exact section
+count (`web/src/app/work/[slug]/page.tsx:122`). That commit is an **ancestor of the live `7747f10`**,
+so production has been serving the corrected denominator for three weeks — including on the night I
+filed this.
+
+**So one of two things is true**, and I cannot tell which without a signed-in session: the symptom
+has a *different* cause, or my observation was wrong. Either way, building the planned fix would
+edit a line that already reads the way the ticket asks — an unearned green by construction, the same
+trap that retired L-5.
+
+**To re-observe (needs auth, which local dev does not have):** sign in on prod, open a long
+unpaginated work, and record the work slug plus the percentage shown at first paint and after
+scrolling. If it does not reproduce, retire the finding.
+
+**My scope-gap note about reading plans is NOT retired by this** — it was a separate question
+(*does plan-day completion share this computation?*) and it does not: plan days are their own
+write path. Worth one explicit check by whoever has a session, but there is no shared code to fix.
+

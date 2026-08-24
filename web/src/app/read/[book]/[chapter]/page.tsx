@@ -141,7 +141,8 @@ export default function ReaderPage() {
   // not a dead end. Declared up here with the other state because the error branch returns EARLY —
   // a `useState` after that return would be a conditional hook.
   const [recoveryPickerOpen, setRecoveryPickerOpen] = useState(false);
-  /** K-6 — did WE push the `#v<n>:study` history entry? See `openStudy` below. */
+  /** K-6 — is the panel open, and did WE push the history entry for it? See `openStudy`. */
+  const panelOpenRef = useRef(false);
   const pushedStudyEntry = useRef(false);
 
   const handleTranslationChange = useCallback((t: Translation) => {
@@ -225,24 +226,27 @@ export default function ReaderPage() {
    * landed on /library. One Back threw the reader out of the chapter they were reading, and the
    * panel had added no history entry at all (`history.length` unchanged, hash empty).
    *
-   * The entry is the existing `#v<n>:study` deep link — the hash effect above already parses it and
-   * opens the panel from it, so pushing it here makes the URL true, shareable and reproducible on
-   * reload, and gives Back something to pop, all with one mechanism rather than a parallel one.
+   * The entry deliberately carries the SAME url rather than the existing `#v<n>:study` deep link.
+   * Writing that hash here is the obvious version and it is wrong: the hash effect above re-reads
+   * the hash whenever `data` changes, so a hash we wrote ourselves makes the panel re-open and the
+   * page re-scroll on every chapter reload — a translation switch with the panel open would yank
+   * the reader back to the verse. Four existing suites caught it
+   * (`study-panel-verse-sequence`, `settings-close-on-study`). Making the URL reflect panel state
+   * is worth doing, but it needs that effect reworked first and is not part of this fix.
    *
    * `pushedStudyEntry` is what keeps the deep-link case honest: arriving directly at
-   * `#v16:study` means the entry is already the current one, so we must NOT push (nothing to pop)
-   * and closing must NOT call `history.back()` — that would leave the site instead of the panel.
+   * `#v16:study` opens the panel through the hash effect without us pushing anything, so closing
+   * must NOT call `history.back()` — that would leave the site instead of the panel.
    */
   const openStudy = useCallback(
     (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord, selection?: WordSelection) => {
-      const target = `#v${verse}:study`;
-      if (/:study$/.test(window.location.hash)) {
-        // Already open and being re-aimed (verse to verse, or word to commentary). Replace, so a
-        // reader who taps six verses does not have to press Back six times to leave.
-        window.history.replaceState(null, '', target);
-      } else {
-        window.history.pushState(null, '', target);
+      if (!panelOpenRef.current) {
+        // An entry with the SAME url — the panel needs something for Back to pop, and nothing
+        // more. Re-aiming an already-open panel (verse to verse, word to commentary) pushes
+        // nothing, so a reader who taps six verses still presses Back once.
+        window.history.pushState(null, '', window.location.href);
         pushedStudyEntry.current = true;
+        panelOpenRef.current = true;
       }
       setStudy({ verse, tab, focusWordIdx, focusWord, selection });
     },
@@ -253,6 +257,7 @@ export default function ReaderPage() {
   useEffect(() => {
     const onPop = (): void => {
       pushedStudyEntry.current = false;
+      panelOpenRef.current = false;
       setStudy(null);
     };
     window.addEventListener('popstate', onPop);
@@ -268,12 +273,16 @@ export default function ReaderPage() {
   const closeStudy = useCallback(() => {
     if (pushedStudyEntry.current) {
       pushedStudyEntry.current = false;
+      panelOpenRef.current = false;
       window.history.back();
       return;
     }
+    // Opened by deep link: nothing of ours on the stack. Strip the hash so a later Back does not
+    // re-open a panel the reader has already dismissed.
     if (/:study$/.test(window.location.hash)) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
+    panelOpenRef.current = false;
     setStudy(null);
   }, []);
 

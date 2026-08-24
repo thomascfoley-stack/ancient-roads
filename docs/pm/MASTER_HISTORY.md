@@ -330,6 +330,38 @@ idiomatic phrasing, not a wrong-book defect on genuine citations.
 
 ## Failure-mode watchlist
 
+**Instance twenty — A MOCK THAT INVENTED A CONTRACT THE REAL DEPENDENCY DOES NOT HAVE, so the
+suite guarded a branch that could not run** (2026-08-24, found while implementing K-4/K-5; the
+defect is finding Claude-10). `web/test/components/auth-sign-up-oracle.test.tsx` existed
+specifically to prove bug #110's account-existence oracle was closed. It was green throughout, and
+the oracle was open in production the whole time: sign-up answered *"User already exists. Use
+another email."*
+
+The whole cause is one line of its own mock —
+
+    signUp: { email: vi.fn(async () => ({ error: signUpError })) }
+
+— which makes the client RESOLVE `{ error }`. The shipped client (`@neondatabase/auth`, a
+Supabase-shaped shim over better-auth) **throws** on 4xx and never populates `error`. So the code
+under test, `const { error: err } = await ...; if (err) <curate the message>`, was unreachable in the
+running app; the rejection skipped it and the outer catch put the vendor's sentence on screen. The
+test proved the component handles a shape its dependency never produces.
+
+Note the file even carried a red-proof line — *"against the unfixed passthrough the existence case
+shows the server's raw message"* — which was true **of the mock**. A red-proof inherits the fidelity
+of whatever it was proved against; proving a test can fail against a fiction says nothing about the
+product. Falsifiable form: *a mock whose success/failure CONTRACT (resolve-vs-throw, not just
+values) was never checked against the real dependency.*
+
+Cure, and it is cheap: assert the dependency's contract once, by executing it. One call to the real
+client with a stubbed 422 answered the question in seconds. The mock now throws an Error carrying
+`code`/`status`, the assertions are unchanged — they were always the right assertions — and against
+the pre-fix component the file now goes RED on exactly the sentence readers were seeing.
+
+Related to instance nineteen, and the pair is worth reading together: nineteen is a suite that never
+asserted the subject could RUN; twenty is a suite that asserted the subject handles a FAILURE it
+could never receive. Both were fully green, both sat directly on top of the defect they named.
+
 **Instance nineteen — A SUITE THAT VALIDATED EVERYTHING *ABOUT* AN INTEGRATION EXCEPT WHETHER IT
 COULD RUN** (2026-08-24, found by the overnight UX sweep; fixed under K-1 of
 `UX_REMEDIATION_PLAN.md`). `web/test/posthog-wiring.test.ts` asserted **seven** properties of the

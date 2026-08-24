@@ -73,12 +73,20 @@ export const metadata: Metadata = {
       'Learn the Word alongside theologians and church fathers who span the past 2,000 years. A tool designed to lead you to the Holy Spirit, not to be the Holy Spirit.',
     siteName: 'Ancient Paths',
     type: 'website',
+    // L-1. Without an image, every share of this link — the ONLY way an invited reader arrives
+    // during a closed beta — unfurled as a bare text row. `og-image.jpg` is a 1200x630 centred crop
+    // of the licensed hero (`hero-ground.jpg`, iStock standard licence, same asset already shipped
+    // on the landing page), cut to the ratio the platforms actually render so they do not crop it
+    // themselves. 232 KB: small enough that the unfurl fetch is not the slow part.
+    images: [{ url: '/marketing/og-image.jpg', width: 1200, height: 630, alt: 'Ancient Paths' }],
   },
   twitter: {
-    card: 'summary',
+    // `summary` renders a ~120px thumbnail; with a real image to show, the large card is the point.
+    card: 'summary_large_image',
     title: 'Ancient Paths',
     description:
       'A Bible study tool that never interprets scripture.',
+    images: ['/marketing/og-image.jpg'],
   },
   icons: {
     icon: '/favicon.svg',

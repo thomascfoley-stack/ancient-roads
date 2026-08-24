@@ -85,6 +85,21 @@ const MIN_PASSWORD = 12;
 const EMAIL_NOT_CONFIRMED = 'email_not_confirmed';
 
 /**
+ * Server failures whose message describes THE INPUT, so it is safe — and useful — to show as sent.
+ *
+ * The distinction that matters is not "validation vs not", it is WHAT THE MESSAGE IS ABOUT. A weak
+ * password or a malformed address is a fact about the characters the person just typed, and telling
+ * them is the whole point. "That address is already registered" is a fact about someone else's
+ * account, and telling them is the oracle. Everything outside this set is curated, so a new
+ * server-side code cannot start leaking by default — it has to be added here on purpose.
+ *
+ * `PASSWORD_TOO_SHORT` / `PASSWORD_TOO_LONG` / `INVALID_EMAIL` all normalise into these two
+ * (BETTER_AUTH_ERROR_MAP). The client's own MIN_PASSWORD check below usually gets there first;
+ * this is for the policies only the server knows.
+ */
+const INPUT_FAULT_CODES = new Set(['weak_password', 'email_address_invalid']);
+
+/**
  * An auth-server failure, as opposed to one of our own curated `throw new Error(...)` messages.
  * Discriminated structurally (`code` + `status`) rather than by class name, because the thrown type
  * comes from `@supabase/auth-js` via the shim and is not ours to depend on.
@@ -273,9 +288,12 @@ export function AuthForm({ path }: { path: AuthMode }) {
         'forgot-password': 'That request could not be sent. Please try again.',
         'reset-password': 'That reset link has expired or has already been used.',
       };
+      const failure = authFailure(e);
       setError(
-        authFailure(e)
-          ? CURATED[path]
+        failure
+          ? failure.code && INPUT_FAULT_CODES.has(failure.code) && e instanceof Error && e.message
+            ? e.message
+            : CURATED[path]
           : e instanceof Error
             ? e.message
             : 'Something went wrong. Please try again.',

@@ -36,6 +36,11 @@ describe('middleware allowlist — the marketing flip gate', () => {
     // from the allowlist only breaks in PROD (it 307'd to /gate on the live site, 2026-07-16).
     for (const p of [
       '/', '/about', '/features', '/why', '/api/waitlist', '/hero-road.jpg',
+      // L-1's Open Graph card. A link unfurl is fetched by an UNAUTHENTICATED crawler that has no
+      // gate cookie and never will, so an og:image behind the wall renders as an empty card — the
+      // 2026-07-16 lesson again, in the one place where the failure is invisible from inside the
+      // product (dev is gate-free, and the tag looks correct in the served HTML either way).
+      '/marketing/og-image.jpg',
       // The 2026-08-08 redesign's photography — same lesson as hero-road.jpg above.
       '/marketing/hero-path.jpg', '/marketing/hero-ground.jpg', '/marketing/steps-fog.jpg',
       '/marketing/forest-dusk-1.jpg', '/marketing/forest-dusk-2.jpg',
