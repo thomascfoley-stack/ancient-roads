@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — auth hydration FIXED and LIVE (`90becf1`)
+
+**Cause:** `AuthForm` called `useSearchParams()`, which forces it under a `<Suspense>` boundary —
+the only lazily-hydrated thing on the auth page. Both reasons for that boundary were void: the page
+is `force-dynamic` so never prerenders, and the hook was used in exactly one place
+(`params.get('token')` inside `submit()`, a user event handler). `auth-forms.tsx`'s own header
+already prescribed reading `window.location.search` instead, *for this exact reason*.
+
+**Fix:** read the token from `window.location.search` in the handler; delete the hook; delete the
+wrapper. Two files, no new deps, no behaviour change to the reset flow.
+
+**Before → after, identical conditions:** dev `false/false` (18s, never) → `TRUE/TRUE`; production
+build `181/234 nodes, form false` → `204/226, form true`. **Live on ancientpaths.app: 274/292,
+form/input/submit all true** (was `181/234`, all false).
+
+**K-4 and K-5 verified END TO END for the first time**, through the real UI against a real auth
+server: sign-up submits by JavaScript (no native GET, `passwordInUrl: false`) and renders
+*"Confirm your email — We have sent a verification link to <address>"* with a working resend.
+
+**This answers an open owner decision:** the server returns `token: null`, so **email verification
+IS enforced**. The K-5 UX is therefore mandatory, not optional.
+
+**Oracle:** a duplicate sign-up returns the *same* confirmation panel rather than an error — the
+server re-sends verification for an unverified address, closing the existence oracle harder than my
+fix required. The *verified*-duplicate path still routes through the curated message and is
+untested (no mailbox access).
+
+**Caveat I could not remove.** Every measurement in this investigation was in a tab reporting
+`visibilityState: 'hidden'`; I could not foreground one through automation. Hydration scheduling is
+priority-sensitive, so it is possible this only ever manifested backgrounded and no real user was
+affected — **my earlier "sign-in does not work in production" should be read with that caveat.**
+What is certain: the form was inert under conditions reproducible at will, and it no longer is.
+Shipped regardless because the boundary's stated reason is void here, lazy hydration of a credential
+form is fragile whatever the trigger, and the change strictly removes work.
+
+`npm run audit` PASSED, all gates green. Evidence:
+`docs/evidence/ux-remediation-2026-08-24/auth-hydration-fix.md`.
+
 ## 2026-08-24 — DEPLOYED: `ffab67d` live on ancientpaths.app
 
 Owner said "get it all shipped". Union candidate built, audited, deployed, verified.
