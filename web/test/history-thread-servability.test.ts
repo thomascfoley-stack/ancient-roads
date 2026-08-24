@@ -17,10 +17,10 @@ const sec = (sectionId: number) => ({
 });
 const payload = (): HistoryResponse => ({
   interpretation: { entities: [], period: null },
-  closest: { ...sec(1), work: { slug: 'schaff-hcc-1', title: 'HCC I', author: 'Schaff' } },
+  closest: { ...sec(1), work: { slug: 'schaff-hcc-1', title: 'HCC I', author: 'Schaff', edition: null } },
   results: [
-    { work: { slug: 'schaff-hcc-1', title: 'HCC I', author: 'Schaff' }, periodSpan: null, sections: [sec(1), sec(2)] },
-    { work: { slug: 'quarantined-work', title: 'Bad', author: 'X' }, periodSpan: null, sections: [sec(3)] },
+    { work: { slug: 'schaff-hcc-1', title: 'HCC I', author: 'Schaff', edition: null }, periodSpan: null, sections: [sec(1), sec(2)] },
+    { work: { slug: 'quarantined-work', title: 'Bad', author: 'X', edition: null }, periodSpan: null, sections: [sec(3)] },
   ],
   coverage: { works: 2, sections: 3 },
 });
