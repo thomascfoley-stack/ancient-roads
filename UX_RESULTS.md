@@ -331,3 +331,39 @@ silent/frozen-looking gaps observed in this sample.
 **Remaining: 140 of 150.** Not run — would need either a longer dedicated session at the same
 ~20-30s/question pacing (roughly another hour of continuous real time for the rest), or a second
 real account to parallelize against, which doesn't exist yet.
+
+## Batch 22 — Daily Office / Plans / Search reachability (parallel agent, signed out)
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/office-plans-search.md`.
+
+DO-001/002 ✅ `/home` shows real dated content ("Monday, August 24" matches the actual date), no
+distinct `/office` route exists (404) — Daily Office is folded entirely into `/home`, nothing in
+nav names it separately. Not a bug, just how it's built.
+PL-001/002 — `/plans` signed out is a pure gate: "Sign in to build a reading plan," no plan browsing,
+no preview of what exists. Matches the ratified plan's L-4 pattern (hard gate vs. an inviting
+preview) — worth the same treatment as `/studies` eventually gets.
+NV-002/003/004 ✅ logo always returns to `/home` from every surface tested; "Bible" nav is a fixed
+default (`/read/jhn/3`), not a remembered position — expected signed out.
+**Full nav route list captured**, useful for future coverage: `/library/commentaries`,
+`/library/sermons`, `/library/hymns-poetry`, `/library/historians`, `/library/devotionals`,
+`/library/theology` — six catalog sub-routes under `/library` never individually tested by this plan.
+
+### F-034 · SR (new) · **P2** · The search input does not submit on Enter/Return at all
+Confirmed directly: typing a new query and pressing Return does nothing — only clicking the Search
+button submits. A keyboard-oriented user typing "faith" and pressing Enter sees stale results from
+the PREVIOUS query still on screen, with no indication their new query was never sent. This is
+distinct from a request-ordering race (SR-012) — no request fires at all, so there's nothing to race.
+Matches AS-016/MK-019's "Enter submits" bar, which this route fails outright.
+
+### F-035 · SR-003 · **P3** · Phrase queries degrade silently to bag-of-words
+"valley of the shadow" is not treated as a phrase — top result highlights only "shadow", a later one
+only "valley". No quote affordance, no "exact phrase" indicator anywhere, so a user has no way to
+know their phrase wasn't searched as one.
+
+### F-036 · SR-004/L-2 · confirms, more precisely · "John" (book name) returns 1,000+ plain text
+matches with no book-jump affordance and no distinct result type — same class as the already-known
+L-2 finding, now confirmed for a bare book name too, not just a full reference.
+
+**Low-confidence, not confirmed:** a possible focus-race on first navigation to `/search` where
+typed characters were consumed as single-letter hotkeys and silently navigated away — observed once,
+not reproduced in isolation, flagged for someone to retest deliberately rather than filed as fact.
