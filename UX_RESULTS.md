@@ -1229,3 +1229,18 @@ all) — strong evidence this is one shared systemic root cause across the whole
 under signed-in load, not four unrelated incidents. Verified the actual data state (unsave) was
 correct by checking the work page's own Save toggle directly, since the shelf list page couldn't be
 trusted to load at all.
+
+## Batch 54 — EM (Empty states) and ST-018, live signed-in production testing
+
+ST-018 PASS: both settings cross-links land on their correct, already-verified destinations.
+
+EM-004/006/008/009/010 correctly left PENDING-SIGNIN with an explicit reason: this real account has
+genuine saved content in every one of these surfaces (shelf, studies, uploads, plans, prayers) — 
+observing their empty states would require deleting real account data, which is out of scope for a
+testing pass.
+
+EM-013 (history search zero-result state) PARTIAL: a deliberately nonsensical query never produced a
+true zero-result state — the system falls back to "No known people or places matched — showing text
+matches" plus a closest-match result. This reads as intentional, sensible design (never a dead end for
+the user) but means the literal "honest zero-result empty state" this ID asks about isn't reachable
+through this path.
