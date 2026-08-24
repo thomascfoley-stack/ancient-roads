@@ -163,3 +163,41 @@ out a display-only sync issue.
 Paths"** — the site suffix is duplicated.
 **Confidence:** single-agent, directly observed.
 
+
+## WK-content-empty-citations — ROOT CAUSE FOUND, upgrading to P1 (data-quality, not cosmetic)
+
+**Supersedes nothing above, adds the fix-ready diagnosis.** Root cause confirmed by a dedicated
+investigation tonight, not just observed symptoms:
+
+**`src/ingest/adapter-ccel.ts:59`**, inside `thmlText()`:
+```js
+.replace(/<scripRef\b[^>]*>[\s\S]*?<\/scripRef>/gi, ' ')
+```
+This regex deletes an entire `<scripRef>` element **including its inner display text** — the actual
+verse reference a human reader typed — leaving only the surrounding hand-typed punctuation (`(`, `)`,
+`;`, `,`, `e.g.`) behind. The code comment justifying this ("their display text is debris... already
+consumed by unitAnchor") holds for standalone footnote-style `scripRef`s, but not for inline ones
+embedded mid-sentence in prose — which is the common case in these public-domain commentaries.
+
+**Confirmed against the actual live CCEL source, not inferred:** fetched `ccel.org/ccel/kempis/
+imitation.xml` and `ccel.org/ccel/jamieson/jfb.xml` — the exact URLs `ingest/sources.config.json`
+points the ccel adapter at. Kempis' source line reads `says the Lord (<scripRef ...>John 8:12</scripRef
+>). By these words...` — which reproduces, byte-for-byte, the `says the Lord ( ). By these words...`
+found live in the DOM earlier tonight. JFB's `(<scripRef>De 17:18</scripRef>; <scripRef>27:3</scripRef
+>...)` pattern matches the `"( , )"` / `"( ; ; )"` shapes seen in the Passion-narrative excerpt.
+
+**Ingestion-time, not render-time:** no render-path code touches citation punctuation; three sibling
+adapters (`sword-genbook.ts`, `sword-zverse.ts`, `sword-ld.ts`) handle the identical `scripRef` element
+correctly (strip the tag, keep the inner text) — only the CCEL adapter has this bug.
+
+**Blast radius:** confirmed on Kempis, and by source-code inspection affects every CCEL-sourced work
+with inline (non-footnote) `scripRef`s — Calvin's Institutes and Schaff's Creeds are named as likely
+affected in `ingest/sources.config.json`'s ccel-adapter entries, not individually re-verified tonight.
+Full sizing needs a DB grep for the `(\s*)`/`(\s*[,;]\s*)`-style empty-paren pattern across
+`sections.body` — not done (read-only investigation, no DB write access used).
+
+**Why this is P1, not cosmetic:** this isn't just a broken paren — it's the citation itself silently
+vanishing from quoted historical sources in a *concordance product whose entire guarantee is precise
+attribution* (see CLAUDE.md's product guarantee). A user cannot verify a quote against a reference that
+was never rendered. Re-ingesting affected CCEL works with the one-line regex fix (keep the inner text,
+drop only the tags) looks cheap relative to the blast radius.
