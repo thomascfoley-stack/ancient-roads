@@ -1183,3 +1183,14 @@ Test document (`ux-test-upload`) intentionally left in the account rather than r
 trying to delete it through the now-unreliable detail page — flagging for cleanup once F-104 is fixed,
 or deletable via the `/library/uploads` list page's own Remove control instead (confirmed working in
 Batch 45).
+
+## Batch 51 — PR (Prayers) and DK cross-references, live signed-in production testing (0 new findings)
+
+Wrote a clearly-marked disposable test entry to the real Prayer journal, confirmed autosave-on-navigate,
+correct list ordering/dating, an emoji round-trip, and a confirmed delete ("Delete this prayer?
+Keep/Delete", B8-compliant) — then removed it. Did not transcribe or quote any of the account's real
+private prayer content in this write-up, consistent with the page's own promise ("Nothing here is
+searched, indexed, or read by anyone else").
+
+DK-021/022 (highlight/annotation sync between reader and Desk pane) both marked FAIL, referencing the
+already-filed F-099 — same root cause, not re-investigated separately.

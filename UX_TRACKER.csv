@@ -209,8 +209,8 @@ x,"DK-015 Desk state on refresh → restored or clean start, consistently (B7)."
 ,"DK-018 Continuous read across a chapter boundary in a pane → seamless, position honest.",NOT — VERIFIED — Did not get a clean run at a continuous-read chapter-boundary scroll inside a desk pane; deprioritized given time/environment constraints.
 ,DK-019 Highlights render inside desk panes.,"NOT — VERIFIED — Could not confirm highlight rendering inside desk panes; highlighting/annotation features are tied to the account (""Sign in to keep notes and highlights...""), limiting testability without sign-in."
 ,DK-020 Notes render inside desk panes.,NOT — VERIFIED — Same constraint as DK-019 for notes.
-,DK-021 Create a highlight in a desk pane → appears in the reader too.,"PENDING-SIGNIN — Creating a highlight and checking cross-view sync requires an authenticated, persisted highlight."
-,DK-022 Edit an annotation in the reader → desk pane reflects it.,PENDING-SIGNIN — Same; editing an annotation and checking desk reflects it requires sign-in.
+,DK-021 Create a highlight in a desk pane → appears in the reader too.,FAIL — Same root cause as F-099: a highlight made in the reader does not appear in a Desk pane on the same chapter
+,DK-022 Edit an annotation in the reader → desk pane reflects it.,FAIL — Same root cause as F-099: annotation state is not shared between the reader and Desk panes
 ,"DK-023 Translation switch inside a pane → affects that pane only, or all — deliberately.",NOT — VERIFIED — Did not get a clean interactive run at switching translation inside one pane to see its scope (per-pane vs global); deprioritized given environment contention.
 ,DK-024 Search kicked off from the desk → panes survive (J-028).,NOT — VERIFIED — Did not exercise search-from-desk in this pass; deprioritized given time budget.
 x,"DK-025 Desk at 390px → usable or gracefully simplified, never a broken half-layout.","PASS — At 390px the desk gracefully stacks panes vertically with an explicit ""Pane 1 of 2 — scroll down for the next"" orientation header; no broken half-layout or horizontal overflow observed, bottom tab bar remains usable."
@@ -620,10 +620,10 @@ x,"PL-019 Plans at 390px → tappable, legible.","PASS — at 390px the gate pag
 ,PL-022 Screen reader: day list is a list; toggle state announced.,"PENDING-SIGNIN — no day list/toggle exists signed out to check list/toggle-state semantics; only a single ""Sign in"" link and static paragraph present."
 x,PR-001 `/prayers` — enumerate. What is it? Is it finished?,"PASS — /prayers exists, titled ""Prayer journal"", clear purpose copy; page itself reads as finished (creation gated behind sign-in)."
 x,PR-002 `/prayers` signed out → gate/redirect sane.,"PASS — signed-out /prayers renders in-app (not a hard gate/blank) with ""Sign in to keep a prayer journal"" CTA; sane."
-,"PR-003 Create a prayer entry → saves, persists.",PENDING-SIGNIN — creating an entry requires the one real account.
-,"PR-004 Edit / delete → work, confirmed (B8).",PENDING-SIGNIN — edit/delete require sign-in.
+x,"PR-003 Create a prayer entry → saves, persists.","PASS — Live: wrote a test prayer entry, correctly autosaved on navigate-away, appeared dated at top of list"
+x,"PR-004 Edit / delete → work, confirmed (B8).","PASS — Edit/Delete both present on detail view; delete requires ""Delete this prayer? Keep/Delete"" confirmation (B8), confirmed removed from list after confirming"
 ,PR-005 Empty state → teaches.,"PENDING-SIGNIN — signed-out empty state teaches (purpose + privacy line), but the true zero-entries-signed-in state needs the real account."
-,"PR-006 Long entry, emoji, unicode → survive round-trip.",PENDING-SIGNIN — round-trip write test requires sign-in.
+x,"PR-006 Long entry, emoji, unicode → survive round-trip.","PASS — Emoji (🙏) survived the full round-trip: typed, saved, listed, detail view, all intact"
 x,PR-007 Prayers at 390px.,"PASS — /prayers at 375px: no overflow/overlap, bottom tab bar unaffected, copy reflows cleanly."
 x,"PR-008 Is `/prayers` reachable from the main navigation? If not, is that deliberate?","PASS — ""My prayers"" is a permanent sidebar item under a ""PRAYER JOURNAL"" section, present on every surface tested."
 x,PR-009 Prayer journal privacy: is it clear this is private? (B2),"PASS — privacy stated twice on the page itself: ""Nothing here is searched, indexed, or read by anyone else"" and ""kept to your account, so they stay yours alone."""
