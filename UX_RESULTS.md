@@ -181,6 +181,11 @@ Session is confirmed valid (`get-session` 200 the whole time). This is a client-
 signal that loading state waits on never arrives, on every affected route except `/library/notes`.
 
 This makes Library — a primary nav item, and the home of the works readers actually study — mostly
-unusable right now. Given the console/network access available to me I could narrow WHICH shared
-condition `/library/notes` alone satisfies, but did not have time to go further; flagging for a
-fix session to pick up from here rather than guessing at the cause.
+unusable right now. **Root-cause hint, from source only, not fixed (out of scope for this pass):**
+`web/src/app/library/loading.tsx` is the shared App Router loading boundary for `/library` and
+every route under it that has no loading.tsx of its own — `[catalog]`, `books`, `passages`,
+`uploads`, `word-study` all inherit it; `notes` has its own `page.tsx` and is the one that works.
+The loading.tsx's own comment: "/library is a server component with `dynamic = 'force-dynamic'`
+and two DB queries." So the index page (and whatever `books`/`uploads`/`word-study` each query) is
+where to look — most likely several independent slow/hanging queries converging on the same
+symptom, not one shared cause, since `notes` goes through the same layout tree and is fine.
