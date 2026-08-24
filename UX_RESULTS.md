@@ -292,3 +292,62 @@ likely the intentional substitute (design call, not a defect).
 — `era` is never filtered for the literal string `'unassigned'`, so it prints verbatim whenever set.
 Confirmed live on 3/22 sampled works (gill-song, calvin-calcom17, augustine-confess) = 13.6% of the
 sample, consistent with F-010's "not a one-off" framing.
+
+## Batch 14 — AX accessibility spot-audit + NV/ER/LD sweep (parallel agents, signed out, prod build)
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/accessibility.md`,
+`docs/evidence/ux-remediation-2026-08-24/nav-errors-loading.md`.
+
+**AX — clean on 5 of 7 checks:** no violations on icon-button names (AX-007), form labels (AX-008),
+heading order (AX-009), lang attribute (AX-011), or focus indicators (AX-016 — all 15 sampled
+elements had a visible 2px outline). `prefers-reduced-motion` rule confirmed present in shipped CSS.
+
+### F-016 · AX-010 · **P2** · `/auth/sign-in` renders TWO `<main>` landmarks
+Nested/duplicate — an outer page-shell `<main>` and an inner sign-in-card `<main>`, both containing
+page content. Violates "exactly one main per page"; a screen-reader user's landmark list shows two
+regions named identically. Same page as today's hydration fix — worth checking in the same file.
+
+### F-017 · AX-019 · **P2, re-confirmed not new** · 15/15 sidebar nav rows under 44px tall
+Matches the plan's own pre-registered "known 16-target failure" (from the ratified remediation
+plan's P3 backlog, C3). Re-measured precisely: every sidebar row is 35px tall (width is fine), the
+collapse icon button is 24×24. Confirms the finding is real and gives exact numbers for a fix.
+
+### F-018 · AX-006/AX-010b · **P3 × 2** · minor landmark/alt gaps
+One decorative image (`/auth/sign-in`) has `alt=""` but no `aria-hidden="true"` companion. Every
+page's secondary `<nav>` (the sidebar library list) carries no `aria-label`, while the mobile bottom
+nav correctly has `aria-label="Primary"` — two unlabeled "navigation" regions in the landmark list.
+
+---
+
+**NV-001 Back-map (4 transitions) — ✅ all correct**, including confirming the K-6 verse-panel fix
+holds signed out too. `/search?q=x` → result → Back correctly restores the query.
+
+### F-019 · NV-013/014 · **P2/P3** · two different "not found" idioms, and only one updates the title
+The branded `/not-found` boundary (404 badge, two recovery buttons, sets the title) is used for
+unknown routes. Bad params inside `/read/*` and `/word/*` get a DIFFERENT plain-text family
+("Unknown book...", "That isn't a Strong's number...") — all good, human copy, but **none of the
+three inline variants update `document.title`**, so a reader who lands here from a bad link keeps a
+generic tab forever. Doesn't look like the same product (B7).
+
+### F-020 · NV-016 · **P2** · full 13-route title sweep: 5 generic, including the reader itself
+`/` (`/home`), `/auth/sign-in`, `/read/:book/:ch`, `/word/:strongs`, `/work/:slug`,
+`/library/word-study` all ship only "Ancient Paths". **`/read/:book/:ch` is the single most-visited
+surface in the product** and does not set "John 3 · Ancient Paths" — supersedes/sharpens the earlier
+F-004 with a complete route list.
+
+### F-021 · ER-e · **P3** · zero-result search shows a wall of "No matches" lines, no next step
+`/search?q=zzyzxqqq123` prints "No matches in commentaries." / "No matches in sermons." / etc., one
+per register — honest, not fabricated, but doesn't suggest a spelling check or fewer words the way
+other empty states in the app do.
+
+**F-012 narrowed, not just re-confirmed:** `/library/uploads` reproduces the hang SIGNED OUT too.
+But `/library`, `/library/books`, `/library/word-study` did **NOT** hang signed out in this run —
+only `/library/uploads` did. Signed-in, I found all four hanging. **Likely conclusion: the bug is in
+a signed-in-specific data fetch that `/library/uploads` also hits even when signed out** (its own
+page probably always tries to load "your uploads" regardless of auth state, while the other three
+routes render a signed-out-safe path). Worth confirming directly in source before a fix session
+starts guessing.
+
+LD-005/LD-007 (skeleton layout-shift, Ask's timed wording) — **NOT RUN**, correctly flagged as such
+rather than assumed passing: the local build has near-zero latency, so a genuine loading window
+couldn't be forced without network throttling this agent didn't have.
