@@ -26,7 +26,7 @@ The swarm touched no production resource; everything prod-bound is in this packe
 | B1 | Migration 127 — drop `idx_embeddings_vector` (~8 GB prod). AUTHORED, NOT APPLIED anywhere (R1 measured the index PRESENT on dev; header corrected). Order: deploy the related-voices bundle first, confirm the panel, then drop | `db/migrations/127_drop_full_table_vector_index.sql` via `db/apply-migration-concurrent.mjs` (owner, per occasion) | `CREATE INDEX CONCURRENTLY idx_embeddings_vector ON embeddings USING hnsw (embedding vector_cosine_ops);` (hours at size) | `swarm/W-RELVOICE-related-voices-source-type` @ 71ef715; EXPLAIN pair `docs/evidence/swarm-2026-08-22/W-RELVOICE/` |
 | B2 | Thayer's prod replay (re-chunk + stale-row reconcile) | per A3 | slug-scoped; vectors regenerable | (pending W-THAYER) |
 | B3 | Eusebius Phase 4 | per A4 | safe stop before serve; slug-scoped deletion | per A4 |
-| B4 | Migration 128 — `asserted_ownership_at` (W-OWNERSHIPCOL, not started) | (pending) | drop column | (pending) |
+| B4 | Migration 128 — **DISCHARGED 2026-08-24** (owner: "apply 128", after the migration-before-code outage — see WORKLOG 2026-08-24). Applied to prod, ledger fb3939ea, upload path proven end-to-end via UI probe | applied | DROP COLUMN | WORKLOG 2026-08-24 |
 | B5 | W-ANCHORBACKFILL prod run (pre-detection My Works anchors) | (pending; dev run first) | re-run with detection is idempotent | (pending) |
 | B6 | W-REGDURABLE prod register flips (sermon/theology durability) | (pending) | batched idempotent tool, dry-run default | (pending) |
 

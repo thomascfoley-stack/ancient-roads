@@ -1,5 +1,36 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — PROD OUTAGE (uploads) 00:08Z–01:5xZ: my migration-before-code inversion; fixed by owner-authorized 128 apply
+
+**What broke.** `7747f10` (deployed 00:08Z) carries W-OWNERSHIPCOL's INSERT naming
+`asserted_ownership_at` (documents.ts:137) while migration 128 was deliberately held off prod as
+packet B4 — so every production My Works upload 500ed from deploy until the fix. **The inversion
+is mine**: I applied 128 to both devs, correctly filed the prod apply as owner-gated, then
+deployed the code that requires it. The packet's own migration-before-code flag, violated by its
+author. Mitigation: the SEC-1 site gate is up, so exposure was gate-holders only.
+
+**Found by** the search-outcomes peer session (cross-session heads-up), **verified independently
+here** (information_schema count 0; the INSERT present in the deployed sha), surfaced to the
+owner, who authorized in-session: "apply 128".
+
+**Fix.** 128 applied to prod (ledger sha256 fb3939ea — identical to both dev ledgers), column
+verified present. **End-to-end proof through the real UI, owner's session:** upload of a 147-byte
+probe → Added → pipeline to `ready` → DB row confirmed `asserted_ownership_at IS NOT NULL` →
+deleted through the UI, count 0 after. Prod left as found. The ownership sentence renders live
+beside the only upload control. **Packet B4 is DISCHARGED** (the B-runs script's B4 step is now a
+no-op re-run).
+
+**Lesson, filed for the next integrator:** a candidate that merges a migration-dependent code
+change must either carry the prod apply in the SAME gate as the deploy, or hold the CODE with the
+migration — holding only the migration ships the breakage. The deploy preflight checks
+`embeddings.served` exists; it has no general schema-parity leg. A cheap ratchet would diff
+`db/migrations/` applied-on-prod vs migrations the deploying sha's code references — filed as a
+backlog note, not built tonight.
+
+**Also this window:** peer session renumbered their colliding 127→129 and applied it to prod
+cleanly (their record); their deploy candidate waits on the Vercel seat block with everyone else's.
+
+
 ## 2026-08-24 — search_outcomes shipped to prod (129); merge with main green; TWO owner items hold the deploy
 
 **Owner go:** "do them" (in-chat, this session, 2026-08-24) — prod migration + merge + deploy.
@@ -12906,8 +12937,6 @@ headline owner decision in GO_LIVE_STATUS.md with 3 options (ship as-is / reader
 all-but-ask-baseline / rebalance+v4). Recommendation: (b) then (c). NOT decided —
 never tune to the test, never ship below the bar without owner sign-off.
 
-
-
 ## 2026-07-17 (GO-LIVE, cont.) — finish-everything ingest + line-by-line review
 
 **Ingest completed the queue.** Reference tier decoded + STAGED (never served,
@@ -12942,8 +12971,6 @@ lexicon serving UX, Origen-via-Catena, Herbert OCR) logged, not silently dropped
 then the certifying gates (A5 eval both checks, register-wall 0 breaches, browser
 matrix, npm run audit + invariants + interpretation_bait live loop). Final numbers
 land in GO_LIVE_STATUS.md when it completes. No prod, no deploy, no Part C.
-
-
 
 ## 2026-07-17 (GO-LIVE overnight→morning, branch `golive`) — bulk ingest + A6 deep-audit remediation
 
@@ -13204,8 +13231,6 @@ selection, "commentaries about this verse" inline (§5), "open in reader" deep-l
 the full gesture grammar (tap-word vs long-press vs tap-number vs tap-existing-highlight),
 per-span recolor/delete, and cross-translation re-anchoring. Migration is live on prod; the new UI
 is pushed but NOT yet deployed to Vercel (owner's call).
-
-
 
 ## 2026-07-16 (LANDING COPY — header tagline) — owner's wording, verified both widths
 ## 2026-07-16 (DEEP-AUDIT of the ingestion run + same-night hardening) — 3 fresh agents, non-overlapping lenses
