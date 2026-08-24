@@ -11,10 +11,22 @@ async function session() {
   // NOT `.api.getSession({ headers })` -- that was Better Auth's shape. Neon Auth's `getSession()`
   // reads the request cookie itself (via next/headers under the hood) and returns `{ data }`,
   // not the session directly.
-  const { data, error } = (await getAuth().getSession()) as { data: unknown; error?: unknown };
-  // D43: an errored call is NOT an absent session. Surface it so callers can answer 503 rather
-  // than telling a signed-in reader they are signed out.
-  if (error) throw new AuthServiceUnavailableError(error);
+  // D43: an errored call is NOT an absent session. Two shapes have to be caught, and the first
+  // version of this fix only caught one:
+  //   * `{ data: null, error }` — the SDK's normalised upstream failure;
+  //   * a THROW — getAuth() itself raises on misconfiguration ("NEON_AUTH_BASE_URL is not set"),
+  //     which is not a session state at all. Observed in the browser leg for this branch: with
+  //     that variable unset every route answered 401, i.e. told the reader they were signed out
+  //     because the SERVER was misconfigured. Exactly the conflation D43 exists to end.
+  let data: unknown;
+  try {
+    const res = (await getAuth().getSession()) as { data: unknown; error?: unknown };
+    if (res.error) throw new AuthServiceUnavailableError(res.error);
+    data = res.data;
+  } catch (e) {
+    if (e instanceof AuthServiceUnavailableError) throw e;
+    throw new AuthServiceUnavailableError(e);
+  }
   return data as { user?: { id: string; email: string } } | null;
 }
 

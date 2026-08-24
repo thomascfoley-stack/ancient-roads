@@ -1,4 +1,4 @@
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { saveReadingProgress } from '@/lib/library';
 import { publishedSourceId } from '@/lib/work';
@@ -40,9 +40,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
-  }
+  } catch (e) { return authFailureResponse(e); }
 
   let raw: unknown;
   try {

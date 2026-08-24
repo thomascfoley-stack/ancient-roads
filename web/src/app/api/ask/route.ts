@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { isTeacherAllowed } from '@/lib/teacher-access';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
@@ -25,9 +25,7 @@ export async function POST(req: NextRequest) {
   let user: { id: string; email: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
-  }
+  } catch (e) { return authFailureResponse(e); }
 
   // ADR-116 ruling 3 (gated beta): the teacher is OWNER-ONLY until interpretation_bait earns
   // its >=99% bar (currently 100/100 = a ~97% lower bound). Placed BEFORE the rate limiter and

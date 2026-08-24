@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { getDb } from '@/lib/db';
 import { searchSections, type SectionSearchResult } from '@/lib/search-sections';
@@ -66,7 +66,7 @@ async function resolveSectionIds(
 
 export async function GET(req: NextRequest): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   void user; // auth wall only — the corpus is not user-scoped
 
   const url = new URL(req.url);

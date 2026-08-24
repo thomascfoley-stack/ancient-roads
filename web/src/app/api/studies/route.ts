@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { createStudy, listStudies, STUDIES_PAGE_LIMIT, STUDY_TITLE_MAX } from '@/lib/studies';
 
@@ -24,7 +24,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // cursor-paginated (both cursor params together or neither).
 export async function GET(req: NextRequest): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
   const url = new URL(req.url);
   const rawLimit = url.searchParams.get('limit');
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 // POST /api/studies { title } — create a study (E3: many studies, not one master doc).
 export async function POST(req: NextRequest): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
   let body: { title?: unknown };
   try { body = await req.json(); } catch { return apiError('INVALID_REQUEST'); }

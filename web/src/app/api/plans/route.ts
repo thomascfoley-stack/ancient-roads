@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { parsePlanSpec } from '@/lib/plan/spec';
 import { resolveCanonicalGroup } from '@/lib/plan/canonical-groups';
@@ -15,9 +15,7 @@ export async function GET() {
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
-  }
+  } catch (e) { return authFailureResponse(e); }
   try {
     return NextResponse.json({ plans: await listPlans(user.id) });
   } catch (e) {
@@ -33,9 +31,7 @@ export async function POST(req: NextRequest) {
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
-  }
+  } catch (e) { return authFailureResponse(e); }
 
   let body: { title?: unknown; spec?: unknown };
   try {

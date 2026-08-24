@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { encodeVerseId } from '@bible/verse-id';
 import { truncateCodePoints } from '@/lib/text';
@@ -66,7 +66,7 @@ type AnnotationBody = {
 
 export async function GET(req: NextRequest) {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
   // #8's class on the query side: Number('1.5') and Number('1e999') are truthy and used to ride
   // straight into SQL. Bounds follow the verse-id encoding: 66 books, chapter < 1000.
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
   let body: AnnotationBody;
   try { body = (await req.json()) as AnnotationBody; } catch { return apiError('INVALID_REQUEST'); }
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
 
   let body: AnnotationBody;
   try { body = (await req.json()) as AnnotationBody; } catch { return apiError('INVALID_REQUEST'); }

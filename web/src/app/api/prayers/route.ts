@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { encodeVerseId } from '@bible/verse-id';
 import { createPrayer, deletePrayer, listPrayers, updatePrayer, PRAYER_MAX_LENGTH } from '@/lib/prayers';
@@ -27,7 +27,7 @@ const PRAYER_VERSE_ID_MAX = encodeVerseId({ book: 66, chapter: 999, verse: 999 }
 
 export async function GET(): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   try {
     return NextResponse.json({ prayers: await listPrayers(user.id) });
   } catch (e) {
@@ -40,7 +40,7 @@ export async function GET(): Promise<Response> {
 
 export async function POST(req: NextRequest): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   let body: { kind?: unknown; id?: unknown; body?: unknown; verseId?: unknown };
   try { body = await req.json(); } catch { return apiError('INVALID_REQUEST'); }
 
