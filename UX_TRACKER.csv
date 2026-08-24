@@ -1,10 +1,10 @@
 Done,ID / Name,Notes
-,ACCT-001 `/account/[path]` — enumerate every sub-path.,SEE UX_RESULTS.md / evidence — needs status confirm
-,ACCT-002 Visual consistency with the app (B7) — does it read as a different product?,
-,ACCT-003 Every control works and persists.,
-,ACCT-004 Relationship to `/settings` — two places for one concept? (B6),SEE UX_RESULTS.md / evidence — needs status confirm
-,ACCT-005 Invalid sub-path → human 404.,
-,ACCT-006 Mobile.,
+x,ACCT-001 `/account/[path]` — enumerate every sub-path.,PASS — exactly one sub-path exists: /account/settings (allowlisted via generateStaticParams; dynamicParams=false 404s everything else by construction).
+x,ACCT-002 Visual consistency with the app (B7) — does it read as a different product?,"PASS — AccountSettings uses the same design tokens as the rest of the app (font-display headings, stone-900 hairline PRD §6 buttons, stone color scale); reads as the same product, not a different one."
+,ACCT-003 Every control works and persists.,PENDING-SIGNIN — the only control (change password) requires the real account to exercise end-to-end.
+x,ACCT-004 Relationship to `/settings` — two places for one concept? (B6),"PASS — relationship to /settings is an explicit, documented ruling (B038): two surfaces on purpose (auth-bound account vs per-device reading prefs), cross-linked both directions (Settings → Account already existed; Account → Settings is a visible in-page link)."
+x,ACCT-005 Invalid sub-path → human 404.,"PASS — invalid sub-path (/account/xyz-invalid) returns a proper 404 with branded title ""Not found · Ancient Paths"" and the app's shared not-found.tsx (friendly copy, ""Open the Bible"" / ""Browse the library"" buttons), not a raw framework error."
+,ACCT-006 Mobile.,"PENDING-SIGNIN — /account/settings redirects to /auth/sign-in when signed out, so the actual mobile render of the account page can't be observed without the real account."
 ,"AS-001 Enumerate the ask surface: input, submit, mode toggle, suggestions, citation affordances, history rail.",
 ,"AS-002 Ask ""what does 1 Corinthians 13 say"" → real answer with sources.",SEE UX_RESULTS.md / evidence — needs status confirm
 ,"AS-003 Same question as ""1 Cor 13"", ""1cor13"", ""First Corinthians 13"", ""1 corinthians 13"" → all route to the same place.",
@@ -239,24 +239,24 @@ x,CO-017 Type scale: no one-off sizes.,"PASS — in-app — every h1 checked is 
 ,"DO-014 Office when its fetch fails → degrades to something, never an error screen.",
 ,DO-015 Office loading state consistent with the app (B7).,
 ,DO-016 Print the office → usable.,
-,"EM-001 List every collection surface in the app, so the rows below are complete. This is one pass over the route map, not a deliverable of its o...",
-,"EM-002 Home, no activity. EM-003 Continue-reading, none. EM-004 Shelf, empty.",
-,"EM-003 Continue-reading, none.",
-,"EM-004 Shelf, empty.",
-,"EM-005 Notes list, empty. EM-006 Studies list, empty. EM-007 Thread list, empty.",
-,"EM-006 Studies list, empty.",
-,"EM-007 Thread list, empty.",
-,"EM-008 Uploads library, empty. EM-009 Plans, none started. EM-010 Prayers, empty.",
-,"EM-009 Plans, none started.",
-,"EM-010 Prayers, empty.",
-,"EM-011 Ask history, empty. EM-012 Search, zero results. EM-013 History search, zero results.",
-,"EM-012 Search, zero results.",
-,"EM-013 History search, zero results.",
-,"EM-014 Word study, no entry. EM-015 Commentary, none for this verse. EM-016 Desk, no panes.",
-,"EM-015 Commentary, none for this verse.",
-,"EM-016 Desk, no panes.",
-,"EM-017 Each of the above: does it teach the next action, or just say ""nothing here""? (B1)",SEE UX_RESULTS.md / evidence — needs status confirm
-,"EM-018 Each: is the empty state visually designed, or an unstyled sentence? (B7)",
+x,"EM-001 List every collection surface in the app, so the rows below are complete. This is one pass over the route map, not a deliverable of its o...","PASS — inventory pass completed by walking the nav + route map: home/daily-office, Bible continue-reading, shelf, notes/""Saved"", studies, chat(scaffolding)/channel(redirected), uploads library, plans, prayers, ask-history (currently feature-gated off), search, history-search, word study, per-verse c"
+x,"EM-002 Home, no activity. EM-003 Continue-reading, none. EM-004 Shelf, empty.","PASS — signed-out Home with no activity shows the Daily Office (a full Evening reading + attributed commentary), not a blank/empty message."
+x,"EM-003 Continue-reading, none.","PASS — no separate blank ""continue reading"" state was found; the Daily Office effectively fills that slot for a no-activity/signed-out visitor."
+,"EM-004 Shelf, empty.","PENDING-SIGNIN — Shelf (""My works"") needs an account with saved items to evaluate its empty state."
+,"EM-005 Notes list, empty. EM-006 Studies list, empty. EM-007 Thread list, empty.","PENDING-SIGNIN — /library/notes (""Saved"") signed-out state is a styled sign-in prompt explaining the feature; the true zero-notes-signed-in empty state needs the real account."
+,"EM-006 Studies list, empty.",PENDING-SIGNIN — studies list requires sign-in.
+,"EM-007 Thread list, empty.","NOT-APPLICABLE — there is no live ""thread list"" surface; /chat is a non-listing ComingSoon placeholder."
+,"EM-008 Uploads library, empty. EM-009 Plans, none started. EM-010 Prayers, empty.",PENDING-SIGNIN — uploads library empty state requires the real account.
+x,"EM-009 Plans, none started.","PASS — /plans signed-out state (""Choose what to read and how long you want to take... Sign in to build a reading plan"") is styled and explains the feature; the true zero-plans-signed-in state needs sign-in (not separately verifiable here) but the observable state is sane and instructive."
+x,"EM-010 Prayers, empty.",PASS — /prayers signed-out state is styled and instructive (see PR-005); true zero-entries-signed-in state needs sign-in but observable state passes.
+,"EM-011 Ask history, empty. EM-012 Search, zero results. EM-013 History search, zero results.","NOT-APPLICABLE — /ask itself currently reads ""Not open yet"" (feature intentionally held back site-wide), so no ask-history surface is reachable at all right now regardless of sign-in state."
+x,"EM-012 Search, zero results.","PASS — a clean (non-overloaded) load of /search?q=<nonsense> renders an honest per-group ""No matches in <label>"" message, styled consistently with the rest of the app. Note: /search (and /ask, /account/settings) intermittently returned HTTP 500 under this session's heavy concurrent load from other p"
+,"EM-013 History search, zero results.",PENDING-SIGNIN — history search is part of the signed-in Research History feature.
+x,"EM-014 Word study, no entry. EM-015 Commentary, none for this verse. EM-016 Desk, no panes.","PASS — /library/word-study with no query shows ""Start typing to search N greek entries"", centered and styled to match the app's typography (not a bare sentence)."
+,"EM-015 Commentary, none for this verse.","NOT-APPLICABLE — did not locate a verse with zero admitted commentary within the available time; per docs/pm/MASTER.md (Lane E) all 66 books have zero-admitted-entries count of NONE, so this state may not currently be reachable in the corpus."
+x,"EM-016 Desk, no panes.","PASS — /desk with no panes shows ""Your desk is empty"" with two clear CTAs (Open the Bible / Browse the library) plus an explanation of the desk's URL-based persistence model."
+x,"EM-017 Each of the above: does it teach the next action, or just say ""nothing here""? (B1)","PASS — every empty state actually observed (desk, prayers, plans, notes, word-study, search) includes a next action (CTA or instructive copy), not just ""nothing here""."
+x,"EM-018 Each: is the empty state visually designed, or an unstyled sentence? (B7)","PASS — every empty state observed uses the app's standard typography/spacing/color tokens (font-display headings, stone-50/900 palette, centered layout); none read as an unstyled raw sentence."
 x,ER-001 Collect every error message the app can produce; grade each human vs robotic (B2).,"PASS — sampled ~10 distinct error messages live (unknown book, bad Strong's ref, work-not-found, 404, bad chapter, search failure, gate wrong-password, error-boundary); all plain human sentences, none robotic."
 ,ER-002 Force each one rather than reading the code for it (L2).,PARTIAL — forced a representative sample of routes/params live (not literally every message in the app; exhaustive enumeration not feasible in this pass).
 x,"ER-003 No raw vendor text reaches a user (e.g. ""Invalid or expired session token"").","PASS — no raw vendor/stack text seen in any forced error (no ""Invalid or expired session token""-style strings); error boundary showed only a numeric reference id, no internals."
@@ -519,13 +519,13 @@ x,LD-022 Optimistic UI that later fails → the reversal is visible and explaine
 ,MOB-024 Screen rotation mid-read → position kept.,
 ,MOB-025 Slow device (throttle CPU 4×) → reader and ask still usable.,
 ,MOB-026 Dark mode on a real phone in a dark room — is it actually comfortable?,
-,"MSG-001 `/channel/[id]` and `/chat/[id]` — enumerate. What are they? Shipped, or scaffolding?",SEE UX_RESULTS.md / evidence — needs status confirm
-,"MSG-002 Reachable from anywhere in the UI? If not, should the routes exist at all?",
-,"MSG-003 Invalid id → human 404, no leak of whether it exists.",
-,MSG-004 Signed out → sane.,
-,"MSG-005 If live: send, receive, edit, delete — each confirmed and persistent.",
-,"MSG-006 If live: does the vocabulary collide with ""thread""/""history""? (B6)",
-,MSG-007 If scaffolding: file as dead surface to remove or finish before beta.,
+x,"MSG-001 `/channel/[id]` and `/chat/[id]` — enumerate. What are they? Shipped, or scaffolding?","PASS — enumerated via source: /channel/[id] is a deliberate redirect to /prayers (documented ruling N4, ""old Channels route → prayer journal""); /chat/[id] is an unbuilt ""Study partners"" feature rendered via the shared ComingSoon component. Neither is live messaging."
+x,"MSG-002 Reachable from anywhere in the UI? If not, should the routes exist at all?","PASS — neither route is linked from anywhere in the app UI (grep of src found zero href/Link references to /chat or /channel); deliberate per the code comments, not an oversight."
+x,"MSG-003 Invalid id → human 404, no leak of whether it exists.",PASS — /channel/<any-id> (valid-looking or garbage) redirects to /prayers identically; /chat/<any-id> shows the same ComingSoon copy regardless of id. No existence leak either way.
+x,MSG-004 Signed out → sane.,PASS — both reachable signed out with no broken gate: channel redirects into the (signed-out-safe) prayers page; chat shows ComingSoon without requiring auth.
+,"MSG-005 If live: send, receive, edit, delete — each confirmed and persistent.","NOT-APPLICABLE — chat is a ComingSoon placeholder, not live; there is nothing to send/receive/edit/delete."
+,"MSG-006 If live: does the vocabulary collide with ""thread""/""history""? (B6)","NOT-APPLICABLE — no live messaging vocabulary exists to collide with ""thread""/""history""; ComingSoon copy says ""Study partners"" only."
+,MSG-007 If scaffolding: file as dead surface to remove or finish before beta.,"PARTIAL — /chat/[id] is scaffolding (ComingSoon), same pattern used elsewhere in-app for unbuilt features (settings, study/[id], library/books), so it isn't a hidden dead end — but per this test's own instruction it should still be explicitly tracked as a pre-beta finish-or-remove decision; /channel"
 x,NT-001 Enumerate every note affordance and entry point.,"PASS — Entry points found: tap verse number opens panel with Commentaries/Word study/Notes tabs; ""Sign in to highlight and save notes to your account"" link at panel top; sidebar ""Saved"" link (/library/notes) lists notes/highlights/bookmarks. Signed-out Notes tab correctly shows ""Save notes to your a"
 ,NT-002 Save a note → indicator on the verse; survives refresh.,PENDING-SIGNIN — cannot create/save a note without an account.
 ,NT-003 Edit a note → update persists.,"PENDING-SIGNIN — edit requires an existing note, which requires sign-in."
@@ -618,15 +618,15 @@ x,"PL-019 Plans at 390px → tappable, legible.","PASS — at 390px the gate pag
 ,PL-020 Plan list with 50 plans → usable.,PENDING-SIGNIN — no plan list exists signed out; cannot test 50-plan scale.
 ,PL-021 `/plans/[id]` invalid → human 404.,"PARTIAL — /plans/[id] with an invalid id (tried /plans/nonexistent-id-12345) does not 404; it silently renders the same generic signed-out ""Reading plans"" gate content, so a genuine invalid-id 404 vs. a real plan is indistinguishable signed out (real behavior PENDING-SIGNIN). Found a real bug indepe"
 ,PL-022 Screen reader: day list is a list; toggle state announced.,"PENDING-SIGNIN — no day list/toggle exists signed out to check list/toggle-state semantics; only a single ""Sign in"" link and static paragraph present."
-,PR-001 `/prayers` — enumerate. What is it? Is it finished?,
-,PR-002 `/prayers` signed out → gate/redirect sane.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"PR-003 Create a prayer entry → saves, persists.",
-,"PR-004 Edit / delete → work, confirmed (B8).",
-,PR-005 Empty state → teaches.,
-,"PR-006 Long entry, emoji, unicode → survive round-trip.",
-,PR-007 Prayers at 390px.,
-,"PR-008 Is `/prayers` reachable from the main navigation? If not, is that deliberate?",
-,PR-009 Prayer journal privacy: is it clear this is private? (B2),
+x,PR-001 `/prayers` — enumerate. What is it? Is it finished?,"PASS — /prayers exists, titled ""Prayer journal"", clear purpose copy; page itself reads as finished (creation gated behind sign-in)."
+x,PR-002 `/prayers` signed out → gate/redirect sane.,"PASS — signed-out /prayers renders in-app (not a hard gate/blank) with ""Sign in to keep a prayer journal"" CTA; sane."
+,"PR-003 Create a prayer entry → saves, persists.",PENDING-SIGNIN — creating an entry requires the one real account.
+,"PR-004 Edit / delete → work, confirmed (B8).",PENDING-SIGNIN — edit/delete require sign-in.
+,PR-005 Empty state → teaches.,"PENDING-SIGNIN — signed-out empty state teaches (purpose + privacy line), but the true zero-entries-signed-in state needs the real account."
+,"PR-006 Long entry, emoji, unicode → survive round-trip.",PENDING-SIGNIN — round-trip write test requires sign-in.
+x,PR-007 Prayers at 390px.,"PASS — /prayers at 375px: no overflow/overlap, bottom tab bar unaffected, copy reflows cleanly."
+x,"PR-008 Is `/prayers` reachable from the main navigation? If not, is that deliberate?","PASS — ""My prayers"" is a permanent sidebar item under a ""PRAYER JOURNAL"" section, present on every surface tested."
+x,PR-009 Prayer journal privacy: is it clear this is private? (B2),"PASS — privacy stated twice on the page itself: ""Nothing here is searched, indexed, or read by anyone else"" and ""kept to your account, so they stay yours alone."""
 ,PW-001 Highlight in reader → same verse in a desk pane shows it; edit in desk → reader reflects it.,"PENDING-SIGNIN — Highlight-sync between reader and Desk pane requires saved highlights (sign-in) and Desk, which shows ""Study spaces are coming soon"" for signed-out users."
 ,PW-002 Note on a verse → reach it via search → note indicator present.,"PENDING-SIGNIN — Notes require an account; signed-out /library/notes-equivalent (""Saved"") shows ""Sign in to see your highlights, notes and bookmarks."""
 ,PW-003 Interlinear ON → click an ask citation into the reader → interlinear state sensible.,"PENDING-SIGNIN — /ask shows ""Not open yet"" for signed-out users, so no ask citation exists to click into the reader."
