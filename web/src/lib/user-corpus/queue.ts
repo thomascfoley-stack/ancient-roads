@@ -196,8 +196,11 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
     // this row — running it inline would keep that claim for a minute and block the queue behind a
     // job that is not ingestion. The client kicks it, and a document that is never opened simply
     // never pays for a search nobody asked to see.
-    await setReadingsState(userId, row.id, { status: 'pending', progress: 0, step: null, error: null })
-      .catch((e) => console.error('[user-corpus] could not mark readings pending:', String((e as Error)?.message ?? e)));
+    // D1: this used to write readings_status='pending' here. It must NOT — 'pending' is what
+    // claimReadingsStart writes when a real job claims the document, and writing it from ingest
+    // wedged every fresh document permanently (readings-not-wedged.test.ts). The state ingest
+    // leaves is READINGS_AFTER_INGEST (null, "no search has been run"): the UI renders that with
+    // its button, and the claim side accepts it. Nothing to write — the row is already null.
 
     return 'ready';
   } catch (e) {
