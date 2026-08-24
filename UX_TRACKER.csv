@@ -552,36 +552,36 @@ x,NT-001 Enumerate every note affordance and entry point.,"PASS — Entry points
 ,NT-024 Note on a verse in a work that later becomes unavailable → dangling reference handled.,PENDING-SIGNIN — requires a saved note plus a corpus-availability change to observe.
 ,"NT-025 Keyboard-only: create, edit, delete a note.",PENDING-SIGNIN — requires an authenticated note to create/edit/delete via keyboard.
 ,NT-026 Screen reader: note editor labelled; save state announced.,"PENDING-SIGNIN — signed-out Notes tab has a labelled Sign in button (accessible name ""Sign in""), but save-state announcement can't be tested without an actual save action."
-,"NV-001 Back-map — worth doing, and about 30 minutes: a table of every view-transition × what Back should do. Not for ceremony — Back is where th...",SEE UX_RESULTS.md / evidence — needs status confirm
-,"NV-002 Every header/nav control on every surface → labelled truthfully, goes where it says.",SEE UX_RESULTS.md / evidence — needs status confirm
-,NV-003 Logo/home from every surface → one consistent destination.,
-,NV-004 Active-section indication → you can always tell where you are.,
-,NV-005 Forward after Back → returns forward; history intact both directions.,
-,"NV-006 Ten-step random walk, then ten Backs → reverses exactly, per the map.",
-,"NV-007 Back out of a modal → closes the modal, doesn't leave the page.",
-,NV-008 Back out of the verse panel → closes the panel (regression guard).,SEE UX_RESULTS.md / evidence — needs status confirm
-,"NV-009 Back out of a desk pane → deliberate behaviour, documented.",
-,NV-010 New tab on any deep URL → full state reconstructs.,
-,NV-011 Deep URL signed out → gate/auth → returns to that URL.,
-,"NV-012 Scroll restoration on Back → per the map (lists restore, new content tops).",
-,"NV-013 404 page → human, branded, offers a way home.",SEE UX_RESULTS.md / evidence — needs status confirm
-,NV-014 404 from a deep invalid path (`/read/x/y/z`) → same.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"NV-015 Global error boundary → trigger it; is the page human? If none exists, that's a finding.",
-,"NV-016 Tab titles: every major surface sets a distinct, truthful title.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"NV-017 Tab titles update on client-side navigation, not just first load.",
-,"NV-018 URL never leaks question text, note content, or credentials (L4).",
-,NV-019 Omnibox: enumerate; reference vs search behaviour matches `/search` (B6).,
-,"NV-020 Omnibox keyboard: open, type, arrow, Enter, Escape.",
-,NV-021 Omnibox with no results → honest.,
-,"NV-022 Mobile nav (menu/drawer): opens, closes, Escape, click-outside, focus trap.",
-,NV-023 Mobile nav → every destination reachable.,
-,NV-024 Nav while a write is in flight → doesn't silently discard it (B4).,
-,NV-025 Browser zoom 80–150% → nav holds on every surface.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"NV-026 Breadcrumbs (if present) → accurate, clickable.",
-,"NV-027 Skip-to-content link → present, works, visible on focus.",
-,"NV-028 Focus after client-side navigation → lands somewhere sane, not lost to `<body>`. Test on 8 transitions.",
-,NV-029 Rapid navigation during loads across 10 surface pairs → no stale content.,
-,"NV-030 Every route in the manifest visited once, signed in and signed out → nothing 500s, nothing blanks.",
+,"NV-001 Back-map — worth doing, and about 30 minutes: a table of every view-transition × what Back should do. Not for ceremony — Back is where th...","NOT-APPLICABLE — this item is a planning/process task (""draft a Back-map""), not a product behavior to pass/fail."
+x,"NV-002 Every header/nav control on every surface → labelled truthfully, goes where it says.","PASS — confirmed (office-plans-search.md): every sidebar nav control has a truthful label and correct href (Home, Bible, Ask, Desk, Reading plans, Sign in, My prayers, Library sub-items, Settings)."
+x,NV-003 Logo/home from every surface → one consistent destination.,"PASS — confirmed (office-plans-search.md): logo click from /read, /search, and /home all land on /home consistently."
+x,NV-004 Active-section indication → you can always tell where you are.,"PASS — active-section indication observed live: the current sidebar item (e.g. ""Home"", ""Reading plans"") is visually distinguished (underline/bold) from the rest."
+,NV-005 Forward after Back → returns forward; history intact both directions.,PARTIAL — not exercised this pass (forward-after-back not tested).
+,"NV-006 Ten-step random walk, then ten Backs → reverses exactly, per the map.",PARTIAL — not exercised this pass (10-step random walk not performed).
+,"NV-007 Back out of a modal → closes the modal, doesn't leave the page.",PARTIAL — not exercised this pass (no modal was opened/closed to test Back behavior).
+,NV-008 Back out of the verse panel → closes the panel (regression guard).,PARTIAL — not exercised this pass (verse panel Back behavior not tested).
+,"NV-009 Back out of a desk pane → deliberate behaviour, documented.",PARTIAL — not exercised this pass (desk pane Back behavior not tested).
+x,NV-010 New tab on any deep URL → full state reconstructs.,"PASS — deep URLs opened directly in a fresh navigation reconstructed full state correctly (e.g. `/search?q=...` results, `/work/owen-works#s1`, `/read/x/y/z` 404) with no missing state observed."
+x,NV-011 Deep URL signed out → gate/auth → returns to that URL.,"PASS — deep URLs signed out do not hard-redirect away; gated surfaces (e.g. /plans) render in place with an inline ""Sign in to build a reading plan"" prompt rather than bouncing off the URL, and non-gated surfaces render fully signed out."
+,"NV-012 Scroll restoration on Back → per the map (lists restore, new content tops).",PARTIAL — not exercised this pass (scroll-restoration-on-Back not tested).
+x,"NV-013 404 page → human, branded, offers a way home.","PASS — confirmed live: `/totally-bogus-route-xyz` shows a human, branded 404 (""That page isn't here"") with ""Open the Bible"" / ""Browse the library"" ways home; title correctly set to ""Not found · Ancient Paths""."
+x,NV-014 404 from a deep invalid path (`/read/x/y/z`) → same.,"PASS — confirmed live: an invalid deep path (`/read/x/y/z`) shows the identical branded 404, not a raw framework error."
+,"NV-015 Global error boundary → trigger it; is the page human? If none exists, that's a finding.",PARTIAL — not exercised this pass (no reliable way found to trigger a global error boundary; presence/absence of one is unverified).
+,"NV-016 Tab titles: every major surface sets a distinct, truthful title.","PARTIAL — most surfaces set distinct, truthful titles (Search · Ancient Paths, Reading plans · Ancient Paths, Library · Ancient Paths, Prayer journal · Ancient Paths, Not found · Ancient Paths), but /home and /desk both leave the generic ""Ancient Paths"" title."
+x,"NV-017 Tab titles update on client-side navigation, not just first load.","PASS — confirmed live: clicking a sidebar link (client-side nav, e.g. Home → Reading plans) updates `document.title` correctly without a full page reload."
+,"NV-018 URL never leaks question text, note content, or credentials (L4).","PARTIAL — sampled URLs (search query, work permalink, 404 paths) carried no note content or credentials, only the search query string itself (`?q=...`), which is expected/benign; not exhaustively tested across note/prayer/write flows (those need sign-in)."
+,NV-019 Omnibox: enumerate; reference vs search behaviour matches `/search` (B6).,NOT-APPLICABLE — no omnibox exists in this app to enumerate or compare against /search.
+,"NV-020 Omnibox keyboard: open, type, arrow, Enter, Escape.",NOT-APPLICABLE — no omnibox exists (cmd+k does nothing observable).
+,NV-021 Omnibox with no results → honest.,NOT-APPLICABLE — no omnibox exists.
+,"NV-022 Mobile nav (menu/drawer): opens, closes, Escape, click-outside, focus trap.","PARTIAL — not exercised this pass; the available browser-resize tool did not actually shrink the rendered viewport in this environment (see SR-023), so mobile drawer nav could not be verified."
+,NV-023 Mobile nav → every destination reachable.,PARTIAL — same tooling limitation as NV-022; not verified this pass.
+,NV-024 Nav while a write is in flight → doesn't silently discard it (B4).,"PENDING-SIGNIN — ""nav during an in-flight write"" requires an authenticated write action (plans/prayers/notes), which needs sign-in; the one real account was not used per constraint."
+,NV-025 Browser zoom 80–150% → nav holds on every surface.,PARTIAL — not exercised this pass (browser zoom 80-150% not tested).
+,"NV-026 Breadcrumbs (if present) → accurate, clickable.",NOT-APPLICABLE — no breadcrumb UI observed anywhere in the app; sidebar nav only.
+,"NV-027 Skip-to-content link → present, works, visible on focus.","PARTIAL — a ""Skip to content"" link is present in the DOM (found in body text), but a synthetic Tab keypress via the automation tooling did not move `document.activeElement` off `<body>` in this environment, so focus-visibility/functionality could not be conclusively verified — inconclusive due to to"
+,"NV-028 Focus after client-side navigation → lands somewhere sane, not lost to `<body>`. Test on 8 transitions.",PARTIAL — not exercised this pass (activeElement after client-side nav not sampled across the required 8 transitions).
+,NV-029 Rapid navigation during loads across 10 surface pairs → no stale content.,PARTIAL — not exercised this pass (rapid navigation race across 10 surface pairs not performed).
+,"NV-030 Every route in the manifest visited once, signed in and signed out → nothing 500s, nothing blanks.","PARTIAL — a signed-out subset was walked this pass (/home, /plans, /library, /desk, /prayers, /search, /work/owen-works, two invalid deep paths) with nothing 500ing or blank; full manifest not walked and the signed-in half is PENDING-SIGNIN."
 ,PF-001 Lighthouse on the core five: perf/a11y/best-practices/SEO — record all four.,PARTIAL — no Lighthouse tool is available in this environment; perf/a11y/best-practices/SEO scores were not produced. (Manual spot checks below substitute for some of it.)
 ,PF-002 Bundle size per route; flag anything unexpectedly large.,"PARTIAL — no dedicated bundle-size tool; Resource Timing spot checks (keyboard-performance.md) found no single resource over 500KB on `/`, `/read/jhn/3`, or `/search?q=shepherd`, but most sub-resource transferSizes read 0 (browser-cache-warm, not a true fresh count) so this is not a reliable bundle-"
 ,"PF-003 Reader first load, cold cache, throttled — record.","PARTIAL — reader first load was only measured warm/over loopback (keyboard-performance.md: DCL 45.2ms, load 92.9ms for /read/jhn/3); no cold-cache or throttled-network measurement was taken (needs devtools network throttling, not available here)."
@@ -753,34 +753,34 @@ x,PR-009 Prayer journal privacy: is it clear this is private? (B2),"PASS — pri
 ,SE-030 Print a study → usable handout with attribution.,"PENDING-SIGNIN — cannot test print output without an account; source shows /export's print path reuses the same docx-model render as print-styled HTML (browser print-to-PDF), not a separate serializer — worth re-checking once signed in."
 ,"SE-031 Keyboard-only: create, write, reference, save.",PENDING-SIGNIN — cannot test keyboard-only study creation/write/save without an account.
 ,SE-032 Screen reader: editor labelled; block structure navigable.,PENDING-SIGNIN — cannot test screen-reader labelling of the editor without an account.
-,"SR-001 Enumerate `/search`: modes, filters, facets, result types.",
-,"SR-002 Word search ""shepherd"" → verse results, correct translation, plausible count.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"SR-003 Phrase search ""valley of the shadow"" → exact-phrase behaviour comprehensible.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"SR-004 Typed reference ""John 3:16"" → jumps to the verse, or clearly offers both jump and results.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"SR-005 Typed reference ""1cor 13"" → same.",
-,SR-006 Reference-vs-search ambiguity resolved the same way here as in the omnibox (B6/B7).,
-,"SR-007 Result click → reader at that verse, located; Back → results intact (query, scroll, filters).",
-,"SR-008 Zero results (""zzyzx"") → honest empty state, suggests spelling or a different translation.",
-,SR-009 One result → layout doesn't look broken.,
-,"SR-010 Thousands of results → paginated or capped, and says which.",
-,"SR-011 Search respects the current translation, or states which it searched.",
-,SR-012 Rapid re-search → results match the LAST query (race).,SEE UX_RESULTS.md / evidence — needs status confirm
-,SR-013 Query preserved in the input after searching; editable for refinement.,
-,"SR-014 Filters/facets → apply, combine, clear; URL reflects them.",
-,SR-015 Shared search URL → reproduces the same results.,SEE UX_RESULTS.md / evidence — needs status confirm
-,SR-016 Search across works (not just Bible) → results labelled by type so you know what you're looking at.,
-,"SR-017 Result snippets → highlight the match, don't cut mid-word.",
-,SR-018 Result snippets carry attribution (B10).,
-,"SR-019 Latency: results or a progress signal, never dead air >3s (B9).",
-,SR-020 Input stays editable during a search; keystrokes are never eaten.,
-,"SR-021 Search offline → honest failure, query preserved.",
-,SR-022 Search rate-limited → human message.,
-,"SR-023 Search on mobile → keyboard, submit, results all reachable.",
-,SR-024 Search from within the reader mid-read → the chapter survives (journey J-028).,
-,SR-025 Search with unicode / Greek / Hebrew input.,
-,SR-026 Search with a very long query.,
-,"SR-027 Keyboard-only: search, move through results, open one.",
-,SR-028 Screen reader: result count announced; results are a navigable list.,
+x,"SR-001 Enumerate `/search`: modes, filters, facets, result types.","PASS — /search enumerated: single query input + Search button, no mode selector; results grouped by 6 registers (Commentaries, Sermons, Hymns & Poetry, Historians, Theology & Creeds, Lexicons), each collapsible with its own count and ""Show more""; no filters/facets exist."
+,"SR-002 Word search ""shepherd"" → verse results, correct translation, plausible count.","FAIL — word search ""shepherd"" returns plain bag-of-words text matches across library registers; no distinct verse-results section, no translation shown/stated."
+,"SR-003 Phrase search ""valley of the shadow"" → exact-phrase behaviour comprehensible.","FAIL — confirmed (office-plans-search.md): phrase query ""valley of the shadow"" not treated as exact phrase; bag-of-words matches, no phrase affordance/toggle surfaced."
+,"SR-004 Typed reference ""John 3:16"" → jumps to the verse, or clearly offers both jump and results.","FAIL — typed reference ""John 3:16"" is NOT jumped to; treated purely as text search (154 commentary/etc. matches), no jump-to-verse affordance offered alongside results."
+,"SR-005 Typed reference ""1cor 13"" → same.","FAIL — same as SR-004: ""1cor 13"" returns 3 weak text matches only, no chapter jump offered."
+,SR-006 Reference-vs-search ambiguity resolved the same way here as in the omnibox (B6/B7).,"NOT-APPLICABLE — no omnibox exists in this app (cmd+k opens nothing; nav has no separate quick-search control), so there is nothing to compare /search behavior against."
+,"SR-007 Result click → reader at that verse, located; Back → results intact (query, scroll, filters).","PARTIAL — clicking a result opens the correct work, and Back correctly restores the query and full result set; but the reader lands at the top of the work (e.g. `/work/owen-works#s1`), not located at the matched passage (""Ephesians ii. 8-10"")."
+,"SR-008 Zero results (""zzyzx"") → honest empty state, suggests spelling or a different translation.","PARTIAL — zero-result query (""zzyzxqplm"") gives an honest, clearly-labelled ""No matches in X"" per register; no spelling suggestion or alternate-translation prompt offered."
+x,SR-009 One result → layout doesn't look broken.,"PASS — a 2-result query (Greek ""ἀγάπη"") rendered cleanly with no broken/degenerate layout."
+x,"SR-010 Thousands of results → paginated or capped, and says which.","PASS — 1,000+ match query (""shepherd"" in Sermons) is capped and clearly labelled ""1,000 matches+"" / ""Show more (5 of 1000+)""."
+,"SR-011 Search respects the current translation, or states which it searched.","FAIL — no translation is named or selectable anywhere on /search; search runs over work/commentary text, not a stated Bible translation."
+,SR-012 Rapid re-search → results match the LAST query (race).,"SEE — F-034 — the underlying cause (Enter/Return does not reliably submit a new query, leaving stale results next to a changed but unsubmitted input) is already filed as F-034 in UX_RESULTS.md; reproduced again live this pass (typing a new query and pressing Return with no click sometimes did nothin"
+x,SR-013 Query preserved in the input after searching; editable for refinement.,"PASS — query text remains in the input, fully editable, after results render (confirmed on every query tried)."
+,"SR-014 Filters/facets → apply, combine, clear; URL reflects them.","FAIL — no filter/facet controls exist anywhere on /search (only per-register collapse arrows, not filters)."
+x,SR-015 Shared search URL → reproduces the same results.,"PASS — query is reflected in the URL (`/search?q=...`), reproducible by loading the URL directly (confirmed via fresh navigation)."
+x,SR-016 Search across works (not just Bible) → results labelled by type so you know what you're looking at.,"PASS — every result is labelled with a type badge (COMMENTARY, SERMON, HYMN, FATHER, THEOLOGY, CONFESSION, etc.) and grouped under its register heading."
+x,"SR-017 Result snippets → highlight the match, don't cut mid-word.",PASS — matched terms are highlighted in snippets; no mid-word truncation observed in samples checked.
+x,SR-018 Result snippets carry attribution (B10).,"PASS — every snippet carries an attribution line (author · tradition · location, e.g. ""Gill, John · unassigned · Chapter 1 Verse 7"")."
+x,"SR-019 Latency: results or a progress signal, never dead air >3s (B9).","PASS — every live query returned results within ~1.5s, no dead air observed."
+,SR-020 Input stays editable during a search; keystrokes are never eaten.,"PARTIAL — the input itself stays editable at all times, but Enter does not reliably submit (see F-034/SR-012), so ""never eaten"" keystrokes is true but the overall keyboard flow is broken."
+,"SR-021 Search offline → honest failure, query preserved.",PARTIAL — not exercised this pass (no way to force an offline network condition with the available tooling).
+,SR-022 Search rate-limited → human message.,PARTIAL — not exercised this pass (no rate-limit trigger attempted).
+,"SR-023 Search on mobile → keyboard, submit, results all reachable.","PARTIAL — not exercised this pass; the browser-resize tool available in this environment did not actually change the rendered viewport (screenshots stayed full desktop width after resizing to 375/390px), so mobile search layout could not be verified."
+,SR-024 Search from within the reader mid-read → the chapter survives (journey J-028).,PARTIAL — not exercised this pass (search-from-within-reader-mid-read not tested; no auth needed but skipped for time).
+x,SR-025 Search with unicode / Greek / Hebrew input.,"PASS — unicode/Greek query (""ἀγάπη"") returned correct, correctly-highlighted matches (2 results in Theology & Creeds)."
+x,SR-026 Search with a very long query.,"PASS — a long, full-sentence query returned relevant highlighted results with no broken layout (input scrolls horizontally as expected for a single-line field)."
+,"SR-027 Keyboard-only: search, move through results, open one.","FAIL — keyboard-only search is broken at the first step: Enter does not submit a query (see F-034/SR-012), so a keyboard-only user cannot complete ""type, submit"" without reaching for the mouse/Search button."
+,SR-028 Screen reader: result count announced; results are a navigable list.,"PARTIAL — not exercised this pass (no screen-reader tool available); result groups do use semantic headings with match counts, which is a reasonable foundation, but announcement behavior was not verified."
 x,ST-001 Enumerate every setting present; append one test per setting.,"PASS — enumerated on /settings (desktop): Reading Theme (Light/Dark), Text Size (Smaller/Medium/Larger), Column Width (Narrower/Wider), Default Translation (18-option list WEB..ANT), Account (""Email and password ->""), Your saved work (""highlights, notes and bookmarks ->"")."
 ,"ST-002 Each setting takes effect immediately, or says when it will (B1).","PARTIAL — Theme click applies immediately (body bg flips to dark rgb(26,20,15), html gets class reader-dark); Text Size/Column Width clicks write new localStorage keys (reader-size, reader-measure) but visible effect on rendered reader text could not be confirmed cleanly (see ST-009/010)."
 ,ST-003 Each setting persists across refresh.,PARTIAL — theme (reader-theme=dark) survived several full page navigations/reloads in-session; text size/column width persistence across a hard refresh not independently confirmed due to browser contention (see note below).

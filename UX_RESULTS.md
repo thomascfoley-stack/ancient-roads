@@ -877,3 +877,34 @@ functional bug, noted for a future polish pass.
 **Coverage limit:** several PF items (PF-001-005, 008, 009, 014) genuinely need tooling this pass
 didn't have (Lighthouse, real network throttling, frame timing, extended memory profiling) — marked
 PARTIAL/NOT-RUN honestly rather than fabricated.
+
+## Batch 38 — SR (Search, second pass) and NV (Navigation), tracker-driven
+
+### F-086 · SR-004/005 · **P2** · Verse-reference queries in `/search` are not recognized as references at all
+Typing "John 3:16" or "1cor 13" into search does not jump to the passage — it's pure bag-of-words
+text search over commentaries/sermons, with no verse-reference recognition or jump affordance. A
+reader typing a reference into the one search box on the site (rather than using the separate
+passage-jump control elsewhere) gets generic text matches instead of the verse they were looking for.
+
+### F-087 · SR-014/011 · **P2** · No filters/facets and no stated translation on search results
+`/search` has no way to narrow by register/date/tradition, and results never state which translation
+the matched text is drawn from.
+
+### F-088 · SR-007 · **P3** · Clicking a search result lands at the top of the document, not the matched passage
+Back correctly restores the prior query/results, but the forward navigation into a result doesn't
+scroll to the actual match — same class of gap as CM-011 (F-073, "Read more" not scrolling to content).
+
+**Confirmed PASS:** result grouping, labelling, attribution, in-result highlighting, thousands-result
+capping, URL-shareability, unicode/Greek input, and long queries all work correctly. SR-012/020/027 all
+trace back to the already-filed F-034 (Enter doesn't reliably submit) — referenced, not re-filed.
+
+**NV — confirmed PASS:** 404 handling is solid, human, branded, with ways home; client-side title
+updates correctly on navigation. **NV-016 PARTIAL:** `/home` and `/desk` never get a distinct tab
+title beyond generic "Ancient Paths" (same class as the earlier HM-017 note). **NOT-APPLICABLE (by
+design, not a gap):** no omnibox and no breadcrumbs exist anywhere in this app — several NV/SR IDs
+that assume those features don't apply here.
+
+**Coverage limit:** the available browser-resize tool didn't actually shrink the rendered viewport in
+this session, so mobile-nav-specific checks (NV-022/023, SR-023) are PARTIAL/untested, not guessed.
+Several Back/forward/scroll/focus items were not exercised this pass for time and are marked PARTIAL
+honestly rather than assumed passing.
