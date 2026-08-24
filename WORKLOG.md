@@ -1,5 +1,88 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — UX remediation: work order ratified, P1s landed (branch `fix/ux-overnight-sweep`)
+
+Owner ratified `UX_REMEDIATION_PLAN.md` "as-is, with the review amendments incorporated" after all
+three runners signed. The four amendments are folded into the plan body; the review blocks are kept
+verbatim as the record of how each was decided. This entry is the build log for what followed.
+
+Worktree `/tmp/ap-uxsweep/repo`, branch `fix/ux-overnight-sweep`, dev Neon branch only. **No deploy,
+no production write, main tree untouched** (four other sessions were live in it tonight; all four
+pinged before I started).
+
+### Landed, in the ratified order
+
+| # | What | Proof |
+|---|---|---|
+| **K-1** | CSP let PostHog *connect* but not *load* — analytics 100% dark | red-proof on the header assertion, then **live browser**: the three previously-blocked scripts now execute (`__PosthogExtensions__`, `_POSTHOG_REMOTE_CONFIG`, `extendPostHogWithSurveys` all defined — a blocked script cannot define globals) |
+| **K-4/K-5** | sign-up said nothing; unverified sign-in was told its password was wrong | 7 test legs, each red-proofed first |
+| **K-2** | CCEL adapter deleted `<scripRef>` display text | 4 legs red-proofed; dev sizing query run |
+| **K-6** | Back from an open verse panel threw the reader out of the chapter | red then green **in a real browser**, 5 behaviours incl. 3 edge cases |
+| **K-3** (half) | `/about` was the one marketing page with no footer | served-HTML check on all four public pages |
+| **L-1** | every shared link unfurled as a bare text row | red/green on served HTML + the gate allowlist |
+
+### The one thing to read if you read one thing
+
+**A P1 nobody had filed: bug #110's account-existence fix was dead code, and the oracle is open.**
+Duplicate sign-up answers *"User already exists. Use another email."* — in the repo whose SEC-1
+problem is account takeover. Every `authClient.*` call **throws** on 4xx and never populates the
+`{ error }` it resolves on success, so every `const { error: err } = await …; if (err) …` in
+`auth-forms.tsx` was unreachable and the vendor's own sentence went to the screen. This is the root
+cause of K-4 and K-5 both — they are one bug, not two. Filed as **Claude-10** in `UX_SWEEP.md`.
+
+**It had a dedicated test, and that test was green.** `auth-sign-up-oracle.test.tsx` mocked the
+client to *resolve* `{ error }`; the real one throws. So it proved the component handles a shape its
+dependency never produces. Rewritten to throw — assertions unchanged, they were always right — and
+against the pre-fix component it now goes red on exactly the sentence readers were seeing.
+
+### Corrections to my own work — three, all recorded rather than quietly fixed
+
+1. **Claude-1 (K-2) severity P1 → P2, on evidence.** I filed it as content corruption citing Kempis.
+   In Kempis the quotation sits *outside* the `<scripRef>` and survives intact; only the citation is
+   lost, leaving `"…place for you" ( ).` Measured over the 876 cached works: 21% of scripRefs sit
+   inside a paren (deletion leaves `( )`), 78% sit in running prose (deletion leaves *"He is
+   mentioned in ."*). Real and worth fixing; not the corpus corruption I claimed.
+2. **K-1's own verify step would have produced an unearned RED.** The plan said to check
+   `window.posthog`. It is `undefined` even when PostHog works perfectly — the SDK is an ES module
+   import and is never put on `window`. I had cited that as evidence of the blackout; retired. The
+   finding stands on its other leg (zero requests to the posthog hostname).
+3. **L-9 held, do not build.** Its stated root cause (`toc.length` as the denominator) was fixed by
+   `79494d4` on 2026-08-02, and that commit is an **ancestor of the live `7747f10`** — prod has had
+   the fix for three weeks. So my finding cannot have the cause the plan assigns it. Needs
+   re-observation with a session before anyone touches it, exactly like L-5.
+
+### NOT DONE / UNVERIFIED — read before trusting any of the above
+
+- **K-4/K-5 are NOT browser-verified, and cannot be locally.** `NEON_AUTH_BASE_URL` is absent from
+  every local env file by deliberate posture (Vercel forbids Sensitive vars in Development;
+  `vercel env pull --environment=development` returns six vars, none of them auth). The component
+  tests drive the real client against a stubbed network — honest about branch logic, silent about
+  the live server's actual codes. **The verifier must run AU-01/AU-02 and an unverified sign-in on a
+  preview deploy.** This is also why ~120 signed-in ledger tasks remain untested.
+- **K-2 does not repair stored rows.** The adapter is upstream of the corpus; existing text stays
+  damaged until a re-ingest, which is an owner-approved step. Dev sizing: 27 CCEL works, 40,463
+  sections, 1,937 (4.8%) with visible `( )` debris — **0 CCEL works are published on dev**, so that
+  number is indicative only. **Production is a separate, owner-gated count.** The plan's claim that
+  Calvin's Institutes is affected is still unconfirmed; the query names `schaff-hcc2`.
+- **K-3 remains blocked on owner legal copy.** Privacy/Terms are still absent and still a beta
+  blocker (MK-13). I deliberately did not write its census test: written now it goes red in CI for a
+  reason nobody can fix, which is how a suite gets trained to ignore red.
+- **Nothing is deployed.** A standing blocker is unrelated to me: `rootDirectory` on the Vercel
+  project is set to `web` by a third session and breaks `deploy.sh`; the owner rules on that.
+- **Per fixer ≠ verifier, I verify none of this.** Owner takes K-2 and K-6; DeepSeek settles U1.
+- One suite is red for environment, not code: `test/user-corpus/blob-round-trip.test.ts`, one leg,
+  `DEEPINFRA_API_KEY is not set`. 275 files pass.
+
+### Two new watchlist instances (`MASTER_HISTORY.md §watchlist`), and they read as a pair
+
+**Nineteen** — `posthog-wiring.test.ts` asserted *seven* properties of the integration (gating, no
+proxying, autocapture off, allowlist sanitization, opaque identity, direct-dial) and never that it
+could RUN. Green throughout a total production blackout.
+**Twenty** — `auth-sign-up-oracle.test.tsx` asserted the component handles a FAILURE SHAPE its real
+dependency never produces. Green throughout an open oracle.
+Both sat directly on top of the defect they named. Both cost one cheap check to expose: *does the
+subject run at all*, and *does the dependency actually fail the way the mock says*.
+
 ## 2026-08-24 — UX/UI overnight sweep, FINAL for tonight (supersedes the "first pass" entry below it)
 
 Six background agents plus direct testing, all in the `fix/ux-overnight-sweep` worktree, all against
