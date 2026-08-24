@@ -381,26 +381,26 @@ x,"HM-016 Refresh → stable, no reshuffle of rails.","PASS — reloaded /home m
 ,"IN-018 Transliteration line: present, consistent, not truncated mid-word.",
 ,"IN-019 Morphology codes → decoded into words, not raw codes.",
 ,IN-020 Interlinear on a verse with textual variants → alignment doesn't silently drift.,
-,KB-001 Complete J-B (first hour) with no mouse.,
-,KB-002 Complete J-C (the study session) with no mouse.,
-,KB-003 Complete J-D (historian thread) with no mouse.,
-,KB-004 Complete J-E (upload) with no mouse.,
-,KB-005 Sign in and sign out with no mouse.,
-,KB-006 Ask a question and open a citation with no mouse.,
-,"KB-007 Read, highlight, and note a verse with no mouse.",
-,"KB-008 Open, switch, and close verse-panel tabs with no mouse.",
-,KB-009 Add and close a desk pane with no mouse.,
-,"KB-010 Every modal/sheet: Tab cycles inside, Escape closes, focus returns to the opener.",SEE UX_RESULTS.md / evidence — needs status confirm
-,"KB-011 Every dropdown: arrow keys move, Enter selects, Escape closes.",SEE UX_RESULTS.md / evidence — needs status confirm
-,KB-012 No focus trap anywhere except deliberately inside a modal.,
-,"KB-013 Focus visible on every interactive element, on every background colour.",SEE UX_RESULTS.md / evidence — needs status confirm
-,KB-014 Tab order matches visual order on every major surface.,SEE UX_RESULTS.md / evidence — needs status confirm
-,KB-015 No positive `tabindex` anywhere.,SEE UX_RESULTS.md / evidence — needs status confirm
-,KB-016 Skip-to-content works and is the first stop.,SEE UX_RESULTS.md / evidence — needs status confirm
-,KB-017 Any step that requires a pointer = P1; name it.,
-,"KB-018 Custom controls (`role=""button""` spans) respond to both Enter and Space.",
-,"KB-019 Keyboard shortcuts (if any) → documented, discoverable, don't collide with the browser's.",
-,KB-020 Sticky headers/bars don't hide the focused element when tabbing.,
+,KB-001 Complete J-B (first hour) with no mouse.,"PENDING-SIGNIN — J-B (first hour: sign-up, save, sign-out) needs an account; only one real account exists, not used per constraint."
+,KB-002 Complete J-C (the study session) with no mouse.,PENDING-SIGNIN — J-C (study session incl. journal save) needs an account.
+,KB-003 Complete J-D (historian thread) with no mouse.,PENDING-SIGNIN — J-D (save/share a historian thread) needs an account.
+,KB-004 Complete J-E (upload) with no mouse.,PENDING-SIGNIN — J-E (upload) needs an account.
+,KB-005 Sign in and sign out with no mouse.,PENDING-SIGNIN — sign in/out explicitly requires the account.
+,KB-006 Ask a question and open a citation with no mouse.,"NOT-APPLICABLE — /ask shows ""Not open yet... held back while we finish testing"" for everyone; the teacher feature is disabled build-wide, not gated by sign-in, so it cannot be exercised at all right now."
+,"KB-007 Read, highlight, and note a verse with no mouse.","PENDING-SIGNIN — verse panel shows ""Sign in to highlight and save notes to your account"" (confirmed live on /read/jhn/3); highlighting/notes require the account."
+x,"KB-008 Open, switch, and close verse-panel tabs with no mouse.",PASS — live-verified on /read/jhn/3: clicking a verse superscript opens the verse panel with Commentaries/Word study/Notes tabs; switching tabs works; pressing Escape closes the panel and focus visibly returns to the verse trigger.
+x,KB-009 Add and close a desk pane with no mouse.,"PASS — live-verified on /desk (signed out, unsaved desk): ""Open the Bible"" -> book picker modal -> pick Genesis 1 adds a pane with Scripture content; clicking the pane's X removes it, returning to the empty-desk state. Add/close controls are ordinary focusable buttons (consistent with KB-013/015's c"
+,"KB-010 Every modal/sheet: Tab cycles inside, Escape closes, focus returns to the opener.","PARTIAL — the only modal/sheet testable signed-out (Desk's book-picker, role=""dialog"" aria-modal=""true"") passes fully: focus moves in on open, Escape closes it, and focus returns to the ""Open the Bible"" opener button (all live-verified via document.activeElement checks). Other modals/sheets (delete "
+,"KB-011 Every dropdown: arrow keys move, Enter selects, Escape closes.","FAIL — from keyboard-performance.md: the translation switcher (""KJV"" button, /read/jhn/3) opens on click but does not close on Escape (pressed twice, dropdown stayed open both times). Filed there as P1/P2."
+,KB-012 No focus trap anywhere except deliberately inside a modal.,"FAIL — from keyboard-performance.md (its KB-010 section): with the translation dropdown open, Tab was pressed repeatedly and after ~21 tabs focus left the still-open dropdown and landed on a verse-number control behind/below it in the reader body — a real focus-trap violation on a non-modal popover "
+x,"KB-013 Focus visible on every interactive element, on every background colour.","PASS — from keyboard-performance.md: focus rings observed on every stop of a clean 15-stop Tab walk on `/` (skip link, logo, nav links, hero CTA, all 8 example-question chip buttons); also visually confirmed live (verse-3 superscript showed a visible focus outline after keyboard focus)."
+x,KB-014 Tab order matches visual order on every major surface.,"PASS — from keyboard-performance.md: Tab order on `/` matches visual top-to-bottom/left-to-right order for all 15 stops, monotonically non-decreasing page-position, no skips or traps."
+x,KB-015 No positive `tabindex` anywhere.,PASS — from keyboard-performance.md: `document.querySelectorAll('[tabindex]')` filtered to tabIndex>0 returned `[]` on both `/` and `/read/jhn/3`.
+,KB-016 Skip-to-content works and is the first stop.,"FAIL — from keyboard-performance.md: skip-to-content link IS the first Tab stop (correct), but activating it (Enter) only updates the URL hash and native-scrolls the page — `document.activeElement` stays on BODY instead of moving to `<main id=""main"" tabindex=""-1"">`, so the next Tab starts back near "
+,KB-017 Any step that requires a pointer = P1; name it.,"FAIL — live-verified on /read/jhn/3: the verse-commentary trigger (`<sup role=""button"" tabindex=""0"" aria-label=""Verse N, read commentary"">`) is reachable and focusable by keyboard, but pressing Enter or Space on it does nothing (panel does not open; confirmed twice via screenshot + DOM check) — only"
+,"KB-018 Custom controls (`role=""button""` spans) respond to both Enter and Space.","FAIL — same evidence as KB-017: the custom `role=""button""` verse control responds to neither Enter nor Space, violating the basic custom-control contract."
+,"KB-019 Keyboard shortcuts (if any) → documented, discoverable, don't collide with the browser's.","PARTIAL — grep of web/src found two real, working shortcuts: Cmd/Ctrl+K opens the search omnibox (web/src/components/omnibox.tsx) and Cmd+\ toggles the sidebar rail (web/src/components/sidebar.tsx). Neither is surfaced anywhere in the UI (no visible ""⌘K"" hint/badge found near the search button) so t"
+,KB-020 Sticky headers/bars don't hide the focused element when tabbing.,"FAIL — live-verified on /read/psa/119: the reader header is `sticky top-0 z-40` with a rendered height of 65px. Focusing a verse element scrolled near the top placed it at `getBoundingClientRect().top = 19`, i.e. under/behind the sticky header (19 < 65). `getComputedStyle(el).scrollMarginTop` is `0p"
 x,"LB-001 Enumerate the library: how works are listed, filtered, sorted, entered.","PASS — /library lists 6 catalogs w/ counts; catalog pages (Commentaries, Sermons) show tradition facet chips, a search box, and item cards (author · tradition · type · section-count) with tap-to-read or ""+"" to open beside the desk."
 ,LB-002 `/library` cold → what is a newcomer supposed to do here? Is it obvious?,"PARTIAL — cold /library shows ""Yours"" shortcuts (Saved/My books/Word study/My Works), a ""Sign in to keep notes..."" line, then ""All items"" catalog list; reasonably discoverable but there's no explicit ""what is this place"" framing for a first-time visitor."
 x,"LB-003 Catalog facets/filters → apply, combine, clear; URL reflects them.","PASS — tradition facet chips with live counts (e.g. methodist 2, patristic 2, reformed 1) are visible and clickable on Commentaries/Sermons; URL-reflection of the active filter not confirmed (see environment note)."
@@ -582,20 +582,20 @@ x,NT-001 Enumerate every note affordance and entry point.,"PASS — Entry points
 ,"NV-028 Focus after client-side navigation → lands somewhere sane, not lost to `<body>`. Test on 8 transitions.",
 ,NV-029 Rapid navigation during loads across 10 surface pairs → no stale content.,
 ,"NV-030 Every route in the manifest visited once, signed in and signed out → nothing 500s, nothing blanks.",
-,PF-001 Lighthouse on the core five: perf/a11y/best-practices/SEO — record all four.,
-,PF-002 Bundle size per route; flag anything unexpectedly large.,
-,"PF-003 Reader first load, cold cache, throttled — record.",
-,PF-004 Ps 119 scroll at 60fps? Record dropped frames.,
-,"PF-005 A 5,000-section work: scroll and TOC performance.",
-,PF-006 Desk with three panes: interaction latency.,
-,PF-007 Ask p50/p95 over 20 questions.,SEE UX_RESULTS.md / evidence — needs status confirm
-,PF-008 Search p50/p95 over 20 queries.,SEE UX_RESULTS.md / evidence — needs status confirm
-,PF-009 Memory after 30 minutes of heavy use — leak check.,
-,PF-010 100 highlights + 50 notes in one chapter → render time.,
-,PF-011 Time to interactive on the auth pages (currently never — see L1).,
-,"PF-012 Font loading: FOUT/FOIT behaviour, no layout shift (B5).",
-,"PF-013 Image loading: correct sizes, no oversized downloads on mobile.",
-,PF-014 Repeat-visit performance (warm cache) vs first visit.,
+,PF-001 Lighthouse on the core five: perf/a11y/best-practices/SEO — record all four.,PARTIAL — no Lighthouse tool is available in this environment; perf/a11y/best-practices/SEO scores were not produced. (Manual spot checks below substitute for some of it.)
+,PF-002 Bundle size per route; flag anything unexpectedly large.,"PARTIAL — no dedicated bundle-size tool; Resource Timing spot checks (keyboard-performance.md) found no single resource over 500KB on `/`, `/read/jhn/3`, or `/search?q=shepherd`, but most sub-resource transferSizes read 0 (browser-cache-warm, not a true fresh count) so this is not a reliable bundle-"
+,"PF-003 Reader first load, cold cache, throttled — record.","PARTIAL — reader first load was only measured warm/over loopback (keyboard-performance.md: DCL 45.2ms, load 92.9ms for /read/jhn/3); no cold-cache or throttled-network measurement was taken (needs devtools network throttling, not available here)."
+,PF-004 Ps 119 scroll at 60fps? Record dropped frames.,NOT-RUN — Ps 119 was used for a sticky-header focus check (KB-020) but scroll FPS / dropped-frame measurement was not performed; no frame-timing tool available.
+,"PF-005 A 5,000-section work: scroll and TOC performance.","NOT-RUN — did not test a 5,000+-section work (e.g. spurgeon-sermons) for scroll/TOC performance; out of scope for the time available this pass."
+,PF-006 Desk with three panes: interaction latency.,"PENDING-SIGNIN — a meaningful 3-pane Desk interaction-latency benchmark needs saved/loaded content typical of real use; signed-out Desk (unsaved, URL-only) was exercised functionally (KB-009) but latency was not benchmarked."
+,PF-007 Ask p50/p95 over 20 questions.,"NOT-APPLICABLE — /ask shows ""Not open yet"" for everyone (feature disabled build-wide), so a 20-question p50/p95 cannot be run at all right now."
+,PF-008 Search p50/p95 over 20 queries.,"PARTIAL — only a single search sample exists (keyboard-performance.md: `/search?q=shepherd` TTFB 614.6ms, DCL 632.2ms), not a 20-query p50/p95 series; that doc itself flags the number as not fully understood (transferSize read 0 despite the slow TTFB)."
+,PF-009 Memory after 30 minutes of heavy use — leak check.,NOT-RUN — a 30-minute sustained-use memory-leak check was not performed (out of scope/time for this pass).
+,PF-010 100 highlights + 50 notes in one chapter → render time.,"PENDING-SIGNIN — 100 highlights + 50 notes requires the account (highlighting/notes are sign-in gated, confirmed under KB-007)."
+,PF-011 Time to interactive on the auth pages (currently never — see L1).,"NOT-APPLICABLE — the test plan itself notes auth-page TTI is ""currently never"" measurable; not attempted without an account and no alternate auth path exists signed out."
+x,"PF-012 Font loading: FOUT/FOIT behaviour, no layout shift (B5).","PASS — live-verified: fonts are self-hosted via next/font (all font URLs are same-origin `/_next/static/media/*.woff2`-style hashed paths, no external font-host round trip), and every `@font-face` rule found in the stylesheets (44 rules checked) declares `font-display: swap`, i.e. FOUT behavior, not"
+,"PF-013 Image loading: correct sizes, no oversized downloads on mobile.","FAIL — live-verified: the homepage hero background (`/marketing/hero-ground.jpg`, CSS `background-image`, not a Next.js optimized `<Image>`) has `decodedBodySize` 845,650 bytes (~826KB) and this exact same file/size is served identically at a 375px mobile viewport and at desktop width — no responsiv"
+,PF-014 Repeat-visit performance (warm cache) vs first visit.,"PARTIAL — not isolated cleanly: keyboard-performance.md's numbers were flagged by its own author as likely already cache-warm rather than true first-visit numbers, so a genuine first-visit-vs-repeat-visit comparison was not performed this pass either."
 ,"PL-001 Enumerate the plans surface, the day list, and the toggle.","PENDING-SIGNIN — /plans signed out shows only ""Sign in to build a reading plan.""; no plan/day list/toggle to enumerate."
 ,PL-002 Browse available plans → each has a clear description and length.,PENDING-SIGNIN — no browsable list of available plans exists signed out; nothing to compare descriptions/lengths against.
 ,PL-003 Start a plan → confirmation; it appears on home.,PENDING-SIGNIN — starting a plan requires an account.

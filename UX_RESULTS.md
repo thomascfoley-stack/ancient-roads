@@ -842,3 +842,38 @@ re-confirmed safe (matches earlier CH-021/022 PASS).
 tooling available this pass — no third-party-cookie-blocking simulation, no distinct CDN host to
 throttle in this local build (same-origin asset serving), no clock-skew or deploy-trigger capability,
 2-hour idle-session impractical to simulate. 6 of 24 PENDING-SIGNIN as expected.
+
+## Batch 37 — KB (Keyboard, second pass) and PF (Performance, second pass), tracker-driven
+
+### F-082 · KB-017/018 · **P1/AX** · The verse-number control has NO keyboard path at all — a core reading interaction
+The verse `<sup role="button">` control (used to open the commentary/word-study/notes panel for any
+verse) does not respond to Enter or Space, only mouse click. This is the primary way a reader opens
+per-verse content, and a keyboard-only user cannot activate it at all — not a degraded experience,
+a completely absent one for this app's central interaction.
+
+### F-083 · KB-020 · **P2/AX** · Sticky reader header hides keyboard-focused verses near the top
+The 65px sticky header has no `scroll-margin-top` compensation (confirmed `0px` via computed style),
+so tabbing/scrolling to a verse near the top of a chapter can land it underneath the fixed header,
+invisible to the user even though it's focused.
+
+### F-084 · KB-012 · confirms/extends F-038 · **P1/P2** · Same non-modal-popover-has-no-keyboard-dismissal pattern
+Re-confirms the translation dropdown's missing Escape/focus-trap already filed as F-038 — same root
+cause, cited rather than re-filed as a new finding.
+
+### F-085 · PF-013 · **P3** · Homepage hero background image has no responsive sizing
+The ~826KB decoded hero image is served identically at 375px mobile and desktop widths — no
+responsive `srcset`/sizing, meaning mobile visitors download a desktop-sized image unnecessarily.
+
+**Confirmed PASS:** verse panel (Commentaries/Word study/Notes tabs) opens, switches tabs, and
+Escape-closes with focus correctly returning to the trigger; Desk pane add/remove works signed out;
+the one real modal (book-picker, `role="dialog" aria-modal="true"`) correctly traps focus and Escape
+closes it with focus return; fonts are self-hosted via `next/font` with `font-display: swap` on all
+44 `@font-face` rules (no FOIT).
+
+**New, not yet filed as a numbered finding:** undocumented keyboard shortcuts exist (Cmd/Ctrl+K
+omnibox, Cmd+\ sidebar toggle) but are never surfaced in the UI — a discoverability gap, not a
+functional bug, noted for a future polish pass.
+
+**Coverage limit:** several PF items (PF-001-005, 008, 009, 014) genuinely need tooling this pass
+didn't have (Lighthouse, real network throttling, frame timing, extended memory profiling) — marked
+PARTIAL/NOT-RUN honestly rather than fabricated.
