@@ -450,3 +450,35 @@ match.
 **Method note, worth keeping:** reading `aria-pressed` synchronously right after `.click()` can catch
 a stale pre-commit value (React lag) and falsely read as "not wired" — an L1 false positive in the
 wrong direction. Re-read after a tick, or check the visible class/background change instead.
+
+## Batch 18 — keyboard-only + performance timing (parallel agent, signed out, prod build)
+
+Full detail: `docs/evidence/ux-remediation-2026-08-24/keyboard-performance.md`.
+
+KB-013/014/015 ✅ Tab order matches visual order for 15 stops on `/`, no traps, no positive
+`tabindex` anywhere on `/` or `/read/jhn/3`.
+
+### F-029 · KB-011/KB-010 · **P1/P2** · The translation switcher isn't keyboard-dismissible at all
+Opens correctly on click, but **Escape does not close it** — confirmed twice, focus stays on the
+trigger, options remain in the DOM and visible. Continuing to Tab (≈21 presses) carries focus **past
+the still-open dropdown** into a verse-number control in the reader body behind it — no focus
+containment either. Combined, this control doesn't behave like a popover at all for a keyboard user:
+it just stays open, visibly, while the rest of the page keeps receiving focus. Same control as
+AU/NV's earlier code-level note ("no Escape handler" was flagged as unconfirmed from reading source
+alone) — **now confirmed live, by keyboard, not by reading code** (L1).
+
+### F-030 · KB-016 · **P2** · Skip-to-content updates the URL but never moves focus
+First Tab correctly lands on the skip link. Activating it changes the URL to `#main` and scrolls
+visually, but `document.activeElement` stays on `<body>` — `<main>` has `tabindex="-1"` ready to
+receive focus but nothing calls `.focus()` on it. The next Tab press starts back at the top,
+defeating the whole point of the link for the keyboard/screen-reader users it exists for.
+
+**PF (informational only, not a verdict):** loopback timings (<100ms for `/` and the reader,
+~660ms for search — the search TTFB alone was 615ms, suggesting real server work) are explicitly
+flagged by the agent as likely cache-warmed, not cold-cache numbers — recorded as a smoke test
+(nothing egregiously bloated, no resource over 500KB) rather than a performance conclusion.
+
+**Method note, worth keeping:** clicking anywhere on a page before testing "Tab order from the top"
+resets the browser's internal focus-navigation starting point to that click — silently invalidating
+a "first Tab" test. Test cold, with zero clicks, for any KB-016-style "what's the very first stop"
+assertion.
