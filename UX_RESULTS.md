@@ -258,3 +258,10 @@ All findings, batches, and source evidence are in this file plus `docs/evidence/
 (one file per agent's full report). Picking this back up: the query batches and remaining signed-in
 depth are the highest-value next slice, since everything code/DB/signed-out-reachable just got a
 serious pass.
+
+## Note — chaos agent failed and was retried
+
+First chaos-resilience agent died mid-run: "API Error: Claude's response exceeded the 64000 output
+token maximum" — no output file was written, nothing to salvage. Retried with a much tighter scope
+(3 checks instead of 6, explicit truncation rules to prevent large HTML/JSON dumps). Will merge on
+completion.
