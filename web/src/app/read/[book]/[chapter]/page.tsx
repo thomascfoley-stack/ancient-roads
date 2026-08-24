@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { isFetchableChapter } from '@/lib/chapter-param';
 import { DEFAULT_BIBLE_HREF, DEFAULT_BIBLE_LABEL, saveBiblePosition } from '@/lib/bible-position';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   BOOK_BY_BOOK_SLUG,
   fetchChapter,
@@ -141,6 +141,8 @@ export default function ReaderPage() {
   // not a dead end. Declared up here with the other state because the error branch returns EARLY —
   // a `useState` after that return would be a conditional hook.
   const [recoveryPickerOpen, setRecoveryPickerOpen] = useState(false);
+  /** K-6 — did WE push the `#v<n>:study` history entry? See `openStudy` below. */
+  const pushedStudyEntry = useRef(false);
 
   const handleTranslationChange = useCallback((t: Translation) => {
     setTranslation(t);
@@ -167,6 +169,23 @@ export default function ReaderPage() {
     setData(null);
     setError(null);
     setStudy(null);
+    // K-6 bookkeeping: the panel is being closed by NAVIGATION, not by the reader, so the entry we
+    // pushed for it (if any) belongs to the chapter we are leaving. Forgetting it here stops a
+    // later close on the NEW chapter from calling `history.back()` and walking the reader back a
+    // chapter instead of shutting the panel.
+    //
+    // NOT also stripping a stale `:study` hash here, though that looks tidier. This effect runs on
+    // first mount too, one ordering step away from the hash effect below that reads that hash to
+    // open a deep-linked panel — and the value it would buy is a URL nicety in a case that needs a
+    // hash to survive a client-side chapter change, which `<Link>` navigation does not do. Least
+    // code wins over a subtle ordering dependency for an edge that may not be reachable.
+    // (Measured both ways in the browser, because a first attempt at this comment asserted the
+    // strip broke the deep link: it does not. That reading came from re-navigating to the URL the
+    // page was already on, which is a no-op, not a load. If you re-add the strip, verify the deep
+    // link by navigating AWAY first.)
+    // If the hash ever does go stale across a chapter change, `openStudy` sees it, replaces rather
+    // than pushes, and `closeStudy` takes its no-entry path — the panel still closes correctly.
+    pushedStudyEntry.current = false;
     fetchChapter(fetchSlug, chapterNum, translation.id)
       .then((d) => {
         if (!cancelled) setData(d);
@@ -199,12 +218,64 @@ export default function ReaderPage() {
   }, [book, chapterNum]);
 
   // ── deep link to a verse (`/read/jhn/3#v16`) ───────────────────────────────────────────────
+  /**
+   * K-6 — THE OPEN PANEL IS A VIEW, SO BACK MUST CLOSE IT BEFORE IT LEAVES THE CHAPTER.
+   *
+   * Measured before fixing (dev, signed out): /library -> /read/jhn/3 -> tap verse 16 -> Back
+   * landed on /library. One Back threw the reader out of the chapter they were reading, and the
+   * panel had added no history entry at all (`history.length` unchanged, hash empty).
+   *
+   * The entry is the existing `#v<n>:study` deep link — the hash effect above already parses it and
+   * opens the panel from it, so pushing it here makes the URL true, shareable and reproducible on
+   * reload, and gives Back something to pop, all with one mechanism rather than a parallel one.
+   *
+   * `pushedStudyEntry` is what keeps the deep-link case honest: arriving directly at
+   * `#v16:study` means the entry is already the current one, so we must NOT push (nothing to pop)
+   * and closing must NOT call `history.back()` — that would leave the site instead of the panel.
+   */
   const openStudy = useCallback(
     (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord, selection?: WordSelection) => {
+      const target = `#v${verse}:study`;
+      if (/:study$/.test(window.location.hash)) {
+        // Already open and being re-aimed (verse to verse, or word to commentary). Replace, so a
+        // reader who taps six verses does not have to press Back six times to leave.
+        window.history.replaceState(null, '', target);
+      } else {
+        window.history.pushState(null, '', target);
+        pushedStudyEntry.current = true;
+      }
       setStudy({ verse, tab, focusWordIdx, focusWord, selection });
     },
     [],
   );
+
+  /** Back (or a swipe-back) while the panel is open closes the panel and stays in the chapter. */
+  useEffect(() => {
+    const onPop = (): void => {
+      pushedStudyEntry.current = false;
+      setStudy(null);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  /**
+   * Closing by the panel's own control. If we pushed an entry, go back so it is CONSUMED — leaving
+   * it on the stack would make the reader's next Back press do nothing visible, which reads as a
+   * broken button. If we did not push (deep link), strip the hash instead so a later Back does not
+   * re-open a panel the reader has already dismissed.
+   */
+  const closeStudy = useCallback(() => {
+    if (pushedStudyEntry.current) {
+      pushedStudyEntry.current = false;
+      window.history.back();
+      return;
+    }
+    if (/:study$/.test(window.location.hash)) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    setStudy(null);
+  }, []);
 
   // Read from `window.location.hash` in an effect, NOT from useSearchParams: the hash is not sent
   // to the server, so there is nothing for a first client render to disagree with, and no Suspense
@@ -512,7 +583,7 @@ export default function ReaderPage() {
           onShowCommentary={() =>
             setStudy((s) => (s ? { ...s, tab: 'commentaries', focusWordIdx: undefined, focusWord: undefined } : s))
           }
-          onClose={() => setStudy(null)}
+          onClose={closeStudy}
         />
       ) : study ? (
         <StudyPanel
@@ -543,11 +614,11 @@ export default function ReaderPage() {
             loadFailed: annotationsFailed,
             onSetHighlight: (color) => addHighlight(study.verse, null, color),
             onClearHighlight: () => clearVerse(study.verse),
-            onSaveNote: (body) => { saveVerseNote(study.verse, body); setStudy(null); },
+            onSaveNote: (body) => { saveVerseNote(study.verse, body); closeStudy(); },
             onDeleteNote: () => deleteVerseNote(study.verse),
           }}
           onTabChange={(t) => setStudy((s) => (s ? { ...s, tab: t, focusWordIdx: undefined } : s))}
-          onClose={() => setStudy(null)}
+          onClose={closeStudy}
         />
       ) : null}
 
