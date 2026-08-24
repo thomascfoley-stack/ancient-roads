@@ -711,3 +711,22 @@ concurrent sweep agents and several checks got clobbered mid-flight rather than 
 largest remaining real gap in this pass; worth a dedicated re-run in an isolated browser session before
 calling LB done. LB-038 (the ~123-work sweep generator) has one sample (Josephus, PASS) out of ~123 —
 not expanded this pass.
+
+## Batch 32 — HL (Highlights), tracker-driven, signed-out
+
+### F-067 · HL-024 · **P2/AX** · The highlight gesture is completely unreachable by keyboard
+Tappable word spans (`[data-tap-word]`) have no `tabindex`/role — the two-tap highlight gesture can
+only be driven by pointer, no keyboard path exists at all.
+
+### F-068 · HL-015 · **P2** · Enabling the interlinear view silently removes highlighting, with no message
+Turning on the Greek/Hebrew interlinear removes all `data-tap-word` spans while the Highlight toggle
+still visually shows "on" — a reader who enables both features gets no indication that highlighting
+just stopped working.
+
+**Confirmed PASS:** highlight toggle has working `aria-pressed` + visible amber state; mobile gesture
+uses `user-select:none` correctly, doesn't fight text selection, works at 375px.
+
+**Flagged, not filed:** the "Sign in to highlight" popup renders in a fixed position near the bottom-
+left/sidebar rather than anchored to the selected text — worth a follow-up visual check, not scored
+as a finding this pass. 18 of 26 items PENDING-SIGNIN as expected (persisted-highlight behavior needs
+the one real account).
