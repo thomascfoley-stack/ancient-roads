@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — search_outcomes shipped to prod (129); merge with main green; TWO owner items hold the deploy
+
+**Owner go:** "do them" (in-chat, this session, 2026-08-24) — prod migration + merge + deploy.
+
+**Done.**
+* Migration renumbered 127→129 (collision with origin/main's canonical 127/128 — caught by peer
+  sessions -90/-db, verified against `git ls-tree origin/main` BEFORE any prod apply; my first
+  prod-apply attempt failed on credentials, which in hindsight was the system working).
+* `129_search_outcomes.sql` APPLIED TO PROD (ep-odd-fog, ledger sha 6b2a39e6eb86, owner go above)
+  and verified independently: RLS on, exactly one INSERT policy, 0 rows. Prod ledger read first:
+  125/126 applied, 127/128 NOT (they are the owner's B1/B4 packets).
+* `origin/main` merged into `fix/q1-signed-out-state` → `85ba99c` (103 theirs + 5 mine). Two real
+  conflicts: WORKLOG (both kept) and user-corpus documents.ts (union: B11 quota INSERT…SELECT +
+  main's `asserted_ownership_at`). One SEMANTIC conflict the merge hid: B1's DIGIT_ATTACHED pass
+  called W-SCANRE's now-5-arg `consider` with 3 args — fixed (attached digit = explicit ordinal),
+  both ref-parse copies byte-identical. ref-parse 83/83, quota suites, my 16 — green.
+* **FULL `npm run audit` on the merged tree: ALL GATES GREEN** — the closeout's fixes healed the
+  two standing reds (tradition-gap, publish-flip); zero known reds remain on this lineage.
+
+**FOUND — ACTIVE PROD OUTAGE (not caused by this work).** Live is `7747f10` (alias API, all four
+aliases). It contains `6d6cbaa` (W-OWNERSHIPCOL): every upload INSERTs
+`user_documents.asserted_ownership_at` — a column PROD DOES NOT HAVE (128 unapplied). Uploads
+have been failing since the 00:08Z closeout deploy. Fix is migration 128 (one nullable
+ADD COLUMN IF NOT EXISTS, already on origin/main) — **owner go requested, held** (bylaw 7; it is
+the owner's B4 packet).
+
+**Holding the deploy on two owner-only acts.**
+1. Migration 128 on prod (fixes the live outage AND is a precondition of deploying the merged
+   tree, which carries the same INSERT).
+2. Vercel seat verification: EVERY deployment since ~05:00Z parks `BLOCKED`
+   (`TEAM_ACCESS_REQUIRED, isVerified:false` via API — the CLI shows UNKNOWN). Dashboard-only.
+   Note: pushes now auto-trigger Vercel Git builds (new tonight; MASTER's "Vercel does not deploy
+   on git push" is stale).
+
 ## 2026-08-23 — search_outcomes: every search surface now logs its queries (owner directive)
 
 **Directive.** "When users run queries searches etc we need to see all of that." Recon first:
