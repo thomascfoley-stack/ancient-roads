@@ -1244,3 +1244,15 @@ true zero-result state — the system falls back to "No known people or places m
 matches" plus a closest-match result. This reads as intentional, sensible design (never a dead end for
 the user) but means the literal "honest zero-result empty state" this ID asks about isn't reachable
 through this path.
+
+## Batch 55 — EM (Empty states, real observation), live signed-in production
+
+### F-106 · EM-005/EM-007 · **P3** · `/library/notes` silently omits entire sections when they're empty, instead of showing an empty state
+This account currently has zero real notes and zero bookmarks (all test ones were created and cleanly
+deleted in earlier batches). The page's own subtitle promises "Every verse you have highlighted,
+bookmarked, or written a note on, in one place" — but with real, verified zero counts, **no "Notes"
+or "Bookmarks" section renders at all**, not even an empty-state line. Only "HIGHLIGHTS (19)" appears.
+A user who has bookmarked or noted nothing yet gets no indication those features exist on this page —
+the sections just aren't there, rather than teaching what they're for (contrast with the well-built
+empty states elsewhere: `/plans`, `/prayers`, `/library/uploads` all correctly show inviting empty-
+state copy).
