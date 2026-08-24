@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BOOKS } from '../bible/books';
+import { mergeChapterEntries } from './merge-chapter-entries.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..', '..');
@@ -25,6 +26,9 @@ interface Entry {
   sourceTitle: string;
   sourceUrl: string;
   text: string;
+  /** Set by register-writer for register-owned entries. Absent on this script's own output.
+   *  D23 uses it to preserve foreign entries unconditionally. */
+  work?: string;
 }
 
 interface ChapterFile {
@@ -92,16 +96,39 @@ for (const book of BOOKS) {
 
     const dir = join(outDir, book.slug);
     mkdirSync(dir, { recursive: true });
+    const outPath = join(dir, `${ch}.json`);
+
+    // D23 (DEEP_SWEEP): this used to write `entries` alone, so the file ended up containing ONLY
+    // this script's two input dirs. THREE writers own web/public/commentaries/{book}/{chapter}.json
+    // and the other two preserve foreign entries — register-writer.ts:362
+    // (`filter(e.work !== slug)`) and insert-static-author.ts:57 (`filter(e.author !== author)`).
+    // This one deleted them outright. Not truncation: DELETION. And it is reachable today — the
+    // patristic producer was removed by ADR-120, but ingest-commentary-api still fills
+    // data/commentaries-api over the network with no local prerequisite, which alone makes
+    // `entries` non-empty and triggers the write. predeploy-gate.ts:180 tells a stressed operator
+    // to run exactly this script when the corpus is missing, and the tree is gitignored and
+    // untracked — for the scraped sources it is the only copy on the machine.
+    //
+    // Register-owned entries (those carrying `work`) are preserved UNCONDITIONALLY rather than by
+    // author name. Keying on author alone works today — register uses 'Gill, John' where the API
+    // uses 'John Gill', and a full-corpus scan found no entry with both a HelloAO author name and
+    // a work slug — but that is one normalisation away from silently deleting a register work.
+    const merged = mergeChapterEntries(readChapterFile(outPath), entries);
+
+    merged.sort((a, b) => {
+      if (a.verseStart !== b.verseStart) return a.verseStart - b.verseStart;
+      return (a.year ?? 9999) - (b.year ?? 9999);
+    });
 
     const payload: ChapterFile = {
       book: book.bookNum,
       chapter: ch,
-      entries,
+      entries: merged,
     };
 
-    writeFileSync(join(dir, `${ch}.json`), JSON.stringify(payload));
+    writeFileSync(outPath, JSON.stringify(payload));
     totalFiles++;
-    totalEntries += entries.length;
+    totalEntries += merged.length;
   }
 }
 
