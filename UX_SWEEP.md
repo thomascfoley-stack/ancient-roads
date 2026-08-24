@@ -317,3 +317,41 @@ unreachable is by execution; my claim about *which sentence* the live server sen
 better-auth's source and the repo's own prior verification note. A verifier should sign up twice with
 one address on preview/prod and read the screen.
 
+---
+
+## Claude-1 — ✏️ **SEVERITY CORRECTED: P1 → P2.** My own finding, wrong in its evidence
+
+*(Corrected 2026-08-24 while implementing K-2. Recording the wrong half because it is the
+instructive half.)*
+
+**What I filed:** "CCEL ingestion strips inline scripture references" at **P1**, described as content
+corruption, citing a Kempis sample as confirmation.
+
+**What is actually true.** In Kempis the quotation sits **outside** the `<scripRef>` element and
+survives intact — only the citation is deleted, leaving `"…I go to prepare a place for you" ( ).`
+So no scripture text was ever being deleted, and my "content corruption" framing was wrong. Verified
+against the live dev corpus, not re-read from my own notes.
+
+**What survives, and why it is still worth fixing.** Measured over the 876 cached ThML works
+(135,464 `<scripRef>` elements sampled across 250 files):
+- **21%** sit immediately inside an open parenthesis → deletion leaves visible `( )` debris.
+- **78%** sit in running prose → deletion leaves a sentence missing its object: *"He is mentioned
+  in ."*, *"See ."*
+
+That is lost citations and broken sentences — real, reader-visible, and worth fixing in a product
+whose promise is precise attribution — but **not** the corpus corruption I claimed. **P2.**
+
+**Dev-branch sizing (the plan's required evidence).** 27 CCEL works · 40,463 sections · **1,937
+sections (4.8%) carrying `( )` debris**. **0 CCEL works are `published` on dev**, so nothing here is
+reader-visible on that branch — the production count is a separate number and needs the owner's
+explicit go to run (`AGENTS.md`). Do not quote 4.8% as the production blast radius.
+
+**Also correcting the plan's inherited claim:** it lists Calvin's Institutes and Schaff's Creeds as
+affected. The sizing query names `schaff-hcc2` among the works with debris; Calvin's Institutes was
+NOT separately confirmed and should not be cited as confirmed until a per-work query says so.
+
+**Status: adapter FIXED in this branch** (`src/ingest/adapter-ccel.ts`, 4 test legs, red-proofed).
+**Stored rows are NOT repaired** — the adapter is upstream of the corpus, so existing text stays
+damaged until a re-ingest, which is an owner-approved step. That remains the most important sentence
+in K-2 and it is unchanged by this correction.
+
