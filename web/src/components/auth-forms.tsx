@@ -51,6 +51,23 @@ export const FIRST_RUN_DESTINATION = '/read/jhn/1?firstrun=1';
 
 const MIN_PASSWORD = 12;
 
+// Account-existence codes from the auth server, verified against the installed better-auth
+// 1.4.18 rather than assumed: the sign-up route throws APIError(UNPROCESSABLE_ENTITY) with
+// message "User already exists. Use another email." (dist/api/routes/sign-up.mjs), and
+// better-call derives the wire code from the message (dist/error.mjs: uppercased, spaces to
+// underscores), giving USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL. The bare USER_ALREADY_EXISTS is
+// the same class emitted by the admin plugin. These get the generic message below so sign-up
+// holds the same posture as sign-in and forgot-password (see the oracle comment there).
+//
+// This NARROWS the account-existence oracle; it does not CLOSE it. The form still succeeds for
+// new addresses and fails for taken ones, so its behaviour alone leaks existence. Closing it
+// means always claiming success and emailing the address's real owner — a much larger change,
+// deliberately not taken here. Do not read this as a guarantee.
+const ACCOUNT_EXISTENCE_CODES = new Set([
+  'USER_ALREADY_EXISTS',
+  'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL',
+]);
+
 // PRD §6 inputs: parchment surface, 1px vellum hairline (`edge`, which also flips the color in
 // dark mode — a layered `dark:border-*` pair cannot be trusted to, per globals.css:226). Focus is
 // the global 2px antique-gold :focus-visible outline, NOT a focus border: an unlayered `.edge`
@@ -156,7 +173,13 @@ export function AuthForm({ path }: { path: AuthMode }) {
           password,
           name: String(data.get('name') ?? '').trim() || email.split('@')[0],
         });
-        if (err) throw new Error(err.message ?? 'That account could not be created.');
+        if (err) {
+          throw new Error(
+            err.code && ACCOUNT_EXISTENCE_CODES.has(err.code)
+              ? 'That account could not be created.'
+              : (err.message ?? 'That account could not be created.'),
+          );
+        }
         // T1 — a new reader's first screen is the PRODUCT, not a dashboard. `/home` shows a
         // devotional feed that teaches nothing about what makes this app different; the verse
         // drawer is the one idea that does. Sign-IN keeps `/home` deliberately: a returning

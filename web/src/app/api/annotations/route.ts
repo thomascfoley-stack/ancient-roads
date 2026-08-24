@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { encodeVerseId } from '@bible/verse-id';
+import { truncateCodePoints } from '@/lib/text';
 import {
   getChapterAnnotations,
   createHighlight,
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
         textColor: textColorRaw,
         spanStart: hasSpan ? spanStart : null,
         spanEnd: hasSpan ? spanEnd : null,
-        translation: body.translation != null ? String(body.translation).slice(0, 32) : null,
+        translation: body.translation != null ? truncateCodePoints(String(body.translation), 32) : null,
       };
       // Idempotent create: the double-submit path (a retry after a timeout, a double-tap)
       // used to INSERT a twin row — prod carried two identical spans (2026-08 live QA).
@@ -151,7 +152,7 @@ export async function POST(req: NextRequest) {
       // "no length cap on free text at the edge" is the shape the API-hardening pass closed
       // everywhere else in this route's neighbourhood.
       const raw = body.label != null ? String(body.label).trim() : '';
-      const label = raw ? raw.slice(0, 200) : null;
+      const label = raw ? truncateCodePoints(raw, 200) : null;
       const b = await createBookmark(user.id, verseId, label);
       return NextResponse.json(b, { status: 201 });
     }

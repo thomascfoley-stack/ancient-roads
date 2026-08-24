@@ -75,7 +75,7 @@ export const HISTORY_GAZETTEER: GazetteerEntry[] = [
   { slug: 'wilfrid', label: 'Wilfrid', kind: 'person' },
   { slug: 'cuthbert', label: 'Cuthbert', kind: 'person' },
   { slug: 'columba', label: 'Columba', kind: 'person' },
-  { slug: 'easter-controversy', label: 'Easter', kind: 'event' },
+  { slug: 'easter-controversy', label: 'Easter controversy', kind: 'event', aliases: ['Quartodeciman', 'Synod of Whitby'] },
   // — patristic / conciliar (Schaff HCC I–III) —
   { slug: 'constantinople', label: 'Constantinople', kind: 'place' },
   { slug: 'chalcedon', label: 'Chalcedon', kind: 'place' },

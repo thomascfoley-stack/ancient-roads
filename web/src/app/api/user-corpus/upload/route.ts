@@ -5,7 +5,7 @@ import { guardUser } from '@/lib/user-corpus/route-guard';
 import { putUserDocument } from '@/lib/user-corpus/blob';
 import { createDocument, findByChecksum, setBlobPathname } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
-import { checkUploadQuota } from '@/lib/user-corpus/quota';
+import { QuotaExceeded } from '@/lib/user-corpus/quota';
 import { assertWithinSizeCap, checksum, sniffType } from '@/lib/user-corpus/sniff';
 import { UploadRefused } from '@/lib/user-corpus/types';
 
@@ -64,15 +64,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Quota AFTER the size cap and the dedupe, BEFORE the row exists (H5b). After dedupe on
-    // purpose: re-uploading identical bytes returns the existing document and adds nothing to
-    // usage, so refusing it on quota would refuse a free request. A quota-check failure lands in
-    // the catch below as a 500 — fail-closed, nothing accepted.
-    const quota = await checkUploadQuota(user.id, bytes.byteLength);
-    if (!quota.ok) {
-      return NextResponse.json({ error: quota.message, code: 'quota_exceeded' }, { status: 403 });
-    }
-
+    // Quota is enforced INSIDE createDocument's transaction (B11): the pre-flight check that
+    // used to sit here and the insert were separate transactions, so two concurrent uploads both
+    // passed the check and both inserted. Dedupe still comes first, on purpose: re-uploading
+    // identical bytes returns the existing document and adds nothing to usage, so refusing it on
+    // quota would refuse a free request. A quota refusal reaches the catch below as QuotaExceeded.
+    //
     // The row is created BEFORE the bytes are stored: a failure between the two leaves a visible
     // row in 'queued' with no blob, which the drain turns into a stated failure. The reverse order
     // can leave a stored file that no row names.
@@ -115,6 +112,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ document: doc }, { status: 201 });
   } catch (e) {
+    if (e instanceof QuotaExceeded) {
+      // The enforced quota refusal from createDocument — same body the pre-flight check returned
+      // before B11 moved enforcement into the transaction: 403, `error` a string (H6).
+      return NextResponse.json({ error: e.message, code: 'quota_exceeded' }, { status: 403 });
+    }
     if (e instanceof UploadRefused) {
       // 413 for the size caps, 415 for a type we do not accept, 400 for the rest. A refusal at
       // this stage never creates a row -- nothing was accepted, so there is nothing to report a

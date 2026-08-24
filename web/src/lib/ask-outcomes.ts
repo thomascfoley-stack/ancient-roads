@@ -2,6 +2,7 @@ import 'server-only';
 import { after } from 'next/server';
 import { getDb, runAsUser } from '@/lib/db';
 import { logEvent } from '@/lib/observability';
+import { truncateCodePoints } from '@/lib/text';
 import type { LaneFlags, TeachMeta, TeacherResult } from '@/lib/teacher/teach';
 import type { RetrievedChunk } from '@/lib/teacher/retrieve';
 
@@ -90,7 +91,7 @@ export function buildAskOutcomeRow(input: AskOutcomeInput): AskOutcomeRow {
   // emits are short fixed strings; sliced anyway against a future free-text one).
   const failures =
     result.kind === 'empty'
-      ? [{ check: 'empty', message: result.reason.slice(0, 300) }]
+      ? [{ check: 'empty', message: truncateCodePoints(result.reason, 300) }]
       : (meta.rejections ?? []);
   return {
     id: input.id,
@@ -136,7 +137,7 @@ export async function recordAskOutcome(input: AskOutcomeInput): Promise<void> {
   try {
     await insertAskOutcome(buildAskOutcomeRow(input));
   } catch (e) {
-    const message = String((e as Error)?.message ?? e).slice(0, 300);
+    const message = truncateCodePoints(String((e as Error)?.message ?? e), 300);
     console.error('[ask_outcomes] persist failed:', message);
     logEvent('error', { where: 'ask_outcomes.persist', message });
   }

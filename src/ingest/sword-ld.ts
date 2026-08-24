@@ -158,6 +158,7 @@ export function decodeZld(base: string, encoding: ModEncoding): LdEntry[] {
     if (n >= blockCount) throw new Error(`${base}: block ${n} out of range (${blockCount} blocks)`);
     const off = zdx.readUInt32LE(n * 8);
     const comp = zdx.readUInt32LE(n * 8 + 4);
+    if (off + comp > zdt.length) throw new Error(`${base}.zdx block ${n} overruns .zdt — unrecognized layout`);
     const buf = inflateSync(zdt.subarray(off, off + comp));
     blockCache.set(n, buf);
     return buf;
@@ -178,6 +179,9 @@ export function decodeZld(base: string, encoding: ModEncoding): LdEntry[] {
   for (let i = 0; i + 8 <= idx.length; i += 8) {
     const off = idx.readUInt32LE(i);
     const size = idx.readUInt32LE(i + 4);
+    // Buffer.subarray clamps instead of throwing — without this check a corrupt
+    // .idx yields a silently truncated record (same check as decodeRawLd).
+    if (off + size > dat.length) throw new Error(`${base}.idx entry @${i} overruns .dat — unrecognized layout`);
     raw.push(splitKeyRecord(dat.subarray(off, off + size), encoding, `${base}.dat @${off}`));
   }
   return resolveLinks(raw, encoding).map(({ key, payload }) => {

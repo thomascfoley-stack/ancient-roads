@@ -117,6 +117,18 @@ describe('parseDocx extracts prose from WordprocessingML', () => {
     expect(text).toBe('Jacob & Esau &lt;tag&gt; "quoted"');
   });
 
+  it('preserves an out-of-range numeric entity instead of throwing', () => {
+    // SEED: decode with a bare String.fromCodePoint -> RED: `RangeError: Invalid code point
+    // 1114112` escapes decodeEntities, and the upload queue — which treats only UploadRefused as
+    // permanent — retries the same deterministic failure three times before it finally fails.
+    // The verifier's normalize.ts has carried the correct guard (keep the original text when
+    // cp < 1 or cp > 0x10ffff) since before this parser existed.
+    const text = parseDocx(
+      docx(`<w:document><w:body>${para('word &#1114112; and &#x110000; more')}</w:body></w:document>`),
+    );
+    expect(text).toBe('word &#1114112; and &#x110000; more');
+  });
+
   it('ignores styling and revision marks', () => {
     const xml =
       '<w:document><w:body><w:p><w:pPr><w:jc w:val="center"/></w:pPr>' +

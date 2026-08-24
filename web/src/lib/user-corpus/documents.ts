@@ -4,6 +4,7 @@
 
 import { runAsUser } from '@/lib/db';
 import { deleteUserDocument } from './blob';
+import { MAX_BYTES_PER_USER, MAX_DOCUMENTS_PER_USER, QuotaExceeded, quotaVerdict } from './quota';
 import type { DocStatus, DocType, UserDocument } from './types';
 
 interface Row {
@@ -125,17 +126,42 @@ export async function findByChecksum(userId: string, sum: string): Promise<UserD
  * uploaded to blob storage, on purpose: §8's guarantee is that no document is ever silently
  * dropped, and a document that fails between arriving and being recorded is exactly a silent drop.
  * Recording first means the worst case is a visible row stuck in 'queued', which the drain retries.
+ *
+ * QUOTA ENFORCEMENT LIVES HERE (B11, owner ruling: option B). The upload route used to run
+ * checkUploadQuota and this insert as separate runAsUser calls — separate transactions — so two
+ * concurrent uploads both passed the check and both inserted (TOCTOU, the same shape queue.ts's
+ * claim and reingest-guard.ts document). Now the usage read and the insert are ONE transaction,
+ * and pg_advisory_xact_lock serialises creates per user for its length: this module is the only
+ * writer of user_documents, so under the lock the WHERE clause's count/sum cannot change before
+ * the insert lands. A refusal throws QuotaExceeded with the same message the pre-flight check
+ * always returned; checkUploadQuota keeps that wording via the shared quotaVerdict.
  */
 export async function createDocument(
   userId: string,
   meta: { title: string; filename: string; byteSize: number; checksum: string; mimeType: string },
 ): Promise<UserDocument> {
-  const [rows] = await runAsUser(userId, (sql) => [
+  const [, usageRows, rows] = await runAsUser(userId, (sql) => [
+    sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`,
+    // Same COALESCE-both-ways read as checkUploadQuota; kept as its own statement so a refusal
+    // can name the live usage in the message.
+    sql`SELECT count(*)::int AS documents, COALESCE(sum(byte_size), 0)::bigint AS bytes
+          FROM user_documents
+         WHERE user_id = ${userId}`,
     sql`INSERT INTO user_documents (user_id, title, source_filename, byte_size, checksum, mime_type, status)
-        VALUES (${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued')
+        SELECT ${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued'
+        WHERE (SELECT count(*) FROM user_documents WHERE user_id = ${userId}) + 1 <= ${MAX_DOCUMENTS_PER_USER}
+          AND (SELECT COALESCE(sum(byte_size), 0) FROM user_documents WHERE user_id = ${userId}) + ${meta.byteSize} <= ${MAX_BYTES_PER_USER}
         RETURNING *`,
   ]);
-  return toDocument((rows as Row[])[0]!);
+  const inserted = (rows as Row[])[0];
+  if (!inserted) {
+    const u = (usageRows as { documents: number; bytes: string | number }[])[0];
+    if (!u) throw new Error('quota query returned no row');
+    const verdict = quotaVerdict(u.documents, Number(u.bytes), meta.byteSize);
+    if (verdict.ok) throw new Error('createDocument: insert returned no row but usage is within quota');
+    throw new QuotaExceeded(verdict);
+  }
+  return toDocument(inserted);
 }
 
 export async function setBlobPathname(userId: string, id: string, pathname: string): Promise<void> {
