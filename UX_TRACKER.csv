@@ -101,28 +101,28 @@ x,ACCT-005 Invalid sub-path → human 404.,"PASS — invalid sub-path (/account/
 ,AU-050 Any auth page with JS disabled → does it fail safely? Nothing sensitive in the URL (L4).,
 ,"AU-051 Screen reader: complete sign-in start to finish, announcing errors.",
 ,AU-052 Every auth error message collected and graded human vs robotic (B2).,
-,AX-001 Automated axe scan on all 33 routes; triage each violation individually.,
-,AX-002 Screen-reader: sign in → ask → hear the answer → open a citation.,
-,"AX-003 Screen-reader: open a chapter, toggle interlinear, highlight a verse — states announced.",
-,AX-004 Screen-reader: navigate the library and open a work.,
-,AX-005 Screen-reader: complete the desk journey.,
-,AX-006 Every image has alt text or is correctly decorative.,SEE UX_RESULTS.md / evidence — needs status confirm
-,AX-007 Every icon-only button has an accessible name.,SEE UX_RESULTS.md / evidence — needs status confirm
-,AX-008 Every form control has a label (not just a placeholder).,SEE UX_RESULTS.md / evidence — needs status confirm
-,AX-009 Headings form a sensible outline on every surface; no skipped levels.,SEE UX_RESULTS.md / evidence — needs status confirm
-,AX-010 Landmarks present (main/nav/complementary) and unique.,SEE UX_RESULTS.md / evidence — needs status confirm
-,AX-011 Page has a lang attribute; original-language text carries its own `lang`.,SEE UX_RESULTS.md / evidence — needs status confirm
-,"AX-012 Colour contrast ≥AA for body, muted, disabled, and placeholder text — light AND dark.",
-,AX-013 Highlight colours keep text ≥AA (both themes).,
-,AX-014 Accent/antique-gold on parchment ≥AA at small sizes.,
-,AX-015 Never colour alone to convey state (B3).,
-,AX-016 Focus indicators ≥3:1 against their background.,SEE UX_RESULTS.md / evidence — needs status confirm
-,AX-017 `prefers-reduced-motion` honoured app-wide — including the highlighter release and the history progress bar.,SEE UX_RESULTS.md / evidence — needs status confirm
-,AX-018 Text resize to 200% → no loss of content or function.,
-,AX-019 Touch targets ≥44px everywhere (a known 16-target failure — re-count).,SEE UX_RESULTS.md / evidence — needs status confirm
-,"AX-020 Live regions used for async results, so screen-reader users know an answer arrived.",
-,AX-021 Error messages associated with their fields programmatically.,
-,AX-022 Zoom + screen reader together on the reader → still usable.,
+,AX-001 Automated axe scan on all 33 routes; triage each violation individually.,"PARTIAL — no axe-core tool available; manually DOM-audited 7 of 33 routes (/, /ask, /library/sermons, /read/jhn/3, /plans, /settings, /library/books) for landmarks/headings/labels/alt/icon-names — no violations found there, but 26 routes not covered and no automated scanner was run."
+,AX-002 Screen-reader: sign in → ask → hear the answer → open a citation.,"PENDING-SIGNIN — /ask shows ""Not open yet"" (pre-signup gate, SEC-1) for the non-owner account; the ask→answer→citation flow cannot be reached without signing in, and no screen reader software was run in this pass regardless."
+,"AX-003 Screen-reader: open a chapter, toggle interlinear, highlight a verse — states announced.","PARTIAL — ARIA verified programmatically on /read/jhn/3: interlinear toggle button correctly flips aria-pressed false→true, verse-panel opens as role=""dialog"" aria-modal=""true"" aria-label=""Study this verse"", tabs use role=""tab""/aria-selected correctly, Greek interlinear text carries lang=""el"". Not c"
+,AX-004 Screen-reader: navigate the library and open a work.,"PARTIAL — /library/sermons and /library/books have a single H1, a nav landmark, and text-labelled links; DOM structure looks sound but not confirmed audibly with a screen reader."
+,AX-005 Screen-reader: complete the desk journey.,"PENDING-SIGNIN — the desk journey (adding panes, My Works) needs sign-in for meaningful content; only the signed-out empty shell was reachable."
+x,AX-006 Every image has alt text or is correctly decorative.,"PASS — no bare <img> without alt found on any checked page (0 <img> elements on marketing home; other pages use SVG icons, all decorative/aria-hidden or labelled)."
+x,AX-007 Every icon-only button has an accessible name.,"PASS — checked icon-only buttons on 5+ pages (sidebar collapse ""Collapse sidebar"", verse-panel ""Next verse"", interlinear toggle ""Greek and Hebrew interlinear"", etc.) — 0 unnamed icon buttons found in any DOM scan."
+x,AX-008 Every form control has a label (not just a placeholder).,"PASS — (spot-checked) — waitlist email input has a proper sr-only <label for=""waitlist-email"">; no unlabelled inputs/textareas/selects found on any page scanned (sign-in and /ask forms not reachable to verify further, gated)."
+,AX-009 Headings form a sensible outline on every surface; no skipped levels.,"FAIL — homepage heading order skips a level: ...H2 ""We are opening the doors slowly"" → H4 ""Product"" / H4 ""More"" in the footer, with no H3 in between."
+,AX-010 Landmarks present (main/nav/complementary) and unique.,"PARTIAL — main landmark present and singular everywhere checked; multiple <nav> elements appear on library/reader pages (2-3) without verifying each has a distinct accessible name; no semantic <header>/<footer> elements detected on the one page precisely measured, despite visible footer content."
+x,AX-011 Page has a lang attribute; original-language text carries its own `lang`.,"PASS — <html lang=""en"">; original-language interlinear text carries its own lang (Greek spans use lang=""el"") on /read/jhn/3."
+,"AX-012 Colour contrast ≥AA for body, muted, disabled, and placeholder text — light AND dark.","PARTIAL — dark theme measured strong (body text 13.7:1, nav-label stone-400 7.66:1, accent-400 6.88:1 — all clear AA). Light theme accent-600 ~5.5:1 and stone-500 ~5.7:1 look fine, but stone-400 (#b4a692) against the light parchment background computes to only ~2.2:1 — likely an AA failure if that t"
+,AX-013 Highlight colours keep text ≥AA (both themes).,PARTIAL — not directly tested; no highlight was applied and measured for text-over-highlight contrast in this pass.
+x,AX-014 Accent/antique-gold on parchment ≥AA at small sizes.,"PASS — computed accent-600 (antique gold, #8a5a2b) against the parchment background ≈5.5:1, clears AA even at small sizes (based on CSS custom-property values, not a pixel-sampled screenshot)."
+,AX-015 Never colour alone to convey state (B3).,"PARTIAL — toggle controls (e.g. interlinear) expose state via aria-pressed, not color alone, which is good for AT users; did not visually verify sighted-only state cues (e.g. tradition/highlight color-coding) elsewhere."
+x,AX-016 Focus indicators ≥3:1 against their background.,"PASS — global :focus-visible rule defines a 2px solid outline in accent-600 (light, ~5.5:1) / accent-400 (dark, ~6.9:1) with 2px offset, both well over 3:1. Caveat: a `.focus-quiet:focus-visible { outline: none }` escape hatch exists in the CSS; no element using that class was found on the pages che"
+x,AX-017 `prefers-reduced-motion` honoured app-wide — including the highlighter release and the history progress bar.,"PASS — a global @media (prefers-reduced-motion: reduce) rule zeroes out transition/animation durations app-wide, plus a specific rule for `.progress-travel` (the history progress bar) that removes its animation and freezes it at full width."
+,AX-018 Text resize to 200% → no loss of content or function.,PARTIAL — not tested; browser pane zoom-to-200% could not be reliably exercised in this environment (screenshot/zoom actions were intermittently unavailable due to shared-tab/pane issues).
+,AX-019 Touch targets ≥44px everywhere (a known 16-target failure — re-count).,"FAIL — confirmed still present, and broader than ""16 targets"": sidebar nav links measure 217×35 / 233×35 (height 35px, under the 44px minimum) — 22 undersized targets counted on /library/sermons alone, 27 on /read/jhn/3, including a 24×24 icon-only ""Collapse sidebar"" button. Some elements are correc"
+,"AX-020 Live regions used for async results, so screen-reader users know an answer arrived.","PARTIAL — a global aria-live=""polite"" region exists on the marketing home page (infra for toast/async notices), but the actual /ask streaming-answer flow could not be exercised (gated, ""Not open yet"" for non-owner), so it's unconfirmed whether the answer arrival is announced through it."
+,AX-021 Error messages associated with their fields programmatically.,"PARTIAL — the one form checked (waitlist email) has a correctly-associated <label>, but no aria-describedby/aria-invalid wiring was confirmed because a validation-error state could not be reliably triggered and inspected in this pass (tab/session instability)."
+,AX-022 Zoom + screen reader together on the reader → still usable.,"PARTIAL — not tested; this is a compound check needing a real screen reader plus zoom simultaneously, which this pass did not have tooling for."
 ,"CH-001 Enumerate every write path in the app (highlight, note, study, plan-day, upload, thread, prayer, settings, progress).",
 ,CH-002 Refresh during each → no zombie state. *One row per write path.*,
 ,CH-003 Offline during each → honest failure + recovery. *One row per write path.*,
@@ -891,29 +891,29 @@ x,UP-005 Queue states are all distinguishable: queued / parsing / embedding / re
 ,VS-028 Panel when the commentary fetch fails → honest error + retry.,
 ,VS-029 Two verses opened in sequence → no content bleed from the first.,
 ,VS-030 Panel + interlinear both on → coexist without overlap.,
-,WS-001 Enumerate both entry points and their differences.,
-,WS-002 Open from a reader word → the right word's entry.,
-,WS-003 Direct URL `/word/G26` → reproduces; refresh-safe.,
-,"WS-004 Back from word study → returns to the invoking context, not the top of the reader.",
-,WS-005 Greek renders correctly with diacritics.,
-,"WS-006 Hebrew renders right-to-left correctly, with vowel points.",
-,WS-007 Transliteration present and consistent.,
-,"WS-008 Definition, KJV usage, morphology all present where the data has them.",
-,"WS-009 Word with multiple senses → navigable, labelled.",
-,WS-010 Obscure/hapax word → honest empty state.,
-,WS-011 Invalid Strong's number `/word/G99999` → human error.,
-,"WS-012 Malformed `/word/XYZ` → human error, not a stack trace.",
-,WS-013 Related verses list → lands correctly; Back returns.,
-,WS-014 Occurrence count → present and plausible; matches the concordance.,
-,WS-015 Concordance list paginated or capped sanely for a common word (e.g. G2532 καί).,
-,WS-016 A very common word (thousands of hits) → page still loads and stays usable.,
-,WS-017 Two word studies in sequence → no bleed of the previous word.,
-,WS-018 `/library/word-study` browse/search → works per enumeration.,
-,WS-019 Search a word in English → finds the right entries.,
-,WS-020 Search gibberish → honest empty state with a suggestion.,
-,"WS-021 Mobile: script readable, long transliterations don't overflow.",
-,"WS-022 Lexicon asset fails to load → ""unavailable"" message, distinguishable from ""no entry"".",
-,WS-023 Word study attribution: which lexicon is this? Named? (B10),
-,WS-024 Cross-link from word study back into a verse → correct.,
-,WS-025 Keyboard-only navigation through a word entry.,
-,WS-026 Screen reader: original-language text has correct `lang` so it isn't read as English.,
+x,WS-001 Enumerate both entry points and their differences.,"PASS — Three entry points found: /library/word-study browse+search page, reader interlinear (ℵα toggle) tap-word popup, and direct /word/Gxx URL."
+x,WS-002 Open from a reader word → the right word's entry.,"PASS — Tapping an interlinear word in the reader (e.g. βασιλείαν) opens a preview popup with a ""Everything about Gxxx"" link to the full /word/G932 lexicon page."
+x,WS-003 Direct URL `/word/G26` → reproduces; refresh-safe.,PASS — /word/G26 loads directly and survives a hard refresh with identical content.
+,"WS-004 Back from word study → returns to the invoking context, not the top of the reader.","FAIL — Back from /word/G932 (opened via reader interlinear tap) returns to the top of John 3, not the scroll position/word that was tapped; the interlinear toggle and the ""Got it"" onboarding tip both reset too."
+x,WS-005 Greek renders correctly with diacritics.,"PASS — Greek renders correctly with diacritics, e.g. ἀγαπάω, ἀγάπη display polytonic accents cleanly in the scripture font."
+x,"WS-006 Hebrew renders right-to-left correctly, with vowel points.","PASS — Hebrew (e.g. H430 אֱלֹהִים) renders right-to-left with vowel points/niqqud visible; h1 has dir=""rtl"" lang=""he""."
+x,WS-007 Transliteration present and consistent.,"PASS — Transliteration shown consistently under each headword, e.g. ""agapáō"", ""'ĕlôhîym · el-o-heem'""."
+,"WS-008 Definition, KJV usage, morphology all present where the data has them.","PARTIAL — Definition and ""KJV renders it"" fields are always present; no distinct ""morphology"" (part of speech/grammatical form) field exists anywhere on the word page."
+,"WS-009 Word with multiple senses → navigable, labelled.","PARTIAL — Multiple related meanings appear only as separate top-level Strong's entries via English search (e.g. searching ""love"" returns agapaō, phileō, philandros, etc. as distinct rows); there is no single entry with an internal, labelled multi-sense/navigable list."
+x,WS-010 Obscure/hapax word → honest empty state.,"PASS — Obscure/rare word (G65 ἀγριέλαιος, 2 occurrences) shows a normal, honest small entry with no broken fields or fake pagination."
+x,WS-011 Invalid Strong's number `/word/G99999` → human error.,"PASS — /word/G99999 shows a clear human-readable error: ""That isn't a Strong's number."" with example format and a ""Search the dictionary"" button — no stack trace."
+x,"WS-012 Malformed `/word/XYZ` → human error, not a stack trace.",PASS — /word/XYZ shows the identical friendly error page as an invalid Strong's number.
+x,WS-013 Related verses list → lands correctly; Back returns.,PASS — Clicking a concordance verse chip (e.g. John 3:16) navigates to the correct highlighted verse in the reader; browser Back returns to the word study page.
+x,WS-014 Occurrence count → present and plausible; matches the concordance.,"PASS — Occurrence count shown and plausible, e.g. ""Appears in 110 verses"" for G25, ""Appears in 2246 verses"" for H430, matching the concordance chip total shown at the bottom of pagination (""1-12 of 110"" etc)."
+x,WS-015 Concordance list paginated or capped sanely for a common word (e.g. G2532 καί).,PASS — Concordance list is paginated 12-per-page with working prev/next controls; verified page 1 (1-12) to page 2 (13-24) of 110 for G25 agapaō.
+x,WS-016 A very common word (thousands of hits) → page still loads and stays usable.,PASS — Very common word H430 (2246 occurrences) loads promptly and the page remains fully usable/responsive; pagination still 12-per-page.
+x,WS-017 Two word studies in sequence → no bleed of the previous word.,PASS — Navigated G25 → H430 → G65 → G430 → G26 in sequence; each page correctly showed only that word's data with no stale/bled-over content.
+x,WS-018 `/library/word-study` browse/search → works per enumeration.,"PASS — /library/word-study browse page works: Greek/Hebrew toggle, live search-as-you-type against ""5,523 greek entries"", results list with lemma/transliteration/Strong's/gloss."
+x,WS-019 Search a word in English → finds the right entries.,"PASS — English search ""love"" correctly surfaces relevant Greek entries (ἀγαπάω, φιλέω, φίλανδρος, ἐπιπόθητος, etc.) ranked sensibly."
+,WS-020 Search gibberish → honest empty state with a suggestion.,"PARTIAL — Gibberish search ""zzqxvblah"" shows an honest empty state (""No matches for ""zzqxvblah""."") but offers no suggestion or recovery hint as the spec asks for."
+x,"WS-021 Mobile: script readable, long transliterations don't overflow.","PASS — At 390px mobile width, word study page reflows cleanly: no horizontal overflow, Hebrew/Greek headword, transliteration, definition, and concordance chips all wrap correctly; bottom tab bar present."
+x,"WS-022 Lexicon asset fails to load → ""unavailable"" message, distinguishable from ""no entry"".","PASS — (with a copy nit) — Simulating a failed lexicon fetch (forced fetch rejection) on the Hebrew tab shows ""The hebrewlexicon isn't available right now. Check your connection and try again."" — clearly distinguishable from the ""not a Strong's number"" no-entry state. Minor bug: missing space, rende"
+x,WS-023 Word study attribution: which lexicon is this? Named? (B10),"PASS — H430 page shows a ""From the reference shelf"" section with a live excerpt explicitly attributed: ""Brown, Driver & Briggs — Brown-Driver-Briggs Hebrew and English Lexicon (1906)"". (Note: some entries, e.g. G25/G65/G932, only show a placeholder ""Deeper entries · coming to this page — Full refere"
+x,WS-024 Cross-link from word study back into a verse → correct.,"PASS — Concordance chip John 3:16 lands on the exact correct verse, highlighted, in the reader."
+x,WS-025 Keyboard-only navigation through a word entry.,"PASS — Keyboard Tab order is logical and reaches all interactive elements (skip-to-content, back link, each concordance verse link, prev/next pagination buttons, nav bar) — all real focusable <a>/<button> elements, no keyboard traps found."
+x,WS-026 Screen reader: original-language text has correct `lang` so it isn't read as English.,"PASS — Original-language headwords carry correct lang attributes: lang=""el"" dir=""ltr"" for Greek, lang=""he"" dir=""rtl"" for Hebrew, so screen readers will not read them as English."

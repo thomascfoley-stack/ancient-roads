@@ -618,3 +618,41 @@ home-specific — noted, not filed as its own finding (cosmetic, low severity).
 Both agents independently reported heavy browser-pool contention from other concurrent sweep agents
 degrading viewport/keyboard/network-throttle checks to PARTIAL rather than confirmed — flagged for
 re-run in isolation, not guessed at.
+
+## Batch 29 — WS (Word Study) and AX (Accessibility), tracker-driven, signed-out
+
+WS tally: 21 PASS, 4 PARTIAL, 1 FAIL — the whole feature is usable signed-out, no PENDING-SIGNIN needed.
+
+### F-058 · WS-004 · **P2** · Back from a word-study page doesn't restore reader state
+Opening a word study from the reader's interlinear tap, then pressing Back, does not restore scroll
+position or the interlinear toggle — lands at chapter top, interlinear off, onboarding tip re-shown.
+Consistent with the already-known interlinear-doesn't-persist pattern (IN-004/005) but now confirmed
+to also break Back-navigation specifically, not just refresh/chapter-nav.
+
+### F-059 · WS-023 · **P2/B10** · Attribution is inconsistent across lexicon entries
+H430 shows a live, properly attributed BDB excerpt; several Greek entries (G25, G65, G932) show only
+a "coming to this page" placeholder instead of actual attributed content — same feature, inconsistent
+completeness.
+
+**Minor, folded in rather than separately filed:** WS-022 copy nit ("**hebrewlexicon** isn't available"
+missing a space, should read "Hebrew lexicon"); WS-008/009 no distinct morphology field or in-entry
+multiple-senses navigation; WS-020 empty search offers no recovery hint.
+
+AX tally: 7 PASS, 2 FAIL, 2 PENDING-SIGNIN, 11 PARTIAL (limited by no axe-core/real screen-reader/200%-
+zoom tooling in this pass — flagged, not guessed).
+
+### F-060 · AX-009 · **P3** · Homepage footer skips a heading level
+H2 → H4 with no H3 in the footer's heading structure.
+
+### F-061 · AX-019 · **P2** · The under-44px tap-target problem (already known from mobile.md, F-031) is broader than first measured
+22-27 sidebar/nav touch targets are under 44px height across multiple pages, not just the marketing
+footer already filed — plus a 24×24 icon-only sidebar-collapse button. Same systemic issue, wider
+surface area than previously scoped.
+
+**Flagged for follow-up, not filed as confirmed:** `stone-400` text computes to ~2.2:1 contrast against
+the light parchment background — a likely WCAG AA failure if used for muted/placeholder text in light
+mode; needs a direct contrast-ratio confirmation pass, not just a computed-color spot-check.
+
+**Notable PASSes:** alt text, icon-button accessible names, correct `lang` attributes including
+`lang="el"` on Greek interlinear text, accent-gold contrast, focus-visible outline ≥3:1 in both themes,
+`prefers-reduced-motion` honored globally including the history progress-bar specifically.
