@@ -12,9 +12,10 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { authClient } from '@/lib/auth/client';
 import type { AuthMode } from '@/lib/auth/paths';
+import { track } from '@/lib/analytics';
 
 /**
  * Where a brand-new reader lands — block `T1`.
@@ -99,6 +100,12 @@ export function AuthForm({ path }: { path: AuthMode }) {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
+  // Drop-off visibility for the funnel: how many readers reach this form at
+  // all vs. submit it (see the corresponding *_submitted events below).
+  useEffect(() => {
+    track({ name: 'auth_page_viewed', mode: path });
+  }, [path]);
+
   // GOOGLE, AND WHAT IT COSTS — stated once, here, where someone would remove it.
   //
   // ADR-109: enabling a social provider alongside email/password restores GHSA-g38m's
@@ -114,6 +121,7 @@ export function AuthForm({ path }: { path: AuthMode }) {
   async function google() {
     setError(null);
     setBusy(true);
+    track({ name: path === 'sign-up' ? 'sign_up_submitted' : 'sign_in_submitted', method: 'google' });
     try {
       const { error: err } = await authClient.signIn.social({
         provider: 'google',
@@ -122,6 +130,7 @@ export function AuthForm({ path }: { path: AuthMode }) {
       });
       if (err) throw new Error(err.message ?? 'Google sign-in could not be started.');
     } catch (e) {
+      track({ name: path === 'sign-up' ? 'sign_up_failed' : 'sign_in_failed', method: 'google' });
       setError(e instanceof Error ? e.message : 'Google sign-in could not be started.');
       setBusy(false);
     }
@@ -137,11 +146,16 @@ export function AuthForm({ path }: { path: AuthMode }) {
 
     try {
       if (path === 'sign-in') {
+        track({ name: 'sign_in_submitted', method: 'email' });
         const { error: err } = await authClient.signIn.email({ email, password });
         // Deliberately does not distinguish "no such account" from "wrong password": that
         // difference is an account-existence oracle, and this app's whole SEC-1 problem was an
         // account-takeover class.
-        if (err) throw new Error('That email and password do not match an account.');
+        if (err) {
+          track({ name: 'sign_in_failed', method: 'email' });
+          throw new Error('That email and password do not match an account.');
+        }
+        track({ name: 'sign_in_succeeded', method: 'email' });
         router.push('/home');
         router.refresh();
         return;
@@ -151,12 +165,17 @@ export function AuthForm({ path }: { path: AuthMode }) {
         if (password.length < MIN_PASSWORD) {
           throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
         }
+        track({ name: 'sign_up_submitted', method: 'email' });
         const { error: err } = await authClient.signUp.email({
           email,
           password,
           name: String(data.get('name') ?? '').trim() || email.split('@')[0],
         });
-        if (err) throw new Error(err.message ?? 'That account could not be created.');
+        if (err) {
+          track({ name: 'sign_up_failed', method: 'email' });
+          throw new Error(err.message ?? 'That account could not be created.');
+        }
+        track({ name: 'sign_up_succeeded', method: 'email' });
         // T1 — a new reader's first screen is the PRODUCT, not a dashboard. `/home` shows a
         // devotional feed that teaches nothing about what makes this app different; the verse
         // drawer is the one idea that does. Sign-IN keeps `/home` deliberately: a returning
@@ -168,6 +187,7 @@ export function AuthForm({ path }: { path: AuthMode }) {
 
       if (path === 'forgot-password') {
         await authClient.requestPasswordReset({ email, redirectTo: '/auth/reset-password' });
+        track({ name: 'password_reset_requested' });
         // Always the same outcome, whether or not the address is registered -- for the same
         // account-existence reason as the sign-in message above.
         setSent(true);

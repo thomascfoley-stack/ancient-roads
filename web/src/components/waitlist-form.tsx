@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { track } from '@/lib/analytics';
 
 type State = 'idle' | 'submitting' | 'done' | 'error';
 
@@ -20,6 +21,7 @@ export function WaitlistForm() {
     e.preventDefault();
     if (state === 'submitting') return;
     setState('submitting');
+    track({ name: 'waitlist_form_submitted' });
     try {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
@@ -30,13 +32,19 @@ export function WaitlistForm() {
       if (res.ok) {
         setState('done');
         setMessage(data.message ?? '');
+        track({ name: 'waitlist_signup_succeeded' });
       } else {
         setState('error');
         setMessage(data.message ?? 'Something went wrong. Please try again.');
+        track({
+          name: 'waitlist_signup_failed',
+          reason: res.status === 429 ? 'rate_limited' : res.status === 400 ? 'validation' : 'error',
+        });
       }
     } catch {
       setState('error');
       setMessage('Network error. Please try again.');
+      track({ name: 'waitlist_signup_failed', reason: 'error' });
     }
   }
 

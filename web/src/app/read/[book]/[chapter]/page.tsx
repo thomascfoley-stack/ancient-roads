@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { isFetchableChapter } from '@/lib/chapter-param';
+import { track } from '@/lib/analytics';
 import { DEFAULT_BIBLE_HREF, DEFAULT_BIBLE_LABEL, saveBiblePosition } from '@/lib/bible-position';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
@@ -214,6 +215,7 @@ export default function ReaderPage() {
     // and Neon's hosted auth server rejects one outright. Read from `window.location` in this
     // effect rather than `useSearchParams`, which would need a Suspense boundary.
     if (new URLSearchParams(window.location.search).get('firstrun') === '1') {
+      track({ name: 'first_run_reached' });
       openStudy(1, 'commentaries');
       return;
     }
