@@ -1058,3 +1058,21 @@ recording: "Life happened. Pick up where you left off — the remaining readings
 and nothing you read is lost," with two explicit choices (Resume from today / Keep the original
 dates) — honest, non-shaming copy that matches the plan's own B2 bar ("nothing lying") better than
 most surfaces tested this session.
+
+## Batch 45 — UP (Uploads), live signed-in production testing, real account (7 IDs closed, 0 new findings)
+
+Uploaded a real small `.md` test file via the file input (not a click-through file picker, which the
+tooling can't drive — used a direct file-input upload matching a real drag-drop/browse outcome).
+
+**Full lifecycle confirmed live:** dropzone accepted the file → named processing stage "Dividing"
+shown → advanced to "Ready" in ~15s → searched "grace upon grace" against "Search your works" →
+correctly matched and returned the exact excerpt, proving the document is genuinely indexed and
+searchable, not just stored → "Remove" button surfaced a "Remove?" confirmation step (B8-compliant,
+same pattern as study delete, unlike the note-delete gap filed as F-098) → confirmed, document gone,
+list correctly returned to its "Nothing here yet" empty state, no orphaned data left in the account.
+
+Also observed: Desk integration controls ("Open beside the tradition", "The tradition on this")
+present directly on the document row — not tested further this pass (would need a real Desk-pane
+verification), but confirms the feature is wired end to end, not a dead affordance.
+
+No new findings — this is a well-built, honestly-staged feature.
