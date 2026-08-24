@@ -25,8 +25,16 @@ export interface HistoryPayload {
 const era = (y: number): string => (y < 0 ? `${-y} B.C.` : `A.D. ${y}`);
 const periodBadge = (p: [number, number] | null): string | null =>
   p ? (p[0] === p[1] ? era(p[0]) : `${era(p[0])}–${era(p[1])}`) : null;
-const century = (p: [number, number] | null): number | null =>
-  p ? Math.ceil(((p[0] + p[1]) / 2) / 100) : null;
+// D29 (DEEP_SWEEP): Math.ceil rounds NEGATIVE fractions toward zero, so every B.C. bucket was
+// wrong. century([-200,-101]) gave -1 ("1c B.C.") for what is the 2nd century B.C., and
+// century([-100,-1]) gave -0, which rendered as the nonsense label "0c". A.D. is unaffected
+// (ceil is correct for positives), so this only ever looked right. Exported for the unit test —
+// the bug is arithmetic and needs no DOM to prove.
+export const century = (p: [number, number] | null): number | null => {
+  if (!p) return null;
+  const mid = (p[0] + p[1]) / 2;
+  return mid < 0 ? Math.floor(mid / 100) : Math.ceil(mid / 100);
+};
 
 // `fq` beside `from=hist:` is what lets the reader's return strip name the study — see
 // HistoryContextBar. Same URL, no extra fetch, and links minted without it still work.
@@ -58,6 +66,13 @@ export function HistoryResults({ data, query, threadId }: {
     }),
   })).filter((g) => g.sections.length > 0), [data.results, offEntities, bucket]);
 
+  // D21: the hero is only honest if the section it shows survived the reader's own chips.
+  const heroVisible = useMemo(() => {
+    const c = data.closest;
+    if (!c) return false;
+    return groups.some((g) => g.work.slug === c.work.slug && g.sections.some((x) => x.sectionId === c.sectionId));
+  }, [data.closest, groups]);
+
   const buckets = useMemo(() => {
     const m = new Map<number, number>();
     for (const g of data.results) for (const s of g.sections) {
@@ -76,6 +91,11 @@ export function HistoryResults({ data, query, threadId }: {
     // through the payload), never a hardcoded one — this surface once appended the literal
     // " (CCEL)" to every citation, Josephus and archive.org works included (W-SEC-CCEL).
     try {
+      // D45: this hard-coded "(CCEL)" onto EVERY citation, misattributing any work that did not
+      // come from CCEL. This branch dropped the suffix rather than guess it; main solved it
+      // BETTER by naming the real edition (WorkRef.edition, from the source record's own
+      // provenance). Main's version wins on merge — it restores the information instead of
+      // removing it, and a citation that names the true edition is what the product claims.
       await navigator.clipboard.writeText(
         `${work.author}, ${work.title}, ${r.headingPath.join(' — ')}${work.edition ? ` — ${work.edition}` : ''}`,
       );
@@ -137,7 +157,11 @@ export function HistoryResults({ data, query, threadId }: {
         </div>
       )}
 
-      {data.closest && groups.length > 0 ? (
+      {/* D21 (DEEP_SWEEP): the hero rendered data.closest whenever ANY group survived, even when
+          the lit century bucket or an off entity chip excluded that exact section — a "Closest
+          match" card showing a hit the chips claimed to exclude. It is only shown when the
+          filtered results still contain it. */}
+      {heroVisible && data.closest ? (
         <Link
           href={workHref(data.closest.work.slug, data.closest.ordinal, threadId, query)}
           className="mt-5 block border edge bg-paper p-5 transition-colors ease-gentle hover:bg-accent-50/40 dark:bg-stone-900 dark:hover:bg-accent-950/20"
@@ -155,7 +179,14 @@ export function HistoryResults({ data, query, threadId }: {
         </Link>
       ) : (
         <div className="mt-6 border edge p-4">
-          <p className="text-stone-700 dark:text-stone-300">Nothing in the {data.coverage.works} served history items matches this.</p>
+          {/* D21: when filters emptied the results this claimed "nothing in the N served history
+              items matches this" — a false statement about the CORPUS caused by the reader's own
+              chips. Unfiltered results existed; only the filter hid them. */}
+          <p className="text-stone-700 dark:text-stone-300">
+            {filtering
+              ? 'No results within these filters. Clear a chip to see the rest.'
+              : `Nothing in the ${data.coverage.works} served history items matches this.`}
+          </p>
           <Link href="/library/historians" className="mt-2 inline-block text-sm text-accent-700 underline dark:text-accent-300">Browse the history shelf</Link>
         </div>
       )}

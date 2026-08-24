@@ -18,6 +18,8 @@
 
 import { CATALOG_IDS, CATALOGS, isCatalogId, isSubFilterOf, type CatalogId } from '@/lib/catalog';
 import { searchSections } from '@/lib/search-sections';
+import { apiError } from '@/lib/api-error';
+import { truncateCodePoints } from '@/lib/text';
 import { publicReadThrottle } from '@/lib/public-read-limit';
 import { scheduleSearchOutcome, type SearchParams } from '@/lib/search-outcomes';
 
@@ -47,7 +49,11 @@ export async function GET(req: Request): Promise<Response> {
   if (throttled) return throttled;
   const t0 = Date.now();
   const url = new URL(req.url);
-  const query = (url.searchParams.get('q') ?? '').trim();
+  // D48: the sibling /api/search/commentaries caps q at 200 code points ("an unbounded string
+  // reaches a query parameter"); this route bound the raw string into websearch_to_tsquery three
+  // times plus ts_headline per row. Same cap, same reason. truncateCodePoints, not slice — see
+  // BUG_SWEEP B2: slice() splits surrogate pairs.
+  const query = truncateCodePoints((url.searchParams.get('q') ?? '').trim(), 200);
   if (!query) return Response.json({ results: [], total: 0, totalCapped: false });
 
   // Catalogs: `catalog` (single, legacy) and `catalogs` (pooled) normalise to one list.
@@ -120,18 +126,28 @@ export async function GET(req: Request): Promise<Response> {
     return Response.json({ error: `${badNum.join(' and ')} must be an integer` }, { status: 400 });
   }
 
+  // UNION 2026-08-24: their D14/D32/D33 error envelope AROUND the call, plus the 129 query log
+  // after it. Both are load-bearing — searchSections has no catch of its own, so an unwrapped
+  // call escapes as Next's RAW 500 instead of the envelope every /api/* route promises; and a
+  // search nobody records is a search the owner cannot see.
   const work = url.searchParams.get('work') ?? undefined;
-  const page = await searchSections({
-    query,
-    // A single catalog keeps the `catalog` path so its sub-filter still applies; two or more go
-    // through the pooled path, where sub-filters have no meaning (see typesForMany).
-    ...(catalogs.length === 1 ? { catalog: catalogs[0]! } : { catalogs }),
-    subFilter: sub,
-    sourceSlug: work,
-    traditions,
-    limit,
-    offset,
-  });
+  let page;
+  try {
+    page = await searchSections({
+      query,
+      // A single catalog keeps the `catalog` path so its sub-filter still applies; two or more go
+      // through the pooled path, where sub-filters have no meaning (see typesForMany).
+      ...(catalogs.length === 1 ? { catalog: catalogs[0]! } : { catalogs }),
+      subFilter: sub,
+      sourceSlug: work,
+      traditions,
+      limit,
+      offset,
+    });
+  } catch (e) {
+    console.error('GET /api/search/works:', (e as Error).message);
+    return apiError('INTERNAL');
+  }
   // Query log (migration 129), off the request path, fail-open. user_id stays NULL here on
   // purpose — this route is public and resolves no session; see the migration header.
   const logged: SearchParams = {};

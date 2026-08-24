@@ -2234,3 +2234,58 @@ would have stayed structural).
 
 **F5 closes on the first run that is green with every suite truthfully accounted for** — not on
 zero failing tests, which run `32554632033` already had.
+
+## ADR-120 — Delete the two ungated aggregator-ingest scripts (owner, 2026-08-23)
+
+> **✅ RESOLVED — owner ruling, in chat, 2026-08-23.** Asked whether to gate or delete
+> `pnpm ingest:commentaries` (DEEP_SWEEP.md D3), the owner answered verbatim:
+>
+> > "1. delete it"
+>
+> The recommendation put to them was deletion, with the reasoning that the script reads a
+> `FORBIDDEN_PROVENANCE_DOMAINS` source, its input file is absent from the tree, and its output
+> feeds the served corpus — so gating would preserve a script nobody can legally run.
+
+**What was deleted, and why two files rather than one.**
+
+1. `src/ingest/ingest-commentaries.ts` — the ruled script. Read the HistoricalChristianFaith
+   SQLite wholesale with **zero** license, manifest, or provenance check (grep count: 0).
+   `historicalchristian.faith` is in `FORBIDDEN_PROVENANCE_DOMAINS`
+   (`forbidden-provenance.mjs:33`, added 2026-07-10). Packaged at `package.json:19`. Output chain:
+   `data/commentaries` → `merge-commentaries.ts:17` → `web/public/commentaries` (served tree).
+2. `src/ingest/ingest-biblehub.ts` — **found while fixing D3; NOT in the sweep.** Same class,
+   shorter path to harm: it does `await fetch('https://biblehub.com/commentaries/...')` and writes
+   **directly** into `web/public/commentaries`, skipping the merge step entirely. Never packaged,
+   never modified since its 2026 introduction (`2432f87`). CLAUDE.md names BibleHub first in
+   "never scrape ToS-protected aggregators".
+
+**Extending the ruling to the second file is a judgement call and is recorded as one.** The owner
+ruled on D3's script; this one was not in front of them. It was deleted under the same reasoning
+because the reasoning is identical and stronger — live scraping, straight into the served tree —
+and leaving it would have meant closing the documented door while an undocumented one stayed open.
+If the owner disagrees, restoring it is `git revert`.
+
+**Deletion was safe, verified not assumed:** nothing in the codebase imports either file (only the
+`package.json` script entry and one docs mention, both removed); `ingest-commentaries.ts` was the
+*only* writer of `data/commentaries`, and that directory is neither on disk nor tracked (0 files),
+so `merge-commentaries`'s patristic input was already empty — deleting the producer changes no
+current output. `ingest-commentary-api.ts` writes `data/commentaries-api`, a different directory,
+and is untouched.
+
+**Residual the owner should know, which this ADR does NOT close.** Whether `ingest-biblehub.ts`
+ever ran cannot be settled by inspection: it stamps the *commentator* as author (Barnes, Calvin,
+Wesley…) and records a `sourceUrl`, but nothing in a produced file identifies the aggregator as
+the *pipeline*, so grepping the served tree for "biblehub" proves nothing either way. The
+`geneva-notes-crosswire` quarantine note ("Old biblehub-collapsed rows quarantined to
+data/quarantine/, never served") indicates a prior remediation of exactly this shape, which
+suggests the served tree is clean. **Suggests, not proves.** A definitive answer needs a
+provenance audit of `web/public/commentaries` against the manifest, which is a separate piece of
+work and is not claimed here.
+
+**Guard:** `test/invariants/no-ungated-aggregator-ingest.test.ts` — tombstones both files, refuses
+any `package.json` script that resurrects them, and fails on any `src/ingest` file that fetches an
+aggregator URL. A first draft keyed on the bare *name* and flagged nine files, seven of which
+legitimately name an aggregator in SQL predicates over our own rows (`regen-crosswire-static`,
+`resource-classify-*`, `verse-key-gate`, `measure-embedding-gap`, `ingest-sword-commentaries`) —
+an extraction wider than the property it claimed, the watchlist's standing failure mode. Narrowed
+to the fetch, which had exactly one instance.

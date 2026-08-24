@@ -23,10 +23,14 @@ describe('PR1a — prayer route boundaries', () => {
   it('does not conflate auth failure with server failure', () => {
     const src = route();
     // requireUser must sit in its own try whose catch returns UNAUTHENTICATED and nothing else.
-    const solo = /try\s*\{\s*user = await requireUser\(\);\s*\}\s*catch\s*\{\s*return apiError\('UNAUTHENTICATED'\);\s*\}/g;
+    // D43: the catch now answers through authFailureResponse, which tells an auth-SERVICE
+    // outage (503) from an absent session (401). The PROPERTY this asserts is unchanged —
+    // requireUser must still be caught ALONE — so only the accepted response helper widened.
+    const solo = /try\s*\{\s*user = await requireUser\(\);\s*\}\s*catch\s*(?:\(e\)\s*)?\{\s*return (?:apiError\('UNAUTHENTICATED'\)|authFailureResponse\(e\));\s*\}/g;
     const occurrences = (src.match(solo) ?? []).length;
     expect(occurrences, 'requireUser must be caught alone — audit A1-16').toBeGreaterThanOrEqual(2);
     expect(src, 'no catch may return UNAUTHENTICATED for a DB failure').not.toMatch(/catch[\s\S]{0,120}console\.error[\s\S]{0,120}UNAUTHENTICATED/);
+    expect(src, 'nor may it answer a DB failure through the auth helper').not.toMatch(/catch[\s\S]{0,120}console\.error[\s\S]{0,120}authFailureResponse/);
   });
 
   it('never logs the prayer body', () => {

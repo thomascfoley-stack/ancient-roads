@@ -79,6 +79,15 @@ const AUTH_LIMITED_SEGMENTS = new Set([
   'forget-password',
   'request-password-reset',
   'reset-password',
+  // D18 (DEEP_SWEEP): change-password is credential-bearing — better-auth verifies
+  // `currentPassword` server-side, so an unthrottled proxy gave anyone holding a live session
+  // (unattended shared device, stolen cookie) unlimited online guesses at the account password.
+  // The brute-force class this limiter exists for, sitting outside its allowlist.
+  'change-password',
+  // D50: unthrottled verification mail is mail-spend and mailbox harassment keyed to any
+  // registered address. Whether the hosted better-auth config enables it cannot be determined
+  // from this repo — throttled regardless, because throttling an unused endpoint costs nothing.
+  'send-verification-email',
 ]);
 
 /** True when `pathname` is one of the credential-bearing auth endpoints. */

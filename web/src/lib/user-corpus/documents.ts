@@ -3,6 +3,7 @@
 // (SLICE_1_DATA_MODEL test 1: "verify with two accounts, not by reading policy").
 
 import { runAsUser } from '@/lib/db';
+import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './claim-constants';
 import { deleteUserDocument } from './blob';
 import { MAX_BYTES_PER_USER, MAX_DOCUMENTS_PER_USER, QuotaExceeded, quotaVerdict } from './quota';
 import type { DocStatus, DocType, UserDocument } from './types';
@@ -136,29 +137,67 @@ export async function findByChecksum(userId: string, sum: string): Promise<UserD
  * the insert lands. A refusal throws QuotaExceeded with the same message the pre-flight check
  * always returned; checkUploadQuota keeps that wording via the shared quotaVerdict.
  */
+/**
+ * D8: thrown when the in-transaction checksum re-check found the file already uploaded — i.e.
+ * this caller LOST a dedupe race it could not have seen from outside the lock. Carries the
+ * existing document so the route can answer with the same "already uploaded" body its pre-flight
+ * `findByChecksum` path returns; the two answers must not disagree.
+ */
+export class DuplicateDocument extends Error {
+  readonly existing: UserDocument;
+  constructor(existing: UserDocument) {
+    super('document with this checksum already exists');
+    this.name = 'DuplicateDocument';
+    this.existing = existing;
+  }
+}
+
 export async function createDocument(
   userId: string,
   meta: { title: string; filename: string; byteSize: number; checksum: string; mimeType: string },
 ): Promise<UserDocument> {
-  const [, usageRows, rows] = await runAsUser(userId, (sql) => [
+  const [, usageRows, rows, twinRows] = await runAsUser(userId, (sql) => [
     sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`,
     // Same COALESCE-both-ways read as checkUploadQuota; kept as its own statement so a refusal
     // can name the live usage in the message.
     sql`SELECT count(*)::int AS documents, COALESCE(sum(byte_size), 0)::bigint AS bytes
           FROM user_documents
          WHERE user_id = ${userId}`,
-    // asserted_ownership_at = now(): the upload UI shows the ownership sentence beside the
-    // only upload control (UPLOADER_DESIGN.md §5/Q7), so every document arriving here was
-    // uploaded past it. Pre-column rows stay NULL — "no assertion recorded", never backfilled.
-    // (Merge union 2026-08-24: B11's quota-enforcing INSERT…SELECT + main's ownership column.)
+    // asserted_ownership_at = now() (from main, merge 2026-08-24): the upload UI shows the
+    // ownership sentence beside the only upload control (UPLOADER_DESIGN.md §5/Q7), so every
+    // document arriving here was uploaded past it. Pre-column rows stay NULL — "no assertion
+    // recorded", never backfilled. It is a LICENSING field and must not be lost to a merge:
+    // main's side of this conflict had it but lacked B11's quota-in-transaction lock and D8's
+    // in-lock checksum re-check, so this keeps THIS branch's statement and adds main's column.
     sql`INSERT INTO user_documents (user_id, title, source_filename, byte_size, checksum, mime_type, status, asserted_ownership_at)
         SELECT ${userId}, ${meta.title}, ${meta.filename}, ${meta.byteSize}, ${meta.checksum}, ${meta.mimeType}, 'queued', now()
         WHERE (SELECT count(*) FROM user_documents WHERE user_id = ${userId}) + 1 <= ${MAX_DOCUMENTS_PER_USER}
           AND (SELECT COALESCE(sum(byte_size), 0) FROM user_documents WHERE user_id = ${userId}) + ${meta.byteSize} <= ${MAX_BYTES_PER_USER}
+          -- D8 (DEEP_SWEEP): dedupe was CHECK-THEN-ACT across two transactions — findByChecksum in
+          -- its own txn, then this insert in another. B11's advisory lock serialised the QUOTA but
+          -- never re-checked the checksum, so two concurrent uploads of the same file (double-tap,
+          -- retry-after-timeout — the exact pattern this repo already found in prod for highlights)
+          -- both missed dedupe and both inserted: duplicate documents, double blob, double PAID
+          -- embedding batch, double quota bytes. Re-checked here, inside the lock, where it holds.
+          -- The route's comment already presupposed a constraint the schema does not have
+          -- (migration 100 declares checksum TEXT with no unique index); this closes the race
+          -- without a migration, which would need an owner-gated production apply.
+          AND NOT EXISTS (
+            SELECT 1 FROM user_documents WHERE user_id = ${userId} AND checksum = ${meta.checksum}
+          )
         RETURNING *`,
+    // The twin, if one already existed. ORDER BY is deliberate: findByChecksum has none, so once
+    // duplicates exist it returns an ARBITRARY one (D8's related finding). Oldest wins here.
+    sql`SELECT * FROM user_documents
+         WHERE user_id = ${userId} AND checksum = ${meta.checksum}
+         ORDER BY created_at ASC, id ASC LIMIT 1`,
   ]);
   const inserted = (rows as Row[])[0];
   if (!inserted) {
+    // D8: a lost dedupe race is NOT a quota refusal. Distinguish them before reading the verdict,
+    // or the loser of the race is told their library is full.
+    const twin = (twinRows as Row[])[0];
+    if (twin) throw new DuplicateDocument(toDocument(twin));
     const u = (usageRows as { documents: number; bytes: string | number }[])[0];
     if (!u) throw new Error('quota query returned no row');
     const verdict = quotaVerdict(u.documents, Number(u.bytes), meta.byteSize);
@@ -179,6 +218,55 @@ export async function setBlobPathname(userId: string, id: string, pathname: stri
  * Move a document to a new state. `error` is cleared on every non-failure transition so a retry
  * that succeeds does not leave last time's message sitting under a green status.
  */
+/**
+ * D9 (DEEP_SWEEP): requeue a document for retry, atomically, and only if no worker is holding it.
+ *
+ * The retry route used to call setDocStatus('queued') and resetAttempts as TWO transactions on a
+ * row a worker might be actively processing, then kick a drain — so the same document went to a
+ * second worker. Both parse and embed it (double paid embedding), and their storeSections
+ * DELETE+INSERT pairs are not mutually exclusive under READ COMMITTED, leaving both generations
+ * of user_sections until a later re-index heals it.
+ *
+ * ONE statement, and the claim predicate is the same shape claimNext uses to reclaim a stale row,
+ * built from the queue's own CLAIMED_STATUSES so the two lists cannot drift apart. A row whose
+ * claim is still fresh is simply not matched, and the caller reports "already running" rather
+ * than silently seizing it.
+ *
+ * Returns false when nothing was requeued.
+ */
+/**
+ * D11 (DEEP_SWEEP): can re-uploading these bytes REPAIR this existing document, rather than
+ * bouncing off dedupe?
+ *
+ * Two cases, and both are dead ends today:
+ *  - `blobUrl` null — the row was created before putUserDocument and the put threw. It counts
+ *    against quota, the drain fails it with "Please upload it again", and re-uploading returns
+ *    the same broken row. The retry route 409s because there is no blob to re-parse.
+ *  - `status === 'failed'` — re-uploading the bytes returned the failed row unchanged, so the
+ *    natural retry gesture silently no-opped.
+ *
+ * Exported so the route's branch is the same predicate the tests assert, rather than one typed
+ * again in a test file — which would test the test.
+ */
+export function isHealable(doc: { blobUrl: string | null; status: string }): boolean {
+  return !doc.blobUrl || doc.status === 'failed';
+}
+
+export async function requeueForRetry(userId: string, id: string): Promise<boolean> {
+  const claimed: string[] = [...CLAIMED_STATUSES];
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`UPDATE user_documents
+           SET status = 'queued', parse_error = NULL, attempts = 0,
+               claimed_at = NULL, updated_at = now()
+         WHERE user_id = ${userId} AND id = ${id}
+           AND NOT (status = ANY(${claimed})
+                    AND claimed_at IS NOT NULL
+                    AND claimed_at > now() - (${STALE_CLAIM_MINUTES} || ' minutes')::interval)
+        RETURNING id`,
+  ]);
+  return (rows as unknown[]).length > 0;
+}
+
 export async function setDocStatus(
   userId: string,
   id: string,

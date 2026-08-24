@@ -273,12 +273,19 @@ export default function PassageSearchPage() {
     fetchCommentaryManifest().then((m) => setManifest(m?.sources ?? []));
   }, []);
 
+  // D16 (DEEP_SWEEP): the B4 shape, unguarded. The book/chapter selects fire one effect run per
+  // change; flip twice quickly and the SLOWER stale response resolves last and overwrites
+  // `entries` — the selectors say John 5 while the list shows John 3, and it stays wrong because
+  // nothing fetches again. setLoading only gates display while pending; it does not decide which
+  // response wins. Same `cancelled` guard as read/[book]/[chapter] and desk-pane.
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setAuthorFilter('all');
     fetchCommentary(bookSlug, chapter)
-      .then((d) => setEntries(d?.entries ?? []))
-      .finally(() => setLoading(false));
+      .then((d) => { if (!cancelled) setEntries(d?.entries ?? []); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [bookSlug, chapter]);
 
   const handleSearchInput = useCallback((value: string) => {
@@ -287,6 +294,7 @@ export default function PassageSearchPage() {
     if (!value.trim()) {
       setDebouncedQuery('');
       setSearchResults([]);
+      setFacetTraditions([]); // D47: a new query gets a new facet vocabulary
       setSearchTotal(0);
       setSearchTotalCapped(false);
       setSearchPage(0);
@@ -301,8 +309,16 @@ export default function PassageSearchPage() {
     }, DEBOUNCE_MS);
   }, []);
 
+  // D17: no sequence guard, unlike catalog-search.tsx:71 and study-library-panel.tsx:85 which
+  // both seq-guard. Two debounced queries, or a tradition-chip tap while a search is in flight,
+  // race — and the stale response painting last shows the OLD query's results and count under
+  // the new query text, i.e. unfiltered results under a lit filter chip. A stale page-0 response
+  // after a Load-more also REPLACES the appended list.
+  const [facetTraditions, setFacetTraditions] = useState<string[]>([]);
+  const searchSeq = useRef(0);
   useEffect(() => {
     if (!debouncedQuery) return;
+    const mine = ++searchSeq.current;
     setSearchLoading(true);
     setSearchError(null);
 
@@ -315,6 +331,13 @@ export default function PassageSearchPage() {
         return r.json();
       })
       .then((data: { results: SearchResult[]; total: number; totalCapped?: boolean }) => {
+        if (mine !== searchSeq.current) return;
+        // D47: capture the facet vocabulary from the UNFILTERED page-0 response only.
+        if (searchPage === 0 && !traditionFilter) {
+          const set = new Set<string>();
+          for (const r of data.results) if (r.tradition) set.add(r.tradition);
+          setFacetTraditions([...set].sort());
+        }
         setSearchTotal(data.total);
         setSearchTotalCapped(Boolean(data.totalCapped));
         setSearchResults((prev) => {
@@ -324,12 +347,17 @@ export default function PassageSearchPage() {
         });
       })
       .catch((err) => {
+        if (mine !== searchSeq.current) return;
         setSearchError(err instanceof Error ? err.message : 'Search failed');
-        setSearchResults([]);
-        setSearchTotal(0);
-        setSearchTotalCapped(false);
+        // D17 secondary: this wiped ALL results even when only a Load-more page failed,
+        // destroying pages the reader already had. Only a page-0 failure clears.
+        if (searchPage === 0) {
+          setSearchResults([]);
+          setSearchTotal(0);
+          setSearchTotalCapped(false);
+        }
       })
-      .finally(() => setSearchLoading(false));
+      .finally(() => { if (mine === searchSeq.current) setSearchLoading(false); });
   }, [debouncedQuery, searchPage, traditionFilter]);
 
   // Resolve a search hit to its full entry text from the static corpus files
@@ -355,13 +383,13 @@ export default function PassageSearchPage() {
     return hit?.text ?? null;
   }, []);
 
-  const traditions = useMemo(() => {
-    const set = new Set<string>();
-    for (const r of searchResults) {
-      if (r.tradition) set.add(r.tradition);
-    }
-    return [...set].sort();
-  }, [searchResults]);
+  // D47 (DEEP_SWEEP): these chips used to be derived from `searchResults`, which the active
+  // traditionFilter has ALREADY narrowed server-side. Clicking "reformed" narrowed the results to
+  // reformed-only, which recomputed the facets to ['reformed'] — every other chip vanished, and
+  // the only way back was "All". Facets must describe what the QUERY matched, not what the
+  // current filter left, so they are captured from the unfiltered page-0 response and held
+  // stable while the reader filters.
+  const traditions = facetTraditions;
 
   // Register wall (library browse): partition the chapter's entries into their
   // registers, then group ONLY the exegetical commentary by author for the browse +

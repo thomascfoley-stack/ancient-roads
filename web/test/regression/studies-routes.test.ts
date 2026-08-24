@@ -15,7 +15,11 @@ const testUser = `qa-study-routes-${Date.now()}`;
 const session: { user: { id: string; email: string } | null } = {
   user: { id: testUser, email: 'qa@example.test' },
 };
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/session', async () => ({
+  // D43: routes answer auth failures through authFailureResponse, which tells an auth-SERVICE
+  // outage (503) from an absent session (401). The real helper lives in lib/auth-failure, which
+  // imports nothing but api-error, so it loads here without the Neon Auth SDK.
+  ...(await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure')),
   requireUser: async () => {
     if (!session.user) throw new Error('Unauthorized');
     return session.user;

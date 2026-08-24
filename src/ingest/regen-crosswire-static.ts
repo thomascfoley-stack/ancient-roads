@@ -14,6 +14,7 @@
 // Every other author's entries pass through byte-identical.
 
 import { readFileSync, readdirSync, writeFileSync, appendFileSync, mkdirSync, statSync, existsSync } from 'node:fs';
+import { chapterLocalVerseEnd } from './chapter-local-range.js';
 import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
 
@@ -80,8 +81,7 @@ function main() {
       const k = `${book}:${chapter}`;
       const list = incoming.get(k) ?? [];
       list.push({
-        verseStart: e.verseId % 1000,
-        verseEnd: (e.verseEnd ?? e.verseId) % 1000,
+        verseStart: e.verseId % 1000, verseEnd: chapterLocalVerseEnd(e.verseId, e.verseEnd),
         author: staticAuthor,
         year: meta.year,
         tradition: meta.tradition,

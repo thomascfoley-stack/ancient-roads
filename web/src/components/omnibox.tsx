@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { DialogPanel } from '@/lib/use-dialog';
 import { useRouter } from 'next/navigation';
 import { typeahead, parseRef, type ParseOutcome } from '@bible/ref-parse';
 import { webVerseCounts } from '@bible/verse-counts';
@@ -87,7 +88,16 @@ export function Omnibox() {
         onClick={() => setOpen(false)}
       />
       {/* PRD §6 modal: parchment surface, 1px hairline, no shadow, square corners. */}
-      <div className="relative w-full max-w-lg border edge bg-paper animate-fade-in dark:bg-stone-900">
+      {/* D39 (DEEP_SWEEP): this scrim+panel had no role="dialog"/aria-modal, no focus trap and
+          no focus restore — Tab walked straight out of the panel into the page beneath the
+          scrim, and closing left focus on <body> rather than the control that opened it.
+          use-dialog was written for exactly this and is wired into five other overlays; the
+          omnibox missed it. DialogPanel mounts the hook only while the overlay is open. */}
+      <DialogPanel
+        label="Go to a passage"
+        onClose={() => setOpen(false)}
+        className="relative w-full max-w-lg border edge bg-paper animate-fade-in dark:bg-stone-900"
+      >
         <form onSubmit={onSubmit}>
           {/* The input carries `focus-quiet`, which suppresses the global :focus-visible
               outline, and nothing replaced it: focus on the omnibox was completely
@@ -173,7 +183,7 @@ export function Omnibox() {
             />
           )}
         </div>
-      </div>
+      </DialogPanel>
     </div>
   );
 }

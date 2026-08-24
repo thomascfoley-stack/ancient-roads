@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { READING_CATEGORIES, type ReadingCategoryId } from '@/lib/user-corpus/suggested-readings';
+import { readingsIsRunning } from '@/lib/user-corpus/readings-state';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 
 // Suggested readings: pick what to search, watch it search, read what it found.
@@ -101,7 +102,9 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
     [documentId, load],
   );
 
-  const running = state?.status === 'running' || state?.status === 'pending';
+  // D1: shared with the route and the queue — this was retyped inline, which is how the two
+  // halves of the wedge drifted apart.
+  const running = readingsIsRunning(state?.status ?? null);
   const byCategory = READING_CATEGORIES
     .map((c) => [c, (state?.readings ?? []).filter((r) => r.category === c.id)] as const)
     .filter(([, rows]) => rows.length > 0);

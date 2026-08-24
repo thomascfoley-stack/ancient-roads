@@ -100,6 +100,10 @@ export default function WordStudyPage() {
             <button
               key={l}
               onClick={() => setLang(l)}
+              // D36: the active button was conveyed by BACKGROUND COLOUR ALONE — a screen
+              // reader heard two identical buttons. Same class B14 fixed in the reader header;
+              // settings-form.tsx already does this right for the identical control.
+              aria-pressed={lang === l}
               className={`min-h-[36px] rounded-lg px-4 text-sm font-medium capitalize transition-colors ease-gentle ${
                 lang === l
                   ? 'bg-paper text-stone-800 dark:bg-stone-700 dark:text-stone-100'

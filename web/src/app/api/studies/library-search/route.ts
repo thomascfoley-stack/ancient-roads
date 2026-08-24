@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { getDb } from '@/lib/db';
 import { searchSections, type SectionSearchResult } from '@/lib/search-sections';
@@ -67,8 +67,10 @@ async function resolveSectionIds(
 
 export async function GET(req: NextRequest): Promise<Response> {
   let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
-  // Auth wall — the corpus is not user-scoped; user.id is used only to attribute the query log.
+  // UNION 2026-08-24: D43's authFailureResponse (an auth OUTAGE must not be reported to the
+  // reader as "you are signed out") plus the timer the 129 query log needs. `user.id` is used
+  // only to attribute that log — the corpus itself is not user-scoped.
+  try { user = await requireUser(); } catch (e) { return authFailureResponse(e); }
   const t0 = Date.now();
 
   const url = new URL(req.url);

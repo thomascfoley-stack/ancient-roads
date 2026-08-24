@@ -551,9 +551,12 @@ export function scanReferenceSpans(text: string, opts: ParseOptions = {}): Scann
     consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[2]!, true);
   }
   for (const m of text.matchAll(DIGIT_ATTACHED_SCAN_RE)) {
-    // Merge union 2026-08-24 (B1 third pass × W-SCANRE span facts): the attached digit IS an
-    // explicit ordinal — "1Cor 13" carries the same confidence as "1 Cor 13", so hasOrdinal
-    // is true and the book word is the attached alias exactly as matched.
+    // Merge 2026-08-24. TWO sessions hit this same conflict from opposite branches and resolved it
+    // identically, which is worth recording: main widened `consider` to take the book word and
+    // whether the span carried an explicit ordinal (the SCAN_RE corroboration work), and the
+    // digit-attached pass had been calling it with three arguments. A digit-attached form IS an
+    // ordinal — "1Cor 13" carries exactly the confidence of "1 Cor 13" — so it passes the matched
+    // alias and `true`, never false.
     consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[2]!, true);
   }
   if (MULTIWORD_SCAN_RE) {

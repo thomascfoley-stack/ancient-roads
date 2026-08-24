@@ -39,9 +39,13 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const form = await req.formData();
-  const attempt = form.get('password');
-  const next = safeNext(form.get('next'));
+  // D26: a POST whose content-type is not a form makes formData() THROW — and this route sits
+  // outside the middleware matcher, so one curl reached Next's raw 500 unauthenticated on the
+  // pre-launch site's only public mutation. Same `.catch(() => null)` the upload route uses; a
+  // body we cannot read is a failed attempt, not a server crash.
+  const form = await req.formData().catch(() => null);
+  const attempt = form?.get('password') ?? null;
+  const next = safeNext(form?.get('next') ?? null);
 
   if (typeof attempt !== 'string' || !passwordMatches(attempt, password)) {
     const url = new URL('/gate', req.url);

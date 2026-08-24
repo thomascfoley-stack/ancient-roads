@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { deleteThread } from '@/lib/research';
 
@@ -40,8 +40,9 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
+  } catch (e) {
+    // D43: an auth-SERVICE outage is 503, not "you are signed out".
+    return authFailureResponse(e);
   }
   const { id } = await ctx.params;
   // IDEMPOTENT: 204 whether a row was removed, the id never existed, or it belongs to someone
@@ -56,6 +57,13 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
   // The return value of `deleteThread` is deliberately unused here. It is not dead weight: the
   // store function is what the tenancy tests assert on, where telling "removed" from "not yours"
   // is the whole point.
-  await deleteThread(user.id, id);
-  return new Response(null, { status: 204 });
+  // Cluster A (DEEP_SWEEP D14/D32/D33): the data layer has no catch of its own, so an
+  // unwrapped call escapes to Next's RAW 500 instead of the envelope every /api/* route promises.
+  try {
+    await deleteThread(user.id, id);
+    return new Response(null, { status: 204 });
+  } catch (e) {
+    console.error('DELETE /api/research/[id]:', (e as Error).message);
+    return apiError('INTERNAL');
+  }
 }

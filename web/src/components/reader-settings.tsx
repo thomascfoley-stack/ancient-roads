@@ -59,12 +59,14 @@ export function ReaderSettings({
           <div className="mb-3 flex bg-stone-100 p-0.5 dark:bg-stone-700">
             <button
               onClick={() => applyDark(false)}
+              aria-pressed={!dark}
               className={`min-h-[40px] flex-1 py-1 text-sm font-medium transition-colors ease-gentle ${!dark ? 'bg-paper text-stone-800' : 'text-stone-500 dark:text-stone-400'}`}
             >
               Light
             </button>
             <button
               onClick={() => applyDark(true)}
+              aria-pressed={dark}
               className={`min-h-[40px] flex-1 py-1 text-sm font-medium transition-colors ease-gentle ${dark ? 'bg-stone-900 text-stone-100' : 'text-stone-500 dark:text-stone-300'}`}
             >
               Dark

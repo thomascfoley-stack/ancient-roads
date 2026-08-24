@@ -14,6 +14,7 @@
 // single blob.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { assertNotQuarantined } from './license-manifest.js';
 import { scanReferences } from '../bible/ref-parse.js';
 import { writeRegisterWork, type RegisterWork, type RegisterSection } from './register-writer.js';
 
@@ -471,6 +472,9 @@ export function buildSections(body: string, profile: Profile): RegisterSection[]
 }
 
 export async function acquireGutenberg(entry: Record<string, unknown>, opts: { write: boolean; publish?: boolean } = { write: true }): Promise<{ sections: number; anchored: number; embedded: number }> {
+  // D2 (DEEP_SWEEP.md): quarantine is enforced at the MOUTH, before any fetch, parse or
+  // write — the historian/sermon line, which this path was missing entirely.
+  assertNotQuarantined(entry);
   const prov = entry.provenance as Record<string, unknown>;
   const acq = prov.acquire as { ebook_id?: number; archive_id?: string };
   const profile = PROFILES[entry.slug as string];

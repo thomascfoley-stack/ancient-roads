@@ -1,8 +1,22 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/ingest/*.ts", "src/evals/run.ts", "scripts/*.{ts,sh}", "test/**/*.test.ts"],
-  "project": ["src/**/*.ts", "test/**/*.ts"],
-  "ignore": ["web/**", "src/bible/verse-counts.ts"],
-  "ignoreBinaries": ["sqlite3"],
+  "entry": [
+    "src/ingest/*.ts",
+    "src/evals/run.ts",
+    "scripts/*.{ts,sh}",
+    "test/**/*.test.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ],
+  "ignore": [
+    "web/**",
+    "src/bible/verse-counts.ts",
+    "src/bible/empty-verses.ts"
+  ],
+  "ignoreBinaries": [
+    "sqlite3"
+  ],
   "ignoreExportsUsedInFile": true
 }

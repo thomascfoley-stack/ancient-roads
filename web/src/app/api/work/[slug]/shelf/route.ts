@@ -1,4 +1,4 @@
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { getShelf, isShelf, removeFromLibrary, setShelf } from '@/lib/library';
@@ -33,9 +33,7 @@ async function resolve(
   let user: { id: string };
   try {
     user = await requireUser();
-  } catch {
-    return apiError('UNAUTHENTICATED');
-  }
+  } catch (e) { return authFailureResponse(e); }
   const { slug } = await ctx.params;
   const sourceId = await publishedSourceId(slug);
   // Same shape as the sibling GET /api/work/[slug]: staged, quarantined and unknown are one 404.
