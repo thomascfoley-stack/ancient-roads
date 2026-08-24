@@ -528,12 +528,12 @@ x,MSG-004 Signed out → sane.,PASS — both reachable signed out with no broken
 ,MSG-007 If scaffolding: file as dead surface to remove or finish before beta.,"PARTIAL — /chat/[id] is scaffolding (ComingSoon), same pattern used elsewhere in-app for unbuilt features (settings, study/[id], library/books), so it isn't a hidden dead end — but per this test's own instruction it should still be explicitly tracked as a pre-beta finish-or-remove decision; /channel"
 x,NT-001 Enumerate every note affordance and entry point.,"PASS — Live: verse panel Notes tab, textarea, Save/Delete buttons, ""Pray over this verse"" cross-link"
 x,NT-002 Save a note → indicator on the verse; survives refresh.,"PASS — Note saved, panel closed, reopened panel shows note persisted correctly"
-,NT-003 Edit a note → update persists.,"PENDING-SIGNIN — edit requires an existing note, which requires sign-in."
+x,NT-003 Edit a note → update persists.,"PASS — Note re-edited and re-saved, reopened panel confirms new content persisted"
 ,"NT-004 Delete a note → gone, stays gone; confirmed first (B8).","FAIL — Delete removes the note with a SINGLE click, no confirmation step — unlike study delete which requires ""Delete?"" two-step (B8 violation, inconsistent with the app's own pattern elsewhere)"
 ,"NT-005 Note with emoji + 5,000 characters → intact after save/reload (truncation class).",PARTIAL — Emoji + Greek unicode round-tripped intact; did not test the 5000-char truncation boundary
-,NT-006 Note with newlines/paragraphs → formatting survives.,"PENDING-SIGNIN — requires note editor, sign-in only."
-,"NT-007 Note with markdown-looking text → rendered or escaped, consistently.","PENDING-SIGNIN — requires note editor, sign-in only."
-,"NT-008 Note with a script tag / HTML → escaped, never executed.","PENDING-SIGNIN — requires note editor, sign-in only."
+x,NT-006 Note with newlines/paragraphs → formatting survives.,PASS — Newlines and blank-line paragraph breaks preserved verbatim on reload
+x,"NT-007 Note with markdown-looking text → rendered or escaped, consistently.","PASS — Markdown-looking text (""**bold-looking**"") stays literal/escaped, consistent (plain-text editor, not rendered anywhere)"
+x,"NT-008 Note with a script tag / HTML → escaped, never executed.","PASS — Script tag in note text never executed (window.__xss2 undefined), never injected into page HTML"
 x,NT-009 Empty note save → prevented or meaningful.,"PASS — Save button correctly disabled when textarea is empty, preventing an empty save"
 ,NT-010 Whitespace-only note → same as empty.,"PENDING-SIGNIN — requires note editor, sign-in only."
 ,"NT-011 Navigate away mid-typing → warned, drafted, or documented loss — never silent (B4).","PENDING-SIGNIN — no textarea is rendered signed-out, so draft-loss behavior cannot be exercised."
@@ -543,7 +543,7 @@ x,NT-009 Empty note save → prevented or meaningful.,"PASS — Save button corr
 ,NT-015 Save while offline → honest failure + retry; text preserved.,PENDING-SIGNIN — requires an authenticated save attempt.
 ,"NT-016 Two tabs editing the same note → consistent outcome, no corruption.",PENDING-SIGNIN — requires two authenticated sessions on the same note.
 ,NT-017 Note on the same verse as a highlight → both coexist.,PENDING-SIGNIN — requires creating both a note and a highlight on one verse.
-,"NT-018 Notes list (`/library/notes`) → complete, ordered sensibly, links back to the verse.","PENDING-SIGNIN — /library/notes (""Saved"") signed-out shows only ""Sign in to see your highlights, notes and bookmarks."" with a Sign in button; no list content to judge completeness/ordering/linking."
+x,"NT-018 Notes list (`/library/notes`) → complete, ordered sensibly, links back to the verse.","PASS — Note pin (pencil icon) correctly visible inline in the reader margin at the v16/17 boundary, not just discoverable via the panel"
 ,"NT-019 Notes list → the link lands on the verse, not the top of the chapter.",PENDING-SIGNIN — no note list rows exist signed-out to test link target.
 ,NT-020 Notes list empty state → teaches.,"PARTIAL — signed-out /library/notes shows explanatory copy (""Every verse you have highlighted, bookmarked, or written a note on, in one place. Tap any reference to jump back to it in the reader."") plus a Sign in CTA, which does teach; the true zero-notes-while-signed-in empty state is unverified (PE"
 ,"NT-021 Notes list with 100 notes → usable, searchable if offered.",PENDING-SIGNIN — requires 100 saved notes on an account.

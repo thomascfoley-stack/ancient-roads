@@ -1076,3 +1076,12 @@ present directly on the document row — not tested further this pass (would nee
 verification), but confirms the feature is wired end to end, not a dead affordance.
 
 No new findings — this is a well-built, honestly-staged feature.
+
+## Batch 46 — NT (Notes, second pass), live signed-in production testing, real account (0 new findings)
+
+Extended the NT pass with a multi-line, script-tag, and markdown-lookalike note on John 3:16, then
+cleaned it up via Delete. All PASS: edits persist across panel reopen; newlines and blank-line
+paragraph breaks survive verbatim; a literal `<script>` tag in note text never executes and is never
+injected into page HTML; markdown-looking text stays literal (consistent, since it's a plain-text
+editor with no rendering anywhere). Also confirmed a note pin (pencil icon) renders inline in the
+reader margin itself, not just inside the panel — a real discoverability plus.
