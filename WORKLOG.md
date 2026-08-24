@@ -1,5 +1,69 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — UNION DEPLOYED (ca433a6) — and I repeated the migration-before-code inversion
+
+**Owner instruction:** "do theirs and mine, do them both."
+
+**LIVE:** `ancientpaths.app` → `dpl_HpVH9bJ78kPDcwC93AU7KTRzkSuh`, sha `ca433a6`, READY, target
+production, ready 05:20:10Z. Receipt `docs/evidence/deploys/deploy-ca433a6-2026-08-24T05-15-36Z.txt`.
+Verified TWO ways rather than trusting deploy.sh: its own post-deploy alias check, and Vercel's
+deployment API queried separately (alias list carries ancientpaths.app + www, author
+thomascfoley@gmail.com, source cli).
+
+**What shipped in one alias move:** wave-0 licensing closeout (peer -be, carried forward from their
+05:07Z deploy) · the ADR-118 ef change (peer -90, via main) · search_outcomes query logging (129) ·
+PostHog analytics with the allowlist URL sanitiser · match_outcome telemetry on all three
+sermon→commentary surfaces · first-party growth data (130).
+
+**THE MISTAKE, STATED PLAINLY. I shipped code whose migration was not applied, which is exactly
+the inversion I had criticised peer -90 for eight hours earlier in this same file.** The live
+waitlist route inserts `attribution` and `consent_text`; production had neither column, so every
+signup on the PUBLIC landing page answered 503 "We couldn't reach the list just now." Window:
+deployment READY 05:20:10Z until migration 130 was applied minutes later. The landing page is
+outside the SEC-1 gate, so a real visitor in that window would have been turned away. Nothing was
+lost (the insert failed, it did not half-write) but the exposure was real and public.
+
+Root cause is not ignorance — I had WRITTEN the "NOT applied to prod" line in the entry below. I
+verified the deploy's ancestry, the audit, the clean tree, the CDN manifest and the alias, and did
+not verify the schema the shipped code requires. **The deploy checklist has no schema-parity gate**
+— exactly the backlog item peer -90 filed after their outage (diff migrations-applied-on-prod
+against the migrations the deploying sha's code references). Two sessions have now hit this in one
+night from opposite directions. It should be built before the next deploy, not filed again.
+
+**Fixed forward, then proven on production:** migration 130 applied (ledger sha 1df5e4191857) and
+verified — `attribution`/`consent_text` present, `user_active_day` + `email_suppression` created
+with exactly one INSERT policy each, zero UNIQUE constraints left on waitlist (append-only live).
+Then the real path, against the live site: `POST https://ancientpaths.app/api/waitlist` with a
+campaign tag → 200, and the row landed carrying `{utm_source, utm_campaign, landing_path}` plus the
+consent sentence. **Campaign attribution now works end to end in production.** Verification row
+deleted; waitlist back to 4 rows.
+
+**Multi-session coordination, for the record.** Five sessions live. The union was assembled rather
+than raced: 8 real conflicts resolved as UNIONS, never by picking a winner — D43 auth-outage
+handling + markActiveDay (activity now cannot be recorded from a misconfigured server, since D43
+throws first); D14/D32/D33 error envelopes + the 129 query log; D35's try/catch with the log moved
+INSIDE the success path so a throw is not recorded as a search; documents.ts resolved to peer -be's
+superset (advisory lock + quota + D8 in-lock checksum re-check + asserted_ownership_at — four
+controls, one statement), independently confirmed identical to my own resolution. `ref-parse.ts`:
+two sessions hit the same 5-arg `consider` conflict from opposite branches and resolved it
+identically; twins re-verified byte-identical.
+
+**NOT DONE / UNVERIFIED / OWED.**
+* **`rootDirectory` is still `null` and that is an ERROR sitting in place, not a ruling.** Peer -be
+  flipped it from "web" at ~04:45Z on a wrong inference, then disclosed it against their own
+  interest. I had reported it to the owner as "option A confirmed by measurement" — the value was
+  right, the PROVENANCE was wrong, and I corrected that. Hard evidence both ways: deploy.sh needs
+  `./`, while PR #124's git build (`dpl_54gK8uL…`, READY 02:35Z, sha 578b6a8) is proof git builds
+  need `web`. **Owner decision, both exhibits on the table.** Tonight's two deploys worked BECAUSE
+  of the error.
+* A schema-parity pre-deploy gate. See above. Twice in one night.
+* Most of wave-0 is unverified in production — peer -be smoked only D26; the rest sits behind the
+  SEC-1 password they do not hold. Paths worth walking: grounding, traditions count, auth-outage,
+  document creation, delete route.
+* `user_active_day` has no production rows yet: the gate means only the owner reaches authenticated
+  paths, so DAU/churn will read ~1 until SEC-1 lifts.
+* Landing copy still promises "the invitation alone"; `consent_text` now records it per row.
+
 ## 2026-08-24 — First-party growth data: own the nouns, rent the mouse movements (migration 130)
 
 **Directive.** "i don't want to be tool dependent… should be ancient paths dependent", "i want to
