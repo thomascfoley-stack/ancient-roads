@@ -1,5 +1,90 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-24 — UX/UI overnight sweep, FINAL for tonight (supersedes the "first pass" entry below it)
+
+Six background agents plus direct testing, all in the `fix/ux-overnight-sweep` worktree, all against
+production (owner-authorized, owner-supplied session cookie, "change nothing net" discipline — every
+reversible write round-tripped back to its original state, documented where it couldn't be). Full
+detail: `UX_TASKS.md` (1550+ lines, the working ledger) and `UX_SWEEP.md` (11 distinct findings in the
+ledger's own format) in that worktree. This entry is the honest summary; go to those files for evidence.
+
+**Read this first if you only read one thing:** `PostHog-CSP-blocked` in `UX_SWEEP.md`. Production's CSP
+blocks PostHog's own bootstrap script (`us-assets.i.posthog.com`) on every page load — verified this
+isn't just cosmetic console noise: zero `/ingest` requests fire, `window.posthog` never initializes.
+**Analytics have been capturing nothing in production** — not DAU, not the `search_outcomes`/
+`ask_outcomes` telemetry MASTER.md discusses at length, nothing — for however long this has been broken
+(not dated). One-line-ish fix: add `us-assets.i.posthog.com` to `web/next.config.ts`'s CSP `script-src`.
+Given how much this repo's programme sheet leans on PostHog data being real, this is worth same-day
+attention, not backlog.
+
+**P1 findings (4):** the PostHog blackout above; no privacy policy/terms linked on the landing page
+(`MK-13`, matches the ledger's own pre-registered prediction); Back from an open verse panel exits the
+reader entirely rather than closing the panel (`NV-back-exits-reader`, confirmed live, root-caused to a
+missing history entry in `read/[book]/[chapter]/page.tsx`); a root-caused ingestion bug in
+`src/ingest/adapter-ccel.ts:59` that deletes verse-reference text (not just tags) from inline citations
+in CCEL-sourced works — confirmed byte-for-byte against live CCEL source XML, affects Kempis and
+(by code inspection, not re-verified per-work) likely Calvin's Institutes and Schaff's Creeds
+(`WK-content-empty-citations`).
+
+**P2 findings (5):** sermon body text has zero clickable scripture references despite the API already
+carrying the verse metadata that would back them (`SM-scripture-refs`); reading progress reports 100%
+instantly for unpaginated works — the whole 50-sermon Spurgeon volume mounts unvirtualized in one DOM
+(`WK-progress-fake-100`, likely the same root cause as the sermon-refs finding); the verse panel's own
+"Word study" tab lists rows that look clickable but do nothing — the only working entry point is
+double-tapping the word in the passage text, undocumented from the panel (`WS-panel-dead-click`); the
+Settings page's Text Size and Column Width controls are completely non-functional — no visual change,
+no persistence, sitting right next to two working controls (Theme, Translation) on the same page
+(`ST-dead-controls`); the Daily Office's "Read in full" link drops the verse anchor, landing at chapter
+top instead of the cited verse (`DO-anchor-missing`).
+
+**P3 findings (2):** a work title renders a literal `&amp;` instead of a decoded ampersand
+(`LB-title-encoding`); the reading-plan detail page's tab title duplicates the site suffix
+(`PL-title-duplication`).
+
+**Verified PASS, live, with evidence:** the entire signed-out surface (marketing, gate mechanism incl.
+`?next=` round-trip, reader/translations/interlinear/word-study/commentary), plus signed-in: highlight/
+note create-verify-delete round-trips, translation switching + persistence, interlinear toggle, desk
+pane lifecycle, reading-plan progress toggle (both directions + persistence), one ask query (the "never
+interprets" guarantee held on an adversarial-benign prompt), Daily Office correctness/mobile/Back, Bible
+search (word/phrase/zero-result/rapid-requery), the reference omnibox end-to-end, six canonical
+edge-passages (pericope adulterae, longer ending of Mark, Ps 119, canon boundaries, single-chapter
+books), library/works browsing incl. attribution and mobile, sermon reading, dark mode, book-boundary
+chapter nav, invalid-chapter/invalid-book error handling, research-history delete (two-step confirm).
+
+**Checked and deliberately NOT filed as bugs** (would have been false positives): Psalm 119's missing
+Hebrew-letter headings (absent from the ingested source data itself, not a display bug); no textual-
+critical marker on the pericope adulterae (consistent with "concordance not commentator"); an
+Enter-key-dispatch test that looked broken but was a synthetic-event tooling artifact, not a product
+bug (re-verified with a real click and passed).
+
+**NOT DONE, honestly:** the 66-book reader sweep beyond spot checks; the ~1000-query AS/HS/VO batches
+(would spend real LLM cost/quota — needs a synthetic account + budget decision, not made unilaterally);
+voice search entirely (needs a feasibility spike); uploads (would consume real Blob quota); study editor
+beyond a read-only peek; cross-browser/device matrix (Safari, Firefox, real phones — one automated
+Chromium browser was available tonight); accessibility screen-reader passes; print; most of chaos/
+resilience and heavy-data states; most pairwise interactions (one attempted, `PW-01`, inconclusive due
+to a DOM-selector miss on my end, cleaned up, needs a redo). Around 1:00 AM the Browser pane stopped
+compositing client-side (the user's view of it went away, expected at this hour) — raw click/keyboard
+simulation became unreliable from that point on; later checks relied on real DOM `.click()` calls,
+`navigate`, and read-only inspection, which stayed reliable throughout.
+
+**Process notes worth keeping:** corrected a peer's claim that `fix/q1-signed-out-state` was stale vs
+`origin/main` — checked directly with `git merge-base --is-ancestor`, and it's backwards: `origin/main`
+is an ancestor of `fix/q1-signed-out-state` (15 commits ahead). COV-00 found `/channel/[id]` and
+`/chat/[id]` (which the owner's ledger flagged as an untested "messaging feature") are actually a dead
+redirect stub and an orphaned placeholder — retired code, not a coverage gap; corrected in the ledger.
+An ask query, despite feeling like a read, persists a real Research History entry — cleaned up via the
+sidebar's own two-step delete, confirmed working (`HT-05`). Prod's published-work count (374) is
+notably higher than the dev-DB snapshot `WK-00` measured (129) — worth reconciling, not chased tonight.
+
+**Next steps, in rough priority order:** (1) the PostHog CSP fix — cheap, and every day it's not fixed
+is another day of silent data loss; (2) the CCEL ingestion regex fix + a DB grep to size the blast
+radius before re-ingesting; (3) fix or hide the dead Text-Size/Column-Width controls; (4) fix the
+verse-panel Back-stack gap (likely needs a real history entry or a popstate listener on panel open);
+(5) ratify the `NV-00` back-map draft (needs the owner's ~15 minutes, per the ledger's own ask); (6)
+decide on a synthetic test account + token budget for the remaining query batches and uploads, if this
+ledger continues.
+
 ## 2026-08-24 — UX/UI overnight sweep, first pass (owner's ledger, worktree `fix/ux-overnight-sweep`)
 
 **Scope note first, because the ledger asked for something bigger than one session delivers honestly:**
