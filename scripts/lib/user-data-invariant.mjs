@@ -92,6 +92,17 @@ export const USER_TABLE_EXCLUDED = {
     'would churn on every ask. Runtime posture (INSERT-only via an INSERT-only RLS policy) is ' +
     'covered by the migration DO block and its static shape test.',
 
+  // Search-outcome log (migration 127) — 116's sibling for the five search surfaces, same
+  // exclusion shape for the same reasons: one telemetry row appended per search, so a digest
+  // would churn on ordinary use, and nothing in it is authored content. INSERT-only posture is
+  // pinned by 127's DO tail and web/test/invariants/search-outcomes-migration.test.ts.
+  search_outcomes:
+    'Append-only search query log (migration 127) — one row per completed search across the ' +
+    'works/commentaries/library/my_works/history surfaces, written fail-open off the request ' +
+    'path. Telemetry, not authored user content; a digest would churn on every search. Runtime ' +
+    'posture (INSERT-only via an INSERT-only RLS policy) is covered by the migration DO block ' +
+    'and its static shape test.',
+
   // ── The four Better Auth tables (migration 104, the SEC-1 cutover) ────────────────────────────
   // EXCLUDED from the G1 digest, and the distinction is worth stating precisely: these hold data
   // ABOUT users, but they are not user CONTENT. G1 exists to prove that a cutover did not silently

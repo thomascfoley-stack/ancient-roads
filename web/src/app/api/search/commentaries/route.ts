@@ -21,6 +21,7 @@ import { searchCommentaries } from '@/lib/commentary-search';
 import { apiError } from '@/lib/api-error';
 import { publicReadThrottle } from '@/lib/public-read-limit';
 import { truncateCodePoints } from '@/lib/text';
+import { scheduleSearchOutcome, type SearchParams } from '@/lib/search-outcomes';
 
 /** Bible book ordinal — 1..66, and a smallint column downstream. */
 const MAX_BOOK = 66;
@@ -66,13 +67,33 @@ export async function GET(req: Request): Promise<Response> {
   };
 
   try {
+    const t0 = Date.now();
+    const query = truncateCodePoints(q, 200);
+    const tradition = str('tradition');
+    const author = str('author');
     const data = await searchCommentaries({
-      query: truncateCodePoints(q, 200),
+      query,
       book: book ?? undefined,
-      tradition: str('tradition'),
-      author: str('author'),
+      tradition,
+      author,
       limit: limit ?? undefined,
       offset: offset ?? undefined,
+    });
+    // Query log (migration 127), off the request path, fail-open. user_id stays NULL here on
+    // purpose — this route is public and resolves no session; see the migration header.
+    const logged: SearchParams = {};
+    if (book !== undefined && book !== null) logged.book = book;
+    if (tradition !== undefined) logged.tradition = tradition;
+    if (author !== undefined) logged.author = author;
+    if (offset !== undefined && offset !== null) logged.offset = offset;
+    scheduleSearchOutcome({
+      surface: 'commentaries',
+      userId: null,
+      query,
+      params: logged,
+      resultCount: data.results.length,
+      total: data.total,
+      latencyMs: Date.now() - t0,
     });
     return Response.json(data);
   } catch (err) {

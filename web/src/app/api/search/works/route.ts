@@ -19,6 +19,7 @@
 import { CATALOG_IDS, CATALOGS, isCatalogId, isSubFilterOf, type CatalogId } from '@/lib/catalog';
 import { searchSections } from '@/lib/search-sections';
 import { publicReadThrottle } from '@/lib/public-read-limit';
+import { scheduleSearchOutcome, type SearchParams } from '@/lib/search-outcomes';
 
 /** Upper bound on filter cardinality. A URL cannot be used to build an unbounded IN-list. */
 const MAX_FILTER_VALUES = 32;
@@ -44,6 +45,7 @@ export async function GET(req: Request): Promise<Response> {
   // Unauthenticated and, once the gate comes off, public. Throttle before doing any work.
   const throttled = await publicReadThrottle(req, 'search-works');
   if (throttled) return throttled;
+  const t0 = Date.now();
   const url = new URL(req.url);
   const query = (url.searchParams.get('q') ?? '').trim();
   if (!query) return Response.json({ results: [], total: 0, totalCapped: false });
@@ -118,16 +120,34 @@ export async function GET(req: Request): Promise<Response> {
     return Response.json({ error: `${badNum.join(' and ')} must be an integer` }, { status: 400 });
   }
 
+  const work = url.searchParams.get('work') ?? undefined;
   const page = await searchSections({
     query,
     // A single catalog keeps the `catalog` path so its sub-filter still applies; two or more go
     // through the pooled path, where sub-filters have no meaning (see typesForMany).
     ...(catalogs.length === 1 ? { catalog: catalogs[0]! } : { catalogs }),
     subFilter: sub,
-    sourceSlug: url.searchParams.get('work') ?? undefined,
+    sourceSlug: work,
     traditions,
     limit,
     offset,
+  });
+  // Query log (migration 127), off the request path, fail-open. user_id stays NULL here on
+  // purpose — this route is public and resolves no session; see the migration header.
+  const logged: SearchParams = {};
+  if (catalogs.length > 0) logged.catalogs = catalogs;
+  if (traditions.length > 0) logged.traditions = traditions;
+  if (sub !== undefined) logged.sub = sub;
+  if (work !== undefined) logged.work = work;
+  if (offset !== undefined) logged.offset = offset;
+  scheduleSearchOutcome({
+    surface: 'works',
+    userId: null,
+    query,
+    params: logged,
+    resultCount: page.results.length,
+    total: page.total,
+    latencyMs: Date.now() - t0,
   });
   return Response.json(page);
 }

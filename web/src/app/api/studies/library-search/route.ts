@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { searchSections, type SectionSearchResult } from '@/lib/search-sections';
 import { searchLexicons } from '@/lib/search-lexicons';
 import { CORPUS_GROUPS, type CorpusGroupId } from '@/lib/search-groups';
+import { scheduleSearchOutcome } from '@/lib/search-outcomes';
 
 // GET /api/studies/library-search?q=…&group=…&offset=… — the study editor's library panel
 // (editor v2, owner direction 2026-08-12: "search commentaries within this page itself").
@@ -67,7 +68,8 @@ async function resolveSectionIds(
 export async function GET(req: NextRequest): Promise<Response> {
   let user: { id: string };
   try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
-  void user; // auth wall only — the corpus is not user-scoped
+  // Auth wall — the corpus is not user-scoped; user.id is used only to attribute the query log.
+  const t0 = Date.now();
 
   const url = new URL(req.url);
   const q = url.searchParams.get('q')?.trim() ?? '';
@@ -107,6 +109,16 @@ export async function GET(req: NextRequest): Promise<Response> {
         heading: r.heading,
         snippet: r.snippet,
       }];
+    });
+    // Query log (migration 127), off the request path, fail-open.
+    scheduleSearchOutcome({
+      surface: 'library',
+      userId: user.id,
+      query: q,
+      params: offset > 0 ? { group, offset } : { group },
+      resultCount: results.length,
+      total: page.total,
+      latencyMs: Date.now() - t0,
     });
     return NextResponse.json({ results, total: page.total, totalCapped: page.totalCapped });
   } catch (e) {

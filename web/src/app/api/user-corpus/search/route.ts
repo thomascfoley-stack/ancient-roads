@@ -5,6 +5,7 @@ import { apiError } from '@/lib/api-error';
 import { embedChunks } from '@/lib/user-corpus/embed';
 import { keywordSearch, searchMyWorks, verseAnchorScan } from '@/lib/user-corpus/search';
 import { parseRef } from '@bible/ref-parse';
+import { scheduleSearchOutcome, type SearchParams } from '@/lib/search-outcomes';
 
 export const runtime = 'nodejs';
 
@@ -51,6 +52,23 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const params = req.nextUrl.searchParams;
   const documentId = params.get('documentId') ?? undefined;
+  // Query log (migration 127), off the request path, fail-open. This is the user's PRIVATE
+  // corpus: the row stores their own typed input and counts, attributed through runAsUser —
+  // the same first-party, owner-read-only posture as ask_outcomes (which already stores the
+  // question text for asks over this same corpus).
+  const t0 = Date.now();
+  const logSearch = (mode: string, typed: string, resultCount: number): void => {
+    const logged: SearchParams = { mode };
+    if (documentId !== undefined) logged.documentId = documentId;
+    scheduleSearchOutcome({
+      surface: 'my_works',
+      userId: user.id,
+      query: typed,
+      params: logged,
+      resultCount,
+      latencyMs: Date.now() - t0,
+    });
+  };
   // B019 — EVERY SEARCH RETURNED EXACTLY ONE RESULT. This was `Number(params.get('limit'))`, and
   // `Number(null)` is 0, as is `Number('')`. `Number.isFinite(0)` is true, so an ABSENT parameter
   // became `limit: 0`, which `clampLimit` floors to 1 — and `scope.limit ?? DEFAULT_LIMIT` in
@@ -76,6 +94,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     // did not ask for.
     const range = parsed.ref.ranges[0]!;
     const anchors = await verseAnchorScan(user.id, range, scope);
+    logSearch('verse', ref, anchors.length);
     return NextResponse.json({ mode: 'verse', ref: parsed.ref.display, range, anchors });
   }
 
@@ -92,22 +111,28 @@ export async function GET(req: NextRequest): Promise<Response> {
   if (!q) return NextResponse.json({ error: 'Provide q or ref.' }, { status: 400 });
 
   if (params.get('mode') === 'keyword') {
-    return NextResponse.json({ mode: 'keyword', q, hits: await keywordSearch(user.id, q, scope) });
+    const hits = await keywordSearch(user.id, q, scope);
+    logSearch('keyword', q, hits.length);
+    return NextResponse.json({ mode: 'keyword', q, hits });
   }
 
   try {
     const [vector] = await embedChunks([q]);
     if (!vector) throw new Error('no query vector');
-    return NextResponse.json({ mode: 'fused', q, hits: await searchMyWorks(user.id, vector, q, scope) });
+    const hits = await searchMyWorks(user.id, vector, q, scope);
+    logSearch('fused', q, hits.length);
+    return NextResponse.json({ mode: 'fused', q, hits });
   } catch (e) {
     // The embedder is the only external dependency here. Degrade to FTS rather than returning
     // nothing: a keyword answer is a worse answer, and no answer looks like an empty corpus.
     console.error('[user-corpus] search fell back to keyword:', String((e as Error)?.message ?? e));
+    const hits = await keywordSearch(user.id, q, scope);
+    logSearch('keyword-degraded', q, hits.length);
     return NextResponse.json({
       mode: 'keyword',
       q,
       degraded: 'semantic search is unavailable; showing keyword matches only',
-      hits: await keywordSearch(user.id, q, scope),
+      hits,
     });
   }
 }

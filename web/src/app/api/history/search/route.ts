@@ -6,6 +6,7 @@ import { requireUser } from '@/lib/session';
 import { checkHistorySearchRateLimit } from '@/lib/rate-limit';
 import { searchHistory } from '@/lib/history-search-db';
 import { createHistoryThread } from '@/lib/history-threads';
+import { scheduleSearchOutcome } from '@/lib/search-outcomes';
 
 // zlib-free but embedQuery + pg need node, not edge.
 export const runtime = 'nodejs';
@@ -48,6 +49,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
+    const t0 = Date.now();
     const data = await searchHistory(query);
     // Persistence is UX (UX-4 parity), not correctness: losing the thread must not lose the
     // results, so this single write fails OPEN with a log line — unlike everything above it.
@@ -57,6 +59,15 @@ export async function POST(req: Request): Promise<NextResponse> {
     } catch (e) {
       console.error('history_thread_persist_failed', (e as Error).message);
     }
+    // Query log (migration 127), off the request path, fail-open. The thread above is the
+    // user's own UX record; this row is the owner-readable one, same as every other surface.
+    scheduleSearchOutcome({
+      surface: 'history',
+      userId,
+      query,
+      resultCount: data.results.length,
+      latencyMs: Date.now() - t0,
+    });
     return NextResponse.json({ threadId, ...data });
   } catch (e) {
     // Includes assertExcerptVerbatim throws: a mutated excerpt is a 500, never a render.
