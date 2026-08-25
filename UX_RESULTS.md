@@ -2623,3 +2623,8 @@ apply everywhere (PW-014 below). So this is an unfinished consistency rather tha
 - **PW-017 cannot be constructed:** requesting the same chapter twice
   (`?p=scripture:jhn/3&p=scripture:jhn/3`) yields **one** pane — the desk de-duplicates identical
   panes. And annotations do not render in desk panes at all (F-099), so there is nothing to sync.
+
+**PW-008, re-run properly.** First written from how the surface is keyed; then executed. Word study
+open on `agape` (ἀγάπη G26, ἀγαπητός G27) in one tab, reader translation switched to **KJV** in a
+second tab (`localStorage.translation = "kjv"`): the word-study entries were unchanged and
+error-free. Keyed to Strong's numbers, not to a display translation.
