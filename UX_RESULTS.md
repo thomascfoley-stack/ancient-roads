@@ -2557,3 +2557,9 @@ Contents and choosing again.
 - **DK-027** the panes really are windowed. With Spurgeon (**118,371 sections**) in one pane, the
   whole document holds **472 DOM nodes**, each pane's scroll height is ~35,000px rather than the
   work's true length, and scrolling costs **0.1–0.7ms** per 1,200px step.
+
+**DK-017, re-run properly.** The first write-up leaned on the DK-024 evidence, which is Back *into*
+the desk, not Back *from* it. Run cleanly from a fresh history: `/home` → `/desk` → Back → **`/home`**,
+landing on the devotional feed. Sane. Worth knowing alongside it: each desk state change pushes its
+own history entry, so inside the desk Back walks back through pane states (adding a pane is undoable
+with Back) before it leaves the desk at all.
