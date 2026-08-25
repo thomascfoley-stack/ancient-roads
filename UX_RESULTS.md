@@ -1483,3 +1483,99 @@ previous pass**, whose AU-050 note said no form existed; commit `90becf1` remove
 boundary). It fails safely: `method="post"` means nothing sensitive reaches the URL. But a real
 no-JS POST returns `HTTP 404` with the 24-byte body `Server action not found.`, and none of
 `/auth/sign-in`, `/auth/sign-up`, `/gate` carries a `<noscript>` explanation.
+
+## Batch — highlights, signed in (HL group)
+
+Method: real UI interaction in the reader (verse-number tap → colour swatch) for every behavioural
+claim; the API (`/api/annotations`) only for bulk seeding where the test is about volume, and for
+reading back server state to check what the UI actually persisted. All test data deleted afterwards.
+
+### F-116 · HL-009 · **P1/AX** · Every highlight colour fails AA contrast in dark mode
+Measured by compositing each highlight's `/70` background over the actual page background on a
+canvas and computing the WCAG ratio against the rendered text colour. Light mode is comfortable —
+all ten colours land between **11.82 and 13.84**. Dark mode is not: all ten land between **1.69 and
+2.05**, against a 4.5 AA floor and even a 3.0 large-text floor.
+
+| colour | light | dark | dark effective bg | dark text |
+|---|---|---|---|---|
+| yellow | 13.83 | **1.69** | rgb(186,174,97) | rgb(231,222,208) |
+| lime | 13.84 | **1.69** | rgb(159,181,111) | " |
+| green | 13.51 | **1.75** | rgb(137,180,149) | " |
+| teal | 13.05 | **1.82** | rgb(112,179,164) | " |
+| sky | 12.61 | **1.91** | rgb(136,167,182) | " |
+| purple | 12.46 | **1.94** | rgb(171,155,184) | " |
+| pink | 12.34 | **1.96** | rgb(184,151,167) | " |
+| violet | 12.31 | **1.98** | rgb(162,156,183) | " |
+| rose | 12.12 | **2.01** | rgb(186,149,152) | " |
+| amber | 11.82 | **2.05** | rgb(187,153,38) | " |
+
+Cause: the same `bg-<colour>-200/70` classes are used in both themes, so in dark mode a pale wash
+composites to a mid-tone while the text stays the light reader colour — light text on a light-ish
+band. Screenshot taken and looked at (1280×800, dark, John 3): highlighted verses are visibly
+*harder* to read than unhighlighted ones, which inverts what a highlight is for. Note the schema
+already carries a per-highlight `text_color`, and the colour buttons never set it.
+
+### F-117 · **P2** · "Saved" caps each section at 100 and prints the page size as the total
+`/library/notes` renders `Highlights ({highlights.length})` over whatever the first API page
+returned, and `getChapterAnnotations`'s sibling list query defaults to `pageLimit = 100`. With 143
+highlights on the account the heading read **"HIGHLIGHTS (100)"** and 43 were unreachable — no
+pagination, no "load more", nothing saying anything was omitted. The count is not just short, it is
+presented as authoritative.
+
+### F-118 · HL-022 · **P2** · The Saved overview has no delete — no controls at all
+`/library/notes` main content contains **zero `<button>` elements**. Every row is a link back to the
+reader. So the one place that lists everything you have saved cannot remove any of it; a highlight
+can only be cleared by navigating to its verse and using the verse panel. HL-022 as written ("delete
+from the overview → reader updates") has no UI to exercise.
+
+### F-119 · HL-006, HL-013 · **P2** · Changing a highlight's colour leaves the old one behind as a second row
+Whole-verse highlight, then a different colour on the same verse, creates a **second** row rather
+than replacing the first. Measured: John 3:21 yellow → teal gives `v21 rows: 2 ['yellow','teal']`.
+The reader looks right (last covering span wins), so nothing signals the duplicate — but `/library/notes`
+lists the verse twice, and the counter inflates: with two verses recoloured the heading read
+**"HIGHLIGHTS (17)"** with `John 3:20` and `John 3:21` each appearing twice.
+The idempotent-create guard in the route only matches an *identical* span, so a colour change is a
+new span by construction. Two tabs recolouring the same verse (HL-013) is the same defect from the
+other end: green in tab A and rose in tab B leaves both rows, with no last-writer-wins.
+
+### F-120 · HL-011 · **P2** · A highlight that fails to save is painted anyway and then vanishes with no message
+With `/api/annotations` writes forced to fail (fetch rejected, simulating offline), tapping a colour
+paints the verse, the panel switches to showing "clear" as though a highlight now exists, and
+**nothing is shown to the reader** — no error, no retry notice, no `role=alert`/`role=status` text
+anywhere. Two POST attempts were made (so there *is* one retry) and after both failed the UI stayed
+optimistic. On reload the highlight is simply gone. This is the B4 class the plan names: work
+silently lost.
+
+### F-121 · HL-012 · **P2** · Clear-then-recolour: the older intent wins and the newer one is destroyed
+Sequence: clear the highlight on John 3:16 (DELETE, held for 4s), then immediately pick rose. The
+POST lands first and creates rose; the delayed DELETE then arrives and — because verse-level delete
+removes *all* spans on the verse — wipes the highlight the reader just asked for. Final server state
+for John 3:16: **empty**. The test's own bar is "newer intent wins"; the opposite happens, silently.
+
+### F-122 · **P3/AX** · Reading-plan disclosures never update `aria-expanded`, and have no `aria-controls`
+On a plan page, each row in ALL READINGS is `<button aria-expanded="false">`. Opening one renders
+the full chapter inline (verified: John 1's text appears, +2,556 characters of body text), but the
+attribute stays `"false"` on all 15 rows, and no row carries `aria-controls`. A screen-reader user is
+told the disclosure is closed while it is open, and is given no pointer to the panel that opened.
+
+### F-123 · HL-020 · **P2** · Highlights do not render in reading-plan context
+John 3 carries 18 highlights in the reader. Opening the plan's "John 3–4" reading renders both
+chapters in full (90 verse numbers) with **zero** highlight spans. The same text in the same app,
+one surface remembers your marks and the other does not. Same family as the already-filed F-099
+(reader ↔ Desk) and F-109 (Desk verse numbers): per-verse state stops at the reader's edge.
+
+### Passing rows worth recording
+- **HL-005** three colours on John 3:1/3/16, reload, all three still present and independent.
+- **HL-006** the same colour three times on one verse → exactly one row (the route's idempotent
+  create works; it is only *different* colours that duplicate, F-119).
+- **HL-007** sub-verse spans are supported and persisted with real offsets (`span 0 21`), reached by
+  selecting text rather than tapping the verse number.
+- **HL-016** the good surprise: whole-verse highlights re-anchor across a translation switch
+  (WEB→KJV, all 13 kept), and *sub-verse* spans — which cannot re-anchor, since offsets are
+  translation-specific — are not silently dropped or mis-placed. The verse shows **"Highlighted in
+  KJV."** while you are in WEB, and the span reappears when you switch back. That is the
+  "or documents otherwise" branch of the test, done properly.
+- **HL-017/018** 50 highlights in one chapter: `domInteractive` 32ms, `loadEventEnd` 172ms.
+  130 highlights in one chapter (Psalm 119, 176 verses): 30ms / 286ms, all 130 spans painted.
+  Frame-rate during scroll could not be measured — `requestAnimationFrame` does not fire while the
+  browser pane is hidden, which it is in this tool.
