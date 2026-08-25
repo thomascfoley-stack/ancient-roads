@@ -1997,3 +1997,78 @@ on it — the UI collapses both into the account wording.
 - **UP-030** the document page reads well: title, the document's text under a **"Your work"**
   heading (which is where the "it's yours" attribution lives), plus "The tradition" (voices on
   passages it anchors) and "Suggested readings" sections, each with an honest empty state.
+
+## Batch — history search (HS group)
+
+The `/ask?mode=history` surface, signed in with the teacher/history allowlist enabled locally
+(`TEACHER_ALLOWLIST`). 24 real queries were run through `POST /api/history/search` across the
+categories HS-030 names (events, people, councils, heresies, places, dates, misspelled, vague), plus
+UI checks on the rendered surface.
+
+### F-138 · **P2** · Every attribution renders an em dash immediately followed by a comma
+On the Ask answer surface, each voice is captioned `Author —, Work`. Looked at, not just read out of
+`innerText` — screenshot at 1280×800 shows **"Adam Clarke —, Adam Clarke's Commentary  Methodist"**.
+The markup explains it: the em dash is an *era swatch*, `<span aria-hidden="true"
+class="ml-1.5 text-xs text-era-modern">—</span>`, and the caption then continues with a literal
+`, Work`. So a decorative element sits exactly where a reader expects a name-and-date separator, and
+the punctuation reads as a typo. All three voices in the sampled answer render this way.
+Two things follow: the caption carries **no publication year at all** (the already-filed F-064 gap,
+here on the product's core attribution surface), and the era swatch is invisible to assistive tech
+(`aria-hidden`) while being the only thing standing between the author and the comma.
+
+### F-139 · HS-002, HS-003, HS-005 · **P2** · History searches the whole of church history against one first-century book
+`coverage` on every response reads `{"works": 1, "sections": 4112}`. The library agrees: the
+Historians shelf holds **1 item**. That work is Josephus (d. c. 100), so every query about anything
+after the apostolic age has no source that could answer it. Measured over 24 queries:
+
+| | |
+|---|---|
+| HTTP 200 | 24 / 24 |
+| returned exactly one result | 22 / 24 |
+| returned zero results | 2 / 24 (`donatism`, `quartodeciman controversy`) |
+| distinct works across all results | **1** (`josephus-whiston`) |
+| query entity recognised | 9 / 24 — and all nine are first-century (Jerusalem, Polycarp, Origen, Herod, Pilate, Antioch, Alexandria, Rome). Councils, heresies and post-apostolic events: 0 |
+| latency | p50 **1.6s**, p95 3.6s, max 4.0s (a cold first query took 21.8s) |
+
+What that looks like to a reader: `council of chalcedon` → *The War of the Jews* on Bernice and the
+Pharisees; `athanasius` → *Antiquities* Book 20; `constantine` → *Antiquities* Book 8; `the great
+schism` → *Against Apion*. **The framing is honest** — the surface says *"No known people or places
+matched — showing text matches"* and labels the result **"CLOSEST MATCH TO YOUR QUESTION"**, so it
+never claims relevance. The gap is that it does not say what it *has*.
+
+### F-140 · **P2** · The surface discloses its coverage only when it finds nothing
+The zero-result state is genuinely good and says the important thing:
+> Nothing in the 1 served history items matches this. · Browse the history shelf · **Searched 1
+> items · 4,112 sections**
+
+The closest-match state — the other 22 of 24 — says none of that. The one fact that would let a
+reader calibrate ("this shelf is one book") is shown exactly when they least need it. The number is
+already in the API response (`coverage`) on every call. *Also:* the copy reads **"the 1 served
+history items"** and **"Searched 1 items"** — no singular form.
+
+### F-141 · HS-019, HS-020, HS-021 · **P2** · History threads are saved forever and there is no way to find them again
+Every history search silently creates a thread: 24 batch queries produced 24 thread ids, and this
+account now holds **27 `chats` rows with `persona = 'history'`** against 1 with `persona = 'ask'`.
+But `/api/research` — the endpoint behind the sidebar's recent-threads rail — filters on
+`THREAD_PERSONA` (`'ask'`), so it returns **1** thread and none of the 27. And `lib/history-threads.ts`
+exports exactly `createHistoryThread`, `servedHistoryWorks` and `getHistoryThread` — **there is no
+list function at all.**
+
+So a history thread is reachable only by its URL. There is no thread list, therefore no empty state
+for one (HS-019), nothing to paginate (HS-020), and no delete (HS-021) — a search you ran once is
+retained indefinitely with no way to see or remove it. This is the same gap UX-4/Research History
+closed for Voices, left open for History.
+
+### Passing rows worth recording
+- **HS-006** the zero-result state is the best empty state measured in this sweep: it says what was
+  searched, how much of it there was, and offers the shelf to browse.
+- **HS-014 / HS-016** a thread is created per search and its URL reopens the whole thing — query,
+  matched entity ("Herod — tap a name to set it aside"), closest match and the full result list.
+- **HS-015** emoji survive titling in both directions: `🔥 Polycarp and the martyrs 😀` stored intact,
+  and a 100-character emoji query truncates to 78 characters ending in `…` with no broken surrogate
+  pair (`truncateCodePoints`).
+- **HS-010** latency is good and the surface is fast enough not to need reassurance: p50 1.6s.
+- **HS-026 / HS-027** a thread opened by a different account is the app's styled **404 "Not found"**,
+  not a crash or a leak; opened signed out it is `307 → /auth/sign-in`. That redirect **drops the
+  destination** — no `next=` parameter — which is the already-filed F-076, confirmed here and on
+  `/ask/[id]` as well.
