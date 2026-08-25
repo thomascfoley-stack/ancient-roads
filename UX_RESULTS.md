@@ -2072,3 +2072,90 @@ closed for Voices, left open for History.
   not a crash or a leak; opened signed out it is `307 → /auth/sign-in`. That redirect **drops the
   destination** — no `next=` parameter — which is the already-filed F-076, confirmed here and on
   `/ask/[id]` as well.
+
+## Batch — Ask / the teacher (AS group)
+
+`/ask` is gated to an allowlist (`TEACHER_ALLOWLIST`, ADR-116 ruling 3) and answers "Not open yet"
+to everyone else. Enabled locally for the disposable account. **12 real questions** were put through
+`POST /api/ask` — the shipped compose→verify path, with real model calls — plus UI checks on the
+rendered surface. Every answer's full JSON was kept and analysed.
+
+### The product guarantee held on every answer
+This is the one that matters, so it is stated with its evidence. Across all 12 answers there were
+**15 non-voice blocks, every one of them a neutral `framing` sentence**, and a scan for
+first-person/verdict language (`I think`, `we believe`, `clearly`, `the truth is`, `you should`,
+`the correct…`) returned **zero hits**. The framing sentences read:
+> "The following sources present distinct historical perspectives on the parable of the prodigal son
+> **without resolving interpretive differences**."
+
+Every `voice` block carried an author, a work and a verbatim quote — **no block was missing
+attribution or a quote**. The bait question ("Is Jesus really God? Just tell me what you think.")
+did not produce an opinion: it produced `kind: "fallback"`, i.e. **zero composed voices and raw
+retrieval instead**, which is precisely the "verifier fails closed → fall back to raw retrieval"
+contract in `CLAUDE.md`. The fallback's user-facing copy explains itself rather than apologising:
+> "A grounded answer couldn't be composed for this one. Here are the sources we found. Read them
+> directly. … Every quote is checked word-for-word against the original before it is shown. This
+> draft didn't pass that check, so the sources are given to you unedited rather than an answer we
+> can't stand behind. Asking again often composes cleanly."
+
+### F-146 · AS-003 · **P2** · `1cor13` (no spaces) routes to 1 Corinthians **3**, not 13
+Four spellings of the same reference, same corpus, same session:
+
+| question | anchors returned |
+|---|---|
+| `1 Cor 13` | 46013001, 46013009 — 1 Cor **13** ✓ |
+| `First Corinthians 13` | 46013001, 46013013 ✓ |
+| `1 corinthians 13` | 46013001, 46013013 ✓ |
+| **`1cor13`** | **46003004, 46003014**, 46013013 — 1 Cor **3** |
+
+Three of four route identically; the unspaced form pulls its top anchors from chapter 3. The answer
+still reads plausibly (it is real Barnes and Clarke, correctly attributed) which is what makes it
+worth filing: the reader has no way to notice they were shown the wrong chapter.
+
+### F-147 · AS-006 · **P2** · There is no "we have nothing on that" — the teacher always finds a topic
+`what does the Bible say about cryptocurrency` returned a fully composed answer, three attributed
+voices, framed as:
+> "The following sources discuss **the spiritual dangers and proper ordering of wealth and gold**."
+Nothing is invented — the quotes are real J.C. Ryle, Matthew Henry and Augustine — but nothing tells
+the reader that the corpus has nothing on what they actually asked, and that the answer is about a
+neighbouring subject. Compare the History surface, which does exactly the right thing here
+("Nothing in the 1 served history items matches this"). The teacher has no equivalent state.
+
+### F-148 · **P2** · A quarter of questions fall back, and the promised time is exceeded on a quarter too
+Of 12 real questions, **3 returned `kind: "fallback"`** rather than a composed answer — and two of
+those are ordinary, well-formed questions this product exists to answer:
+- "what does the Bible say about grief" (49.4s → fallback)
+- "What did the church fathers say about the incarnation in John 1?" (40.0s → fallback)
+- the deliberate bait question (29.3s → fallback, correctly)
+
+Latency over the same 12: **p50 26.7s, p95 63.2s, max 63.2s**, with 3 of 12 over 40s. The surface
+promises *"An answer usually takes 20–40 seconds"*. So a reader asking a normal topical question has
+roughly a one-in-four chance of waiting past the promised window and then being told no answer could
+be composed. The fallback copy is good; the rate is the finding.
+
+### F-149 · **P3** · Tradition labels are inconsistently cased, and "unassigned" reaches the reader
+Across the 12 answers the `tradition` values were: `Presbyterian` ×10, `Methodist` ×9,
+**`unassigned` ×4**, `Nonconformist` ×2, `anglican` ×1, `Patristic` ×1, `catholic` ×1. Two defects in
+one field: `anglican`/`catholic` are lower-case while their neighbours are capitalised, and
+`unassigned` is a database placeholder rendered straight onto the attribution line — the already-filed
+F-010, confirmed here in the answer payload and in the fallback's `figcaption`
+(`{author}, {sourceTitle} · {tradition}`).
+
+### F-142 · AS-011, AS-012 · **P2** · The 500-character cap is enforced silently, and breaching it says "Something went wrong"
+The textarea carries `maxLength={500}` with **no counter and no message**, so a longer pasted
+question is silently truncated. If a longer question does reach the server (it is easy to produce),
+the API answers precisely — `{"error":{"code":"INVALID_REQUEST","message":"That question is too long
+(max 500 characters)."}}` — and the UI throws that away and shows **"Something went wrong. Please try
+again."** with an "Ask again" button that will fail identically. The app *can* do better and does
+elsewhere: with the network cut it correctly says **"Network error. Please try again."** So the
+machinery for a specific message exists; the 400's message is the one discarded.
+
+### Passing rows worth recording
+- **AS-005** a vague question ("that verse about love") composes gracefully — three voices, framed
+  as "distinct perspectives on the nature and origin of love". Not empty, not a shrug.
+- **AS-034** a thread opened by another account is the styled 404, not a crash.
+- **AS-038** the gate is unambiguous in both directions (see the tracker row).
+- **AS-039** offline is honest and distinct: "Network error. Please try again." + Ask again.
+- **AS-030** cannot be exercised as written: the answer shape caps at **3 voices per lane**
+  (`sermons: 3, theology: 3, song_verse: 3` on every one of the 12 answers, `retrieval: 6`), so a
+  "10+ voices" answer is not reachable by design.
