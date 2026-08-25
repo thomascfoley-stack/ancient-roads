@@ -2822,3 +2822,53 @@ An ancestor clips them, so nothing scrolls and nothing *looks* broken — the te
 phone the reader cannot see which sermon or which book a result came from, which is most of what a
 result row is for. This is the shape a viewport sweep misses: no horizontal scroll, no console error,
 content silently gone.
+
+## Batch — accessibility (AX group)
+
+### Method, and a measurement error caught in the middle of it
+Contrast was first scanned with a helper that composited a colour over a single opaque ancestor
+background. That is wrong wherever a translucent layer sits between: it reported the sidebar's nav
+labels at **1.79** and the Ask hint at **2.00**, both of which a screenshot immediately contradicted.
+Rebuilt to composite the **whole ancestor background stack** over white, the same elements measure
+**4.54** and **6.17** — passing. Every number below is from the corrected method, and the one finding
+it was used to re-check (F-131) **survived** re-measurement rather than being retracted.
+
+### F-171 · AX-021 · **P2/AX** · Errors are announced but never attached to the field that caused them
+On `/account/settings`, submitting a wrong current password produces a real live region —
+`role="alert"` carrying the message — so it *is* announced. But nothing connects it to an input:
+**no `aria-describedby` on either field, no `aria-invalid` on either field, and the alert has no
+`id`** to point at. A screen-reader user hears that something is invalid and is told nothing about
+which of the two password fields to fix.
+
+### F-172 · **P3** · The change-password form reports an email problem
+The same submission returns **"Invalid email or password"** on a form that has **no email field** —
+it asks for your current password and your new one. The sign-in path's curated sentence is being
+reused where it does not fit.
+
+### AX-001 · A structural scan across 12 signed-in surfaces — and it is clean
+Not axe (not available here); a hand-built scan for the violation classes axe would flag first, run
+over `/home`, `/read/jhn/3`, `/library`, `/library/commentaries`, `/plans`, `/prayers`, `/settings`,
+`/studies`, `/desk`, `/library/notes`, `/library/uploads`, `/ask`:
+
+| check | result across all 12 |
+|---|---|
+| `<h1>` count | **exactly 1 on every surface** |
+| heading-level skips | **none** |
+| interactive controls with no accessible name | **0** |
+| `<img>` missing `alt` | **0** |
+| form inputs with no label | **0** |
+| `main` landmark | 1 everywhere |
+
+That is a better result than most production apps would give, and it is worth saying plainly. The
+one gap: `header`/`banner` is **absent on `/library`, `/library/commentaries` and `/desk`** while
+present on the other nine.
+
+### AX-012 · contrast, measured properly, in both themes
+- **Sidebar navigation, light:** every one of 27 sampled labels sits at **4.54** — passing AA, with
+  **no margin at all** (`rgb(107,97,86)` on `rgb(231,222,208)`). One shade darker in either direction
+  and it fails.
+- **`/search` match counts:** `rgb(180,166,146)` at 11px → **2.25 light**, **3.01 dark**, six
+  instances per results page. This is F-131, re-measured with the corrected method and confirmed.
+- **Highlighted verse text, dark:** **1.69–2.05** across all ten colours — F-116.
+- Everything else scanned on `/home`, `/plans`, `/prayers`, `/settings`, `/studies`, `/library`,
+  `/library/notes` came back clean in both themes.
