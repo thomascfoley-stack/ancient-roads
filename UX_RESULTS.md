@@ -1627,3 +1627,71 @@ jump (the test's other half), but a 5,000-character note is edited through a six
   What is missing is the save announcement — after a successful save there is no `role=status` or
   `role=alert` anywhere in the document, so nothing is announced. Full screen-reader pass still
   needs a real screen reader (owner decision D-5).
+
+## Batch — reading plans, signed in (PL group)
+
+### F-108 — ROOT CAUSE FOUND, and the fix already exists in this repo
+The previous pass reproduced "Delete plan freezes the entire tab" three ways and concluded it was
+"a real synchronous hang inside the click handler". The symptom is right; the cause is one line:
+
+```
+web/src/components/plans-client.tsx:762
+if (!window.confirm('Delete this plan? Your progress on it goes too.')) return;
+```
+
+`window.confirm` is a **native modal that blocks the renderer's main thread**, which is exactly why
+`Runtime.evaluate` itself hangs — CDP cannot evaluate anything while the dialog is up, so the whole
+tab looks dead. Nothing in the app's own code is slow. Proven both directions on this build:
+
+- Clicked Delete with the dialog unhandled → returned in 815ms having done **nothing at all**: still
+  on the plan page, no dialog visible, plan not deleted (Chrome suppresses dialogs in a background
+  tab and returns `false`, so the delete silently no-ops).
+- Stubbed `window.confirm` to return `true`, clicked Delete → the plan was deleted and the app
+  navigated to `/plans` **in ~1 second**. The delete path itself is healthy.
+
+**This exact defect was already found and fixed elsewhere in this codebase.**
+`web/src/components/prayer-journal.tsx:353` carries the fix and the reasoning:
+
+> This was `window.confirm`, which froze the renderer for 60+ seconds during verification and is
+> impassable to automation and to assistive tech — a modal that blocks the main thread is an outage
+> with a button on it. The confirmation is REPLACED, not removed […] Two steps, in-page, focusable,
+> and cancellable.
+
+The plans delete is the **last remaining `window.confirm` in `web/src`** (grep: two hits, one of them
+that comment). The fix is to apply the prayer-journal pattern — the sign-out control uses the same
+two-step idiom, so the app already has this in two places and plans is the odd one out.
+
+### F-128 · PL-018, PW-004, PW-010 · **P2** · Verse numbers in plan reading are inert — you cannot annotate from plan context
+The plan's inline reading panel renders the chapters in full — 90 `<sup>` verse numbers for
+"John 3–4" — and **not one of them is interactive**: no `role`, no `tabindex`, no `aria-label`, versus
+the reader's own `<sup role="button" tabindex="0" aria-label="Verse 16, read commentary">`. So from
+inside a plan there is no way to highlight, note, bookmark, or open commentary on what you are
+reading. Together with F-123 (highlights invisible there) and F-109 (the same gap on Desk), this is
+one shape: **per-verse tooling exists only in `/read`, and every other reading surface is a flat
+page of text.**
+
+### F-129 · PL-020 · **P3** · With 50 plans the only way to make a new one is 8 screens down
+50 plans render fine (`domInteractive` 29ms, `loadEventEnd` 327ms, all 50 rows present). But the
+list has no search, no filter, no sort, and no separation of finished from active — and the **"New
+plan" button sits at y≈6,587px**, below every row. The primary action of the page is the last thing
+on it.
+
+### Passing rows worth recording
+- **PL-007** the good one: with `/api/plans` writes rejected, "Mark as read" reverts and says so —
+  *"That change could not be saved. Please try again."* in a live region, and the counter rolls back
+  to its real value. This is the honest-failure behaviour that highlights (F-120) and notes (F-125)
+  do not have. Whatever shipped the plan toggle got this right; the annotation writes did not.
+- **PL-010** progress persists across a full reload ("1 of 15 days read" still shown).
+- **PL-011** finishing every day is acknowledged: *"Every day is read. Well done."*, and the UP NEXT
+  block cleanly disappears. No broken state.
+- **PL-012** a finished plan can be restarted day by day — each row carries a real toggle
+  (`aria-label="Mark day 3 unread"` → `"Mark day 3 read"`), the counter drops to 14 of 15 and UP NEXT
+  recomputes to that day. There is no bulk "restart" or "abandon" short of delete.
+- **PL-014** a multi-chapter day ("John 3–4") renders both chapters in one panel (90 verses) and ends
+  with an "Open in full reader" link, so both chapters are reachable.
+- **PL-017** the empty state teaches: it names the three things you can build (a book, a collection,
+  a topic) with a concrete example of each before asking you to choose.
+- **PL-022 (partial)** the day list IS a real `<ul>`, and each toggle is a `<button>` whose
+  accessible name states the action and implies the state. There is no `aria-pressed`/`aria-checked`,
+  so state is carried by wording alone; progress changes DO announce (`role=status` → "1 of 15 days
+  read"). A real screen reader is still needed for the rest (owner decision D-5).
