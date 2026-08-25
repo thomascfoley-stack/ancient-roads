@@ -2159,3 +2159,85 @@ machinery for a specific message exists; the 400's message is the one discarded.
 - **AS-030** cannot be exercised as written: the answer shape caps at **3 voices per lane**
   (`sermons: 3, theology: 3, song_verse: 3` on every one of the 12 answers, `retrieval: 6`), so a
   "10+ voices" answer is not reachable by design.
+
+## Batch — the reader (RD group)
+
+### F-143 · RD-024 · **P2** · A multi-verse selection copies only the first verse, and labels it as if that were the whole selection
+Selected 297 characters spanning John 13:16–18 and pressed **Copy**. The clipboard received the
+**137 characters of verse 16 only**, captioned `John 3:16 · ASV` — a single-verse reference for a
+multi-verse selection. Captured by intercepting `navigator.clipboard.write` and reading the
+`ClipboardItem` back, so this is what actually lands on the clipboard, in both `text/plain` and
+`text/html`. Nothing on screen indicates the selection was trimmed. Single-verse copy is excellent
+(see below), which makes this worse: the reader has no reason to check.
+
+### F-144 · RD-045 · **P2** · The reader never restores scroll position
+Scrolled the reader to 1400px, navigated to `/settings`, pressed Back: the reader returns at
+**scrollTop 0**. The mechanism is worth stating because it also explains the already-filed F-058
+(Back from word study loses reader position): the reader scrolls an **inner container**
+(`<main class="flex-1 overflow-y-auto">`, `scrollHeight` 2562 vs `clientHeight` 800) while
+`document.scrollingElement` never scrolls at all. The browser's native scroll restoration only
+applies to the document scroller, so an app that moves scrolling into a child element has to restore
+it itself — and this one does not. On a long chapter, Back sends the reader to verse 1.
+
+### F-145 · RD-064 · **P2** · Notes and bookmarks are invisible in the reader
+Wrote a note on **every one of John 13's 38 verses**, plus a bookmark on verse 7, and reloaded.
+Highlights render (38 coloured spans). Notes and bookmarks render **nothing at all**: zero
+indicators of any kind, and the verse markup is byte-identical to a verse with no note —
+`<span id="v5" data-verse="5" class="verse inline scroll-mt-20 rounded ">` with a `<sup>` whose
+accessible name is `"Verse 5, read commentary"` whether or not a note exists. So the layout survives
+38 notes perfectly, for the wrong reason. A reader cannot see where they have written, and must open
+each verse panel one at a time to find their own notes.
+
+### F-150 · **P2** · Interlinear glosses are broken or empty for about 1 word in 15
+Sampled the first **60** Greek words of John 3 in interlinear mode. Four carried a gloss that is not
+a gloss:
+
+| word | transliteration | gloss shown |
+|---|---|---|
+| ἄνθρωπος | ánthrōpos | `from G3700 )` — a fragment of a Strong's etymology, with a stray `)` |
+| ἐκ | ek | `literal or figurative` — a fragment of a definition, not a meaning |
+| οἴδαμεν | *(empty)* | *(empty)* |
+| τις | *(empty)* | *(empty)* |
+
+That is **6.7% of sampled words**, on the feature whose whole purpose is showing the word behind the
+word. (A `swarm/w-strongs-gloss-fix` branch exists in this repo, so the class is known; this is the
+user-facing measurement.)
+
+### F-090 CONFIRMED, with the mechanism
+Interlinear ON: the reader's 38 `<sup>` elements — 36 of them `role="button" tabindex="0"` verse
+handles — drop to **zero**. They are not hidden; they are replaced. The verse number in interlinear
+mode is a plain `<span class="…text-accent-600…">` with no role, no tabindex and no label, while each
+Greek *word* becomes a `<button>`. So the verse-study panel (commentaries, notes, word study) has no
+entry point at all while interlinear is on, exactly as F-090 says.
+
+### Passing rows worth recording
+- **RD-013** ten rapid "next chapter" clicks land on `/read/jhn/13` with the John 13 text (38 verses,
+  the foot-washing) and no John 3 content anywhere. No stale content arriving late.
+- **RD-023** single-verse copy is very good. The clipboard receives
+  `“For God so loved the world, …”` / `John 3:16 · ASV` as `text/plain`, plus a styled `text/html`
+  `<blockquote>` + reference. No verse numbers, no UI text, reference *and* translation included, and
+  the button confirms with "Copied ✓".
+- **RD-029** the reading column does not stretch: at a 1920px viewport it stops at **827px** (≈91
+  characters) on the widest setting, and the Settings copy states the design intent explicitly
+  ("Standard is the designed 66-character measure; widen it to fill a large screen").
+- **RD-034** the Aa popover and the verse panel cooperate: Aa opens, then opening a verse panel
+  closes Aa and opens the panel. No two-popover state.
+- **RD-062** verse numbering is consistent across translations: Psalm 3 renders verses 1–8 in ASV,
+  KJV and WEB alike, with no verse-0/verse-1 divergence. (The superscription "A Psalm of David, when
+  he fled from Absalom" is absent in all three — that is F-040, a content gap, not a numbering one.)
+- **RD-063** 130 highlights in one chapter still read fine — see HL-018 for the numbers.
+- **RD-065 / RD-066** an unavailable corpus asset fails honestly: with `/bible/*` rejected, a fresh
+  book renders **"Failed to load chapter"** + the chapter name + **"Choose another chapter"**. Not a
+  blank, not an infinite spinner. Two gaps worth noting: there is no "try again", and the message is
+  not in a live region (`role=alert`/`role=status` search returns nothing), so it is not announced.
+- **RD-067** with the corpus fetch delayed 5s the reader shows a **named** waiting state —
+  "Loading Exodus 1" — and then renders the correct chapter. No race, no stale text.
+- **RD-068 / RD-069** first paint is the reader chrome (title, Aa, HL, interlinear, translation)
+  with the text area saying "Loading <book> <chapter>" — better than a white void, but it is the
+  bare-"Loading…" idiom rather than a skeleton in the final layout (the F-055/F-066/F-074 family).
+  Cold-load numbers, unthrottled and local: the chapter asset is **32 KB, 48 ms**. A throttled number
+  could not be taken (no network-throttle capability in this tool); the injected-5s-delay run above
+  is the substitute and it degrades gracefully.
+- **RD-073** at a 640×400 viewport (the layout equivalent of 200% zoom) there is no horizontal
+  scroll (`scrollWidth == clientWidth == 640`), nothing overflows the viewport, and the sticky header
+  does not overlap the first verse.
