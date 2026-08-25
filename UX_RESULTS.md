@@ -2404,3 +2404,78 @@ row anticipates.
 `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover,
 interactive-widget=resizes-content">`. No `user-scalable=no`, no `maximum-scale`. Pinch-zoom is not
 disabled by declaration; whether the layout survives it still needs real hardware (owner decision D-4).
+
+## Batch — navigation, viewports, error routes (NV + MOB groups)
+
+### CORRECTION — F-037 is wrong: the skip link does move focus
+F-037 filed "skip-link never moves focus". Measured: the link is `<a href="#main">`, `#main` exists
+and carries `tabindex="-1"`, and after activating it **`document.activeElement` is `MAIN#main`**.
+Focus moves, to the right element, by the standard pattern.
+
+The visibility half could not be observed at runtime and the reason is worth recording: the CSS is
+`.skip-link:focus { top: 1rem }` (`globals.css:284`, plain `:focus`, not `:focus-visible`), and in
+this environment **no element ever matches `:focus`** — `document.activeElement === skip` is true
+while `skip.matches(':focus')` is false, because the browser window itself is not focused. So the
+rule is present and correct by inspection; watching it slide into view needs a focused window.
+
+### CORRECTION — F-044 is half right
+The doubled title is real and still there: `/plans/<id>` renders
+**`<title>Reading plan · Ancient Paths · Ancient Paths</title>`**. The other half is not: an invalid
+plan id does **not** fall back silently — it says *"This plan could not be opened. It may have been
+removed."* with a "← All plans" link.
+
+### F-156 · NV-015 · **P3** · The error states are good and every one of them returns HTTP 200
+The app's malformed-route messages are among the best copy in the product:
+
+| route | what the reader sees | status |
+|---|---|---|
+| `/read/notabook/1` | **"Unknown book: "notabook""** + a John 1 link | **200** |
+| `/read/jhn/999` | **"John has 21 chapters"** + John 1 + "Choose another chapter" | **200** |
+| `/work/no-such-work` | **"This work isn't available. It may still be staged for review, or the link is mistaken."** + "Browse the library" | **200** |
+| `/word/ZZZ999` | **"That isn't a Strong's number. A word page looks like /word/G2316 (Greek) or /word/H430 (Hebrew)."** + "Search the dictionary" | **200** |
+| `/plans/not-a-uuid` | "This plan could not be opened. It may have been removed." | **200** |
+| `/library/uploads/not-a-uuid` | (My Works shell) | **200** |
+| `/studies/not-a-uuid` | styled "Not found · Ancient Paths" | **404** ✓ |
+
+Only `/studies/[id]` answers with a real 404; every other bad URL is a **soft 404**. For a reader
+that is fine — better than fine, the messages are specific and actionable. For crawlers, uptime
+monitors and anything that reads status codes, six routes claim success while serving an error.
+`/studies/[id]` shows the intended shape, so the fix is a pattern the app already has.
+
+### F-157 · NV-016 · **P2** · Eleven surfaces still share the title "Ancient Paths" — including the reader and every work
+Current, complete sweep of 26 routes (this supersedes the earlier partial list in F-004):
+
+| distinct title | generic "Ancient Paths" |
+|---|---|
+| `/about`, `/features`, `/why`, `/settings`, `/ask`, `/plans`, `/prayers`, `/search`, `/studies`, `/library`, `/library/books`, `/library/uploads`, `/library/commentaries`, `/library/sermons` | `/`, `/home`, `/account/settings`, `/desk`, `/library/notes`, `/library/passages`, `/library/word-study`, **`/read/jhn/3`**, **`/work/adam-clarke`**, `/word/G26`, `/auth/sign-in` |
+
+The two that matter most are in the wrong column: **the reader** (which should say "John 3") and
+**a work** (which should carry the work's title). Those are the pages a reader keeps open in a tab
+strip and returns to. `/ask?mode=history` also shares `/ask`'s title, so the two modes are
+indistinguishable in a tab.
+
+### Passing rows worth recording
+- **NV-005 / NV-006** history is exact in both directions. A nine-step walk
+  (`/read/jhn/3 → /library → /plans → /prayers → /settings → /library/commentaries → /studies →
+  /home → /desk`) reversed in precisely the reverse order under nine Backs, and three Forwards then
+  replayed it forwards (`/read/jhn/3 → /library → /plans`).
+- **NV-008** Back out of the verse panel closes the panel and stays in the chapter (the K-6
+  regression guard holds).
+- **NV-028** after a client-side navigation focus lands on `MAIN#main` — not lost to `<body>`.
+- **NV-030** every route in the manifest, visited **signed in and signed out — 40 routes, zero 500s**.
+  All 200s or purposeful 307s: `/auth/sign-in|sign-up` redirect a signed-in reader away;
+  `/account/settings`, `/studies`, `/studies/[id]` redirect a signed-out one to sign-in;
+  `/channel/[id]` 307s both ways (the documented stub). Checked for leakage on the two routes that
+  return 200 while signed out — `/plans/<id>` and `/library/uploads/<id>` — and **neither leaks**: no
+  plan title, no document title, no document body in the server HTML, just the shell and a sign-in
+  prompt.
+- **NV-018** no content in URLs: an ask thread is `/ask/<uuid>`, a history thread
+  `/ask/<uuid>?mode=history`, a note has no URL at all, and the only query strings carrying text are
+  the ones the reader typed into a search box (`?q=`, `?fq=`), which is the expected place for it.
+- **MOB-002 … MOB-006** the viewport half of the mobile matrix is clean. Six surfaces (`/home`,
+  `/read/jhn/3`, `/library`, `/plans`, `/prayers`, `/settings`) at **320×700**, **430×932**,
+  **820×1180**, **1024×768** and landscape **812×375**: no horizontal scroll anywhere
+  (`scrollWidth == clientWidth` at every size), **zero** elements overflowing the viewport box, and
+  the 256px sidebar holds its place from 768px up. Sub-44px targets: 0 on most surfaces, 1 on the
+  reader at phone widths, 6 on the reader at tablet widths. Landscape phone keeps the header at 55px
+  with content below it and about nine lines of scripture visible.
