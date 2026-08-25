@@ -2956,3 +2956,63 @@ reader who follows a link to *Why* is asked to request access to the product the
   ("Save failed below" / "Save failed — Retry"), pressing **Sign out** arms the ordinary two-step
   confirm ("Sign out?") and says **nothing** about unsaved work. The confirmation exists; the warning
   the row asks for does not.
+
+## Batch — consistency (CO group)
+
+### CO-001 · the terminology inventory, taken from the running app
+The sidebar, with what each label actually points at:
+
+| label | route | what the destination calls itself |
+|---|---|---|
+| Home | `/home` | (no heading — a date and "Evening") |
+| Bible | `/read/psa/119` *(your last chapter)* | "Psalms 119" |
+| Ask | `/ask` | "Explore the paths" |
+| Desk | `/desk` | "Your desk" |
+| Reading plans | `/plans` | "Reading plans" |
+| All studies | `/studies` | "My Studies" |
+| My prayers | `/prayers` | "Prayer journal" |
+| **All items** | `/library` | "Library" |
+| **Saved** | `/library/notes` | "Saved" (holds Bookmarks, Notes, Highlights) |
+| Word study | `/library/word-study` | "Word study" |
+| **My Works** | `/library/uploads` | page heading "My Works", `<title>` "My uploads" |
+| Passage search | `/library/passages` | — |
+| Settings | `/settings` | "Settings" |
+
+Not in the sidebar at all: **My books** (`/library/books`), reachable only from the `/library` hub.
+
+### F-178 · CO-005 · **P2** · Four user-facing nouns for four overlapping things, and two of them are inverted
+- **"My books"** = *library works you saved* (a shelf of other people's writing)
+- **"My Works"** = *documents you uploaded* (your own writing)
+- **"All items"** = the corpus catalogue (33 commentaries, 6 sermons, …)
+- **"Saved"** = your highlights, notes and bookmarks — a fourth meaning of "things I kept"
+
+A reader who wants their own sermon looks for "My books" and finds other people's; a reader who wants
+the commentary they shelved looks for "My Works" and finds their uploads. Underneath, the same
+concepts are `sources` (corpus) and `user_documents` (uploads), and the routes disagree with the
+labels in two more places (`Saved` → `/library/notes`, `My Works` → `/library/uploads` titled "My
+uploads"). *Noted, not re-litigated:* `CLAUDE.md` records that naming is locked and that the counted
+noun moved from "works" to "items" — the catalogue does say "33 items", so that part of the lock is
+honoured. The collision above is between "books", "Works" and "Saved", which the lock does not settle.
+
+### F-179 · CO-006 · **P3** · Voices / Commentary / Sources are three words for one thing on one screen
+On `/ask` alone: the mode is **Voices**, the lane filter beneath it is **Commentary**, the composed
+answer is introduced as "The following **sources** present…", and the fallback says "Here are the
+**sources** we found". The library calls the same material **Commentaries**. Four words, one screen
+and its neighbour.
+
+### Passing rows worth recording
+- **CO-007** every toggle checked exposes real state, not just styling: `aria-pressed` on the
+  reader's HL (verified flipping `false → true`) and interlinear, on the Settings theme and
+  translation buttons, and on the study Pin (which also changes its label Pin → Pinned); plan day
+  toggles carry a state-bearing accessible name; ask lane filters show a ✓ glyph as well as colour.
+- **CO-015** the design system is genuinely tight. Across `/library`, `/read`, `/plans`, `/settings`,
+  `/studies`, `/prayers` the *entire* inventory of main-content borders, radii and shadows is:
+  **border-width `1px` only**, **radius `4px` (and `3px` on highlight spans) only**, and
+  **no `box-shadow` anywhere**. There is no drift to find.
+- **CO-014** tone is consistent and plain across every failure and empty state collected in this
+  sweep — "Today's reading could not be opened. The Scriptures are still there to search.", "Nothing
+  in the 1 served history items matches this.", "This work isn't available. It may still be staged
+  for review, or the link is mistaken.", "John has 21 chapters", "That isn't a Strong's number." No
+  chattiness, no exclamation marks, no apology-padding, and no developer voice — with the two
+  exceptions already filed: "Attach a file in the \"file\" field." (F-134) and "Slice 1 accepts .pdf,
+  .docx, .txt and .md." (F-101).
