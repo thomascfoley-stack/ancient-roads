@@ -2903,3 +2903,56 @@ overflows and nothing is broken; the page simply has no action in its first five
 - **HM-019** after real use — 39 notes, 19 highlights, 12 uploads, 27 history threads, 2 studies, a
   finished plan — `/home` is unchanged and still scannable, because it is a devotional feed rather
   than an activity dashboard. Nothing accumulates on it.
+
+## Batch — chaos, errors, performance, and the marketing tier (CH / ER / PF / MK / PW leftovers)
+
+### F-177 · PW-020 · **P1** · "Save to study" silently does nothing when you pick a study you already have
+On an Ask answer, each voice offers **Save to study**. Clicking it opens a destination picker listing
+your existing studies plus *"New study: <the question>"*. The two paths do not behave the same:
+
+| destination chosen | network | result |
+|---|---|---|
+| **an existing study** ("UX sweep study — SE group") | `GET /studies/<id>?_rsc=…` ×2 — **no POST at all** | navigates to that study, **saves nothing** |
+| **"New study: …"** | `GET /api/studies`, `POST /api/studies`, `POST /api/studies/<new id>/blocks` | creates the study, saves the clipping, stays on the thread |
+
+Verified in the database, not just the network: `study_blocks` for the existing study still reads
+`202 text, 1 clipping` (that one clipping is the Calvin quote added earlier from the study's own
+library panel), while the newly created study holds `1 clipping` and its export contains the quoted
+answer. There is **no error message** on the failing path — the reader is taken to the study they
+chose, sees their study, and has no reason to suspect the quote was not added. After your first
+study exists, that is the path everyone takes.
+
+### F-175 · CH-008 · **P2** · With storage blocked the reader crashes into the error boundary
+Made `localStorage` throw the way a browser with cookies/site-data blocked does (Safari's stricter
+modes, enterprise policy, "block all cookies"). Navigating to `/read/jhn/3` then renders the global
+error boundary:
+> **Something went wrong** — "This page failed to load. Nothing you have saved is affected."
+> *Try again* · *Go home*
+
+Two things are right — it is **not** a white screen, and the reassurance is accurate — and one is
+wrong: the reader does not degrade, it dies. Reading preferences are a nicety; the chapter should
+render without them. The message also never mentions storage, so a reader in that mode has no way to
+connect the failure to their browser setting.
+
+### F-176 · MK-026 · **P2** · The marketing pages pitch the product to people who already have it
+Signed in (`/api/auth/get-session` returns a session), `/`, `/about`, `/features` and `/why` all
+still render **"LOG IN"** (→ `/auth/sign-in`) and **"Request access"** (→ `/#doors`), and the nav's
+"Home" points at `/` rather than `/home`. There is no "go to the app" affordance on any of the four.
+Nothing is broken — the login link bounces a signed-in reader to `/home` — but a paying, signed-in
+reader who follows a link to *Why* is asked to request access to the product they are signed into.
+
+### Passing rows worth recording
+- **NV-024** an in-flight write is **not** discarded by navigation. Held the annotation POST for
+  2.5s, started it, navigated to `/plans` 200ms later: the write completed and the lime highlight on
+  John 3:25 is in the database. Client-side routing keeps the fetch alive.
+- **PF-010** 100 highlights **and** 50 notes in one chapter (Psalm 119, 176 verses): `domInteractive`
+  **29ms**, `loadEventEnd` **415ms**, **1,157 DOM nodes**, all 100 highlight spans painted, scroll
+  cost 20.5ms on the first step then ≤1ms, and the verse panel opens in **975ms**. (The 50 notes cost
+  nothing to render — because notes render nothing at all, F-145.)
+- **PF-006** three desk panes including a 118,371-section work: the whole document is **472 DOM
+  nodes**, panes scroll at **0.1–0.7ms** per 1,200px step, and a 3-pane desk rebuilds from its URL in
+  **914ms**.
+- **PW-015** is a FAIL, recorded here for the sequence: with a study visibly in a failed-save state
+  ("Save failed below" / "Save failed — Retry"), pressing **Sign out** arms the ordinary two-step
+  confirm ("Sign out?") and says **nothing** about unsaved work. The confirmation exists; the warning
+  the row asks for does not.
