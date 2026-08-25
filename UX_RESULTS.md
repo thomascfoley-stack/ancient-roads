@@ -1387,3 +1387,99 @@ re-check after each cleanup, not assumed.
 This represents the practical ceiling for a single-session, single-account pass: every remaining
 PENDING-SIGNIN/PARTIAL row has a stated reason (tool limitation, hard device block, or a specific
 untested condition) rather than being silently left blank or guessed at.
+
+---
+
+# Session 2026-08-25 — continuation pass (local prod build + real test account)
+
+**What changed vs the previous pass.** The previous pass had one real production account and could
+not risk it, so 126 items sat at PENDING-SIGNIN. This pass built a **local production build of
+`fix/ux-overnight-sweep` itself** (`next build && next start`, `SITE_PASSWORD` set so the gate is
+live exactly as in prod) pointed at the **dev** Neon branch (`ep-tiny-hat`, `NEON_BRANCH=dev` — NOT
+production `ep-odd-fog`), and created a disposable account on it (`uxsweep.tester@example.com`).
+Dev-branch test users already exist from earlier sessions (`test+au007@`, `test+au009@`,
+`test+au012b@`, `test+throwaway1@`), so this is the established practice here, not a new one.
+
+Everything below was run against `http://localhost:3010` on that build. Where a result could differ
+in production (latency, mail delivery, OAuth) it says so on the row.
+
+**Tooling limits found and calibrated (they bound several rows below):**
+- `computer key` delivers **no keyboard events to the page at all** — a probe input with a `keydown`
+  listener recorded zero events, so Tab-traversal and Enter-to-submit cannot be exercised by
+  keystroke in this tool. Text entry (`computer type`) *does* work. Keyboard-order rows are
+  therefore answered by DOM-order/tabindex analysis, and every such row says so.
+- `computer left_click` by ref is unreliable after a re-render (a click aimed at the password field
+  landed in the email field). Form entry below uses the native value setter + `requestSubmit()`,
+  which exercises the app's real submit handler and real network calls.
+- `resize_window` **does** work in this session (390×844 and 1280×800 both verified against
+  `innerWidth`), which is what the previous pass could not get. Viewport rows that were PARTIAL for
+  that reason are re-runnable and are being re-run.
+
+## Corrections to previously filed findings
+
+**F-051 and F-077 are WRONG — both are disproven. The gate and the sign-in endpoint are BOTH rate
+limited; the earlier tests simply stopped below the threshold.** Measured on this build:
+
+| Endpoint | Attempts | Observed |
+|---|---|---|
+| `POST /api/gate` (wrong password) | 14 in one minute | `303 ×10` then `429 ×4` — cap is `GATE_LIMIT_PER_MIN=10` (and 60/hour) |
+| `POST /api/auth/sign-in/email` (wrong password) | 12 in one minute | `401 ×5` then `429 ×7` — cap is `AUTH_EMAIL_LIMIT_PER_MIN=5` per address (10/min per IP) |
+| `POST /api/auth/send-verification-email` | 8 in one minute | `200 ×5` then `429 ×3` |
+
+F-051 used n=8 against a cap of 10; F-077 used n=5 against a cap of 5 (the 6th would have been the
+429). Counters are visible in `api_rate_limit` (`auth:email:…`, `auth:ip:…`, `gate:…`).
+
+**A trap worth recording, because it produced a false 401 here first:** `/api/auth/*` is INSIDE the
+middleware matcher, so a POST without the gate cookie returns the gate's own `401 Locked`, which
+looks exactly like an auth failure. The first run of this test read "10 × 401, no throttling" and
+was wrong for that reason. Re-run with the gate cookie, the 429s appear. Any rate-limit test against
+this app must carry the gate cookie or it is measuring the gate.
+
+## New findings
+
+### F-110 · AU-047 · **P2** · "Other sessions were signed out" is true in the database and false in practice for up to 5 minutes
+Changing the password at `/account/settings` shows *"Your password has been changed. Other sessions
+were signed out."* The DB agrees — the other session row disappears from `neon_auth.session`. But
+the app kept serving that revoked session as **signed in**: with the revoked cookie,
+`/account/settings` still rendered "Your account" and the account email at 01:07:26Z, ~19s after
+revocation. It stopped at 01:08:57Z. The `__Secure-neon-auth.local.session_data` cookie is a signed
+cache of the session with its own ~5-minute expiry (stamped 01:08:26Z here), and it is trusted
+without re-checking the session row. So a stolen session survives a password change for up to the
+remaining cache TTL. Reproduce: sign in twice (two cookie jars), change the password in jar A, then
+hit `/account/settings` with jar B.
+
+### F-111 · AU-025 · **P3** · A used reset link explains itself but offers no way forward
+Re-submitting an already-used reset link correctly says *"That reset link has expired or has already
+been used."* The only link on the screen is "Back to sign in" — there is no "request a new link"
+action, which is the one thing the reader now needs. (The test itself passes; this is the polish gap.)
+
+### F-112 · AU-024 · **P1** · Password RESET does not revoke existing sessions
+The forgot-password → reset-link flow is the flow someone uses when they think their account is
+compromised. Measured: sessions created **before** the reset are still in `neon_auth.session`
+afterwards and still authenticate. Browser session `Tnp9d3IG` (01:06:57Z) and curl session
+`88liMPe2` (01:07:07Z) both survived a reset performed at ~01:08:2xZ, and the browser session
+continued to render `/account/settings` as signed in. Note the inconsistency: `changePassword` is
+called with `revokeOtherSessions: true` (`web/src/components/account-settings.tsx:40`) but the reset
+path has no equivalent. An attacker holding a session keeps it through the victim's password reset.
+
+### F-113 · AU-031, AU-032 · **P2** · A tab whose session ended reports a generic, retryable error and never says you were signed out
+Two tabs signed in; sign out in tab A; in tab B type into a prayer. `POST /api/prayers` returns
+**401** and the UI shows *"That change could not be saved. Please try again."* — the same sentence it
+would show for a transient network failure. There is no mention of the session, no route to sign in,
+and "try again" can never succeed. The typed words stay on screen unsaved. Same mechanism covers
+session expiry mid-page (AU-031): the app cannot distinguish 401 from a retryable write failure.
+
+### F-114 · AU-004 · **P2** · Email-verification links expire in 5 minutes, and nothing says so
+`neon_auth.verification` rows for `email-verification-otp-<address>` carry `expiresAt - createdAt =
+00:05:00`. The screen says only *"We have sent a verification link to <address>. Open it and you will
+be signed in."* — no expiry stated. Five minutes is shorter than many people take to reach their
+inbox, so the default outcome for a distracted reader is a dead link. Contrast the reset flow, which
+gets this right in both directions: its token TTL is exactly `01:00:00` and its copy says *"It can be
+used once, and expires in an hour."*
+
+### F-115 · AU-050 · **P3** · With JavaScript off, submitting sign-in yields a raw "Server action not found." 404
+The form now server-renders (`<form method="post">` is in the raw HTML — this is a **change since the
+previous pass**, whose AU-050 note said no form existed; commit `90becf1` removed the Suspense
+boundary). It fails safely: `method="post"` means nothing sensitive reaches the URL. But a real
+no-JS POST returns `HTTP 404` with the 24-byte body `Server action not found.`, and none of
+`/auth/sign-in`, `/auth/sign-up`, `/gate` carries a `<noscript>` explanation.
