@@ -152,3 +152,65 @@ not blocked by anything this pass lacked):
   positive, a false "no keyboard feedback" read that turned out to be a stale test-tool coordinate —
   were caught and corrected before being written down; see the batch write-ups in `UX_RESULTS.md` for
   the specific corrections, they're left in as a record of the methodology, not scrubbed out).
+
+---
+
+# UPDATE — continuation pass, 2026-08-25 (session 2)
+
+**738 of 918 IDs are now closed (PASS/FAIL/NA), up from 437.** 251 rows were closed in this pass and
+`PENDING-SIGNIN` went from **126 to 4**. Full write-ups for everything below are in
+[`UX_RESULTS.md`](UX_RESULTS.md) under the dated section headers; every row's own note is in
+[`UX_TRACKER.csv`](UX_TRACKER.csv). Owner-only decisions are collected in
+[`OWNER_DECISIONS.md`](OWNER_DECISIONS.md) — nine of them, none blocking the rest of the testing.
+
+## What unblocked it
+
+A **local production build of this branch** (`next build && next start`, `SITE_PASSWORD` set so the
+gate is live) pointed at the **dev** Neon branch (`ep-tiny-hat`, never production `ep-odd-fog`), with
+two disposable accounts created on it. Upload and teacher access were enabled locally through their
+own documented env switches (`USER_CORPUS_OWNER_IDS`, `TEACHER_ALLOWLIST`). That made the entire
+signed-in surface testable — annotations, studies, plans, uploads, prayers, desk, Ask and History —
+without touching the owner's account.
+
+## Six previously filed findings are WRONG, with measurements
+
+| finding | verdict |
+|---|---|
+| **F-011** (P0) "the core journey has no discoverable UI" | **Disproven.** Walked end to end: `/desk` → Open the Bible → John 3 → `+` ("Add a work from the library") → Commentaries → `+` → two panes side by side. The desk-grid commit is an ancestor of the live sha, so this is production behaviour. The real defect is worse and precise: **F-158**, the added commentary opens at Genesis 1 with no way to bring it to the passage. |
+| **F-012 / F-102 / F-104** (P1) "`/library/*` hangs" | **A hidden-tab artifact, not a bug.** The content is already in the DOM behind React's streaming Suspense reveal, the reveal is queued on `requestAnimationFrame`, and rAF never fires in a hidden tab. Running the queued callback by hand reveals the page instantly. |
+| **F-051 / F-077** "no rate limiting" | **Disproven.** The gate caps at 10/min and sign-in at 5/min per address; both earlier tests stopped below the cap. (But **F-168** is new: `/search` really has no limiter at all.) |
+| **F-050** "text size / column width may do nothing" | **Disproven.** 18→25.6px and 620→827px, measured. |
+| **F-037** "the skip link never moves focus" | **Disproven.** Focus lands on `MAIN#main`. |
+| **F-105** "study export returns 503" | **Does not reproduce.** A valid 9.4KB .docx and a print HTML with attribution. The route's only failure path is 500, so a production 503 is the gate or the platform. |
+| **F-044** "invalid plan id falls back silently" | **Half wrong.** It says "This plan could not be opened." The doubled `<title>` is real. |
+
+## The most serious new findings
+
+- **F-177 (P1)** "Save to study" from an Ask answer **saves nothing** when you pick a study you
+  already have — no request, no error, it just navigates. The "New study" path works.
+- **F-162 (P1)** A failed commentary fetch renders as **"No commentary on this verse yet."** — a
+  network error reported as the corpus being empty, on the app whose promise is reporting what
+  commentators said.
+- **F-151 (P1)** **1,110 of 1,258 Jamieson sections (88%)** have their scripture references stripped
+  to bare punctuation — and Jamieson is served in Ask answers.
+- **F-158 (P1)** The desk's added commentary lands at Genesis 1 with no follow, no sync, no jump.
+- **F-116 (P1/AX)** All ten highlight colours fail AA in dark mode (**1.69–2.05** against 4.5).
+- **F-112 (P1)** Password **reset** does not revoke existing sessions (password *change* does).
+- **F-155 / F-088** Every in-app deep link into a work loses its anchor: a search result linked to
+  `#s8` lands at `#s1` with the passage **504,073px** below the fold. Loading the same URL directly
+  works.
+
+## What is genuinely left — 180 rows
+
+| status | count | what it means |
+|---|---|---|
+| PARTIAL | 102 | each row states its own specific limitation; many are runnable and simply not yet reached |
+| NOT RUN | 25 | the remaining `AS-*` and `HS-*` behaviours (streaming, follow-ups, rate-limit copy, thread lifecycle) plus the two open-ended query generators |
+| PENDING-DEVICE | 25 | real iOS/Android hardware or a non-Chromium browser. `CLAUDE.md` forbids an agent closing these |
+| BLOCKED | 18 | 13 keyboard rows (this tool delivers **no key events** to the page — proven with a probe input), 3 verification-mail rows, 2 screen-reader rows |
+| PENDING-SIGNIN | 4 | Google OAuth (owner decision D-3) and two screen-reader journeys (D-5) |
+| other | 6 | `AS-044`/`HS-030` sampling, `CO-020` (a human judgement call), three `PF-*` rows |
+
+**Tooling limits that bound the above, each proven rather than assumed:** no keyboard events reach
+the page; `requestAnimationFrame` never fires (the pane is hidden), so animation and frame-rate rows
+cannot be measured; no network throttling; no real screen reader; no mail access.
