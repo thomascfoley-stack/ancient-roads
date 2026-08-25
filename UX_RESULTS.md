@@ -3016,3 +3016,35 @@ and its neighbour.
   chattiness, no exclamation marks, no apology-padding, and no developer voice — with the two
   exceptions already filed: "Attach a file in the \"file\" field." (F-134) and "Slice 1 accepts .pdf,
   .docx, .txt and .md." (F-101).
+
+---
+
+## Session close — test data removed from the dev branch
+
+Every row of data this pass created was deleted from the **dev** Neon branch (`ep-tiny-hat`) when the
+session ended. Counts before → after, for the two disposable accounts
+(`uxsweep.tester@example.com`, `uxsweep.tester2@example.com`):
+
+| table | before | after |
+|---|---|---|
+| `highlights` | 290 | 0 |
+| `notes` | 194 | 0 |
+| `bookmarks` | 1 | 0 |
+| `library_items` (shelf) | 100 | 0 |
+| `user_documents` | 12 | 0 |
+| `user_sections` / `user_section_embeddings` | 1,054 | 0 |
+| `plans` (+ `plan_days`, `plan_day_readings`) | 1 | 0 |
+| `studies` (+ `study_blocks`, revisions) | 2 | 0 |
+| `chats` (+ `messages`) — ask and history threads | 31 | 0 |
+
+**What deliberately remains:** the two `neon_auth.user` rows for the disposable accounts, alongside
+the ones earlier sessions left (`test+au007@`, `test+au009@`, `test+au012b@`, `test+throwaway1@`).
+They are dev-branch auth records with no application data behind them, kept so this pass is
+repeatable. Nothing was created, changed or deleted on production (`ep-odd-fog`) at any point, and
+the local server started for this work has been stopped.
+
+The one item this pass could **not** clean is not its own: the previous pass's stranded reading plan
+on the owner's **production** account (`/plans/959dc6bc-…`, "Romans · 3 weeks", 0/15 read), which is
+owner decision **D-6**. F-108's root cause is now known (`window.confirm` at `plans-client.tsx:762`),
+so it can be deleted through the UI as soon as that line is replaced with the two-step confirm
+`prayer-journal.tsx` already uses.
