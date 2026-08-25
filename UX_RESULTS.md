@@ -3048,3 +3048,33 @@ on the owner's **production** account (`/plans/959dc6bc-…`, "Romans · 3 weeks
 owner decision **D-6**. F-108's root cause is now known (`window.confirm` at `plans-client.tsx:762`),
 so it can be deleted through the UI as soon as that line is replaced with the two-step confirm
 `prayer-journal.tsx` already uses.
+
+---
+
+## RETRACTION — F-177 was my own testing error, not a bug
+
+**F-177 ("Save to study silently does nothing when you pick a study you already have") is WRONG and
+is withdrawn.** Re-tested with the selector scoped to the picker itself
+(`[role=dialog][aria-label="Choose a study"]`) instead of a page-wide text match:
+
+- clicking the existing study inside the picker fires **`POST /api/studies/da9bc1b0-…/blocks`**
+- the page **stays on the ask thread**
+- a live region reports **"Saved to F-177 retest study. Change?"**
+- and the database agrees: that study now holds **1 clipping**
+
+What went wrong in the original run: my query was
+`[...document.querySelectorAll('button,a')].find(x => /UX sweep study/.test(x.innerText))`, and the
+**sidebar carries a link with the same study title**. I clicked the sidebar link, which navigated to
+`/studies/<id>` — which is exactly what "navigates instead of saving" looked like. The picker's option
+is a `<button onClick={onPick}>` (`save-to-study.tsx:395`), never a link.
+
+One genuinely interesting behaviour surfaced while re-testing, and it is **not** a defect: the *first*
+click on "Save to study" auto-saves to the study you last saved to, remembered in `localStorage`
+(`save-to-study:last-target:v1`). The picker only opened here because that remembered study had been
+deleted in the session cleanup — which the component handles exactly as its header comment says it
+should ("a stored target means the study is gone — the stale default is cleared and the picker
+opens").
+
+**Method note for the fix pass:** any DOM query on this app must be scoped to the surface under test.
+The sidebar mirrors study titles, thread titles and register names, so a page-wide `innerText` match
+will find the navigation copy of a control rather than the control.
