@@ -2753,3 +2753,54 @@ translation that worked.
 - **TR-022** the interlinear survives a translation switch intact: with it on, ASV→KJV kept
   `aria-pressed="true"` and **the same 1,067 original-language word tokens**. Alignment cannot drift,
   because the interlinear is keyed to the original text rather than to the display translation.
+
+## Batch — search (SR group)
+
+### F-155 is bigger than one surface: it breaks search results too
+The same anchor loss measured on history results happens on **corpus search results**, and the
+number is worse. A result linked to `/work/calvin-calcom21#s8`; after the in-app click the URL was
+`/work/calvin-calcom21#s1`, `main.scrollTop` **0**, and the cited section sat **504,073px** below the
+fold. Loading `/work/calvin-calcom21#s8` **directly** lands correctly (hash `#s8`, `scrollTop`
+503,977, the section 96px from the top).
+
+So both search surfaces — the one that finds passages in the corpus and the one that finds
+historians — deliver the reader to the top of a work half a million pixels tall instead of to the
+passage they clicked. This is the already-filed **F-088** ("clicking a result lands at the top of the
+doc, not the match") with its mechanism and its magnitude.
+
+### F-168 · SR-022 · **P2** · The main search surface has no rate limiting at all
+`/search` runs six searches per request — `searchSections`, `searchLexicons`, `searchNotes`,
+`searchPrayers`, `searchStudies`, `keywordSearch` — and `web/src/app/search/page.tsx` imports **no
+limiter**. `checkCorpusSearchRateLimit` (30/min, 500/day) is imported by exactly three routes, all of
+them user-corpus: `documents/[id]/readings`, `user-corpus/search`, `user-corpus/draft-check`.
+
+Measured: **35 distinct queries in a burst, all HTTP 200**, no throttle message, and the
+`corpus-search:min` counter recorded a single bump for the window (from an unrelated path). `/search`
+also answers **200 while signed out**, so anyone past the site password can run unlimited full-text
+queries over the whole corpus. Every other expensive surface in this app is throttled — the gate, the
+auth endpoints, `/api/ask`, history search, the user-corpus routes. This one is not.
+
+### F-169 · SR-020 · **P3** · Submitting a search is a full page navigation, so anything typed while it runs is discarded
+A search submit replaces the document — the JS execution context is destroyed mid-flight (measured:
+a timer armed before submit never ran, and `window.__typedAt` came back undefined because the context
+was gone). The input is editable during the search, but when the new document arrives it is
+repopulated from `?q=`, so a query typed while results were loading is lost. Searches took **2.0s
+(`loadEventEnd`)** to **4–6s** end to end in this session, which is a wide enough window to type into.
+
+### Passing rows worth recording
+- **SR-008** zero results are honest and per-catalog: `zzyzx` gives "0 matches" and *"No matches in
+  commentaries."*, *"…in sermons."*, *"…in hymns & poetry."*, *"…in historians."*, *"…in theology &
+  creeds."*, *"…in lexicons."* What the row also asks for is absent: no spelling suggestion, no
+  "try a different translation", no did-you-mean.
+- **SR-012** no stale-results race: results always match the URL, because each submit is a real
+  navigation and the URL is the query. (The cost of that is F-169.)
+- **SR-024** the best answer in this group — and not the one the row expects. The reader's **Search**
+  control does not leave the chapter at all: it opens an in-page dialog,
+  `role="dialog" aria-label="Go to a passage"`, with the placeholder *"Go to passage, e.g. John
+  3:16"*. Scroll position stayed at exactly **1,200** and the URL never changed. Worth noting for the
+  vocabulary audit (CO group): "Search" means *go to a passage* in the reader and *full-text corpus
+  search* in the sidebar — the same word, two different actions.
+- **SR-028 (structure half)** results are real lists — **6 `<ul>`, 36 `<li>`** — and every catalog's
+  count is rendered as text ("1,000 matches+", "9 matches", "950 matches", "454 matches"). There is
+  **no live region** (`role=status` and `aria-live` are both absent), which is correct here rather
+  than missing: each search is a full document load, so there is no async arrival to announce.
