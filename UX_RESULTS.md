@@ -2563,3 +2563,63 @@ the desk, not Back *from* it. Run cleanly from a fresh history: `/home` → `/de
 landing on the devotional feed. Sane. Worth knowing alongside it: each desk state change pushes its
 own history entry, so inside the desk Back walks back through pane states (adding a pane is undoable
 with Back) before it leaves the desk at all.
+
+## Batch — cross-journey walks (PW group)
+
+### F-160 · PW-006, PW-019, AS-042 · **P2 / owner decision** · Your own uploads are searchable in My Works and never appear in an Ask answer
+Asked a question that quotes an uploaded document almost verbatim — *"What does it mean that grace
+and peace are multiplied through the knowledge of God?"* against a document whose text is
+"Grace and peace be multiplied unto you through the knowledge of God." repeated. The answer composed
+in 20.7s with **three corpus voices, every one `origin: "corpus"`**, and **no user voice at all**;
+the whole JSON contains no reference to any uploaded document.
+
+The pipeline underneath is healthy — this is not a broken upload:
+- `user_sections`: **1,054** rows for this account, all with embeddings (`user_section_embeddings`
+  1,054)
+- `GET /api/user-corpus/search?q=grace and peace be multiplied` → **200**, `mode: "fused"`, top hit
+  `batch-01` with the exact sentence
+
+So the documents are indexed and findable in **My Works**, and simply do not reach `/ask`. The reason
+is in the history: `5c8ab31` **"W-SLICE4: revert the behavior change per pre-registered withdrawal
+bar"** reverted the user-voices lane's product code — its own commit message says the control bar
+"failed EVERY run including the pre-change baseline — a defective pin", and the withdrawal rule was
+honoured anyway. `lib/teacher/user-voices.ts` and the `teach.ts` wiring are still in the tree
+(`teach.ts:200/275/288`, attributing user sections as author **"You"**), so the code is present and
+the behaviour is not.
+
+**This is an owner decision, not a defect to fix blind:** ship Slice 4 (re-land the lane with a
+sound control bar) or state that uploads are for My Works search only. Until it is decided, three
+test IDs cannot be exercised at all.
+
+### F-161 · PW-013 · **P2** · Text size and column width apply only in `/read`
+`--reading-size` was set to `1.6rem` and the desk pane's text stayed at **16px**, because no desk
+pane is inside a `.reading-scale` container (`document.querySelectorAll('.reading-scale').length ===
+0` on both the desk and the plan reading panel). Neither surface offers an **Aa** control either.
+So the two reading controls govern one of the app's three reading surfaces.
+
+In fairness to the copy: Settings attaches *"Applies everywhere, and is remembered on this device"*
+to **READING THEME** only — text size and column width claim nothing. And the theme really does
+apply everywhere (PW-014 below). So this is an unfinished consistency rather than a broken promise.
+
+### Passing rows worth recording
+- **PW-014** the theme is genuinely global and live. With the **verse panel open**, switching to Dark
+  from the reader's Aa popover repainted the panel in place — background `rgb(253,250,244)` →
+  `rgb(43,33,25)` — with the panel still open and no reload, and `body` went to `rgb(26,20,15)` at
+  the same moment.
+- **PW-018** asking about what you are reading carries real context. The selection toolbar's *"Ask
+  Ancient Paths about this"* navigates to
+  `/ask?q=What have commentators said about "For God so loved the world, that he gave his only born
+  Son," (John 3:16)?` — the selected words **and** the reference — with the question **prefilled in
+  the textarea**, and Back returns to `/read/jhn/3`.
+- **PW-009** copying from a verse that carries an active highlight gives a clean clipboard:
+  `“For God so loved the world, that he gave his only born Son,”` / `John 3:16 · WEB`, plus a clean
+  `text/html` blockquote. No highlight markup, no UI text. (Checked the toolbar's Copy control while
+  there: its `innerText` is empty but its `textContent` is "Copy", so it has an accessible name — an
+  icon-looking button that is correctly labelled.)
+- **PW-002 (half)** notes are reachable by search and the link is exact: `/search?q=…&personal=1`
+  returns **"YOUR NOTES — 38 matches"** with verse references and note bodies, and the result links to
+  `/read/jhn/13#v38` and lands there. The other half fails — once in the reader there is **no note
+  indicator** on that verse (F-145).
+- **PW-017 cannot be constructed:** requesting the same chapter twice
+  (`?p=scripture:jhn/3&p=scripture:jhn/3`) yields **one** pane — the desk de-duplicates identical
+  panes. And annotations do not render in desk panes at all (F-099), so there is nothing to sync.
