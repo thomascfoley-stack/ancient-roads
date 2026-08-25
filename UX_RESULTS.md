@@ -2804,3 +2804,21 @@ repopulated from `?q=`, so a query typed while results were loading is lost. Sea
   count is rendered as text ("1,000 matches+", "9 matches", "950 matches", "454 matches"). There is
   **no live region** (`role=status` and `aria-live` are both absent), which is correct here rather
   than missing: each search is a full document load, so there is no async arrival to announce.
+
+### F-170 · SR-023 · **P2** · Search-result heading paths run off the right edge at 390px
+`SR-023` was first written as a pass from the mobile matrix, which did not include `/search`. Run
+directly: at **390×844** on `/search?q=grace` there is no page-level horizontal scroll
+(`scrollWidth === clientWidth === 390`) — and **nine elements extend past the viewport**. They are
+the result heading paths, `overflow: visible`, with no truncation and no wrap:
+
+| rendered text | right edge |
+|---|---|
+| `· Sermon 8. Setting forth the …` | **640px** |
+| `· The Antiquities of the Jews …` | 498px |
+| `· The War of the Jews — Book 2 …` | 451px |
+| `· Sermon 858. The Fullness of …` | 483px |
+
+An ancestor clips them, so nothing scrolls and nothing *looks* broken — the text simply stops. On a
+phone the reader cannot see which sermon or which book a result came from, which is most of what a
+result row is for. This is the shape a viewport sweep misses: no horizontal scroll, no console error,
+content silently gone.
