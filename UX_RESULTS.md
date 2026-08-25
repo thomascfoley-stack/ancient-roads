@@ -2479,3 +2479,81 @@ indistinguishable in a tab.
   the 256px sidebar holds its place from 768px up. Sub-44px targets: 0 on most surfaces, 1 on the
   reader at phone widths, 6 on the reader at tablet widths. Landscape phone keeps the header at 55px
   with content below it and about nine lines of scripture visible.
+
+## Batch — the Desk (DK group)
+
+### CORRECTION — F-011, the sweep's only P0, is wrong on this build. The journey works.
+F-011: *"The app's own core described journey — Scripture + commentary side by side, swap for a
+sermon — has no discoverable UI to add a commentary/sermon pane at all."* It was walked end to end
+here, every step through the UI:
+
+1. `/desk` empty state: *"Open up to 16 things in a grid: a chapter of Scripture, a commentary on it,
+   and a sermon, hymn, poem or history in the panes around them."* → **Open the Bible**
+2. book picker → John → 3 → `/desk?p=scripture:jhn/3`, one SCRIPTURE pane
+3. the pane rail's **`+`**, `aria-label="Add a work from the library"` (also `title=`) →
+   `/library?desk=scripture:jhn/3` — the library in add-to-desk mode, carrying the desk state
+4. **Commentaries** → each row gains a `+` labelled *"Add Adam Clarke's Commentary on the Bible to
+   your desk"*
+5. → `/desk?p=scripture:jhn/3&p=work:adam-clarke`, **two panes, SCRIPTURE and COMMENTARY**, side by
+   side at 494×644 each on a 1280px viewport
+
+A third pane (Spurgeon, SERMON) loads from the URL in 914ms. The add controls are both **44×44px**
+with `aria-label` and `title`. **This is not a build difference:** the desk-grid commit (`e7dbe20`
+"W-UX3: desk layout model — 4×4 grid, 16-pane ceiling, windowed panes") is an ancestor of
+`origin/main` *and* of the live commit `7747f10`, so the controls exist in production too.
+
+What is fair in F-011's neighbourhood is **discoverability, not existence**: both controls are icons
+(`+` and an unlabelled glyph) whose only text is a tooltip, and the empty state names the outcome
+("a commentary on it") without naming the gesture that gets you there. That is a P3 wording gap, not
+a P0 missing feature.
+
+### F-158 · DK-004, DK-006, F-062 · **P1** · The commentary you add lands at Genesis 1, and there is no way to bring it to the passage
+This is the real defect behind F-011's symptom, and it is worse than a missing button. Adding Adam
+Clarke's commentary *beside John 3* opens the pane at **Genesis 1**:
+> "God in the beginning created the heavens and the earth - בראשית ברא אלהים … Many attempts have
+> been made to define the term God…"
+
+Nothing anchors the added pane to the scripture pane's current passage, and there is **no follow
+control, no sync toggle and no "jump to this passage"** — the pane's only navigation is its own
+Contents, which opens at "Genesis 1 / Part 1 of 19" over a **12,693-section** work. So the journey
+the product describes is reachable in five clicks and then unusable: the two panes are showing John 3
+and Genesis 1.
+
+**Swap cost (DK-006/DK-007), counted:** replacing the commentary with a sermon is
+`✕ close` → `+` → pick a register → pick a work = **four moves**, with no single swap action, and the
+replacement lands at *its* beginning too. F-063's "no single-action swap" is confirmed by count.
+
+### F-099, F-109 and F-145 all confirmed inside the desk pane, together
+On a desk SCRIPTURE pane showing John 3 — a chapter that carries **18 highlights and 38 notes** on
+this account:
+- highlight spans rendered: **0** (F-099)
+- `<sup>` verse numbers present: **0** — not inert, *absent* (F-109)
+- note or bookmark indicators: **0** (F-145)
+
+So the desk shows the bare text of a chapter the reader has marked up heavily, with no sign of any of
+it and no way to open the verse tools. Three filed findings, one root: per-verse state and per-verse
+tooling exist only in `/read`.
+
+### F-159 · DK-018 · **P2** · A desk scripture pane stops dead at the chapter end
+Scrolled the John 3 pane to its bottom: it ends at 3:36 ("…the wrath of God remains on him.") and
+**does not continue into John 4**. The pane's controls are only `John 3` (picker), *Contents of John
+3*, and `✕` — there is **no next-chapter control** and no continuous read. The reader has continuous
+chapter flow; the desk does not, so following an argument across a chapter boundary means opening
+Contents and choosing again.
+
+### Passing rows worth recording
+- **DK-005** panes scroll independently: driving one scroller to 800px left the others at 0.
+- **DK-011** no stale content under churn: pushed four different desk URLs 120ms apart, and the
+  settled state matched the **final** URL exactly (1 pane, SCRIPTURE John 3) with nothing left over.
+- **DK-013** closing every pane returns the empty state and clears the URL back to `/desk`. No
+  orphans.
+- **DK-016** the desk is URL state by design and says so on screen — *"This desk is not saved to your
+  account. It lives in the page address — bookmark or share the link to keep it."* So sign-out/in
+  cannot affect it; a 3-pane URL rebuilt the full desk in 914ms.
+- **DK-023** there is no per-pane translation control; panes follow the stored default (`translation:
+  "web"` in localStorage → the pane renders WEB). Deliberate and consistent, if not per-pane.
+- **DK-024** panes survive leaving and returning: `/desk` (3 panes) → Search → Back → all three panes
+  and the exact query string restored.
+- **DK-027** the panes really are windowed. With Spurgeon (**118,371 sections**) in one pane, the
+  whole document holds **472 DOM nodes**, each pane's scroll height is ~35,000px rather than the
+  work's true length, and scrolling costs **0.1–0.7ms** per 1,200px step.
