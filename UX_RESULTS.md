@@ -1579,3 +1579,51 @@ one surface remembers your marks and the other does not. Same family as the alre
   130 highlights in one chapter (Psalm 119, 176 verses): 30ms / 286ms, all 130 spans painted.
   Frame-rate during scroll could not be measured — `requestAnimationFrame` does not fire while the
   browser pane is hidden, which it is in this tool.
+
+## Batch — notes, signed in (NT group)
+
+### F-124 · NT-011, NT-012 · **P2** · An unsaved note is lost on refresh or navigation, with no warning and no draft
+Typed into the verse-panel note editor without saving, then: `beforeunload` is **not** prevented
+(dispatched a cancelable event; `defaultPrevented === false`), and there is no draft anywhere —
+zero keys matching `/note|draft/i` in either `localStorage` or `sessionStorage`. Reloaded for real
+and reopened the note: the draft text is gone and only the last saved version is there. The test's
+own bar is "warned, drafted, or documented loss — never silent". It is silent.
+
+### F-125 · NT-015 · **P2** (arguably P1 — it is the user's own words) · A note that fails to save is discarded, and the panel closes as though it saved
+With `/api/annotations` writes rejected, typing a note and pressing **Save note**: three write
+attempts are made, all fail, **no error is shown**, and the verse panel **closes** — the same thing
+it does on a successful save. The typed text is not preserved anywhere. Server state confirms the
+old note is untouched. This is worse than the highlight equivalent (F-120), because the closing
+panel actively signals success and the lost content is prose the reader wrote.
+
+### F-126 · NT-021, NT-022, NT-023 · **P2** · The Saved list shows note bodies in full, with no timestamp and no search
+Three defects in one list, measured with 105 notes on the account:
+- **No truncation.** A 2,520-character note renders **2,519 characters** in the list — `line-clamp:
+  none`, `overflow: visible`, no "read more". It occupies 400px of the page on its own. The route
+  accepts notes up to 20,000 characters, so one note can bury the entire list.
+- **No timestamps at all.** A note row is a reference and a body, nothing else. There is no "2 days
+  ago" and no date, so notes cannot be placed in time.
+- **No search or filter.** Zero `input` elements in the list.
+Combined with F-117's 100-row cap (`NOTES (100)` shown while 105 existed), a reader with real usage
+gets an unsearchable, undated, unbounded-length list that silently stops at 100.
+
+### F-127 · NT-014 · **P3** · The note editor does not resize
+`rows=6`, height **142px** at 11 characters and still **142px** at 5,000 characters. It does not
+jump (the test's other half), but a 5,000-character note is edited through a six-line window.
+
+### Passing rows worth recording
+- **NT-005** 5,000 characters including emoji and polytonic Greek round-trip intact (`😀 Ἀγάπη
+  ἐστίν …`), stored as 4,999 after the route's `.trim()`. No truncation, no mojibake.
+- **NT-016** two tabs on the same note: last write wins, exactly one row, no corruption. Worth
+  knowing that the loser is overwritten silently — tab B had loaded the pre-edit note, and saving it
+  replaced tab A's newer text with no conflict notice — but the test's bar ("consistent outcome, no
+  corruption") is met.
+- **NT-017** a note and a highlight coexist on one verse (John 3:16 carries an amber highlight and a
+  4,999-character note simultaneously).
+- **NT-020** the signed-in empty state is the same explanatory copy as signed out ("Every verse you
+  have highlighted, bookmarked, or written a note on, in one place. Tap any reference to jump back
+  to it in the reader.") — it teaches.
+- **NT-026 (partial)** the editor IS labelled: `aria-label="Note on this verse"` plus a placeholder.
+  What is missing is the save announcement — after a successful save there is no `role=status` or
+  `role=alert` anywhere in the document, so nothing is announced. Full screen-reader pass still
+  needs a real screen reader (owner decision D-5).
