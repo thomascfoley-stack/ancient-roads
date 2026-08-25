@@ -2330,3 +2330,39 @@ the same values.
 - **LB-028** Greek renders correctly with no mojibake (zero `Ã`/`â€`/`Â` sequences in 40,505
   characters). It is not language-tagged in work prose, though — zero `[lang=el]` elements — which is
   the same gap the reader has outside interlinear.
+
+### Correction to the batch above — three rows were written from reasoning, then actually run
+
+LB-014, LB-025 and LB-026 were first recorded as PASS on the strength of *how the routes are built*
+rather than on an execution. That is the unearned-green shape this repo's own watchlist names, so
+each was then run properly. Two survived, one produced a new finding, and one adjacent row (LB-013)
+turned out to be **better** than recorded.
+
+- **LB-014 — stands, with the mechanism.** The tradition filters are `<a>` links carrying the state
+  in the URL (`/library/commentaries?tradition=methodist`), so Back genuinely restores it: went
+  methodist (2 items) → `/work/adam-clarke` → Back → `/library/commentaries?tradition=methodist`,
+  still 2 items. Scroll restoration is *not* proven by this run (a 2-item list has nothing to scroll)
+  and F-144 says the app does not restore inner-container scroll generally.
+- **LB-026 — stands.** `/work/adam-clarke` ("…Many attempts have been made to define the term God…",
+  41,331 chars) then `/work/augustine-homilies` ("…teousness of the scribes and Pharisees…", 40,501
+  chars): each renders its own title and its own body, no substring of the first survives into the
+  second.
+- **LB-013 — better than recorded: reading position really does resume.** Reopening
+  `/work/augustine-homilies` with **no fragment** landed back at `#s37`, the section left earlier,
+  with `main.scrollTop` 180. `/api/work/<slug>/progress` is called on both works. So position is
+  tracked and restored silently — which narrows F-153 to *display*: progress is kept, never shown.
+
+### F-155 · LB-025 · **P2** · "Open in book" from a history result drops you at the top of the work
+The link is correct — `/work/josephus-whiston?from=hist:…&fq=herod%20the%20great#s14` — and the
+work view even adds a proper context bar (**"← Results for "herod the great""** with a ✕). But after
+the in-app navigation the hash has been rewritten to **`#s1`**, `main.scrollTop` is **0**, and the
+cited section `s14` ("The Life of Flavius Josephus — Section 9") sits **8,793px** below the fold.
+Still true 6 seconds later, so it is not a timing artifact.
+
+**It is specific to the in-app transition.** Loading the same anchor directly —
+`/work/josephus-whiston#s14` — lands correctly: hash `#s14`, `scrollTop` 180, the section 66px from
+the top. So the route and the anchor both work; the client-side navigation loses them, and something
+(a scroll-spy writing the visible section into the hash) replaces `#s14` with `#s1` before the scroll
+happens. The effect is that every history citation lands the reader at the start of a very long book
+rather than at the passage that was cited — which is the one thing "History points you into the
+sources" promises to do.
