@@ -2628,3 +2628,49 @@ apply everywhere (PW-014 below). So this is an unfinished consistency rather tha
 open on `agape` (ἀγάπη G26, ἀγαπητός G27) in one tab, reader translation switched to **KJV** in a
 second tab (`localStorage.translation = "kjv"`): the word-study entries were unchanged and
 error-free. Keyed to Strong's numbers, not to a display translation.
+
+## Batch — the verse panel (VS group)
+
+### F-162 · VS-028, VS-026 · **P1** · A failed commentary fetch is reported as "No commentary on this verse yet."
+With `/commentaries/*` rejected, opening the verse panel on **John 8:5** shows:
+> Commentaries *(no count)* · **"No commentary on this verse yet."**
+
+Unblocked, the same verse shows **"Commentaries5"** and five entries beginning with Matthew Henry
+(1710). So a network failure is rendered as *absence of content*, with no error, no retry, and no
+way for the reader to tell the difference. On this product that is not a cosmetic mix-up: the whole
+promise is reporting what commentators have said, and a dropped fetch makes it say they said nothing.
+The empty state itself (VS-026) is clear and correctly worded — it is being reused for a case it does
+not describe.
+
+### F-163 · VS-018, VS-021 · **P2/AX** · The panel claims `aria-modal="true"` and is not modal
+The panel is `role="dialog"` with **`aria-modal="true"`** and `aria-label="Study this verse"` — but
+measured at 1280×800 it is `position: static`, 672×704 at (301, 96), it does **not** cover the
+viewport, there is **no scrim element anywhere** (zero fixed full-viewport elements outside it), and
+**clicking outside does not close it**. `body` does get `overflow: hidden`, so the page behind is
+locked, but the panel is an in-flow region, not an overlay.
+
+`aria-modal="true"` tells a screen reader that everything outside the dialog is inert. Here it is not
+— the reader's text, the sidebar and the header are all still on screen and clickable. Either the
+panel should be a real modal (scrim, outside-click, focus trap) or it should drop `aria-modal`.
+VS-018 has no scrim to click, so that row has nothing to exercise.
+
+### Passing rows worth recording
+- **VS-009** every rendered entry carries an attribution: Matthew Henry —, Adam Clarke —, John Gill
+  —, Barnes' Notes —, John Wesley —. Nothing unattributed is shown. *(One data oddity: "Barnes'
+  Notes" is a work title sitting in the author slot; the author is Albert Barnes.)*
+- **VS-010** the panel is its own scroll container — 1,903px of content inside a 508px viewport — and
+  the page behind is locked (`body { overflow: hidden }`), so a long entry scrolls the panel, not the
+  page.
+- **VS-020 (the half that matters most)** focus is handled correctly at both ends: opening moves
+  focus into the dialog (`BUTTON "Previous verse"`), and **closing returns it to the verse handle**
+  (`SUP` with `aria-label="Verse 16, read commentary"`). The trap itself cannot be exercised without
+  keyboard events.
+- **VS-025** on the chapter's last verse (John 3:36) the **"Next verse" button is `disabled`** —
+  deliberate, neither wrapping nor erroring.
+- **VS-023** at 820×1180 the panel is neither a full-width sheet nor a narrow sidebar: 672×1038 at
+  (74, 142) — a centred panel filling most of the tablet's height. Designed for the width rather than
+  inheriting the phone or desktop treatment.
+- **The verse panel renders the publication year, and the Ask surface does not.** Here an attribution
+  reads **"Matthew Henry — 1710 — Nonconformist"**. That is the same `Author — Year` pattern F-138
+  found broken on Ask, where the year is missing and the em dash collides with the following comma.
+  So the fix for F-138 is to render what this surface already renders.
