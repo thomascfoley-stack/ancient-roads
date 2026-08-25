@@ -2728,3 +2728,28 @@ Chesterton is in the database and correctly not served:
 
 The one caveat worth writing down for anyone repeating this: the "isn't available" message is
 client-rendered, so a `curl | grep` of the work page finds nothing and looks like a leak. It is not.
+
+## Batch — translations (TR group)
+
+### F-167 · TR-019 · **P3** · Switching translation silently closes the verse panel
+Observed twice on Psalm 119:105. The panel survives *opening* the switcher and then **closes the
+moment a translation is applied** — it does not follow the switch, and it does not explain. The
+reader loses their place in the commentary as a side effect of changing translation, with no notice.
+
+### TR-018 — honest failure, then a slightly wrong way out
+With `/bible/ylt/*` rejected, switching to Young's Literal shows **"Failed to load chapter"** and
+does **not** silently fall back to another translation — which is the important half, and it passes.
+The escape it offers is *"Psalms 1 · Choose another chapter"* while the reader was on **Psalm 119**:
+it drops them at the first chapter of the book rather than back where they were or back to the
+translation that worked.
+
+### Passing rows worth recording
+- **TR-004** switching mid-chapter keeps your place exactly: `main.scrollTop` **5,862 before and
+  5,862 after** a WEB→KJV switch deep inside Psalm 119. One consistent choice, and the better one.
+- **TR-012** at 390px the current translation is legible **without** opening the switcher (the header
+  shows "YLT"), the control is 43×44px, and opening it introduces no horizontal scroll.
+- **TR-015** the switcher stays open and stays anchored while the chapter scrolls behind it — it
+  neither detaches nor closes — because it hangs off the sticky header.
+- **TR-022** the interlinear survives a translation switch intact: with it on, ASV→KJV kept
+  `aria-pressed="true"` and **the same 1,067 original-language word tokens**. Alignment cannot drift,
+  because the interlinear is keyed to the original text rather than to the display translation.
