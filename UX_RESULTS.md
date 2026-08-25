@@ -1822,3 +1822,78 @@ correct — so this is cosmetic drift, not data loss.
 - **ST-015** change password works end to end — see AU-047 and F-110.
 - **ST-024** Back from Settings returns to where you came from (`/read/mrk/1` → `/settings` → Back →
   `/read/mrk/1`), not to home.
+
+## Batch — studies (SE group)
+
+### CORRECTION — F-105 does not reproduce. Study export works, in both formats.
+F-105 filed "Study export to Word (`.docx`) returns HTTP 503, reproduced twice, with zero
+user-facing error". On this build, against a real study with 203 blocks including a library clipping:
+
+| request | result |
+|---|---|
+| `GET /studies/<id>/export?format=docx` | **200**, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, **9,455 bytes**, opens as a valid docx (`word/document.xml` read back and checked) |
+| `GET /studies/<id>/export?format=pdf` | **200**, print-styled HTML with `@media print` and a `window.print()` call |
+| `GET /studies/<id>/export` (no format) | 400 with a clear message — correct |
+
+**The route cannot return 503 by its own logic.** Its only failure path is `apiError('INTERNAL')`,
+which is **500** (`lib/api-error.ts:35`). The two codes that map to 503 are `GATE_LOCKED` and
+`UPSTREAM_UNAVAILABLE`, and neither is reachable from this handler — `GATE_LOCKED` is the
+**middleware's** code, which is what an ungated request to any app route returns. So a 503 observed
+in production points at the site gate or the platform, not at the export handler. Worth one check at
+the production terminal; it is not a bug in this code.
+
+**The second half of F-105 does stand, and is worth keeping as its own note:** both export options
+are plain `<a href>` links (`format=docx` with no `target`, `format=pdf` with `target="_blank"`)
+with no client-side error handling at all. Whatever the server returns, the app shows nothing — so
+any failure, of any kind, is silent from the user's side. That is why a 503 looked like "the
+dropdown just sits there".
+
+### F-133 · SE-021 · **P2** · An over-length block fails as "Save failed — Retry", and retrying can never work
+The server caps a text block at 20,000 characters and says so plainly:
+`{"error":{"code":"INVALID_REQUEST","message":"a text block holds at most 20000 characters"}}`.
+The editor never shows that sentence. A 25,200-character block produces the same generic
+**"Save failed — Retry"** as a dropped network, pressing Retry fails again (verified), and the
+textarea carries no `maxLength` (`-1`) and no character counter. Shortening the block makes it save
+immediately — so the fix is one the writer would never guess. This is the same class as F-130's
+neighbours: a specific, actionable server message discarded in favour of a generic retryable one.
+
+### Passing rows worth recording — including the best write-failure behaviour in the app
+- **SE-012** is the model the rest of the app should copy. With `/api/studies` writes rejected:
+  the editor shows **"Save failed below"** at the top and **"Save failed — Retry"** on the block, the
+  typed text stays exactly where it is, and clicking **Retry** after the network returns saves it and
+  goes back to "Saved" (verified end to end). Compare F-120 (highlights), F-125 (notes) and F-113
+  (any 401), which lose work silently or blame the network for an auth failure.
+- **SE-013** two tabs on the same block: last write wins, one block, no corruption, no duplication.
+- **SE-019** toggles are honest: **Pin** carries `aria-pressed` and it really flips
+  `false → true` with the label changing `Pin → Pinned`, and the Library disclosure flips
+  `aria-expanded false → true`. (Directly contrast F-122, where the reading-plan disclosures never
+  update `aria-expanded` at all — so this app knows how to do it and one surface does not.)
+- **SE-020** 200 blocks: `domInteractive` 748ms, `loadEventEnd` 914ms, editor renders 100 blocks and
+  offers **Show more** (which is what `/studies/[id]/feed` is for — see SE-028). Keystroke cost in a
+  block, measured as input-handler + forced-layout time: **2–12ms at 100 blocks, 17–29ms at 202
+  blocks**. Usable, but a keystroke at 200 blocks costs ~1.5 frames of a 60fps budget, so this is the
+  number to watch if block counts grow.
+- **SE-021 (the paste half)** the editor is a plain `<textarea>`, so a paste can only ever be text —
+  no formatting to go wrong.
+- **SE-022** HTML is stored and rendered as literal text. Posted a block containing
+  `<img src=x onerror="window.__XSS=3">` and `<script>window.__XSS=4</script>`: nothing executed
+  (`window.__XSS` stayed undefined), zero `<img>` or `<script>` elements appeared in `main`, and the
+  **export escapes it too** (`&lt;img src=x onerror=&quot;…`). Safe by construction, not by filtering.
+- **SE-028** `/studies/[id]/feed` is not unused scaffolding — it is the block pagination endpoint the
+  editor's "Show more" calls (`study-editor.tsx:606`, `?afterPosition=`). Verified live: 202 blocks,
+  100 shown, Show more brings the rest and then removes itself.
+- **SE-029** at a real 390px viewport the editor has no horizontal overflow (`scrollWidth == 390`),
+  the textarea is 318px, the library panel is reachable. **235 controls are under the 44px minimum**
+  though — "+ Insert" at 28px (×200), the export items at 32px, the title field at 36px — which is
+  concrete evidence for the already-filed F-061.
+- **SE-030** the print/PDF export is a usable handout **and it attributes**: a clipping renders as the
+  quoted text followed by "— Calvin, John, Commentary on Isaiah - Volume 3 (Chapter 43)", in both the
+  print HTML and the .docx. No licence/public-domain line, but author + work + locus is there.
+
+### Method note that nearly produced a false finding
+The study title appeared not to save: setting the field and calling `.blur()` fired no request, and
+the study stayed "Untitled study". It saves on **React's `onBlur`**, which listens for `focusout`;
+`element.blur()` in this hidden tab does not produce one. Dispatching a real `focusout` fired the
+`PATCH /api/studies/<id>` immediately and the title persisted (confirmed in `/api/studies` and in the
+export's `<title>`). **The title save is fine** — recorded because the same trap would catch anyone
+automating this editor.
