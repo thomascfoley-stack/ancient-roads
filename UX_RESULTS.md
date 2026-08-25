@@ -2674,3 +2674,57 @@ VS-018 has no scrim to click, so that row has nothing to exercise.
   reads **"Matthew Henry — 1710 — Nonconformist"**. That is the same `Author — Year` pattern F-138
   found broken on Ask, where the year is missing and the em dash collides with the following comma.
   So the fix for F-138 is to render what this surface already renders.
+
+## Batch — commentary surfaces (CM group)
+
+### F-164 · CM-017 · **P2** · You cannot copy a commentator's words with their name attached
+Selecting text **inside a commentary entry** in the verse panel produces **no selection toolbar** —
+no Copy, no attribution-aware copy, nothing. The toolbar exists only for Scripture text in the
+reader, where it does the right thing (see RD-023: the copy carries the reference and the
+translation). So the one place where attribution matters most — a commentator's words leaving the
+app for a sermon or an essay — is served by a bare browser copy that carries the prose and nothing
+else. On a product whose promise is "quoted and attributed", the quote can be taken without the
+attribution more easily than with it.
+
+### F-165 · CM-019 · **P2** · Five surfaces render the same attribution five different ways
+The same work, Adam Clarke's commentary, as the reader meets it:
+
+| surface | what is rendered | year? |
+|---|---|---|
+| library list | `ADAM CLARKE · METHODIST · COMMENTARY · 727` | no |
+| work page | `AUGUSTINE OF HIPPO · PATRISTIC · PATRISTIC · PUBLIC DOMAIN` (F-154: the word twice) | no |
+| desk pane | `Adam Clarke · methodist` (lower case) | no |
+| **verse panel** | **`Matthew Henry — 1710 — Nonconformist`** | **yes** |
+| Ask answer | `Adam Clarke —, Adam Clarke's Commentary  Methodist` (F-138: em dash then comma) | no |
+
+The verse panel is the one that gets it right, and it proves the year is available — so F-064 ("no
+publication year anywhere") is really "the year exists and one surface out of five shows it".
+Tradition casing splits the same way: `METHODIST` / `methodist` / `Methodist` across surfaces
+(F-149).
+
+### F-166 · CM-013 · **P3** · Refreshing while reading a commentary loses it
+The verse panel is not in the URL — opening it changes nothing in the address bar (RD-046) — so a
+refresh on `/read/jhn/8` with John 8:5's commentary open returns to the chapter with the panel
+**closed**. There is no way to link to, bookmark, or reload a commentary view, and Back is the only
+thing that remembers it.
+
+### CM-010 · one real instance of raw entity leakage, double-escaped
+A query over every published section found exactly **one** work with raw entities in its body:
+`chatfield-greeksongs`, where a Greek hymn renders
+> `' Ω παντων επεκεινα &#38;&#35;183; τι γαρ θεμις αλλο σε μελπειν ;`
+
+`&#38;&#35;183;` is `&#183;` (a middle dot) escaped twice, so the reader sees the escape sequence
+itself. One occurrence in the whole corpus — worth fixing, not worth alarm.
+
+### CM-016 · the licensing gate holds — checked three ways
+Chesterton is in the database and correctly not served:
+`chesterton-preexistence` is **quarantined**, `chesterton-historyengland` is **staged**.
+- `/work/chesterton-preexistence` → *"This work isn't available. It may still be staged for review,
+  or the link is mistaken."* (a 107-character page; no prose)
+- `/api/work/chesterton-preexistence/sections` → **404 `{"error":"not found"}`**, and the same for
+  the staged one
+- corpus search for "Chesterton" returns other authors *writing about* him (Manning's hymn papers),
+  never his text
+
+The one caveat worth writing down for anyone repeating this: the "isn't available" message is
+client-rendered, so a `curl | grep` of the work page finds nothing and looks like a leak. It is not.
