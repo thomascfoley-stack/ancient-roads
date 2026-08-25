@@ -2241,3 +2241,92 @@ entry point at all while interlinear is on, exactly as F-090 says.
 - **RD-073** at a 640×400 viewport (the layout equivalent of 200% zoom) there is no horizontal
   scroll (`scrollWidth == clientWidth == 640`), nothing overflows the viewport, and the sticky header
   does not overlap the first verse.
+
+## Batch — the library and works (LB group)
+
+### F-151 · LB-029, LB-024 · **P1** · 88% of Jamieson's sections have their scripture references stripped to bare punctuation
+`LB-029` calls this "known corpus damage"; here is the size of it, counted over the served corpus:
+
+| work | sections | with an empty `( )` | with a bare `; ;` |
+|---|---|---|---|
+| **jamieson-jfb** | 1,258 | **1,110 (88%)** | **716** |
+| augustine-homilies | 3,723 | 85 (2%) | 0 |
+| adam-clarke | 12,693 | 0 | 0 |
+| matthew-henry | 4,210 | 0 | 0 |
+
+What a reader sees — Jamieson's first section, the *Chronological Table of the Parables of Christ*:
+> The strong man armed / Galilee / **; ; , .**
+> The unclean spirit / Galilee / **; .**
+
+The reference column is gone; only its punctuation survives. In prose it reads
+"…as opposed to every kind of idol or false god **( )**." This is the K-2 class (the CCEL adapter
+dropping `scripRef` display text) — the fix is on this branch (`1cef7e8`) but it governs ingest, so
+**the already-ingested rows still carry the damage**. This is not a cosmetic issue for this product
+specifically: Jamieson is served in Ask answers (it supplied the fallback sources for the
+interpretation-bait question in the AS batch), so citations with their references deleted are being
+handed to readers as sources.
+
+**LB-024 is the same wound from the other side:** a scripture reference inside a work's prose is not
+a link. Every work page carries exactly **two** `/read/` links and both are the sidebar's Bible
+entry — none are in the content.
+
+### F-152 · LB-020 · **P2** · The shelf shows 50 of your saved works and does not say so
+Saved **100** works via the shelf API, then opened *My books*: the page renders exactly **50**
+`a[href^="/work/"]` rows, with **no count, no "load more", and nothing indicating a limit**. Half the
+shelf is unreachable and the page reads as complete. Same family as F-117 (Saved capped at 100 shown
+as the total) and F-136 (200 uploads with no sort/filter) — three surfaces, one habit: a page size
+presented as the whole.
+
+### F-153 · LB-012 · **P2** · A work has no reading progress at all
+`LB-012` asks whether progress is accurate; there is none to be accurate. On a work page there is no
+`progressbar`/`<progress>` element, no percentage, and no "section N of M" text — only Contents, Save
+and Aa. The one progress signal in the product is inside the Contents dialog, where the current part
+is badged **READING**. On a 3,723-section work opened at 89,129px of scroll height, that is the whole
+of it. (`/api/work/[slug]/progress` exists, so the data is being kept — it is the surface that is
+missing.)
+
+### F-154 · **P3** · The work header prints the same word twice
+`/work/augustine-homilies` reads: **"AUGUSTINE OF HIPPO · PATRISTIC · PATRISTIC · PUBLIC DOMAIN"**.
+The tradition and the source-type both resolve to "patristic" for this work and both are rendered.
+The library list gets it right for the same work — "AUGUSTINE OF HIPPO · PATRISTIC · FATHER" — so
+the two surfaces disagree about which field goes in the second slot. No publication year appears in
+either (F-064).
+
+### Confirmation: F-010 ("unassigned") is bigger than 20 instances
+The commentaries catalogue's own tradition filter is the clearest statement of it:
+> All traditions · **unassigned 24** · methodist 2 · patristic 2 · anglican 1 · catholic 1 ·
+> lutheran 1 · nonconformist 1 · reformed 1
+
+**24 of 33 commentaries (73%) carry `unassigned`**, and the raw value is offered to the reader as a
+filter option and printed on every shelf row ("MORRIS, JOSEPH · UNASSIGNED"). Note also the casing
+split already filed as F-149: this list is lower-case throughout while the Ask surface capitalises
+the same values.
+
+### Passing rows worth recording
+- **LB-002** the cold `/library` is legible for a newcomer: a **YOURS** row (Saved · My books · Word
+  study · My Works) over an **ALL ITEMS** list of registers with real counts (Commentaries 33,
+  Sermons 6, Hymns & Poetry 45, Historians 1, Devotionals 15, Theology & Creeds 11) and the
+  instruction "Tap a work to read it, or + to open it beside what is on your desk."
+- **LB-005** search finds works by title *and* by author: "Catena Aurea" → 5 matches, top hit the
+  right work; "Augustine" → 718 matches; "Clarke" → 93; a nonsense query → "No matches." and the full
+  list returns. It is a full-text search over section content rather than a metadata filter, so an
+  author query also surfaces passages that merely mention the author (Spurgeon on Clarke) — worth
+  knowing, not wrong.
+- **LB-008** at 768px the 256px sidebar stays put and the content takes the remaining 512px in one
+  column with no horizontal scroll. Designed, not accidental — the layout does not simply shrink the
+  desktop grid.
+- **LB-009 / LB-010** Contents is a 395-entry hierarchical dialog with the current part badged
+  READING; jumping works and the URL follows (`#s37`), and reloading that URL restores the position
+  (`main.scrollTop` 20,027, the anchor 96px from the top, in view). **A false finding was avoided
+  here:** the first `Chapter …` heading in the DOM is not the one you jumped to, so reading the
+  heading out of `innerText` says you landed in the wrong chapter. Checking the anchor element itself
+  showed the jump was correct.
+- **LB-016** Save works and reports state: the control flips to **"Saved"** with `aria-pressed="true"`.
+- **LB-022** NOT-APPLICABLE, verified rather than assumed: a query over every published source found
+  **zero** titles containing `&amp;`, `&#`, `&quot;` or `&gt;`. There is nothing to decode.
+- **LB-023** a 113-character title wraps to two lines (66px) at 390px with `line-clamp: none` and no
+  overflow — shown in full rather than truncated, so "full text reachable" holds by a different route.
+- **LB-027** an 89,129px work scrolls with 0.1–0.3ms of forced-layout cost per 1,500px step. No jank.
+- **LB-028** Greek renders correctly with no mojibake (zero `Ã`/`â€`/`Â` sequences in 40,505
+  characters). It is not language-tagged in work prose, though — zero `[lang=el]` elements — which is
+  the same gap the reader has outside interlinear.
