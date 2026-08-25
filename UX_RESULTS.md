@@ -1757,3 +1757,68 @@ background-tab prefetching, automated screenshotting, and uptime monitoring will
 and — more usefully — re-examine whether the `uploads/page.tsx` synchronous-render change is worth
 keeping, since it was made to fix something that was never broken. Any future "it hangs on
 Loading…" report against this app should first check `document.visibilityState`.
+
+## Batch — settings (ST group)
+
+### CORRECTION — F-050 is WRONG. Text size and column width both work.
+F-050 flagged "text-size/column-width settings may not actually affect the reader — suspect, needs a
+clean re-test". Re-tested by measuring `getComputedStyle` on the verse text, stepping the reader's
+own Aa panel:
+
+| step | font-size | container width |
+|---|---|---|
+| base | 18px | 620px |
+| A+ ×1 / ×2 / ×3 | 20px / 22.4px / **25.6px** (ceiling) | 620px |
+| A− ×1…×4 | 22.4 / 20 / 18 / **16px** (floor) | 620px |
+| ⇥ ×1 / ×2 / ×3 | 16px | 715px / **827px** (ceiling) |
+
+Both controls change the rendered page, both clamp at sensible ends, both persist
+(`reader-size`, `reader-measure` in `localStorage`, applied by the pre-hydration script in
+`layout.tsx:138`) and both survive navigation to a fresh chapter. No dead setting was found in this
+group, so **ST-012 has nothing to file**.
+
+### F-130 · ST-007 · **P2** · The system dark-mode preference is ignored on a first visit
+With no stored preference (`localStorage.removeItem('reader-theme')`) and the browser reporting
+`prefers-color-scheme: dark` (`matchMedia('(prefers-color-scheme: dark)').matches === true`), the app
+renders **light**: no `reader-dark` class, `body` background `rgb(251, 248, 242)`. The cause is one
+expression in the pre-hydration script, `layout.tsx:138`:
+```js
+d.classList.toggle('reader-dark', t === 'dark')   // t = localStorage 'reader-theme'
+```
+There is no `prefers-color-scheme` fallback for the `t == null` case. A reader whose whole machine is
+in dark mode gets a bright page until they find Settings.
+
+### F-131 · **P2/AX** · The match-count labels on `/search` fail AA in both themes
+The per-catalog counts ("950 matches", "1,000 matches+") are 11px in a muted colour:
+
+| theme | colour | on | ratio | AA floor |
+|---|---|---|---|---|
+| light | rgb(180,166,146) | rgb(251,248,242) | **2.25** | 4.5 |
+| dark | rgb(107,97,86) | rgb(26,20,15) | **3.01** | 4.5 |
+
+Six instances on one search page. These are the numbers that tell a reader where the results are, so
+they are not decoration. Everything else measured on the surfaces below clears comfortably.
+
+### F-132 · ST-019 · **P3** · Settings do not sync between open tabs
+Changed the theme to Dark in tab A through the Settings UI; tab B (on `/read/mrk/1`) still rendered
+light, and *stayed* light through a further in-page action (opening a verse panel), while sharing the
+updated `localStorage` value (`reader-theme: "dark"`). Nothing listens for the `storage` event, so the
+two tabs disagree until the stale one is reloaded. No corruption — the stored value is single and
+correct — so this is cosmetic drift, not data loss.
+
+### Passing rows worth recording
+- **ST-002/003** every control applies immediately and survives a reload and a route change (theme,
+  size, measure and default translation all still in force on a freshly opened chapter).
+- **ST-004** these are per-device by design — the page says so ("Saved on this device", and
+  `/account/settings` repeats it) — so they are unaffected by sign-out/in, which is the documented
+  behaviour rather than a gap.
+- **ST-006** dark mode measured on four surfaces, worst non-highlight contrast per surface: reader
+  **7.66**, `/home` **6.88**, `/library` **13.69**, `/search` **3.01** (the F-131 labels). Highlighted
+  verse text is the separate F-116 failure at 1.69–2.05.
+- **ST-008** no flash of the wrong theme: the theme is applied by a synchronous inline script in
+  `<head>` before first paint, not by a React effect.
+- **ST-011** the default-translation setting really is the default: set ASV in Settings, opened
+  `/read/mrk/1` fresh, and the reader opened in ASV.
+- **ST-015** change password works end to end — see AU-047 and F-110.
+- **ST-024** Back from Settings returns to where you came from (`/read/mrk/1` → `/settings` → Back →
+  `/read/mrk/1`), not to home.
