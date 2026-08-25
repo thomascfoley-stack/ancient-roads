@@ -1897,3 +1897,103 @@ the study stayed "Untitled study". It saves on **React's `onBlur`**, which liste
 `PATCH /api/studies/<id>` immediately and the title persisted (confirmed in `/api/studies` and in the
 export's `<title>`). **The title save is fine** — recorded because the same trap would catch anyone
 automating this editor.
+
+## Batch — uploads / My Works (UP group)
+
+Uploads were unreachable for a second account: `/library/uploads` said *"Uploads are not available on
+this account yet."* The gate is `uploadDenial()` (`lib/user-corpus/access.ts:82`) — the §4 owner-only
+beta, an env allowlist. Enabled for the disposable test account by starting the local server with
+`USER_CORPUS_OWNER_IDS=<test user id>`, which is the documented way in.
+
+### F-134 · UP-013 · **P2** · The upload limit is advertised as 25 MB and is actually just under 10 MB
+The UI says **"PDF, Word, text or Markdown · up to 25 MB"**, and the client-side pre-check refuses
+only above 25 MB (`my-works.tsx:204`). But anything at or above **10,485,760 bytes (10 MiB)** is
+rejected by the server with **`{"error":"Attach a file in the \"file\" field."}`** — a message about
+a missing form field, which mentions neither size nor a limit. Bisected exactly:
+
+| bytes | result |
+|---|---|
+| 9,437,184 (9 MB) | 201 Created |
+| 10,485,184 (9.9995 MB) | **201 Created** |
+| **10,485,760 (10 MiB)** | **400** "Attach a file in the \"file\" field." |
+| 12 / 16 / 25 MB | 400, same message |
+
+Next.js names the cause in the server log, with the fix:
+```
+Request body exceeded 10MB for /api/user-corpus/upload. Only the first 10MB will be available
+unless configured. See .../config/next-config-js/middlewareClientMaxBodySize
+```
+The route sits behind middleware, so the middleware body limit truncates the request; `formData()`
+then finds no `file` field and the handler's missing-file branch answers. **A 15 MB sermon PDF — the
+exact thing this feature is for — fails with a message the writer cannot act on.** Two fixes are
+needed and they are independent: raise `middlewareClientMaxBodySize` to match the advertised cap,
+*and* make the advertised number and the enforced number come from one constant.
+
+### F-135 · UP-015, UP-016 · **P2** · 3 of 10 simultaneous uploads lost their bytes
+Ten small files (≈20 KB each) selected at once: all ten reported **"Added"** in the upload panel and
+all ten created rows, but **batch-08, batch-09 and batch-10 landed in `status: failed`** with
+*"The uploaded file was not stored, so it cannot be parsed. Please upload it again."* The three
+failures are the last three submitted, which points at the blob write rather than at the file. A
+single upload immediately before and immediately after the batch both succeeded, so the store was
+healthy either side of it. **Nothing appears in the server log** — the blob failure is swallowed and
+only surfaces as a document status.
+
+The recovery is real, and worth crediting: each failed row shows the message above with a **Try
+again** button, and pressing it re-sends the bytes and heals the row to Ready (verified on batch-10).
+That is the D11 heal path working. The defect is the ~30% failure rate on a batch a user is invited
+to make — the file input is `multiple`.
+
+### F-136 · UP-028 · **P3** · 200 documents, one flat list, no sort and no filter
+Seeded to 200 documents: all 200 rows render with a Remove button each. There is a **"Search your
+works"** box, so the list is searchable — but there is no sort control and no filter control of any
+kind (checked every `select`, `input` and `button` in `main`), and no grouping by status, so the two
+`failed` documents sit wherever creation order put them.
+
+### F-137 · **P3** · The upload gate blames your account for a deployment setting
+The server says *"Uploads are not enabled on this deployment."* (`access.ts:89`, the branch taken
+when the allowlist is empty). The screen says *"Uploads are not available on this **account** yet."*
+(`my-works.tsx:619`). A reader is told to wonder what is wrong with their account when the answer is
+that the feature is off for everyone. `access.ts` has a *separate*, correct per-account string
+("Uploads are not enabled for this account.") for the case where an allowlist exists and you are not
+on it — the UI collapses both into the account wording.
+
+### Confirmations of previously filed findings
+- **F-100 and F-101 both confirmed, and they are the same string.** A 0-byte `.txt` returns
+  `HTTP 415` with: *"That file is not a PDF, Word document, or text file. Slice 1 accepts .pdf,
+  .docx, .txt and .md."* — factually wrong (it is a text file; it is empty), and it leaks the
+  internal codename. The string is `lib/user-corpus/sniff.ts:67`; a second copy carrying "Slice 1"
+  is `lib/user-corpus/parse-docx.ts:215`. Cause of the wrong wording: `looksTextual()` is false for
+  zero bytes, so an empty file falls through to the unsupported-type branch.
+- **The `SCAN_RE` false-floor class, live in the product.** A test document beginning "Sermon number
+  10." was labelled by the uploads list as **"Looks like: Numbers 10"** — a common noun plus a
+  numeral read as a book reference. That is the queued `SCAN_RE` item in `docs/pm/MASTER.md`,
+  observed on a user-facing surface rather than in an eval.
+
+### Passing rows worth recording
+- **UP-012** the size refusal happens **before** any transfer: a 26 MB file produced no POST at all
+  (network log shows only the list refresh) and the row read *"Refused — Larger than the 25 MB limit
+  (26.0 MB)"* with a "1 refused" summary. Exactly the shape the test asks for — it is only the number
+  that is wrong (F-134).
+- **UP-018 / UP-019** both quota refusals name the limit, the current usage and the remedy:
+  *"You have reached the limit of 200 documents (you have 200). Delete a document to upload another."*
+  and *"This file would take you past the 100 MB storage limit (you have used 100.2 MB). Delete a
+  document to free up space."* Re-uploading identical bytes is correctly exempt — it returns the
+  existing document with *"You have already uploaded this file."* and adds nothing to usage.
+- **UP-020 / UP-022** reloading mid-upload leaves **no row at all** — no zombie, nothing half-created;
+  the upload is simply restartable.
+- **UP-021** a network cut mid-upload says *"Could not be uploaded. Check your connection and try
+  again."* and creates no row.
+- **UP-023** a document whose bytes never stored fails visibly with a reason and a Try again — it is
+  never silently skipped (this is what F-135 surfaced through).
+- **UP-025** deleting a document mid-processing returns `{"deleted":true}`, removes it from the list,
+  and drops the queue depth by one. No orphan, no stuck claim.
+- **UP-027 tenancy holds on every path testable here.** A second real account
+  (`uxsweep.tester2@example.com`) sees `{"studies":[]}`, `{"plans":[]}`, `{"prayers":[]}` and empty
+  annotations, gets **404 "No such plan."** for account 1's plan id, **404** for account 1's study
+  page *and* its export, and an empty (not leaking) `/studies/<id>/feed`. Note precisely what is NOT
+  proven: account 2 could not be tested against account 1's *documents*, because the upload routes
+  refuse it at the feature gate (403) before any ownership check runs. That leg needs both accounts
+  on the allowlist.
+- **UP-030** the document page reads well: title, the document's text under a **"Your work"**
+  heading (which is where the "it's yours" attribution lives), plus "The tradition" (voices on
+  passages it anchors) and "Suggested readings" sections, each with an honest empty state.
