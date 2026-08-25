@@ -2366,3 +2366,41 @@ the top. So the route and the anchor both work; the client-side navigation loses
 happens. The effect is that every history citation lands the reader at the start of a very long book
 rather than at the passage that was cited — which is the one thing "History points you into the
 sources" promises to do.
+
+### Self-audit — every "persists across sign-out/in" claim, actually executed
+
+Several rows in the batches above said data "survived this session's sign-out and sign-in". That was
+loose: the studies, plans and settings in question were all created *after* the sign-out/in sequence,
+so nothing had been proven. The claim was re-tested properly by opening a **completely fresh session**
+— new cookie jar, new `POST /api/auth/sign-in/email` — which is exactly a sign-out followed by a
+sign-in, and reading the account back through it:
+
+| checked from a brand-new session | result |
+|---|---|
+| plans | `John · 3 weeks` present, **15 days, 14 completed** — the progress set earlier survived |
+| studies | `UX sweep study — SE group` present |
+| annotations | highlights/notes read back unchanged |
+
+So the underlying claim holds; it now has an execution behind it. **A trap for the next person:**
+the plan day's completion field is `completed_at`, not `read`/`read_at` — a first pass at counting it
+reported "0 read" for a plan that was 14/15 done. That was a bad parser, not a bug, and it was caught
+by looking at the raw row.
+
+### Correction — LB-016: signed-out Save is deliberately absent, not an invitation
+The row was first written as "the control is replaced by the sitewide sign-in invitation". It is not.
+`web/src/components/work-header.tsx:18` states the decision in the code:
+
+> Signed-out readers get **NOTHING** here rather than a disabled control or a sign-in prompt — the
+> route 401s them, and the reader is mid-page in a book, which is the wrong moment to advertise an
+> account. `/library/books` makes the offer where it is relevant.
+
+Confirmed against a signed-out fetch of `/work/adam-clarke`: no Save control in the header. So
+nothing fails silently — because nothing is offered — and the invitation is deliberately relocated to
+the shelf page, which does carry it ("Open a work and press Save in its header to keep it here").
+That is a defensible answer to the row's intent, and it is a design decision rather than the gap the
+row anticipates.
+
+### RD-070 — the viewport declaration, read rather than assumed
+`<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover,
+interactive-widget=resizes-content">`. No `user-scalable=no`, no `maximum-scale`. Pinch-zoom is not
+disabled by declaration; whether the layout survives it still needs real hardware (owner decision D-4).
