@@ -2872,3 +2872,34 @@ present on the other nine.
 - **Highlighted verse text, dark:** **1.69–2.05** across all ten colours — F-116.
 - Everything else scanned on `/home`, `/plans`, `/prayers`, `/settings`, `/studies`, `/library`,
   `/library/notes` came back clean in both themes.
+
+## Batch — home / Daily Office (HM group)
+
+### F-173 · HM-009 · **P3** · The office never notices that the day rolled over
+`TodayView` reads the clock **once**, in a `useEffect` at mount (`today-view.tsx:55`, with a good
+comment explaining why it is one clock: two independent `new Date()` reads once straddled local noon
+and made Spurgeon's half disagree with Daily Light's). There is **no timer** to recompute. So a page
+left open across local midnight — or across noon — keeps showing yesterday's date and the previous
+half until it is reloaded. On load the logic is right: `mmddOf` uses the local month/day and its
+comment explains why it refuses an ordinal day-of-year ("day 60 is Feb 29 in a leap year and Mar 1
+otherwise"), and `halfOf` is `getHours() < 12`.
+
+### F-174 · HM-015 · **P2** · On a phone the first action on the home page is five screens down
+At **390×844**, `/home` is **5,085px** tall and the first interactive element — "READ MORE" — sits at
+**y = 4,218px**. The only other action, "Read Exodus 22:6 in full", is at **4,931px**. So a phone
+reader gets roughly 4,200 pixels of devotional prose before anything they can act on. Nothing
+overflows and nothing is broken; the page simply has no action in its first five screens.
+
+### Passing rows worth recording
+- **HM-010** the failure copy is one of the best in the app. With `/devotional/*` blocked:
+  **"Today's reading could not be opened. The Scriptures are still there to search."** with an
+  **"Open the Word"** action. It says what failed, what still works, and what to do.
+- **HM-008 / HM-018** date and half are correct and correctly *local*: the page read
+  "Monday, August 24 · Evening" at ~21:00 local on 2026-08-24, and the code resolves both from the
+  reader's own clock.
+- **HM-013** a finished plan leaves no broken card. Marked the plan to **15 of 15 days read**, then
+  loaded `/home`: no plan card, no "undefined", no "NaN", no empty slot — the API returns a due day
+  only while one exists, so the card simply is not rendered.
+- **HM-019** after real use — 39 notes, 19 highlights, 12 uploads, 27 history threads, 2 studies, a
+  finished plan — `/home` is unchanged and still scannable, because it is a devotional feed rather
+  than an activity dashboard. Nothing accumulates on it.
