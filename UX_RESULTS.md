@@ -1695,3 +1695,65 @@ on it.
   accessible name states the action and implies the state. There is no `aria-pressed`/`aria-checked`,
   so state is carried by wording alone; progress changes DO announce (`role=status` → "1 of 15 days
   read"). A real screen reader is still needed for the rest (owner decision D-5).
+
+## CORRECTION — F-012 / F-102 / F-104 are a TESTING ARTIFACT, not a user-facing bug
+
+This retires the previous pass's second-highest-severity finding ("Most of `/library/*` hangs on
+'Loading the library'", reconfirmed there four times, 20s–60s each). It reproduces here — and the
+cause is the **hidden browser tab**, not the app.
+
+**The chain, each link measured on this build:**
+
+1. `/library` hard-loaded in this tool sits on "Loading the library" indefinitely — **25,226ms** and
+   still going, with **no pending network request** (every API call returned: `get-session` 6ms,
+   `/api/research` 292ms, `/api/studies` 294ms).
+2. The resolved content **is already in the document**. On the stuck page,
+   `/All items/i.test(document.documentElement.innerHTML)` is `true` while
+   `main.innerText` still reads "Loading the library" — the real segment is parked in a
+   `div[hidden]`, exactly where React's streaming Suspense puts a segment awaiting reveal.
+3. The reveal is scheduled with **`requestAnimationFrame`**. The last line of the server HTML is
+   React's own reveal script:
+   ```js
+   $RC=function(a,b){ … 2===$RB.length&&("number"!==typeof $RT
+        ? requestAnimationFrame($RV.bind(null,$RB))
+        : setTimeout(…)) … }
+   ```
+   `$RT` is `undefined` on this page, so the `requestAnimationFrame` branch is the one taken.
+4. **`requestAnimationFrame` never fires in this environment.** Direct measurement: armed one rAF
+   and one MessageChannel message in the same call — the MessageChannel callback ran
+   (`messageChannelFired: 1`), the rAF callback did not (`rafFired: 0`), with
+   `document.visibilityState === "hidden"`. Chrome does not run rAF for a hidden tab. The browser
+   pane is hidden for the whole of this session, and `tabs_select` does not change it.
+5. **Running the queued callback by hand reveals the page instantly.** `window.$RV(window.$RB)` on
+   the stuck page → `main.innerText` becomes "Library / YOURS / Saved / My books / Word study /
+   My Works / ALL ITEMS / Commentaries 33 items / Sermons 6 items / …" immediately.
+
+**So:** the segment streams, arrives, and waits for one animation frame that a hidden tab never
+gives it. A visible tab gets that frame in ~16ms. The one link not directly measured here is "a
+visible tab fires rAF", because this tool cannot produce a visible tab — but that is
+`requestAnimationFrame`'s specified behaviour, and the other four links are measured.
+
+**Corroborating detail that fits, and re-reads an old repo decision.** In-app navigation to
+`/library` from the sidebar renders in **1,377ms** every time, on the same hidden tab, because a
+client-side route change commits through React's scheduler (MessageChannel) instead of the
+streaming-reveal path. That "hard load hangs, in-app navigation is fine" split is precisely what
+`web/src/app/library/uploads/page.tsx:20-32` records:
+
+> Measured: still "Loading the library" 43s in, with `/api/user-corpus/documents` never called ONCE.
+> … In-app navigation from the sidebar was fine throughout (~700ms), which is why this only ever bit
+> a refresh or a pasted URL
+
+That earlier measurement almost certainly hit this same artifact, and `/library/uploads` was made
+synchronous to work around it. **The workaround did not work**: `/library/uploads` and
+`/library/word-study` — both plain `'use client'` pages with no async server component — sit on the
+same fallback for 12s+ on a hard load here, for the same reason (the boundary is the parent's).
+
+**What is actually true for a user:** a `/library/*` URL opened in a **background** tab shows the
+skeleton until that tab is looked at. That is standard React streaming behaviour in every Next.js
+app, not an Ancient Paths defect, and it resolves on focus. Residual real impact is narrow —
+background-tab prefetching, automated screenshotting, and uptime monitoring will see a skeleton.
+
+**Recommended disposition:** downgrade F-012 from P1 and F-102/F-104 from P1/P2 to a **P3 note**,
+and — more usefully — re-examine whether the `uploads/page.tsx` synchronous-render change is worth
+keeping, since it was made to fix something that was never broken. Any future "it hangs on
+Loading…" report against this app should first check `document.visibilityState`.
