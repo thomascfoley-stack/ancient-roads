@@ -39,19 +39,19 @@
     "yaml": "^2.5.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@types/node": "^22.10.0",
-    "@types/pg": "^8.20.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
     "@types/pg-copy-streams": "^1.2.5",
-    "@vitest/coverage-v8": "^2.1.9",
-    "eslint": "^9.0.0",
-    "knip": "^6.25.0",
-    "pg": "^8.22.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^10.9.0",
+    "knip": "^6.32.2",
+    "pg": "^8.23.0",
     "pg-copy-streams": "^7.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "typescript-eslint": "^8.63.0",
-    "vitest": "^2.1.0"
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.11"
   },
   "pnpm": {
     "overrides": {
