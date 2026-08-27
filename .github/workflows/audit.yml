@@ -319,7 +319,7 @@ jobs:
       # can never seed a poisoned cache.
       - name: bible assets — restore cache
         id: biblerestore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: web/public/bible
           key: ${{ steps.biblekey.outputs.key }}
@@ -335,7 +335,7 @@ jobs:
           fi
       - name: bible assets — save cache (only a verified-complete tree)
         if: steps.biblerestore.outputs.cache-hit != 'true' && steps.bibledone.outputs.complete == 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: web/public/bible
           key: ${{ steps.biblekey.outputs.key }}
