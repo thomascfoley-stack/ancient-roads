@@ -3,8 +3,8 @@ import { after } from 'next/server';
 import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { putUserDocument } from '@/lib/user-corpus/blob';
-import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument, requeueForRetry, isHealable } from '@/lib/user-corpus/documents';
-import { drain } from '@/lib/user-corpus/queue';
+import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument, requeueForRetry, isHealable, healPlan } from '@/lib/user-corpus/documents';
+import { drain, MAX_ATTEMPTS } from '@/lib/user-corpus/queue';
 import { QuotaExceeded } from '@/lib/user-corpus/quota';
 import { assertWithinSizeCap, checksum, sniffType } from '@/lib/user-corpus/sniff';
 import { UploadRefused } from '@/lib/user-corpus/types';
@@ -94,11 +94,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // document used to return it unchanged, so the natural retry gesture silently no-opped.
     const healable = existing && isHealable(existing);
     if (healable) {
-      if (!existing.blobUrl) {
+      // K1: what to DO about it depends on the attempt budget, not just on healability. The first
+      // cut of this path always reset `attempts`, which cleared MAX_ATTEMPTS on every re-upload and
+      // let a file failing during embedding be re-processed indefinitely at provider cost.
+      const plan = healPlan(existing, MAX_ATTEMPTS);
+
+      if (plan.action === 'exhausted') {
+        // Deliberately NOT requeued. Requeueing without a reset would mark the row 'queued' when
+        // claimNext (`attempts < MAX_ATTEMPTS`) can never claim it — a silent stall. Say so instead.
+        return NextResponse.json(
+          {
+            document: existing,
+            duplicateOf: existing.id,
+            healed: false,
+            message:
+              'That file has already failed to process several times, so re-uploading it will not help. ' +
+              'Delete it and try a different copy, or a different format.',
+          },
+          { status: 200 },
+        );
+      }
+
+      if (plan.action === 'store-and-requeue') {
         const healedPath = await putUserDocument(user.id, existing.id, bytes);
         await setBlobPathname(user.id, existing.id, healedPath);
       }
-      const requeued = await requeueForRetry(user.id, existing.id);
+      const requeued = await requeueForRetry(user.id, existing.id, { resetAttempts: plan.resetAttempts });
       kickDrain(user.id);
       return NextResponse.json(
         {
@@ -106,7 +127,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           duplicateOf: existing.id,
           healed: true,
           message: requeued
-            ? 'That file was already uploaded but had not been stored. It has been restored and queued.'
+            ? plan.action === 'store-and-requeue'
+              ? 'That file was already uploaded but had not been stored. It has been restored and queued.'
+              : 'That file is already uploaded. It has been queued to try processing again.'
             : 'That file is already uploaded and is being processed right now.',
         },
         { status: 200 },
