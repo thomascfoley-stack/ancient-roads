@@ -21,9 +21,16 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const limit = await checkCorpusSearchRateLimit(user.id);
   if (!limit.ok) {
-    return apiError(limit.limited === 'day' ? 'RATE_LIMIT_DAY' : 'RATE_LIMIT_MINUTE', {
-      retryAfterSec: limit.retryAfterSec,
-    });
+    // 'unavailable' = the limiter DB itself failed (fail-closed in rate-limit.ts) — surface it as
+    // 503 UPSTREAM_UNAVAILABLE, not 429, so a limiter outage isn't misclassified as a user quota
+    // hit by callers that branch on the status code. Same three-way split as /api/ask.
+    const code =
+      limit.limited === 'unavailable'
+        ? 'UPSTREAM_UNAVAILABLE'
+        : limit.limited === 'day'
+          ? 'RATE_LIMIT_DAY'
+          : 'RATE_LIMIT_MINUTE';
+    return apiError(code, { retryAfterSec: limit.retryAfterSec });
   }
 
   const csrfFloor = requireJsonContentType(req);
