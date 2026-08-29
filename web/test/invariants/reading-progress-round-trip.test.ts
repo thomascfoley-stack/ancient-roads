@@ -42,6 +42,7 @@ vi.mock('@/lib/session', () => ({
     return signedIn;
   },
   currentUser: async () => signedIn,
+  authFailureResponse: (_e: unknown) => Response.json({ error: 'Please sign in to continue.' }, { status: 401 }),
 }));
 
 // The REAL shipped handler. If this import fails to resolve, the route does not exist and the
