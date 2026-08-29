@@ -69,10 +69,21 @@ const SOURCES: Record<string, CommentarySource> = {
   },
 };
 
-interface ApiVerse {
+export interface ApiVerse {
   type: string;
   number: number;
   content: (string | Record<string, unknown>)[];
+}
+
+export interface ChapterEntry {
+  verseStart: number;
+  verseEnd: number;
+  author: string;
+  year: number;
+  tradition: string;
+  sourceTitle: string;
+  sourceUrl: string;
+  text: string;
 }
 
 function extractText(content: (string | Record<string, unknown>)[]): string {
@@ -90,6 +101,48 @@ function extractText(content: (string | Record<string, unknown>)[]): string {
     }
   }
   return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+// Collect verse entries from a chapter's content and compute verse ranges.
+// Section-based commentaries (e.g. Matthew Henry) span multiple verses, so
+// verseEnd = nextEntry.number - 1. The range builder assumes EVERY verse is
+// present: a dropped intermediate verse lets the prior entry's range swallow
+// the missing one (a query for verse 7 returned verse 6's text). Keep all
+// non-empty entries — never re-introduce a text-length floor here. Short
+// word-glosses (John 1:7 "through him--John.", 18 chars) are real commentary,
+// and the Thayer's adapter keeps cross-reference stubs for the same reason.
+export function buildChapterEntries(
+  content: ApiVerse[],
+  source: CommentarySource,
+): ChapterEntry[] {
+  const verseItems: { number: number; text: string }[] = [];
+  for (const item of content) {
+    if (item.type === 'verse' && typeof item.number === 'number') {
+      const text = extractText(item.content);
+      if (text) {
+        verseItems.push({ number: item.number, text });
+      }
+    }
+  }
+
+  const entries: ChapterEntry[] = [];
+  for (let vi = 0; vi < verseItems.length; vi++) {
+    const item = verseItems[vi]!;
+    const nextStart = verseItems[vi + 1]?.number;
+    const verseEnd = nextStart ? nextStart - 1 : item.number;
+
+    entries.push({
+      verseStart: item.number,
+      verseEnd: Math.max(item.number, verseEnd),
+      author: source.author,
+      year: source.year,
+      tradition: source.tradition,
+      sourceTitle: `${source.author}'s Commentary`,
+      sourceUrl: '',
+      text: item.text,
+    });
+  }
+  return entries;
 }
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -134,47 +187,8 @@ async function ingestSource(source: CommentarySource) {
             chapter: { content: ApiVerse[] };
           };
 
-          const entries: {
-            verseStart: number;
-            verseEnd: number;
-            author: string;
-            year: number;
-            tradition: string;
-            sourceTitle: string;
-            sourceUrl: string;
-            text: string;
-          }[] = [];
-
-          // Collect verse numbers first to compute ranges
-          const verseItems: { number: number; text: string }[] = [];
-          for (const item of data.chapter.content) {
-            if (item.type === 'verse' && typeof item.number === 'number') {
-              const text = extractText(item.content);
-              if (text && text.length > 20) {
-                verseItems.push({ number: item.number, text });
-              }
-            }
-          }
-
-          // Compute verse ranges (section-based commentaries like Matthew Henry
-          // have entries that span multiple verses)
-          for (let vi = 0; vi < verseItems.length; vi++) {
-            const item = verseItems[vi]!;
-            const nextStart = verseItems[vi + 1]?.number;
-            const verseEnd = nextStart ? nextStart - 1 : item.number;
-
-            entries.push({
-              verseStart: item.number,
-              verseEnd: Math.max(item.number, verseEnd),
-              author: source.author,
-              year: source.year,
-              tradition: source.tradition,
-              sourceTitle: `${source.author}'s Commentary`,
-              sourceUrl: '',
-              text: item.text,
-            });
-            totalEntries++;
-          }
+          const entries = buildChapterEntries(data.chapter.content, source);
+          totalEntries += entries.length;
 
           const payload = {
             book: book.bookNum,
@@ -206,37 +220,39 @@ async function ingestSource(source: CommentarySource) {
 }
 
 // --- Main ---
-const requestedSources = process.argv.slice(2);
-const sourceIds = requestedSources.length > 0
-  ? requestedSources
-  : Object.keys(SOURCES);
+if (process.argv[1] && /ingest-commentary-api/.test(process.argv[1])) {
+  const requestedSources = process.argv.slice(2);
+  const sourceIds = requestedSources.length > 0
+    ? requestedSources
+    : Object.keys(SOURCES);
 
-const invalid = sourceIds.filter((s) => !SOURCES[s]);
-if (invalid.length > 0) {
-  console.error(`Unknown source(s): ${invalid.join(', ')}`);
-  console.error(`Available: ${Object.keys(SOURCES).join(', ')}`);
-  process.exit(1);
-}
+  const invalid = sourceIds.filter((s) => !SOURCES[s]);
+  if (invalid.length > 0) {
+    console.error(`Unknown source(s): ${invalid.join(', ')}`);
+    console.error(`Available: ${Object.keys(SOURCES).join(', ')}`);
+    process.exit(1);
+  }
 
-console.log(`Pulling ${sourceIds.length} commentary source(s) from ${API_BASE}`);
+  console.log(`Pulling ${sourceIds.length} commentary source(s) from ${API_BASE}`);
 
-const results: { source: string; totalEntries: number; totalChapters: number; errors: number }[] = [];
-for (const id of sourceIds) {
-  results.push(await ingestSource(SOURCES[id]!));
-}
+  const results: { source: string; totalEntries: number; totalChapters: number; errors: number }[] = [];
+  for (const id of sourceIds) {
+    results.push(await ingestSource(SOURCES[id]!));
+  }
 
-console.log('\n=== Summary ===');
-for (const r of results) {
-  console.log(`  ${r.source}: ${r.totalEntries} entries, ${r.totalChapters} chapters${r.errors ? `, ${r.errors} errors` : ''}`);
+  console.log('\n=== Summary ===');
+  for (const r of results) {
+    console.log(`  ${r.source}: ${r.totalEntries} entries, ${r.totalChapters} chapters${r.errors ? `, ${r.errors} errors` : ''}`);
+  }
+  // D44 (DEEP_SWEEP): errors were counted, printed, and then thrown away — the run ended
+  // "Done." with exit code 0 while chapters were missing. The repo's standard is fail loud, and
+  // a script that reports green on an incomplete corpus is the shape a gate exists to prevent.
+  // Resume-by-existsSync makes the fix free: re-running fills the gaps.
+  const failed = results.reduce((n, r) => n + (r.errors ?? 0), 0);
+  if (failed > 0) {
+    console.error(`\nFAILED: ${failed} chapter(s) could not be fetched after 3 attempts. Re-run to fill the gaps.`);
+    process.exit(1);
+  }
+  console.log('Done.');
 }
-// D44 (DEEP_SWEEP): errors were counted, printed, and then thrown away — the run ended
-// "Done." with exit code 0 while chapters were missing. The repo's standard is fail loud, and
-// a script that reports green on an incomplete corpus is the shape a gate exists to prevent.
-// Resume-by-existsSync makes the fix free: re-running fills the gaps.
-const failed = results.reduce((n, r) => n + (r.errors ?? 0), 0);
-if (failed > 0) {
-  console.error(`\nFAILED: ${failed} chapter(s) could not be fetched after 3 attempts. Re-run to fill the gaps.`);
-  process.exit(1);
-}
-console.log('Done.');
 
