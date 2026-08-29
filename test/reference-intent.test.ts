@@ -50,3 +50,17 @@ describe('matchPericopes + resolveIntent (named passages)', () => {
     expect(resolveIntent('justification by faith apart from works')).toEqual({ inject: [], floor: [] });
   });
 });
+
+describe('resolveIntent ambiguous-book-word corroboration gate', () => {
+  // Book words that are also ordinary English nouns (mark/james/job/acts/numbers/kings)
+  // always inject but floor only when biblically corroborated — a CONFIDENT (non-ambiguous)
+  // reference or a surviving BIBLICAL_LEXICON token, NOT a second ambiguous ref. The frozen
+  // reference_floors.yaml adversarial set has ZERO two-ambiguous cases, so it cannot catch a
+  // count-based shortcut being re-introduced; this leg is the only guard against that footgun.
+  it('does NOT floor two ambiguous refs with no biblical context (regression guard)', () => {
+    const adversarial = resolveIntent('mark 5 and james 2 insurance company');
+    expect(hasStart(adversarial.inject, vid(41, 5))).toBe(true); // inject still soft-boosts (harmless)
+    expect(hasStart(adversarial.inject, vid(59, 2))).toBe(true);
+    expect(adversarial.floor).toEqual([]); // the floor cannot hijack a topical query
+  });
+});

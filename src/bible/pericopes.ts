@@ -85,7 +85,7 @@ const BIBLICAL_LEXICON: ReadonlySet<string> = new Set(
     'disciples apostle apostles prophet prophets prophecy covenant righteousness ' +
     'salvation sin sins sinner repentance grace faith faithful believe belief holiness ' +
     'heaven heavenly hell kingdom resurrection risen raised raising rose crucified ' +
-    'crucifixion cross atonement redemption redeemer sabbath temple synagogue priest ' +
+    'crucifixion cross atonement redemption redeemer sabbath temple synagogue church priest ' +
     'pharisee pharisees gentile gentiles israel israelite israelites tongues angel ' +
     'angels miracle miracles blessed glory worship preach sermon creation flood ark ' +
     'passover manna tabernacle sacrifice prayer baptism baptized communion trinity ' +
@@ -154,15 +154,16 @@ const AMBIGUOUS_BOOK_WORDS: ReadonlySet<string> = new Set([
 ]);
 
 // Does the query carry biblical context BEYOND the ambiguous numeric matches themselves?
-// Mirrors pericopesCorroborated: a second scanned reference corroborates, otherwise a lexicon
-// token must survive once the matched spans are cut out of the source text.
+// Mirrors pericopesCorroborated: a confident (non-ambiguous) reference corroborates, otherwise
+// a lexicon token must survive once the matched spans are cut out of the source text. A SECOND
+// ambiguous ref does NOT corroborate — these book words (mark/james/job/acts/numbers/kings) are
+// ordinary English nouns, so "mark 5 and james 2 insurance company" carries no biblical intent.
 function numericsCorroborated(
   query: string,
   ambiguous: Array<{ start: number; end: number }>,
   confidentCount: number,
 ): boolean {
   if (confidentCount > 0) return true;
-  if (ambiguous.length >= 2) return true;
   let stripped = query;
   for (const a of [...ambiguous].sort((x, y) => y.start - x.start)) {
     stripped = stripped.slice(0, a.start) + ' ' + stripped.slice(a.end);
