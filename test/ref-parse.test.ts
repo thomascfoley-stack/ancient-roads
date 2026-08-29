@@ -472,3 +472,101 @@ describe('scanReferences — attached-digit ordinals (1Cor 13, #108)', () => {
     expect(scan(text)).toEqual([]);
   });
 });
+
+describe('scanReferences — space-separated verses in prose (M3 verse precision)', () => {
+  // The remaining half of M3 (docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md Run 4):
+  // SCAN_RE's numeric tail was `(?::\d{1,3})?` — a verse REQUIRED a colon — so "john 3 16" in
+  // prose scanned as chapter-only ("John 3") and the trailing "16" dropped, while parseRef
+  // (typeahead) already normalised "3 16" → "3:16". The two functions disagreed, so /ask intent
+  // routing ("what does john 3 16 say") resolved a whole CHAPTER instead of the verse. The fix
+  // is a fourth additive pass (SPACE_VERSE_SCAN_RE) that requires chapter + SPACE + verse, feeds
+  // the span to parseRef, and out-spans SCAN_RE's chapter match under the longer-span rule.
+  const scan = (t: string) => scanReferences(t).map((r) => r.display);
+
+  // ── the measured drops: a space-separated verse resolves to the VERSE, not the chapter ─────
+  it('finds a space-separated verse in prose (the headline bug)', () => {
+    expect(scan('in john 3 16 we read')).toEqual(['John 3:16']);
+    expect(scan('what does romans 8 28 teach us')).toEqual(['Romans 8:28']);
+  });
+  it('finds a space-separated verse for a numbered book (with digit ordinal)', () => {
+    expect(scan('1 cor 13 4')).toEqual(['1 Corinthians 13:4']);
+    expect(scan('1 john 3 16')).toEqual(['1 John 3:16']);
+  });
+  it('resolves the verse range, not the chapter range (the intent-routing payload)', () => {
+    const r = scanReferences('what does romans 8 28 teach us')[0]!;
+    expect(r.ranges).toEqual([{ start: 45008028, end: 45008028 }]);
+    expect(r.kind).toBe('verse');
+  });
+
+  // ── agreement with parseRef (typeahead) and the colon form ──────────────────────────────────
+  it('agrees with parseRef for the space form, and the colon form scans the same verse', () => {
+    expect(display('john 3 16')).toBe('John 3:16'); // typeahead already normalised this
+    expect(scan('john 3 16')).toEqual(['John 3:16']); // prose now agrees
+    expect(scan('john 3:16')).toEqual(['John 3:16']); // colon form unchanged
+  });
+
+  // ── ordinal variants all reach the verse, mid-prose and standalone ───────────────────────
+  it('roman and word ordinals normalise through parseRef', () => {
+    expect(scan('ii tim 3 16')).toEqual(['2 Timothy 3:16']);
+    expect(scan('first cor 13 4')).toEqual(['1 Corinthians 13:4']);
+    expect(scan('I cor 13 4')).toEqual(['1 Corinthians 13:4']);
+    expect(scan('turn to 1 cor 13 4 for the reading')).toEqual(['1 Corinthians 13:4']);
+  });
+
+  // ── ranges: a space-separated verse start, with a same-chapter or colon-cross-chapter tail ─
+  it('same-chapter verse range via space start + dash end', () => {
+    expect(scan('john 3 16-18')).toEqual(['John 3:16–18']);
+    expect(scan('1 cor 13 4-7')).toEqual(['1 Corinthians 13:4–7']);
+  });
+  it('cross-chapter range with a space start and a colon range-end', () => {
+    expect(scan('john 3 16-4:2')).toEqual(['John 3:16–4:2']);
+  });
+
+  // ── overlap & non-overlap: the longer space-verse span wins; multiple refs all survive ─────
+  it('two space-separated verses in one sentence both survive', () => {
+    expect(scan('john 3 16 and romans 8 28')).toEqual(['John 3:16', 'Romans 8:28']);
+    expect(scan('Ephesians 2 8 and Revelation 22 20')).toEqual(['Ephesians 2:8', 'Revelation 22:20']);
+  });
+  it('a prefixed numbered-John space-verse yields ONLY the epistle (longer span wins)', () => {
+    expect(scan('What does 1 John 4 8 mean?')).toEqual(['1 John 4:8']);
+    // Single-chapter books display without the chapter — the canonical form, not a bug.
+    expect(scan('read 2 John 1 6')).toEqual(['2 John 6']);
+    expect(scan('on 3 John 1 4')).toEqual(['3 John 4']);
+  });
+  it('the bare Gospel alias space-verse is untouched', () => {
+    expect(scan('John 4 8')).toEqual(['John 4:8']);
+  });
+
+  // ── regression controls unique to this pass (colon/multiword/digit-attached forms are already
+  //    pinned by the M3 / multiword / digit-attached describe blocks above) ───────────────────
+  it('control: a bare chapter in prose stays a chapter (no false verse)', () => {
+    expect(scan('Isaiah 53 the suffering servant')).toEqual(['Isaiah 53']);
+    expect(scan('1 Corinthians 13 the greatest of these is love')).toEqual(['1 Corinthians 13']);
+  });
+  it('control: a chapter followed by "and <number>" stays a chapter (no false verse)', () => {
+    expect(scan('Genesis 1 and 2')).toEqual(['Genesis 1']);
+  });
+
+  // ── precision guards: book word + two numbers that die in parseRef, so [] ────────────────────
+  it.each([
+    ['unknown book word, two numbers', 'the dog 3 4 barked'],
+    ['ordinary word, two adjacent numbers', 'top 6 7 results returned'],
+    ['non-book "at" before two numbers', 'at 3 16 the meeting started'],
+    ['ambiguous numbered book (1/2 Peter)', 'peter 2 3 letters'],
+    ['ambiguous numbered book (1/2 Cor, no ordinal)', 'cor 13 4 reference'],
+    ['ambiguous prefix (John/Joel)', 'see jo 3 16 again'],
+  ])('yields nothing for %s', (_label, text) => {
+    expect(scan(text)).toEqual([]);
+  });
+
+  it('has a known limit, recorded rather than hidden: a real book word + space verse in non-citation prose resolves', () => {
+    // scanReferences finds references; it does not judge whether they are citations — that is
+    // isExplicitCitation's job downstream. A book word beside a digit has always resolved; the
+    // space-verse pass makes "John 3" → "John 3:16" here, a lateral move on a case that was
+    // ALREADY a false positive before this fix (it returned "John 3"). Pinned so the next person
+    // meets the limit as a known one, not a surprise — the uncited channel and the ≥2-tradition
+    // floor are what stop a stray anchor mattering, same as the M3 colon-form limit recorded in
+    // web/test/user-corpus/anchor.test.ts "has a known limit".
+    expect(scan('see john 3 16 people came')).toEqual(['John 3:16']);
+  });
+});
