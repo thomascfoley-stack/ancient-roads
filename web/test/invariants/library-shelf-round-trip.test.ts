@@ -31,13 +31,19 @@ import { sweepQaResidue } from '../helpers/qa-residue';
 ensureDbEnv();
 
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
-  requireUser: async () => {
-    if (!signedIn) throw new Error('Unauthorized');
-    return signedIn;
-  },
-  currentUser: async () => signedIn,
-}));
+vi.mock('@/lib/session', async () => {
+  // authFailureResponse lives in lib/auth-failure, which imports nothing but api-error — so the
+  // real one can be used here without loading the Neon Auth SDK.
+  const real = await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure');
+  return {
+    requireUser: async () => {
+      if (!signedIn) throw new Error('Unauthorized');
+      return signedIn;
+    },
+    currentUser: async () => signedIn,
+    authFailureResponse: real.authFailureResponse,
+  };
+});
 
 // The REAL shipped handlers.
 import { DELETE, GET, PUT } from '@/app/api/work/[slug]/shelf/route';
