@@ -33,8 +33,13 @@ describe('D11 — re-uploading the bytes repairs a row whose blob was never stor
     const src = await import('node:fs').then((fs) =>
       fs.readFileSync(new URL('../../src/app/api/user-corpus/upload/route.ts', import.meta.url), 'utf8'));
     expect(src).toMatch(/const healable = existing && isHealable\(existing\)/);
+    // K1: the route must consult the attempt budget, not just healability.
+    expect(src, 'the heal must be planned against MAX_ATTEMPTS').toMatch(/healPlan\(existing, MAX_ATTEMPTS\)/);
+    expect(src, 'an exhausted document must not be requeued').toMatch(/plan\.action === 'exhausted'/);
+    expect(src, 'and the reset must be the plan\u2019s, never unconditional')
+      .toMatch(/requeueForRetry\(user\.id, existing\.id, \{ resetAttempts: plan\.resetAttempts \}\)/);
     expect(src, 'the bytes must actually be stored onto the existing row').toMatch(/putUserDocument\(user\.id, existing\.id, bytes\)/);
-    expect(src, 'and the row re-queued').toMatch(/requeueForRetry\(user\.id, existing\.id\)/);
+
     expect(src, 'and the drain kicked').toMatch(/kickDrain\(user\.id\)/);
   });
 });

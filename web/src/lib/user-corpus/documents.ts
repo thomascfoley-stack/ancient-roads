@@ -252,11 +252,54 @@ export function isHealable(doc: { blobUrl: string | null; status: string }): boo
   return !doc.blobUrl || doc.status === 'failed';
 }
 
-export async function requeueForRetry(userId: string, id: string): Promise<boolean> {
+/** What a re-upload of identical bytes should actually DO to an existing healable document. */
+export type HealPlan =
+  | { action: 'store-and-requeue'; resetAttempts: true }
+  | { action: 'requeue'; resetAttempts: false }
+  | { action: 'exhausted' };
+
+/**
+ * K1 — the attempt ceiling, which D11's first cut cleared on every re-upload.
+ *
+ * `requeueForRetry` zeroes `attempts`, and MAX_ATTEMPTS is what retires a permanently-failing
+ * document (claimNext will not claim at the ceiling; reapExhausted retires it). Routing every
+ * re-upload through that reset meant a file failing during EMBEDDING could be re-uploaded
+ * indefinitely, paying for a parse and a full embedding run each cycle, bounded only by the upload
+ * rate limiter. Before D11 the gesture was a silent no-op — which is what D11 existed to fix — so
+ * the repair has to keep the gesture working WITHOUT refilling the budget.
+ *
+ * The distinction:
+ *  - blobUrl NULL: the prior attempts were burned by a condition now repaired (the blob put threw,
+ *    so the drain failed the row for "not stored"). They bought nothing. Reset — this is the first
+ *    real attempt.
+ *  - failed WITH a blob, budget left: requeue, do NOT reset. Spend what remains.
+ *  - failed WITH a blob, budget spent: do NOT requeue. Requeueing without a reset would mark the
+ *    row 'queued' when claimNext's predicate (`attempts < MAX_ATTEMPTS`) can never claim it — a
+ *    silent stall, which is worse than the loop it replaces.
+ */
+export function healPlan(
+  doc: { blobUrl: string | null; status: string; attempts: number },
+  maxAttempts: number,
+): HealPlan {
+  if (!doc.blobUrl) return { action: 'store-and-requeue', resetAttempts: true };
+  if (doc.attempts >= maxAttempts) return { action: 'exhausted' };
+  return { action: 'requeue', resetAttempts: false };
+}
+
+export async function requeueForRetry(
+  userId: string,
+  id: string,
+  opts: { resetAttempts?: boolean } = {},
+): Promise<boolean> {
+  // K1: default TRUE, so the explicit Retry button keeps its fresh budget — pressing Retry is a
+  // deliberate act on one document. The re-upload path passes false, because re-sending identical
+  // bytes is not new information and must not refill the ceiling.
+  const resetAttempts = opts.resetAttempts ?? true;
   const claimed: string[] = [...CLAIMED_STATUSES];
   const [rows] = await runAsUser(userId, (sql) => [
     sql`UPDATE user_documents
-           SET status = 'queued', parse_error = NULL, attempts = 0,
+           SET status = 'queued', parse_error = NULL,
+               attempts = CASE WHEN ${resetAttempts} THEN 0 ELSE attempts END,
                claimed_at = NULL, updated_at = now()
          WHERE user_id = ${userId} AND id = ${id}
            AND NOT (status = ANY(${claimed})
