@@ -1,5 +1,22 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-29 — DEPLOYED: `9028208` live on ancientpaths.app
+
+**What shipped:** the full UX overnight sweep — F-112/F-121/F-162 residuals, then
+F-119/F-120/F-125/F-134/F-143/F-144/F-145/F-164/F-157/F15. Thirty files, 455 insertions.
+
+**Deploy:** `dpl_2nzPKMZzUuHmgDX9dn1zV8f5YVhY` · receipt `docs/evidence/deploys/deploy-9028208-2026-08-29T21-51-20Z.txt`.
+`rootDirectory` flipped `'web'` → `null` → deployed → restored to `'web'` per the owner-ruled procedure.
+
+**Verified live:** `/` 200, `/gate` 200, `/search` 307 → gate (SEC-1 site-password wall holds).
+
+**Still open (tabled in LAUNCH_BLOCKERS.md):** SEC-1 public-launch decision, D3 blob credential,
+C6 auth waves, front-matter gating, `app_runtime` REVOKE, K-2 CCEL repair, A9 residuals, F-151
+Jamieson re-ingest, G10 fork.
+
+**Pre-existing test failures (red before this session):** `annotation-write-failure.test.tsx:241`,
+`date-locale-and-plan-title.test.ts:105`, `study-editor.test.tsx` (2).
+
 ## 2026-08-29 — UX fix pass residuals closed (F-112, F-121, F-162)
 
 Three items left open by the 2026-08-25 fix pass, verified by Claude Code's runtime pass
