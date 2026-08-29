@@ -54,8 +54,9 @@ export async function claimReadingsStart(userId: string, documentId: string, sta
           readings_status = 'pending', readings_progress = 0, readings_step = NULL,
           readings_error = NULL, updated_at = now()
         WHERE user_id = ${userId} AND id = ${documentId}
-          AND NOT (readings_status IN ('pending', 'running')
-                   AND updated_at > now() - (${Math.floor(staleMs / 1000)} || ' seconds')::interval)
+          AND (readings_status IS NULL
+               OR readings_status NOT IN ('pending', 'running')
+               OR updated_at <= now() - (${Math.floor(staleMs / 1000)} || ' seconds')::interval)
         RETURNING id`,
   ]);
   return (rows as unknown[]).length > 0;
