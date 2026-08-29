@@ -45,9 +45,16 @@ export async function GET(req: NextRequest): Promise<Response> {
   // between an authenticated account and an unbounded embedding bill.
   const limit_ = await checkCorpusSearchRateLimit(user.id);
   if (!limit_.ok) {
-    return apiError(limit_.limited === 'day' ? 'RATE_LIMIT_DAY' : 'RATE_LIMIT_MINUTE', {
-      retryAfterSec: limit_.retryAfterSec,
-    });
+    // 'unavailable' = the limiter DB itself failed (fail-closed in rate-limit.ts) — surface it as
+    // 503 UPSTREAM_UNAVAILABLE, not 429, so a limiter outage isn't misclassified as a user quota
+    // hit by callers that branch on the status code. Same three-way split as /api/ask.
+    const code =
+      limit_.limited === 'unavailable'
+        ? 'UPSTREAM_UNAVAILABLE'
+        : limit_.limited === 'day'
+          ? 'RATE_LIMIT_DAY'
+          : 'RATE_LIMIT_MINUTE';
+    return apiError(code, { retryAfterSec: limit_.retryAfterSec });
   }
 
   const params = req.nextUrl.searchParams;
