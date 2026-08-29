@@ -354,7 +354,7 @@ function validate(segments: Segment[], book: Book, opts: ParseOptions): string |
       seg.verseStart !== undefined &&
       seg.verseEnd !== undefined &&
       (seg.endChapter ?? seg.chapter) === seg.chapter &&
-      seg.verseEnd <= seg.verseStart
+      seg.verseEnd < seg.verseStart
     ) {
       return `Backwards range: ${seg.verseStart}-${seg.verseEnd}`;
     }
