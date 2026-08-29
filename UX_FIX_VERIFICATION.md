@@ -151,3 +151,32 @@ Not a criticism — the brief did not ask for all of them — but they should no
    its own commit.
 2. **F-112 is the one to re-do before anything else ships**, because it is a security behaviour that
    currently reads as fixed in the summary and is not fixed in the product.
+
+---
+
+## Addendum — 2026-08-29: the two open confirmations, closed
+
+Both gaps flagged above have now been run, on a rebuilt production build of the same change set
+(`npx next build` → exit 0). **The change set is byte-identical to the one verified on 2026-08-25**
+(21 files, 536 insertions, 93 deletions), so all results above stand unchanged.
+
+- **F-155 / F-088, the search-result path** — previously unverifiable because the new `/search`
+  throttle was still holding from the F-168 test. Now run: a result linked to
+  `/work/gill-song#s63` lands at **`#s63`**, anchor **66px from the top, in view**, `main.scrollTop`
+  180. Both entry points into a work — search results and history results — now land on the cited
+  passage. **Fully verified fixed.**
+- **F-162, the genuinely-empty case** — previously reasoned from the code branch rather than run.
+  Now run against **1 Chronicles 1:31**, a verse with no commentary coverage and a *successful*
+  fetch: the panel shows **"No commentary on this verse yet."** with **no `role="alert"`**. The two
+  states are correctly distinguished in both directions. The residual defect stands: the failure
+  message still directs the reader to a Retry control that does not exist when only the commentary
+  fetch fails.
+
+### Recovery note
+
+The fix pass was left uncommitted in `/private/tmp/ap-uxsweep/repo`, and that worktree was destroyed
+by a `/tmp` cleanup between 2026-08-25 and 2026-08-29 — the exact risk flagged in §6 above. The
+source files survived in the orphaned directory; they were recovered into a fresh worktree, confirmed
+byte-identical to the backup taken during verification, rebuilt clean, and **committed and pushed**
+(`1827777`, authored-by note in the commit message: written by the fix pass, committed by the
+verifier to preserve it). Nothing was lost.
