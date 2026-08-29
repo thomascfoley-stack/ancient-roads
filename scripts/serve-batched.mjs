@@ -37,7 +37,7 @@ import readline from 'node:readline';
 import { isAllowedLicense } from '../src/ingest/allowed-licenses.mjs';
 import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mjs';
 import { assertPublishTarget, assertStrongTls } from './lib/publish-flip-guard.mjs';
-import { isMustNotServe } from './lib/served-corpus-authors.mjs';
+import { isServingBanned } from './lib/served-corpus-authors.mjs';
 
 const val = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=').slice(1).join('=');
 const has = (n) => process.argv.includes(`--${n}`);
@@ -131,7 +131,11 @@ try {
   const unpublished = src.filter((r) => r.status !== 'published');
   const badLicense = src.filter((r) => !isAllowedLicense(r.license));
   const badProv = src.filter((r) => r.url && forbiddenProvenanceDomain(r.url) !== null);
-  const vetoed = src.filter((r) => isMustNotServe(r.author));
+  // Surname-aware, identical to publish-flip's flip-time gate: `sources.author` is surname-first
+  // ("Chesterton, Gilbert Keith"), which `isMustNotServe()` cannot see. `isServingBanned` applies
+  // the surname rule AND its ADR-112 per-work / reviewed-clearance ways out, so this gate and
+  // publish-flip.mjs agree in every format (this script is the served writer for --status-only).
+  const vetoed = src.filter((r) => isServingBanned(r.author, r.slug));
   const badSections = (await client.query(
     `SELECT DISTINCT s.slug, sec.source_url AS url FROM sections sec JOIN sources s ON s.id = sec.source_id
       WHERE s.slug = ANY($1) AND sec.source_url IS NOT NULL`, [slugs]))

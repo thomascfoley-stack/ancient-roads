@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { isAllowedLicense } from '../src/ingest/allowed-licenses.mjs';
 import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mjs';
 import { assertDevOnlyTarget } from '../src/ingest/dev-only-target.mjs';
-import { isMustNotServe } from './lib/served-corpus-authors.mjs';
+import { isServingBanned } from './lib/served-corpus-authors.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_TYPES = ['sermon', 'theology'];
@@ -95,7 +95,10 @@ try {
   const excluded = src.filter((r) => r.status !== 'published');
   const badLicense = published.filter((r) => !isAllowedLicense(r.license));
   const badProv = published.filter((r) => r.url && forbiddenProvenanceDomain(r.url) !== null);
-  const vetoed = published.filter((r) => isMustNotServe(r.author));
+  // Surname-aware, identical to publish-flip's flip-time gate: `sources.author` is surname-first,
+  // which `isMustNotServe()` cannot see. `isServingBanned` applies the surname rule AND its
+  // ADR-112 per-work / reviewed-clearance ways out, so this gate and publish-flip.mjs agree.
+  const vetoed = published.filter((r) => isServingBanned(r.author, r.slug));
 
   const stops = [];
   if (badLicense.length) stops.push(`licence not allowed: ${badLicense.map((r) => `${r.slug}=${r.license}`).join(', ')}`);

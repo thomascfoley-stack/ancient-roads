@@ -8,6 +8,7 @@ export declare const REVIEWED_SURNAME_CLEARANCES: Record<string, string>;
 export declare function isMustNotServe(author: unknown): boolean;
 export declare function authorSurnameLooksMustNotServe(author: unknown): boolean;
 export declare function isRulingAdmittedWorkSlug(slug: unknown): boolean;
+export declare function isServingBanned(author: unknown, work: unknown): boolean;
 export interface ServedAuthorOffender {
   author: string;
   entries: number;
