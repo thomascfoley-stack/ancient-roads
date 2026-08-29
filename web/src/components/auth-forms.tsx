@@ -276,10 +276,29 @@ export function AuthForm({ path }: { path: AuthMode }) {
         throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
       }
       // Throws on failure; curated per-path in the catch (same dead-`error` mechanism as above).
-      // @ts-expect-error The installed beta SDK types omit `revokeOtherSessions` on resetPassword,
-      // but the server honours it. Remove this once the types catch up.
-      await authClient.resetPassword({ newPassword: password, token, revokeOtherSessions: true });
-      router.push('/auth/sign-in');
+      await authClient.resetPassword({ newPassword: password, token });
+
+      // F-112 — the hosted resetPassword endpoint does NOT revoke other sessions (verified
+      // 2026-08-25: `revokeOtherSessions: true` is silently dropped). Do it explicitly: sign in
+      // with the new password, then revoke every session that is not this one. If the account is
+      // still unverified the sign-in throws EMAIL_NOT_CONFIRMED — the password is already reset,
+      // so send them through the verification flow rather than leaving them stranded.
+      try {
+        await authClient.signIn.email({ email, password });
+        await authClient.revokeOtherSessions();
+        router.push('/home');
+        router.refresh();
+      } catch (signInErr) {
+        if (authFailure(signInErr)?.code === EMAIL_NOT_CONFIRMED) {
+          setVerifyFor(email);
+          return;
+        }
+        // The reset succeeded; only the automatic sign-in or revocation failed. Send them to
+        // sign-in manually rather than pretending the whole thing failed.
+        router.push('/auth/sign-in');
+        router.refresh();
+      }
+      return;
     } catch (e) {
       // K-5 — an unverified reader supplied the RIGHT password and was told it was wrong. That
       // message is protective for a bad password and simply false here, and it sent people to
@@ -423,19 +442,17 @@ export function AuthForm({ path }: { path: AuthMode }) {
           </div>
         )}
 
-        {path !== 'reset-password' && (
-          <div>
-            <label htmlFor="email" className={label}>Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              className={`mt-1.5 ${field}`}
-            />
-          </div>
-        )}
+        <div>
+          <label htmlFor="email" className={label}>Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            className={`mt-1.5 ${field}`}
+          />
+        </div>
 
         {path !== 'forgot-password' && (
           <div>

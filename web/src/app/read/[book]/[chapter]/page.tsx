@@ -417,6 +417,15 @@ export default function ReaderPage() {
     return all.filter((e) => e.verseStart <= study.verse && study.verse <= e.verseEnd);
   }, [study, commentaryCache, commentaryKey]);
   const studyEntriesFailed = study ? commentaryFailed.has(commentaryKey) : false;
+  // F-162 — the panel's own retry: clear the failure mark so the prefetch effect re-runs.
+  const retryCommentaries = useCallback(() => {
+    setCommentaryFailed((prev) => {
+      if (!prev.has(commentaryKey)) return prev;
+      const next = new Set(prev);
+      next.delete(commentaryKey);
+      return next;
+    });
+  }, [commentaryKey]);
 
   const studyVerseText = study
     ? data?.verses.find((v) => v.verse === study.verse)?.text ?? ''
@@ -636,6 +645,7 @@ export default function ReaderPage() {
           verseText={studyVerseText}
           entries={studyEntries}
           entriesLoadFailed={studyEntriesFailed}
+          onRetryCommentaries={retryCommentaries}
           originalWords={studyWords}
           lang={original?.lang ?? null}
           defaultTab={study.tab}

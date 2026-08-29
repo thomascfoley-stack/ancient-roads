@@ -1,5 +1,37 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-29 — UX fix pass residuals closed (F-112, F-121, F-162)
+
+Three items left open by the 2026-08-25 fix pass, verified by Claude Code's runtime pass
+(`UX_FIX_VERIFICATION.md`). Static gates only; runtime verification handed to Claude Code.
+
+**F-112 — password reset now revokes other sessions.** The first pass passed
+`revokeOtherSessions: true` to `authClient.resetPassword` behind a `@ts-expect-error`; the hosted
+better-auth server silently drops the unknown field (session count 7 → 7, pre-reset cookie still
+authenticates). Fixed by doing it explicitly: the reset form now carries Email, and after a
+successful reset the client signs in with the new password and calls
+`authClient.revokeOtherSessions()`. If the account is unverified the sign-in throws
+`EMAIL_NOT_CONFIRMED` and the reader lands in the verification flow rather than stranded.
+
+**F-121 — clear-then-recolour keeps only the new colour.** The first pass aborted the pending
+verse-level DELETE, which saved the new span but left the old one on the server (2 rows where 1
+was expected). Fixed by sequencing instead of aborting: the clear is marked superseded (so its
+rollback cannot clobber the new span) but allowed to finish, and the new highlight's POST awaits
+the clear's `settled` promise before it is issued.
+
+**F-162 — the commentary-failure panel has its own Retry.** The first pass replaced the lying
+empty-state with "The commentaries couldn't be loaded" but directed the reader to a chapter-level
+Retry that does not render when only the commentary fetch fails. Fixed by threading an
+`onRetryCommentaries` callback from the reader page into `StudyPanel` → `CommentariesTab`, where
+a "Try again" button clears the chapter's failure mark so the prefetch effect re-runs.
+
+**Tests:** `web/test/auth-verification-feedback.test.tsx` updated to fill the new Email field on
+the reset form. All auth, study-panel, and annotation-write suites pass except two pre-existing
+failures (`annotation-write-failure.test.tsx:241` and `date-locale-and-plan-title.test.ts:105`),
+both red before this change.
+
+`npx tsc --noEmit`, `npm run build`, `npm run lint`, `npm run typecheck` — all green.
+
 ## 2026-08-24 — auth hydration FIXED and LIVE (`90becf1`)
 
 **Cause:** `AuthForm` called `useSearchParams()`, which forces it under a `<Suspense>` boundary —

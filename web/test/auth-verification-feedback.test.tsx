@@ -191,6 +191,8 @@ describe('the same dead-`error` mechanism on the other auth surfaces', () => {
     // The token now comes from the real URL, which is what the component reads.
     window.history.replaceState({}, '', '/auth/reset-password?token=tok_123');
     render(<AuthForm path="reset-password" />);
+    // F-112 — the reset form now carries Email too (needed to sign in and revoke other sessions).
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'reader@example.com' } });
     // this surface labels the field "New password"
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'a-long-enough-password' } });
     const submit = document.querySelector('button[type="submit"]');

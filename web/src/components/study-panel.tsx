@@ -31,6 +31,7 @@ export function StudyPanel({
   verseText,
   entries,
   entriesLoadFailed = false,
+  onRetryCommentaries,
   originalWords,
   lang,
   annotation,
@@ -51,6 +52,9 @@ export function StudyPanel({
   verseText: string;
   entries: CommentaryEntry[];
   entriesLoadFailed?: boolean;
+  /** F-162 — retry the commentary fetch for this chapter when `entriesLoadFailed` is true.
+   *  Absent = no retry control (the caller does not have one to offer). */
+  onRetryCommentaries?: () => void;
   originalWords: OWord[] | null;
   lang: 'hebrew' | 'greek' | null;
   annotation: AnnotationControls;
@@ -238,7 +242,7 @@ export function StudyPanel({
 
         {/* Tab content */}
         <div className="min-h-[30vh] flex-1 overflow-y-auto">
-          {tab === 'commentaries' && <CommentariesTab entries={entries} loadFailed={entriesLoadFailed} />}
+          {tab === 'commentaries' && <CommentariesTab entries={entries} loadFailed={entriesLoadFailed} onRetry={onRetryCommentaries} />}
           {tab === 'word' && <WordTab words={originalWords} lang={lang} focusIdx={focusWordIdx} selection={selection} />}
           {tab === 'notes' && <NotesTab annotation={annotation} />}
           {/* PRAY — block PR1a. An ACTION, not a fourth tab: commentaries/word/notes are facets of
@@ -418,7 +422,7 @@ function HighlightRow({
   );
 }
 
-function CommentariesTab({ entries, loadFailed }: { entries: CommentaryEntry[]; loadFailed?: boolean }) {
+function CommentariesTab({ entries, loadFailed, onRetry }: { entries: CommentaryEntry[]; loadFailed?: boolean; onRetry?: () => void }) {
   // Register wall (reader side): sermons, theology/confessions, and hymns/poems are
   // DISTINCT registers — each renders in its OWN labeled section, never blended
   // into (or displacing) the exegetical voices (A6 line-by-line 2026-07-17 landed
@@ -438,7 +442,17 @@ function CommentariesTab({ entries, loadFailed }: { entries: CommentaryEntry[]; 
       return (
         <div role="alert" className="px-5 py-10 text-center">
           <p className="mb-1 text-sm text-stone-500 dark:text-stone-400">The commentaries couldn&rsquo;t be loaded.</p>
-          <p className="text-xs text-stone-500 dark:text-stone-400">Close the panel and use Retry at the top of the chapter.</p>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-3 inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
+            >
+              Try again
+            </button>
+          ) : (
+            <p className="text-xs text-stone-500 dark:text-stone-400">Close the panel and use Retry at the top of the chapter.</p>
+          )}
         </div>
       );
     }
