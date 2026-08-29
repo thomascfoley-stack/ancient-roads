@@ -17,7 +17,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { IN_COPYRIGHT_SUSPECTS, MUST_NOT_SERVE, MUST_NOT_SERVE_SURNAMES, MUST_NOT_SERVE_WORK_EXCEPTIONS, ADR112_CUTOFF_YEAR, REVIEWED_SURNAME_CLEARANCES, isMustNotServe, scanServedCorpusAuthors } from '../../scripts/lib/served-corpus-authors.mjs';
+import { IN_COPYRIGHT_SUSPECTS, MUST_NOT_SERVE, MUST_NOT_SERVE_SURNAMES, MUST_NOT_SERVE_WORK_EXCEPTIONS, ADR112_CUTOFF_YEAR, REVIEWED_SURNAME_CLEARANCES, isMustNotServe, isServingBanned, scanServedCorpusAuthors } from '../../scripts/lib/served-corpus-authors.mjs';
 import { isMustNotServeAuthor } from '../../web/src/lib/legal-corpus';
 import { MUST_NOT_SERVE_AUTHORS } from '../../web/src/lib/legal-corpus';
 import {
@@ -216,5 +216,87 @@ describe('the surname-token rule — the chesterton-preexistence hole, closed', 
   it('token boundaries hold — substrings are not surnames', () => {
     const r = scanServedCorpusAuthors(fixture([{ author: 'Lewisham' }, { author: 'Chestertonfield, John' }, { author: 'Wilsonian, Mark' }]));
     expect(r.offenders).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE FLIP-TIME SERVING BAN — the embeddings-surface twin of the scan above.
+//
+// `publish-flip.mjs` is the ONLY gate that runs at flip time for the embeddings surface, and it
+// used to call `isMustNotServe()` alone — which is forename-first / exact-match only. Embeddings
+// store authors surname-first ("Chesterton, Gilbert Keith"; "Calvin, John" is a served voice in
+// production, licensing.test.ts:184), so a vetoed author in 'Surname, Given' form PASSED the flip
+// gate and became served until a later CI invariant caught it: the 2026-08-18 chesterton-preexistence
+// incident, 25 served rows. `isServingBanned` mirrors the static surface's decision (must ||
+// surnameHit) with the SAME two ways out, so the flip gate and the deploy gate agree in any format.
+// Pure, so this runs in the same CI job as the scan parity tests rather than only against a DB.
+describe('the flip-time serving ban — surname-first detected, ADR-112 admissions kept', () => {
+  // THE INCIDENT, PINNED. If this ever goes false the flip gate is blind to surname-first again.
+  it('bans a surname-first author the exact/prefix rules miss (the incident)', () => {
+    // SEED: revert isServingBanned to `return isMustNotServe(author)` -> RED (all four go false).
+    expect(isServingBanned('Chesterton, Gilbert Keith', 'chesterton-preexistence')).toBe(true); // the incident
+    expect(isServingBanned('Lewis, C.S.', 'lewis-screwtape')).toBe(true);
+    expect(isServingBanned('Tolkien, J.R.R.', 'tolkien-lotr')).toBe(true);
+    expect(isServingBanned('Wilson, Douglas', 'wilson-works')).toBe(true);
+  });
+
+  it('still bans forename-first, exact, and prefixed forms (no regression on the old path)', () => {
+    // SEED: drop the `isMustNotServe(author)` short-circuit from isServingBanned -> RED on exact.
+    expect(isServingBanned('GK Chesterton', 'chesterton-anything')).toBe(true);
+    expect(isServingBanned('CS Lewis', 'lewis-anything')).toBe(true);
+    expect(isServingBanned('CS Lewis  (via the character Screwtape, a devil)', 'lewis-screwtape')).toBe(true);
+    expect(isServingBanned('Origen of Alexandria', 'origen-on-john')).toBe(true);
+    expect(isServingBanned('Tyndale Study Notes', 'tyndale-notes')).toBe(true);
+    expect(isServingBanned("Jerome's translation of X", 'jerome-something')).toBe(true);
+  });
+
+  it('admits a RULING-ADMITTED work of a vetoed surname (ADR-112 keeps its 21)', () => {
+    // A regression here would BLOCK the admitted Chesterton works from ever being served via the
+    // flip gate, while the static-JSON deploy gate admits them — the two surfaces disagreeing.
+    // SEED: drop the `!isRulingAdmittedWorkSlug(work)` term from isServingBanned -> RED.
+    expect(isServingBanned('Chesterton, Gilbert Keith', 'chesterton-orthodoxy')).toBe(false);     // 1908
+    expect(isServingBanned('Chesterton, Gilbert Keith', 'chesterton-everlasting')).toBe(false);   // 1925
+    expect(isServingBanned('Chesterton, Gilbert Keith', 'chesterton-thursday')).toBe(false);      // 1908
+  });
+
+  it('refuses an UNADMITTED work of a vetoed surname (chesterton-aquinas, 1933 — ADR-112 cut)', () => {
+    // SEED: make isRulingAdmittedWorkSlug return true unconditionally -> RED.
+    expect(isServingBanned('Chesterton, Gilbert Keith', 'chesterton-aquinas')).toBe(true);       // 1933, excluded
+    expect(isServingBanned('Chesterton, Gilbert Keith', 'chesterton-preexistence')).toBe(true);   // undated, fail closed
+  });
+
+  it('admits a reviewed SURNAME clearance (Bayly, Lewis — d.1631, not CS Lewis)', () => {
+    // The only surname-token hit in the measured static corpus; the same person can appear in the
+    // embeddings surface. A regression here blocks a public-domain bishop from serving.
+    // SEED: drop the `!(author in REVIEWED_SURNAME_CLEARANCES)` term from isServingBanned -> RED.
+    expect(isServingBanned('Bayly, Lewis', 'bayly-piety')).toBe(false);
+  });
+
+  it('a non-string work FAILS CLOSED on the admission (no slug, no ruling to cite)', () => {
+    // A row whose embeddings metadata lacks a work key cannot claim an ADR-112 admission — it must
+    // fail closed (banned). SEED: add `if (work == null || work === '') return false;` (admit
+    // un-keyed rows) to isServingBanned -> RED (all three go false).
+    expect(isServingBanned('Chesterton, Gilbert Keith', null)).toBe(true);
+    expect(isServingBanned('Chesterton, Gilbert Keith', '')).toBe(true);
+    expect(isServingBanned('Chesterton, Gilbert Keith', undefined)).toBe(true);
+  });
+
+  it('does not fire on unrelated authors, in either format', () => {
+    expect(isServingBanned('John Calvin', 'calvin-calcom01')).toBe(false);      // surname-first 'Calvin, John' is a served voice
+    expect(isServingBanned('Calvin, John', 'calvin-calcom01')).toBe(false);
+    expect(isServingBanned('Matthew Henry', 'matthew-henry')).toBe(false);
+    expect(isServingBanned('Augustine of Hippo', 'augustine-confessions')).toBe(false);
+    expect(isServingBanned('John Chrysostom', 'chrysostom-on-john')).toBe(false);
+  });
+
+  it('a null/empty author is NOT banned here — the flip gate owns that via its unattributed check', () => {
+    // isServingBanned intentionally returns false for an unattributable author so the flip gate's
+    // SEPARATE unattributed-author STOP owns that failure end-to-end (a row the ruling cannot be
+    // checked against fails closed by a louder, distinct path). If this ever returns true the
+    // unattributed STOP message goes stale and the two legs double-report.
+    // SEED: add an `author == null` branch returning true to isServingBanned -> RED on the message.
+    expect(isServingBanned(null, 'unknown')).toBe(false);
+    expect(isServingBanned('', 'unknown')).toBe(false);
+    expect(isServingBanned(undefined, 'unknown')).toBe(false);
   });
 });

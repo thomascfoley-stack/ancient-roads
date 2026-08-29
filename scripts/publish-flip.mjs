@@ -41,7 +41,7 @@ import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mj
 import { eligibility, flipDelta } from './lib/publish-flip-delta.mjs';
 import { assertPublishTarget, assertStrongTls, thayersEvidenceError, THAYERS_EVIDENCE_PATH } from './lib/publish-flip-guard.mjs';
 import { scrubCredentialText } from './lib/neon-connection.mjs';
-import { isMustNotServe } from './lib/served-corpus-authors.mjs';
+import { isServingBanned } from './lib/served-corpus-authors.mjs';
 
 const OWNER_ROLE = 'neondb_owner';
 const CONFIRM_WORD = 'publish';
@@ -562,21 +562,35 @@ try {
 
   // ── the serving gate: no must-not-serve author may enter the served set (forward only) ───
   // 2026-08-03 audit: the flip became the serving switch without inheriting any serving gate —
-  // the old wall was the slug simply never being typed into a routing list. The list is
-  // imported from served-corpus-authors.mjs (byte-equality-tested against the shipped
-  // legal-corpus.ts), never re-typed here. Directional per M7: a reverse only shrinks the
-  // served set and is never blocked.
+  // the old wall was the slug simply never being typed into a routing list. The decision is
+  // imported from served-corpus-authors.mjs (its lists byte-equality-tested against the shipped
+  // legal-corpus.ts and must-not-serve-audit.ts), never re-typed here. Directional per M7: a
+  // reverse only shrinks the served set and is never blocked.
+  //
+  // FORMAT-AGNOSTIC BY CONSTRUCTION (the chesterton-preexistence hole, closed). The embeddings
+  // surface stores authors surname-first ("Chesterton, Gilbert Keith", "Calvin, John" — the latter
+  // is a served voice in production, licensing.test.ts:184), and the prior gate called
+  // `isMustNotServe()` alone, which is exact/forename-first only — so a vetoed author in
+  // 'Surname, Given' form passed the flip gate and became served until a LATER CI invariant
+  // (served-veto-db.test.ts, format-agnostic) caught it. `isServingBanned` is the embeddings twin
+  // of `scanServedCorpusAuthors`: it applies the surname-token rule AND its two recorded ways out
+  // — an ADR-112 ruling admitting the WORK, a reviewed clearance of the PERSON — so the flip gate
+  // and the static-JSON deploy gate agree in every format. The work slug is fetched alongside the
+  // author because ADR-112 admits per-WORK; DISTINCT on author alone would lose that.
   if (!reverse && servedCol && servedTargets.length > 0) {
     const authors = await client.query(
-      `SELECT DISTINCT metadata->>'author' AS author FROM embeddings
+      `SELECT DISTINCT metadata->>'author' AS author, metadata->>'work' AS work FROM embeddings
         WHERE user_id IS NULL AND metadata->>'work' = ANY($1)`,
       [servedTargets],
     );
-    const banned = authors.rows.map((r) => r.author).filter((a) => isMustNotServe(a ?? ''));
+    const banned = authors.rows
+      .filter((r) => isServingBanned(r.author, r.work))
+      .map((r) => `${r.author ?? '(no author)'}${r.work ? ` (${r.work})` : ''}`);
     // NULL/missing author FAILS CLOSED (bylaw-4 refuter): a row this gate cannot attribute is a
     // row the ruling cannot be checked against, and every manifest work carries an author — a
     // NULL here is upstream data damage, not a benign gap. Serving unattributable text also
-    // breaks the product guarantee directly (quoted AND attributed).
+    // breaks the product guarantee directly (quoted AND attributed). `isServingBanned` returns
+    // false for a null author ON PURPOSE so this leg owns that failure mode end-to-end.
     const unattributed = authors.rows.some((r) => r.author === null || String(r.author).trim() === '');
     if (banned.length > 0 || unattributed) {
       await client.query('ROLLBACK');
