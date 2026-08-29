@@ -21,8 +21,26 @@ import { logEvent } from './observability';
 // unmetered. The site-gate throttle keeps failing OPEN, because there the password is still
 // required and locking real visitors out is the worse failure.
 
-const LIMIT_PER_MIN = Number(process.env.ASK_LIMIT_PER_MIN ?? 10);
-const LIMIT_PER_DAY = Number(process.env.ASK_LIMIT_PER_DAY ?? 100);
+// Fail-fast on the env-tunable limits. `Number(process.env.X ?? d)` turned a typo — "ten",
+// "1O", "10x" — into `NaN`, and `count > NaN` is always false, so one bad value silently
+// disabled EVERY limit on its endpoint (cbd09b1 et al.). Validate at module load so a
+// misconfiguration fails the boot with the offending name, rather than uncapping a paid
+// route. Same shape as messages/route.ts's `parseLimit` (D12), applied to operator config.
+export function parseRateLimitEnv(
+  raw: string | undefined | null,
+  defaultValue: number,
+  name: string,
+): number {
+  if (raw === undefined || raw === null) return defaultValue;
+  const n = Number(raw);
+  if (Number.isNaN(n) || !Number.isInteger(n) || n < 1) {
+    throw new Error(`Invalid rate limit: ${name}="${raw}" must be a positive integer`);
+  }
+  return n;
+}
+
+const LIMIT_PER_MIN = parseRateLimitEnv(process.env.ASK_LIMIT_PER_MIN, 10, 'ASK_LIMIT_PER_MIN');
+const LIMIT_PER_DAY = parseRateLimitEnv(process.env.ASK_LIMIT_PER_DAY, 100, 'ASK_LIMIT_PER_DAY');
 // GLOBAL daily ceiling across ALL users (2026-08-02 deep audit, H1). The per-user caps bound
 // what one account can spend; they bound the BILL only if accounts are scarce, and registration
 // is open with no allowlist. This is the backstop that makes the worst case finite: it is not a
@@ -35,7 +53,7 @@ const LIMIT_PER_DAY = Number(process.env.ASK_LIMIT_PER_DAY ?? 100);
 //
 // NOTE ON PRECEDENCE: this default is inert if `ASK_LIMIT_GLOBAL_PER_DAY` is set in the deployment
 // environment. Raising the number in code does nothing on a host where the variable already exists.
-const LIMIT_GLOBAL_PER_DAY = Number(process.env.ASK_LIMIT_GLOBAL_PER_DAY ?? 5_000);
+const LIMIT_GLOBAL_PER_DAY = parseRateLimitEnv(process.env.ASK_LIMIT_GLOBAL_PER_DAY, 5_000, 'ASK_LIMIT_GLOBAL_PER_DAY');
 /** The bucket key for the global cap. Not a user id — deliberately a constant. */
 const GLOBAL_BUCKET_USER = '__global__';
 
@@ -43,8 +61,8 @@ const GLOBAL_BUCKET_USER = '__global__';
 // the pre-launch site (SEC-1 open), and the check had no throttle — a wordlist could pick it
 // with no signal. Tight caps: a human types the password once or twice, so 10/min + 60/hour
 // per IP is generous for a human and hostile to a script. Env-tunable, no deploy needed.
-const GATE_LIMIT_PER_MIN = Number(process.env.GATE_LIMIT_PER_MIN ?? 10);
-const GATE_LIMIT_PER_HOUR = Number(process.env.GATE_LIMIT_PER_HOUR ?? 60);
+const GATE_LIMIT_PER_MIN = parseRateLimitEnv(process.env.GATE_LIMIT_PER_MIN, 10, 'GATE_LIMIT_PER_MIN');
+const GATE_LIMIT_PER_HOUR = parseRateLimitEnv(process.env.GATE_LIMIT_PER_HOUR, 60, 'GATE_LIMIT_PER_HOUR');
 
 // Auth-proxy throttle (owner directive 2026-08-15; finding: docs/UX_REMEDIATION.md §9,
 // filed 2026-08-08). Since the Neon Auth cutover (ADR-107/108), better-auth runs on
@@ -64,10 +82,10 @@ const GATE_LIMIT_PER_HOUR = Number(process.env.GATE_LIMIT_PER_HOUR ?? 60);
 // barrier, and failing closed here would turn a limiter-DB hiccup into a total sign-in
 // outage while Neon's hosted auth service is still up. Every fail-open is logged
 // (rate_limit_fail_open) so a silent open door is at least a loud one.
-const AUTH_LIMIT_PER_MIN = Number(process.env.AUTH_LIMIT_PER_MIN ?? 10);
-const AUTH_LIMIT_PER_HOUR = Number(process.env.AUTH_LIMIT_PER_HOUR ?? 60);
-const AUTH_EMAIL_LIMIT_PER_MIN = Number(process.env.AUTH_EMAIL_LIMIT_PER_MIN ?? 5);
-const AUTH_EMAIL_LIMIT_PER_HOUR = Number(process.env.AUTH_EMAIL_LIMIT_PER_HOUR ?? 30);
+const AUTH_LIMIT_PER_MIN = parseRateLimitEnv(process.env.AUTH_LIMIT_PER_MIN, 10, 'AUTH_LIMIT_PER_MIN');
+const AUTH_LIMIT_PER_HOUR = parseRateLimitEnv(process.env.AUTH_LIMIT_PER_HOUR, 60, 'AUTH_LIMIT_PER_HOUR');
+const AUTH_EMAIL_LIMIT_PER_MIN = parseRateLimitEnv(process.env.AUTH_EMAIL_LIMIT_PER_MIN, 5, 'AUTH_EMAIL_LIMIT_PER_MIN');
+const AUTH_EMAIL_LIMIT_PER_HOUR = parseRateLimitEnv(process.env.AUTH_EMAIL_LIMIT_PER_HOUR, 30, 'AUTH_EMAIL_LIMIT_PER_HOUR');
 
 // The credential-bearing auth subpaths (hosted better-auth's route names, as they arrive
 // at /api/auth/<segment>/...). Session reads (get-session, list-sessions, ...) are NOT
@@ -183,8 +201,8 @@ export async function checkAskRateLimit(userId: string, sql: Sql = getDb()): Pro
 // worse outcome. Until 2026-08-17 this route had NO limiter at all and the wallet invariant was
 // green over it, because `routeSpendsMoney` matched `teach()` alone while being named for spend
 // in general (pre-deploy audit finding 1).
-const CORPUS_SEARCH_PER_MIN = Number(process.env.CORPUS_SEARCH_LIMIT_PER_MIN ?? 30);
-const CORPUS_SEARCH_PER_DAY = Number(process.env.CORPUS_SEARCH_LIMIT_PER_DAY ?? 500);
+const CORPUS_SEARCH_PER_MIN = parseRateLimitEnv(process.env.CORPUS_SEARCH_LIMIT_PER_MIN, 30, 'CORPUS_SEARCH_LIMIT_PER_MIN');
+const CORPUS_SEARCH_PER_DAY = parseRateLimitEnv(process.env.CORPUS_SEARCH_LIMIT_PER_DAY, 500, 'CORPUS_SEARCH_LIMIT_PER_DAY');
 
 export async function checkCorpusSearchRateLimit(userId: string, sql: Sql = getDb()): Promise<RateLimitResult> {
   try {
@@ -225,8 +243,8 @@ export async function checkCorpusSearchRateLimit(userId: string, sql: Sql = getD
 // paid endpoint is the worse outcome (the ask limiter's header).
 //
 // Exported so the wallet/H5 suites pin the shipped numbers rather than restating them.
-export const CORPUS_UPLOAD_PER_MIN = Number(process.env.CORPUS_UPLOAD_LIMIT_PER_MIN ?? 10);
-export const CORPUS_UPLOAD_PER_DAY = Number(process.env.CORPUS_UPLOAD_LIMIT_PER_DAY ?? 100);
+export const CORPUS_UPLOAD_PER_MIN = parseRateLimitEnv(process.env.CORPUS_UPLOAD_LIMIT_PER_MIN, 10, 'CORPUS_UPLOAD_LIMIT_PER_MIN');
+export const CORPUS_UPLOAD_PER_DAY = parseRateLimitEnv(process.env.CORPUS_UPLOAD_LIMIT_PER_DAY, 100, 'CORPUS_UPLOAD_LIMIT_PER_DAY');
 
 export async function checkCorpusUploadRateLimit(userId: string, sql: Sql = getDb()): Promise<RateLimitResult> {
   try {
@@ -254,8 +272,8 @@ export async function checkCorpusUploadRateLimit(userId: string, sql: Sql = getD
   }
 }
 
-const HISTORY_SEARCH_PER_MIN = Number(process.env.HISTORY_SEARCH_LIMIT_PER_MIN ?? 30);
-const HISTORY_SEARCH_PER_DAY = Number(process.env.HISTORY_SEARCH_LIMIT_PER_DAY ?? 500);
+const HISTORY_SEARCH_PER_MIN = parseRateLimitEnv(process.env.HISTORY_SEARCH_LIMIT_PER_MIN, 30, 'HISTORY_SEARCH_LIMIT_PER_MIN');
+const HISTORY_SEARCH_PER_DAY = parseRateLimitEnv(process.env.HISTORY_SEARCH_LIMIT_PER_DAY, 500, 'HISTORY_SEARCH_LIMIT_PER_DAY');
 
 /** History search (HISTORY_RETRIEVAL_DESIGN §4). Same caps and FAIL-CLOSED posture as corpus
  *  search: a limiter outage refuses search rather than uncapping it — search is never
