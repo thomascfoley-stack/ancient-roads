@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
+import { apiError } from '@/lib/api-error';
 import { getDocument } from '@/lib/user-corpus/documents';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { corpusPredicate, traditionGap } from '@/lib/user-corpus/tradition-gap';
@@ -31,27 +32,39 @@ interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
+// Returns `Response`, not `NextResponse`: the app-wide error envelope (`apiError`, lib/api-error.ts
+// / docs/API_ERRORS.md) is framework-free and returns the global Web `Response`. NextResponse
+// extends Response, so every JSON return below still satisfies this — same shape as the sibling
+// search route (D35, e4542c97).
+export async function GET(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
 
   const { id } = await ctx.params;
-  // 404 rather than 403 for a document that is not theirs, matching the sibling routes: RLS makes
-  // it invisible anyway, and distinguishing "not yours" from "does not exist" confirms an id to
-  // someone who cannot read it.
-  const doc = await getDocument(user.id, id);
-  if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // A DB fault here — `getDocument` or the `traditionGap` join — must return the stable error
+  // envelope, never escape as Next's raw 500. This route and the sibling `related` route are the
+  // two /api/* handlers the D35 envelope sweep missed; the `search` route is the precedent.
+  try {
+    // 404 rather than 403 for a document that is not theirs, matching the sibling routes: RLS makes
+    // it invisible anyway, and distinguishing "not yours" from "does not exist" confirms an id to
+    // someone who cannot read it.
+    const doc = await getDocument(user.id, id);
+    if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // A document that has not finished indexing has no anchors yet, so the join would honestly
-  // return nothing. Say which of the two it is rather than showing an empty shelf.
-  if (doc.status !== 'ready') {
-    return NextResponse.json(
-      { voices: [], authorCount: 0, rangesConsidered: 0, pending: true },
-      { status: 200 },
-    );
+    // A document that has not finished indexing has no anchors yet, so the join would honestly
+    // return nothing. Say which of the two it is rather than showing an empty shelf.
+    if (doc.status !== 'ready') {
+      return NextResponse.json(
+        { voices: [], authorCount: 0, rangesConsidered: 0, pending: true },
+        { status: 200 },
+      );
+    }
+
+    const result = await traditionGap(user.id, id, PREDICATE);
+    return NextResponse.json({ ...result, pending: false });
+  } catch (e) {
+    console.error('[user-corpus] voices failed:', String((e as Error)?.message ?? e));
+    return apiError('INTERNAL');
   }
-
-  const result = await traditionGap(user.id, id, PREDICATE);
-  return NextResponse.json({ ...result, pending: false });
 }
