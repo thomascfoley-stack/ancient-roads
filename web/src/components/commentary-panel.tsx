@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
@@ -273,6 +273,7 @@ export function pickDiverse(entries: CommentaryEntry[], max: number): Commentary
 
 export function EntryCard({ entry }: { entry: CommentaryEntry }) {
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const isLong = entry.text.length > 600;
   const displayText = isLong && !expanded ? entry.text.slice(0, 600).replace(/\s+\S*$/, '') + '...' : entry.text;
 
@@ -282,6 +283,24 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
   // the attribution line in ink-wash.
   const era = eraLabel(entry.year);
   const ornament = ERA_ORNAMENT[era];
+
+  // F-164 — copy the commentary WITH its attribution. The label carries author, work, year,
+  // and tradition: everything a citation needs, never a host URL (GO_LIVE A5).
+  const copyAttribution = useCallback(async () => {
+    const parts = [entry.author];
+    if (entry.sourceTitle) parts.push(entry.sourceTitle);
+    if (entry.year) parts.push(entry.year < 0 ? `${Math.abs(entry.year)} BC` : String(entry.year));
+    if (entry.tradition) parts.push(entry.tradition);
+    const label = parts.join(' · ');
+    const payload = `"${entry.text}"\n${label}`;
+    try {
+      await navigator.clipboard.writeText(payload);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {
+      // Clipboard permission denied — the text is on screen to copy by hand.
+    }
+  }, [entry]);
 
   return (
     <div className={`border-l-[3px] pl-4 ${eraAccent(era)}`}>
@@ -307,6 +326,16 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           </span>
         )}
         {entry.paraphrase && <ParaphraseChip />}
+        {/* F-164 — the copy control. min-h-[44px] keeps the touch target honest; the button
+            sits on the attribution line so it is clear WHAT is being copied. */}
+        <button
+          type="button"
+          onClick={() => void copyAttribution()}
+          className="ml-auto inline-flex min-h-[44px] items-center font-sans text-xs font-semibold text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
+          aria-label={copied ? 'Copied' : 'Copy with attribution'}
+        >
+          {copied ? 'Copied' : 'Copy'}
+        </button>
       </div>
       {/* Lane/song-verse text is lineated (stanzas, sermon headings) — preserve
           line breaks like the library and /ask surfaces do; exegetical prose

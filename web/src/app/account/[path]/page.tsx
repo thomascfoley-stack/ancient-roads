@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { AccountSettings } from '@/components/account-settings';
 import { currentUser } from '@/lib/session';
+
+export const metadata: Metadata = { title: 'Account Settings' };
 
 export const dynamicParams = false;
 

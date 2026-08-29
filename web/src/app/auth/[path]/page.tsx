@@ -1,9 +1,21 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AuthForm } from '@/components/auth-forms';
 import { AUTH_PATHS, isAuthPath } from '@/lib/auth/paths';
 import { currentUser } from '@/lib/session';
+
+const TITLES: Record<string, string> = {
+  'sign-in': 'Sign in',
+  'sign-up': 'Create an account',
+  'forgot-password': 'Reset your password',
+  'reset-password': 'Choose a new password',
+};
+
+export function generateMetadata({ params }: { params: Promise<{ path: string }> }): Promise<Metadata> {
+  return params.then(({ path }) => ({ title: TITLES[path] ?? 'Sign in' }));
+}
 
 export const dynamicParams = false;
 

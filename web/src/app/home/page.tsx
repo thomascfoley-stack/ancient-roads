@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { TodayView } from '@/components/today-view';
+
+export const metadata: Metadata = { title: 'Today' };
 
 // The authenticated app home (behind the SITE_PASSWORD gate + login). It IS the daily "Today"
 // screen now: today's Spurgeon Morning/Evening devotional + the grounded corpus voices on its

@@ -473,7 +473,10 @@ export function VerseDisplay({
                   now aria-hidden and the meaning is real text beside it. */}
               {hasNote && (
                 <>
-                  <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" aria-hidden>
+                  <sup
+                    className="mr-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-accent-100 text-[10px] font-semibold text-accent-700 select-none dark:bg-accent-900 dark:text-accent-200"
+                    aria-hidden
+                  >
                     ✎
                   </sup>
                   <span className="sr-only">You have a note here.</span>
@@ -481,7 +484,10 @@ export function VerseDisplay({
               )}
               {isBookmarked && (
                 <>
-                  <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" aria-hidden>
+                  <sup
+                    className="mr-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-accent-100 text-[10px] font-semibold text-accent-700 select-none dark:bg-accent-900 dark:text-accent-200"
+                    aria-hidden
+                  >
                     ⚑
                   </sup>
                   <span className="sr-only">Bookmarked.</span>

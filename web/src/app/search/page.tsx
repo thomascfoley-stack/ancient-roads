@@ -34,6 +34,7 @@ import { searchNotes, searchPrayers, searchStudies } from '@/lib/search-personal
 import { keywordSearch, type UserHit } from '@/lib/user-corpus/search';
 import { uploadDenial } from '@/lib/user-corpus/access';
 import { publicReadPageThrottle } from '@/lib/public-read-limit';
+import { parseRef } from '@bible/ref-parse';
 import {
   buildSearchHref,
   CORPUS_GROUPS,
@@ -176,6 +177,23 @@ export default async function SearchPage({
   const q = state.q.trim();
   const user = await currentUser();
 
+  // F15 — a typed reference is navigation, never search (NAVIGATION_AND_SEARCH.md decision #1).
+  // Parse the query as a reference; when it resolves, offer the jump above the text results so
+  // the reader who meant "John 3:16" is not left reading 935 commentary matches.
+  const ref = q ? parseRef(q) : null;
+  const refHref =
+    ref?.ok && ref.ref.ranges.length > 0
+      ? (() => {
+          const first = ref.ref.ranges[0]!;
+          const book = ref.ref.book;
+          const chapter = Math.floor((first.start % 1000000) / 1000);
+          const verse = first.start % 1000;
+          return ref.ref.kind === 'verse' || ref.ref.kind === 'verse_range'
+            ? `/read/${book.slug}/${chapter}#v${verse}`
+            : `/read/${book.slug}/${chapter}`;
+        })()
+      : null;
+
   // F-168: /search runs up to six full-text queries per request and answers signed-out;
   // apply the same per-IP public-read throttle the other unauthenticated read routes use.
   const throttleResult = await publicReadPageThrottle('search-page');
@@ -255,6 +273,22 @@ export default async function SearchPage({
       {throttleResult !== null && (
         <div role="alert" className="mb-8 border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
           {throttleResult.message}
+        </div>
+      )}
+
+      {/* F15 — the reference jump. A typed reference is navigation; the link is primary, the
+          text results below are the fallback for the reader who meant the words. */}
+      {refHref && ref?.ok && (
+        <div className="mb-8 border edge bg-stone-50 px-4 py-3 dark:bg-stone-900">
+          <Link
+            href={refHref}
+            className="inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
+          >
+            Go to {ref.ref.display} →
+          </Link>
+          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+            Or keep reading the {q} text matches below.
+          </p>
         </div>
       )}
 

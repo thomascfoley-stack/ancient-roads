@@ -220,6 +220,52 @@ export default function ReaderPage() {
     saveBiblePosition(book.slug, chapterNum);
   }, [book, chapterNum]);
 
+  // ── F-144 — restore the reader's scroll position within the chapter ─────────────────────────
+  // The work reader already does this (`saveWorkProgress`/`loadWorkProgress`); Scripture did not.
+  // Same contract: per-device, never throws, corrupt reads as "no position". Keyed by book+chapter
+  // so a translation switch does not lose the place.
+  const scrollKey = book ? `bible-scroll:${book.slug}:${chapterNum}` : null;
+  useEffect(() => {
+    if (!scrollKey || !data) return;
+    // A hash (#v16) is an explicit destination — it wins over the saved position.
+    if (window.location.hash) return;
+    let saved: number | null = null;
+    try {
+      const raw = window.localStorage.getItem(scrollKey);
+      if (raw) {
+        const n = Number(JSON.parse(raw));
+        if (Number.isFinite(n) && n >= 0) saved = n;
+      }
+    } catch {
+      // Corrupt or unavailable storage: no saved position.
+    }
+    if (saved !== null) {
+      // Defer so the chapter has painted and the scroll height is real.
+      const t = setTimeout(() => window.scrollTo({ top: saved!, behavior: 'instant' }), 50);
+      return () => clearTimeout(t);
+    }
+  }, [scrollKey, data]);
+
+  useEffect(() => {
+    if (!scrollKey) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    function save() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        try {
+          window.localStorage.setItem(scrollKey!, JSON.stringify(window.scrollY));
+        } catch {
+          // Quota/privacy failure: resume is a convenience, not a gate.
+        }
+      }, 300);
+    }
+    window.addEventListener('scroll', save, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', save);
+      if (timer) clearTimeout(timer);
+    };
+  }, [scrollKey]);
+
   // ── deep link to a verse (`/read/jhn/3#v16`) ───────────────────────────────────────────────
   /**
    * K-6 — THE OPEN PANEL IS A VIEW, SO BACK MUST CLOSE IT BEFORE IT LEAVES THE CHAPTER.
@@ -669,7 +715,13 @@ export default function ReaderPage() {
             loadFailed: annotationsFailed,
             onSetHighlight: (color) => addHighlight(study.verse, null, color),
             onClearHighlight: () => clearVerse(study.verse),
-            onSaveNote: (body) => { saveVerseNote(study.verse, body); closeStudy(); },
+            onSaveNote: (body) => {
+              // F-120/F-125 — do not close the panel on a failed save. The panel closes only
+              // via the onSuccess callback, which fires after the write has landed; on failure
+              // the error banner appears and the panel stays open so the reader can retry or
+              // copy their note out.
+              saveVerseNote(study.verse, body, closeStudy);
+            },
             onDeleteNote: () => deleteVerseNote(study.verse),
           }}
           onTabChange={(t) => setStudy((s) => (s ? { ...s, tab: t, focusWordIdx: undefined } : s))}

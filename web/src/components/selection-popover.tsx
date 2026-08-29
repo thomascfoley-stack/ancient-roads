@@ -206,7 +206,13 @@ export function SelectionPopover({
 
   const copy = useCallback(
     async (mode: CopyMode) => {
-      const src: CopySource = { text: pending.text, label: contextLabel, lineNo: copyLineNo };
+      // F-143 — a selection spanning multiple verses must copy ALL of it. `pending.text` is the
+      // FIRST verse's canonical substring (useTextAnnotation resolves only the start container);
+      // the live selection's toString() carries every verse. Use whichever is longer — the live
+      // selection is empty after a programmatic raise (tap mode), so pending.text wins there.
+      const liveText = window.getSelection()?.toString().trim() ?? '';
+      const text = liveText.length > pending.text.length ? liveText : pending.text;
+      const src: CopySource = { text, label: contextLabel, lineNo: copyLineNo };
       const plain =
         mode === 'text' ? formatTextOnly(src) : mode === 'lines' ? formatLines(src) : formatStyledText(src);
       try {

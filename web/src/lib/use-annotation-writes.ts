@@ -86,7 +86,7 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   // AbortController and a `settled` promise; a newer write for the same verse marks the clear
   // superseded (so its rollback is skipped) and awaits `settled` before issuing its own POST,
   // sequencing the verse-level DELETE ahead of the new span.
-  interface ClearEntry { controller: AbortController; superseded: boolean; settled: Promise<void>; }
+  interface ClearEntry { controller: AbortController; superseded: boolean; settled: Promise<unknown>; }
   const activeClears = useRef<Map<number, ClearEntry>>(new Map());
 
   const verseId = useCallback(
@@ -164,6 +164,7 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       retry: () => void,
       isAborted?: () => boolean,
       onSettled?: () => void,
+      onSuccess?: () => void,
     ) => {
       return persistWrite(request).then((ok) => {
         if (isAborted?.()) {
@@ -173,6 +174,7 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         if (ok) {
           setWriteError((cur) => (cur?.id === id ? null : cur));
           onSettled?.();
+          onSuccess?.();
           return;
         }
         rollback();
@@ -199,11 +201,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       rollback: () => void,
       isAborted?: () => boolean,
       onSettled?: () => void,
+      onSuccess?: () => void,
     ) => {
       const id = ++writeSeq.current;
       const attempt = () => {
         paint();
-        return beginPersist(id, message, request, rollback, attempt, isAborted, onSettled);
+        return beginPersist(id, message, request, rollback, attempt, isAborted, onSettled, onSuccess);
       };
       return attempt();
     },
@@ -225,9 +228,78 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
     return () => window.removeEventListener('online', retryWrite);
   }, [writeError, retryWrite]);
 
+  // Mirror of `highlights` state so addHighlight can decide whether a whole-verse tap is a
+  // replacement (F-119) without adding `highlights` to its own dependency array and re-creating
+  // the callback on every paint.
+  const highlightsRef = useRef(highlights);
+  useEffect(() => { highlightsRef.current = highlights; }, [highlights]);
+
+  // Clear every span on a verse (the whole-verse "clear" affordance in the study panel).
+  const clearVerse = useCallback(
+    (verse: number) => {
+      // F-121: if a clear is already pending for this verse, mark it superseded so it cannot
+      // roll back a newer write, but let it finish — its DELETE is what removes the old colour.
+      // The new clear replaces the old one in the registry.
+      const existing = activeClears.current.get(verse);
+      if (existing) {
+        existing.superseded = true;
+      }
+      const entry: ClearEntry = { controller: new AbortController(), superseded: false, settled: Promise.resolve() };
+      activeClears.current.set(verse, entry);
+      // Captured by `paint`, read by `rollback` — always the freshest prior value, including on a
+      // retry (where "prior" is whatever `rollback` already restored after the first failure).
+      let previous: StoredSpan[] | undefined;
+      const paint = () => {
+        setHighlights((prev) => {
+          previous = prev.get(verse);
+          const next = new Map(prev);
+          next.delete(verse);
+          return next;
+        });
+      };
+      // Identity, not value, restoration — the inverse of addHighlight's rollback: this op
+      // removed the SET of spans in `previous`, so it re-adds exactly the members still missing
+      // and leaves anything painted since (a newer highlight on the same verse) untouched. A
+      // blind `set(verse, previous)` would restore the prior spans at the cost of that newer one.
+      const rollback = () => {
+        if (!previous?.length) return;
+        setHighlights((cur) => {
+          const existing = cur.get(verse) ?? [];
+          const next = new Map(cur);
+          next.set(verse, [...previous!.filter((s) => !existing.includes(s)), ...existing]);
+          return next;
+        });
+      };
+      const request = () =>
+        fetch('/api/annotations', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kind: 'highlight', verseId: verseId(verse) }),
+          signal: entry.controller.signal,
+        });
+      const settled = runPersist(
+        "Couldn't clear the highlight",
+        paint,
+        request,
+        rollback,
+        () => entry.superseded,
+        () => { activeClears.current.delete(verse); },
+      );
+      entry.settled = settled ?? Promise.resolve();
+    },
+    [verseId, runPersist],
+  );
+
   // Add a highlight span. range === null → whole verse (the tap-a-verse path).
   const addHighlight = useCallback(
     (verse: number, range: { start: number; end: number } | null, color: string) => {
+      // F-119: a whole-verse highlight REPLACES any existing highlights for the verse — the
+      // reader asked for "this colour now", not "add another row". Clear first so the old
+      // colour does not survive beside the new one. F-121's sequencing then guarantees the
+      // DELETE lands before the POST below.
+      if (range === null && (highlightsRef.current.get(verse)?.length ?? 0) > 0) {
+        clearVerse(verse);
+      }
       // F-121: a pending clear for this verse must still run (so the old colour is removed),
       // but its verse-level DELETE must not land after this POST and wipe the new span. Mark
       // it superseded so its rollback is skipped, and await its `settled` promise inside the
@@ -296,67 +368,11 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       };
       runPersist("Couldn't save your highlight", paint, request, rollback);
     },
-    [verseId, translationId, runPersist],
-  );
-
-  // Clear every span on a verse (the whole-verse "clear" affordance in the study panel).
-  const clearVerse = useCallback(
-    (verse: number) => {
-      // F-121: if a clear is already pending for this verse, mark it superseded so it cannot
-      // roll back a newer write, but let it finish — its DELETE is what removes the old colour.
-      // The new clear replaces the old one in the registry.
-      const existing = activeClears.current.get(verse);
-      if (existing) {
-        existing.superseded = true;
-      }
-      const entry: ClearEntry = { controller: new AbortController(), superseded: false, settled: Promise.resolve() };
-      activeClears.current.set(verse, entry);
-      // Captured by `paint`, read by `rollback` — always the freshest prior value, including on a
-      // retry (where "prior" is whatever `rollback` already restored after the first failure).
-      let previous: StoredSpan[] | undefined;
-      const paint = () => {
-        setHighlights((prev) => {
-          previous = prev.get(verse);
-          const next = new Map(prev);
-          next.delete(verse);
-          return next;
-        });
-      };
-      // Identity, not value, restoration — the inverse of addHighlight's rollback: this op
-      // removed the SET of spans in `previous`, so it re-adds exactly the members still missing
-      // and leaves anything painted since (a newer highlight on the same verse) untouched. A
-      // blind `set(verse, previous)` would restore the prior spans at the cost of that newer one.
-      const rollback = () => {
-        if (!previous?.length) return;
-        setHighlights((cur) => {
-          const existing = cur.get(verse) ?? [];
-          const next = new Map(cur);
-          next.set(verse, [...previous!.filter((s) => !existing.includes(s)), ...existing]);
-          return next;
-        });
-      };
-      const request = () =>
-        fetch('/api/annotations', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'highlight', verseId: verseId(verse) }),
-          signal: entry.controller.signal,
-        });
-      const settled = runPersist(
-        "Couldn't clear the highlight",
-        paint,
-        request,
-        rollback,
-        () => entry.superseded,
-        () => { activeClears.current.delete(verse); },
-      );
-      entry.settled = settled ?? Promise.resolve();
-    },
-    [verseId, runPersist],
+    [verseId, translationId, runPersist, clearVerse],
   );
 
   const saveVerseNote = useCallback(
-    (verse: number, body: string) => {
+    (verse: number, body: string, onSuccess?: () => void) => {
       let previous: string | undefined;
       const paint = () => {
         setNotes((prev) => {
@@ -382,7 +398,7 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ kind: 'note', verseId: verseId(verse), body }),
         });
-      runPersist("Couldn't save your note", paint, request, rollback);
+      runPersist("Couldn't save your note", paint, request, rollback, undefined, undefined, onSuccess);
     },
     [verseId, runPersist],
   );

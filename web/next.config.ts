@@ -58,6 +58,14 @@ const CSP = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // F-134 — the middleware's default body-size cap (~10 MB) rejects uploads well under the
+  // app's own 25 MB ceiling (MAX_UPLOAD_BYTES in sniff.ts). Raise the middleware cap to match
+  // so the advertised limit is the real one. The app-level cap still applies after the body
+  // is parsed; this only lets the bytes reach it.
+  experimental: {
+    middlewareClientMaxBodySize: '25mb',
+  },
+
   // PDFJS MUST NOT BE BUNDLED, and this is the root of the PDF-upload outage.
   //
   // Bundling rewrites pdfjs's module graph, and pdfjs does two things at RUNTIME that only work
