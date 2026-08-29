@@ -193,6 +193,15 @@ describe('ranges and sequences', () => {
     }
   });
 
+  it('same-verse range collapses to a single verse (not backwards)', () => {
+    // John 3:16-16 is a zero-length range: identical to John 3:16. It must not
+    // be rejected as a "Backwards range" — there is no backwards progression.
+    for (const form of ['john 3:16-16', 'john 3:16–16', 'john 3:16—16']) {
+      expect(ranges(form)).toEqual([{ start: 43003016, end: 43003016 }]);
+    }
+    expect(display('john 3:16-16')).toBe('John 3:16–16');
+  });
+
   it('cross-chapter ranges', () => {
     expect(ranges('john 3:16-4:2')).toEqual([{ start: 43003016, end: 43004002 }]);
     expect(ranges('gen 1:31-2:3')).toEqual([{ start: 1001031, end: 1002003 }]);
@@ -246,6 +255,15 @@ describe('rejects, never guesses', () => {
     expect(reject('john 3:18-16').reason).toContain('Backwards');
     expect(reject('matt 7-5').reason).toContain('Backwards');
     expect(reject('john 4:2-3:16').reason).toContain('Backwards');
+  });
+
+  it('same-verse notation still respects verse bounds', () => {
+    // Accepting 16-16 must not open a hole around 0-0 or out-of-range verses:
+    // the bounds check runs before the (now `<`) backwards check.
+    expect(reject('john 3:0-0').reason).toContain('start at 1');
+    expect(reject('john 3:99-99', { verseCounts: provider }).reason).toContain(
+      'has 36 verses',
+    );
   });
 
   it('garbage tails', () => {
