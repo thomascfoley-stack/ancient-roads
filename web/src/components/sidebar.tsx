@@ -149,6 +149,7 @@ export function SidebarNavContent({
   // mid-task destroys the reader's place and, on the QA run, took two further sessions with it.
   // Disarms on blur so an armed row cannot lie in wait.
   const [signOutArmed, setSignOutArmed] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -266,7 +267,7 @@ export function SidebarNavContent({
               // shared device that is a false security signal, which is worse than an error.
               onClick={async () => {
                 // First tap arms (B044); the second, while armed, signs out.
-                if (!signOutArmed) { setSignOutArmed(true); return; }
+                if (!signOutArmed) { setSignOutArmed(true); setSignOutError(null); return; }
                 setSignOutArmed(false);
                 // Better Auth's own client, not a hand-rolled POST. The route that used to serve
                 // this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family now -- and
@@ -281,7 +282,7 @@ export function SidebarNavContent({
                   if (error) throw new Error(error.message ?? 'sign-out failed');
                   window.location.href = '/';
                 } catch {
-                  alert('Sign out failed. You are still signed in. Please try again.');
+                  setSignOutError('Sign out failed. You are still signed in. Please try again.');
                 }
               }}
             />
@@ -294,6 +295,11 @@ export function SidebarNavContent({
               row={row}
               onNavigate={onNavigate}
             />
+          )}
+          {signOutError && (
+            <p role="alert" className="px-4 py-1 text-xs text-red-800 dark:text-red-200">
+              {signOutError}
+            </p>
           )}
         </div>
 

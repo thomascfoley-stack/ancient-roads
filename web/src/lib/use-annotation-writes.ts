@@ -81,6 +81,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   const retryAnnotations = useCallback(() => setLoadNonce((n) => n + 1), []);
   const [writeError, setWriteError] = useState<WriteFailure | null>(null);
 
+  // F-121: a verse-level clear that is still in flight when the reader recolours the same verse
+  // must not roll back the new colour. Each clear gets an AbortController; a newer write for the
+  // same verse aborts the pending clear and marks it superseded so its rollback is skipped.
+  interface ClearEntry { controller: AbortController; superseded: boolean; }
+  const activeClears = useRef<Map<number, ClearEntry>>(new Map());
+
   const verseId = useCallback(
     (verse: number) => encodeVerseId({ book: bookNum!, chapter: chapterNum, verse }),
     [bookNum, chapterNum],
@@ -148,15 +154,29 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
    * one logical write (see above) — callers must not mint a fresh one per attempt.
    */
   const beginPersist = useCallback(
-    (id: number, message: string | (() => string), request: () => Promise<Response>, rollback: () => void, retry: () => void) => {
+    (
+      id: number,
+      message: string | (() => string),
+      request: () => Promise<Response>,
+      rollback: () => void,
+      retry: () => void,
+      isAborted?: () => boolean,
+      onSettled?: () => void,
+    ) => {
       void persistWrite(request).then((ok) => {
+        if (isAborted?.()) {
+          onSettled?.();
+          return;
+        }
         if (ok) {
           setWriteError((cur) => (cur?.id === id ? null : cur));
+          onSettled?.();
           return;
         }
         rollback();
         lastFailedAttempt.current = retry;
         setWriteError({ id, message: typeof message === 'function' ? message() : message });
+        onSettled?.();
       });
     },
     [],
@@ -170,11 +190,18 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
    * does NOT fit this shape — see its own comment.
    */
   const runPersist = useCallback(
-    (message: string | (() => string), paint: () => void, request: () => Promise<Response>, rollback: () => void) => {
+    (
+      message: string | (() => string),
+      paint: () => void,
+      request: () => Promise<Response>,
+      rollback: () => void,
+      isAborted?: () => boolean,
+      onSettled?: () => void,
+    ) => {
       const id = ++writeSeq.current;
       const attempt = () => {
         paint();
-        beginPersist(id, message, request, rollback, attempt);
+        beginPersist(id, message, request, rollback, attempt, isAborted, onSettled);
       };
       attempt();
     },
@@ -199,6 +226,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   // Add a highlight span. range === null → whole verse (the tap-a-verse path).
   const addHighlight = useCallback(
     (verse: number, range: { start: number; end: number } | null, color: string) => {
+      // F-121: a pending clear for this verse would otherwise delete the new span on arrival.
+      const pendingClear = activeClears.current.get(verse);
+      if (pendingClear) {
+        pendingClear.superseded = true;
+        pendingClear.controller.abort();
+      }
       const optimistic: StoredSpan = {
         start: range?.start ?? null,
         end: range?.end ?? null,
@@ -263,6 +296,15 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   // Clear every span on a verse (the whole-verse "clear" affordance in the study panel).
   const clearVerse = useCallback(
     (verse: number) => {
+      // F-121: if a clear is already pending for this verse, abort it so it cannot roll back a
+      // newer write. The new clear replaces the old one in the registry.
+      const existing = activeClears.current.get(verse);
+      if (existing) {
+        existing.superseded = true;
+        existing.controller.abort();
+      }
+      const entry: ClearEntry = { controller: new AbortController(), superseded: false };
+      activeClears.current.set(verse, entry);
       // Captured by `paint`, read by `rollback` — always the freshest prior value, including on a
       // retry (where "prior" is whatever `rollback` already restored after the first failure).
       let previous: StoredSpan[] | undefined;
@@ -292,8 +334,16 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ kind: 'highlight', verseId: verseId(verse) }),
+          signal: entry.controller.signal,
         });
-      runPersist("Couldn't clear the highlight", paint, request, rollback);
+      runPersist(
+        "Couldn't clear the highlight",
+        paint,
+        request,
+        rollback,
+        () => entry.superseded,
+        () => { activeClears.current.delete(verse); },
+      );
     },
     [verseId, runPersist],
   );

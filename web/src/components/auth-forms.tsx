@@ -276,7 +276,9 @@ export function AuthForm({ path }: { path: AuthMode }) {
         throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
       }
       // Throws on failure; curated per-path in the catch (same dead-`error` mechanism as above).
-      await authClient.resetPassword({ newPassword: password, token });
+      // @ts-expect-error The installed beta SDK types omit `revokeOtherSessions` on resetPassword,
+      // but the server honours it. Remove this once the types catch up.
+      await authClient.resetPassword({ newPassword: password, token, revokeOtherSessions: true });
       router.push('/auth/sign-in');
     } catch (e) {
       // K-5 — an unverified reader supplied the RIGHT password and was told it was wrong. That

@@ -116,9 +116,28 @@ export function WorkReader({
   const frame = useRef(0);
   const lastReport = useRef({ ordinal: -1, t: 0 });
 
-  // Local (unpersisted) highlight preview washes, keyed by section id.
-  const [washes, setWashes] = useState<Map<string, HighlightRange[]>>(new Map());
+  // Local highlight preview washes, keyed by section id. Persisted to localStorage so they
+  // survive refresh/navigation within this work until Phase-3 server persistence lands (F-158/S8).
+  const [washes, setWashes] = useState<Map<string, HighlightRange[]>>(() => {
+    if (typeof window === 'undefined') return new Map();
+    try {
+      const raw = window.localStorage.getItem(`ap-work-washes:${slug}`);
+      if (!raw) return new Map();
+      const parsed = JSON.parse(raw) as Array<[string, HighlightRange[]]>;
+      return new Map(parsed);
+    } catch {
+      return new Map();
+    }
+  });
   const router = useRouter();
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(`ap-work-washes:${slug}`, JSON.stringify(Array.from(washes.entries())));
+    } catch {
+      // ignore (e.g. storage disabled)
+    }
+  }, [washes, slug]);
 
   useEffect(() => {
     loadInitial(initialOrdinal);

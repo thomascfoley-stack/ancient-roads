@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
 
 // THE ONE CANONICAL SAVE-TO-STUDY VERB (design §7.5, R3; build file P2/W4). Every surfaced
@@ -263,10 +264,17 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
 
   const newStudyTitle =
     (contextTitle ?? '').trim().slice(0, NEW_STUDY_TITLE_MAX) || 'Untitled study';
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closePicker = useCallback(() => {
+    setPickerOpen(false);
+    // Return focus to the trigger so keyboard users do not lose their place.
+    triggerRef.current?.focus();
+  }, []);
 
   return (
     <div className={`relative${className ? ` ${className}` : ''}`}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={onTap}
         disabled={busy}
@@ -282,7 +290,7 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
           busy={busy}
           newStudyTitle={newStudyTitle}
           onPick={(target) => void saveTo(target, saved ? { studyId: saved.studyId, blockId: saved.blockId } : undefined)}
-          onClose={() => setPickerOpen(false)}
+          onClose={closePicker}
         />
       )}
 
@@ -320,6 +328,7 @@ function StudyPicker({
 }) {
   const [studies, setStudies] = useState<StudySummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let live = true;
@@ -350,6 +359,14 @@ function StudyPicker({
     };
   }, []);
 
+  // Move focus into the picker once its contents arrive. If the list is capped, the first
+  // focusable item is a study; otherwise it is "New study". Closing returns focus to the trigger.
+  useEffect(() => {
+    if (studies === null) return;
+    const first = dialogRef.current?.querySelector('button, a[href]') as HTMLElement | null;
+    first?.focus();
+  }, [studies]);
+
   const createAndPick = async () => {
     try {
       const res = await fetch('/api/studies', {
@@ -371,6 +388,7 @@ function StudyPicker({
       {/* Click-away layer: the picker is the second tap, so it must also be one tap to dismiss. */}
       <div className="fixed inset-0 z-10" onClick={onClose} aria-hidden="true" />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-label="Choose a study"
         onKeyDown={(e) => {
@@ -403,6 +421,15 @@ function StudyPicker({
             )}
           </button>
         ))}
+        {studies !== null && studies.length > NAV_CAP && (
+          <Link
+            href="/studies"
+            onClick={onClose}
+            className="edge flex w-full items-center border-t px-2 py-1.5 text-left text-sm font-medium text-stone-700 transition-colors ease-gentle hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800/60"
+          >
+            <span className="truncate">All studies</span>
+          </Link>
+        )}
         {/* "New study", titled from the surface's context (design §7.5) — the question on the
             ask surface, so the study names itself after what was being asked about. */}
         <button

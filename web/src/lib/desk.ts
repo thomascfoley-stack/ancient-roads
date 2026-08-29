@@ -39,16 +39,19 @@ export interface ScripturePane {
 export interface WorkPane {
   kind: 'work';
   slug: string;
+  /** Optional initial ordinal so a pane added beside a Scripture passage opens near it (F-158). */
+  ordinal?: number;
 }
 
 export type Pane = ScripturePane | WorkPane;
 
 /**
- * Serialise one pane to its `p=` value. `scripture:john/3` | `work:spurgeon-sermons`.
+ * Serialise one pane to its `p=` value. `scripture:john/3` | `work:spurgeon-sermons` | `work:spurgeon-sermons:42`.
  * Kept deliberately readable: these URLs get pasted into messages between people studying together.
  */
 export function encodePane(p: Pane): string {
-  return p.kind === 'scripture' ? `scripture:${p.book}/${p.chapter}` : `work:${p.slug}`;
+  if (p.kind === 'scripture') return `scripture:${p.book}/${p.chapter}`;
+  return p.ordinal !== undefined ? `work:${p.slug}:${p.ordinal}` : `work:${p.slug}`;
 }
 
 /**
@@ -71,7 +74,13 @@ export function decodePane(raw: string): Pane | null {
 
   if (kind === 'work') {
     // Work slugs are the library's own identifiers: lowercase, digits, hyphens.
-    return /^[a-z0-9][a-z0-9-]*$/.test(rest) ? { kind: 'work', slug: rest } : null;
+    // Optional ordinal suffix: work:slug:42
+    const [slug, ordinalRaw] = rest.split(':');
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(slug ?? '')) return null;
+    if (ordinalRaw === undefined) return { kind: 'work', slug: slug! };
+    const ordinal = Number(ordinalRaw);
+    if (!Number.isInteger(ordinal) || ordinal < 1) return null;
+    return { kind: 'work', slug: slug!, ordinal };
   }
 
   if (kind === 'scripture') {

@@ -104,7 +104,9 @@ export default function ReaderPage() {
   }, []);
   const [data, setData] = useState<ChapterData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const [commentaryCache, setCommentaryCache] = useState<Map<string, CommentaryEntry[]>>(new Map());
+  const [commentaryFailed, setCommentaryFailed] = useState<Set<string>>(new Set());
   const [interlinear, setInterlinear] = useState(false);
   // Two-tap highlight mode (the phone flow): header toggle flips it, ESC inside VerseDisplay
   // exits it. VerseDisplay owns the anchor; the page owns only on/off.
@@ -197,7 +199,7 @@ export default function ReaderPage() {
     return () => {
       cancelled = true;
     };
-  }, [book, fetchSlug, chapterNum, translation, hydrated]);
+  }, [book, fetchSlug, chapterNum, translation, hydrated, retryTick]);
 
   // A040 — REMEMBER WHERE THE READER IS, so closing the tab does not send them back to John 1.
   //
@@ -333,11 +335,21 @@ export default function ReaderPage() {
     // A084 — unguarded, this prefetched `.../NaN` on every malformed chapter URL.
     if (!isFetchableChapter(book?.bookNum, chapterNum)) return;
     const key = `${fetchSlug}:${chapterNum}`;
-    if (commentaryCache.has(key)) return;
+    if (commentaryCache.has(key) || commentaryFailed.has(key)) return;
     fetchCommentary(fetchSlug, chapterNum).then((result) => {
-      if (result) setCommentaryCache((prev) => new Map(prev).set(key, result.entries));
+      if (result) {
+        setCommentaryCache((prev) => new Map(prev).set(key, result.entries));
+        setCommentaryFailed((prev) => {
+          if (!prev.has(key)) return prev;
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      } else {
+        setCommentaryFailed((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+      }
     });
-  }, [fetchSlug, chapterNum, commentaryCache]);
+  }, [fetchSlug, chapterNum, commentaryCache, commentaryFailed]);
 
   // Prefetch original-language words for the chapter (small per-chapter file);
   // powers both the interlinear view and the study panel's Word study tab.
@@ -396,13 +408,15 @@ export default function ReaderPage() {
     [openStudy],
   );
 
+  const commentaryKey = `${fetchSlug}:${chapterNum}`;
   const studyEntries = useMemo(() => {
     if (!study) return [];
     // Must match the prefetch effect's key exactly (fetchSlug, not bookSlug) or an alias URL
     // reads an empty cache forever — the prefetch stores under fetchSlug two effects above.
-    const all = commentaryCache.get(`${fetchSlug}:${chapterNum}`) ?? [];
+    const all = commentaryCache.get(commentaryKey) ?? [];
     return all.filter((e) => e.verseStart <= study.verse && study.verse <= e.verseEnd);
-  }, [study, commentaryCache, fetchSlug, chapterNum]);
+  }, [study, commentaryCache, commentaryKey]);
+  const studyEntriesFailed = study ? commentaryFailed.has(commentaryKey) : false;
 
   const studyVerseText = study
     ? data?.verses.find((v) => v.verse === study.verse)?.text ?? ''
@@ -449,18 +463,39 @@ export default function ReaderPage() {
   //   - the book did not resolve at all (`enoch/1`): there is no book to offer a chapter of, so
   //     offer the default way into Scripture. The picker needs a `currentBook` and there isn't one.
   if (error) {
+    const canRetry = error === 'Failed to load chapter';
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-5 px-6 text-center">
-        <p className="text-lg text-stone-500 dark:text-stone-400">{error}</p>
+        <p role="alert" className="text-lg text-stone-500 dark:text-stone-400">{error}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
+          {canRetry && (
+            <button
+              type="button"
+              onClick={() => {
+                setRetryTick((t) => t + 1);
+                setCommentaryFailed((prev) => {
+                  const key = `${fetchSlug}:${chapterNum}`;
+                  if (!prev.has(key)) return prev;
+                  const next = new Set(prev);
+                  next.delete(key);
+                  return next;
+                });
+              }}
+              className="min-h-[44px] border edge px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-200 dark:hover:bg-stone-200 dark:hover:text-stone-950"
+            >
+              Try again
+            </button>
+          )}
           {book ? (
             <>
-              <Link
-                href={`/read/${book.slug}/1`}
-                className="min-h-[44px] border edge px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-200 dark:hover:bg-stone-200 dark:hover:text-stone-950"
-              >
-                {book.name} 1
-              </Link>
+              {!canRetry && (
+                <Link
+                  href={`/read/${book.slug}/1`}
+                  className="min-h-[44px] border edge px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-200 dark:hover:bg-stone-200 dark:hover:text-stone-950"
+                >
+                  {book.name} 1
+                </Link>
+              )}
               <button
                 onClick={() => setRecoveryPickerOpen(true)}
                 className="min-h-[44px] border edge px-4 py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950"
@@ -600,6 +635,7 @@ export default function ReaderPage() {
           verseNum={study.verse}
           verseText={studyVerseText}
           entries={studyEntries}
+          entriesLoadFailed={studyEntriesFailed}
           originalWords={studyWords}
           lang={original?.lang ?? null}
           defaultTab={study.tab}

@@ -664,6 +664,7 @@ export function readingLabel(r: PlanReading): string {
 function PlanDetail({ open, onBack, onChanged, onDayPainted }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void>; onDayPainted: (dayIndex: number, completedAt: string | null) => void }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [pane, setPane] = useState<PassageTarget | null>(null);
   const [catchUpDismissed, setCatchUpDismissed] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -759,7 +760,11 @@ function PlanDetail({ open, onBack, onChanged, onDayPainted }: { open: OpenPlan;
   };
 
   const remove = async () => {
-    if (!window.confirm('Delete this plan? Your progress on it goes too.')) return;
+    // Two-step, not window.confirm: the first tap arms, the second acts. A native confirm dialog
+    // in a plan detail is heavier than the action deserves, and it froze the renderer in some
+    // environments (F-108).
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setConfirmDelete(false);
     // Was: await fetch(DELETE) then onBack() unconditionally, so a failed delete returned the
     // reader to a list with the plan still sitting in it and no message.
     try {
@@ -793,9 +798,29 @@ function PlanDetail({ open, onBack, onChanged, onDayPainted }: { open: OpenPlan;
         <button onClick={onBack} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300">
           ← All plans
         </button>
-        <button onClick={remove} className="inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700">
-          Delete plan
-        </button>
+        {confirmDelete ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span className="text-xs text-red-800 dark:text-red-200">Delete this plan and your progress?</span>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              className="inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={remove}
+              className="inline-flex min-h-[44px] items-center text-xs font-semibold text-red-800 hover:text-red-900 dark:text-red-200 dark:hover:text-red-100"
+            >
+              Delete
+            </button>
+          </div>
+        ) : (
+          <button onClick={remove} className="inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700">
+            Delete plan
+          </button>
+        )}
       </div>
 
       {/* An h1, not an h2. The page's only h1 is gated on `{!open}` above, so with a plan

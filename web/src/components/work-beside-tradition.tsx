@@ -56,11 +56,15 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
   const [voices, setVoices] = useState<Voice[] | null>(null);
   const [passages, setPassages] = useState(0);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<'unauthenticated' | string | null>(null);
+  const [voicesError, setVoicesError] = useState<'unauthenticated' | string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const [open, setOpen] = useState<Record<string, EntryState>>({});
 
   useEffect(() => {
     let alive = true;
+    setError(null);
+    setVoicesError(null);
     (async () => {
       try {
         const [dRes, vRes] = await Promise.all([
@@ -68,6 +72,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
           fetch(`/api/user-corpus/documents/${documentId}/voices`),
         ]);
         if (!alive) return;
+        if (dRes.status === 401) { setError('unauthenticated'); return; }
         if (dRes.status === 404) { setError('That document could not be found.'); return; }
         if (!dRes.ok) { setError('That document could not be loaded.'); return; }
         const d = (await dRes.json()) as { document: Doc; sections?: Section[] };
@@ -79,14 +84,14 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
           setPassages(v.rangesConsidered);
           setPending(v.pending);
         } else {
-          setVoices([]);
+          setVoicesError(vRes.status === 401 ? 'unauthenticated' : `The tradition could not be loaded. (${vRes.status})`);
         }
       } catch {
         if (alive) setError('That document could not be loaded. Check your connection and try again.');
       }
     })();
     return () => { alive = false; };
-  }, [documentId]);
+  }, [documentId, retryTick]);
 
   // One row per author+work, carrying every passage of this document they speak on. The join
   // returns a row per (author, work) already; grouping here keeps a voice that touches three of
@@ -146,7 +151,23 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
   if (error) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
-        <p role="alert" className="font-serif text-[15px] text-amber-800 dark:text-amber-300">{error}</p>
+        {error === 'unauthenticated' ? (
+          <p role="alert" className="font-serif text-[15px] text-red-800 dark:text-red-200">
+            Sign in to read your works and the tradition on them.{` `}
+            <Link href="/auth/sign-in" className="underline underline-offset-2 hover:text-red-900 dark:hover:text-red-100">Sign in →</Link>
+          </p>
+        ) : (
+          <p role="alert" className="font-serif text-[15px] text-red-800 dark:text-red-200">{error}</p>
+        )}
+        {error !== 'unauthenticated' && (
+          <button
+            type="button"
+            onClick={() => setRetryTick((t) => t + 1)}
+            className="mt-4 inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
+          >
+            Try again
+          </button>
+        )}
         <Link href="/library/uploads" className="mt-4 inline-block text-[15px] underline underline-offset-2">Back to My Works</Link>
       </div>
     );
@@ -161,7 +182,14 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
         {/* D18 (2026-08-20 audit) — the title is a raw filename minus extension; at text-2xl/3xl a
             long unbroken one overflows a 390px viewport. Truncate, same treatment as the list rows. */}
         <h1 className="mt-2 truncate font-display text-2xl font-medium text-stone-800 sm:text-3xl dark:text-stone-100">
-          {doc?.title ?? 'Loading…'}
+          {doc?.title ? (
+            doc.title
+          ) : (
+            <>
+              <span className="sr-only">Loading document</span>
+              <span aria-hidden className="inline-block h-8 w-48 animate-pulse bg-stone-200 dark:bg-stone-800" />
+            </>
+          )}
         </h1>
         {voices !== null && !pending && (
           <p className="mt-1 font-serif text-[14px] text-stone-500 dark:text-stone-400">
@@ -184,7 +212,27 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
             The tradition
           </h2>
           <div className="lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto lg:pr-2">
-            {voices === null ? (
+            {voicesError ? (
+              <div className="space-y-3">
+                {voicesError === 'unauthenticated' ? (
+                  <p role="alert" className="font-serif text-[15px] text-red-800 dark:text-red-200">
+                    Sign in to see the tradition on this document.{` `}
+                    <Link href="/auth/sign-in" className="underline underline-offset-2 hover:text-red-900 dark:hover:text-red-100">Sign in →</Link>
+                  </p>
+                ) : (
+                  <>
+                    <p role="alert" className="font-serif text-[15px] text-red-800 dark:text-red-200">{voicesError}</p>
+                    <button
+                      type="button"
+                      onClick={() => setRetryTick((t) => t + 1)}
+                      className="inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
+                    >
+                      Try again
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : voices === null ? (
               <p role="status" className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Reading the tradition…</p>
             ) : pending ? (
               <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">This document is still being indexed.</p>

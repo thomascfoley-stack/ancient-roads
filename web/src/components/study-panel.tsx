@@ -30,6 +30,7 @@ export function StudyPanel({
   verseNum,
   verseText,
   entries,
+  entriesLoadFailed = false,
   originalWords,
   lang,
   annotation,
@@ -49,6 +50,7 @@ export function StudyPanel({
   verseNum: number;
   verseText: string;
   entries: CommentaryEntry[];
+  entriesLoadFailed?: boolean;
   originalWords: OWord[] | null;
   lang: 'hebrew' | 'greek' | null;
   annotation: AnnotationControls;
@@ -236,7 +238,7 @@ export function StudyPanel({
 
         {/* Tab content */}
         <div className="min-h-[30vh] flex-1 overflow-y-auto">
-          {tab === 'commentaries' && <CommentariesTab entries={entries} />}
+          {tab === 'commentaries' && <CommentariesTab entries={entries} loadFailed={entriesLoadFailed} />}
           {tab === 'word' && <WordTab words={originalWords} lang={lang} focusIdx={focusWordIdx} selection={selection} />}
           {tab === 'notes' && <NotesTab annotation={annotation} />}
           {/* PRAY — block PR1a. An ACTION, not a fourth tab: commentaries/word/notes are facets of
@@ -416,7 +418,7 @@ function HighlightRow({
   );
 }
 
-function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
+function CommentariesTab({ entries, loadFailed }: { entries: CommentaryEntry[]; loadFailed?: boolean }) {
   // Register wall (reader side): sermons, theology/confessions, and hymns/poems are
   // DISTINCT registers — each renders in its OWN labeled section, never blended
   // into (or displacing) the exegetical voices (A6 line-by-line 2026-07-17 landed
@@ -432,6 +434,14 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
   const shown = showAll ? [...diverse, ...rest] : diverse;
   let lastEra = '';
   if (diverse.length === 0 && sermon.length === 0 && theology.length === 0 && songVerse.length === 0) {
+    if (loadFailed) {
+      return (
+        <div role="alert" className="px-5 py-10 text-center">
+          <p className="mb-1 text-sm text-stone-500 dark:text-stone-400">The commentaries couldn&rsquo;t be loaded.</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Close the panel and use Retry at the top of the chapter.</p>
+        </div>
+      );
+    }
     return <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">No commentary on this verse yet.</p>;
   }
   return (
@@ -629,7 +639,16 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
 
 function NotesTab({ annotation }: { annotation: AnnotationControls }) {
   const [text, setText] = useState(annotation.note);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => setText(annotation.note), [annotation.note]);
+
+  // F-127: keep the textarea exactly tall enough for its content instead of a fixed rows=6.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [text]);
 
   if (!annotation.signedIn) {
     return (
@@ -664,12 +683,13 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
     <div className="px-5 py-4">
       {/* PRD §6 input: parchment surface, 1px hairline, antique-gold focus, no shadow. */}
       <textarea
+        ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Write a note on this verse…"
         aria-label="Note on this verse"
-        rows={6}
-        className="w-full resize-y rounded-lg border edge edge-focus bg-stone-50 px-3 py-2.5 font-sans text-sm text-stone-900 placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400"
+        rows={1}
+        className="w-full resize-y overflow-hidden rounded-lg border edge edge-focus bg-stone-50 px-3 py-2.5 font-sans text-sm text-stone-900 placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400"
       />
       <div className="mt-2 flex items-center gap-2">
         {/* PRD §6 primary CTA: 1px ink hairline, transparent, ink fill on hover. */}

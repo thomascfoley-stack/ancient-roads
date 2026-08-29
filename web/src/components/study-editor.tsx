@@ -109,12 +109,14 @@ function GrowingTextarea({
   autoFocus,
   ariaLabel,
   placeholder = 'Write…',
+  maxLength,
 }: {
   value: string;
   onChange: (value: string) => void;
   autoFocus?: boolean;
   ariaLabel: string;
   placeholder?: string;
+  maxLength?: number;
 }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -159,6 +161,7 @@ function GrowingTextarea({
       aria-label={ariaLabel}
       rows={1}
       placeholder={placeholder}
+      maxLength={maxLength}
       className="focus-quiet w-full resize-none overflow-hidden border-0 bg-transparent font-serif text-lg leading-[1.75] text-stone-900 outline-none placeholder:text-stone-400 dark:text-stone-200 dark:placeholder:text-stone-500"
     />
   );
@@ -205,6 +208,7 @@ export function StudyEditor({
 }) {
   const [blocks, setBlocks] = useState<EditorBlock[]>(initialBlocks);
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
+  const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
   const [blockErrors, setBlockErrors] = useState<Record<string, 'remove' | 'move' | 'trim'>>({});
   /** The clipping currently in trim mode: its quote renders RAW (byte-for-byte) so selection
    *  offsets index the stored string exactly (the paragraph display reflows whitespace). */
@@ -364,6 +368,13 @@ export function StudyEditor({
 
   const setSave = (key: string, state: SaveState) =>
     setSaveStates((cur) => ({ ...cur, [key]: state }));
+  const setSaveError = (key: string, message: string | undefined) =>
+    setSaveErrors((cur) => {
+      const next = { ...cur };
+      if (message === undefined) delete next[key];
+      else next[key] = message;
+      return next;
+    });
   const setBlockError = (id: string, kind: 'remove' | 'move' | 'trim' | undefined) =>
     setBlockErrors((cur) => {
       const next = { ...cur };
@@ -391,7 +402,17 @@ export function StudyEditor({
     if (buf.inFlight) { buf.pending = true; return; }
     buf.inFlight = true;
     setSave(key, 'saving');
+    setSaveError(key, undefined);
     let currentKey = key;
+    const readServerMessage = async (res: Response): Promise<string | undefined> => {
+      try {
+        const data = (await res.json()) as { error?: { message?: string } | string; message?: string };
+        if (typeof data.error === 'string') return data.error;
+        if (typeof data.error?.message === 'string') return data.error.message;
+        if (typeof data.message === 'string') return data.message;
+      } catch {}
+      return undefined;
+    };
     try {
       if (isLocal(key)) {
         // First save of an inserted block: CREATE with the placement captured at insert time.
@@ -406,7 +427,12 @@ export function StudyEditor({
         const data = res.status === 201
           ? ((await res.json().catch(() => undefined)) as { block?: EditorBlock } | undefined)
           : undefined;
-        if (!data?.block?.id) { setSave(key, 'failed'); return; }
+        if (!data?.block?.id) {
+          const message = await readServerMessage(res);
+          setSave(key, 'failed');
+          if (message) setSaveError(key, message);
+          return;
+        }
         const created = data.block;
         setBlocks((cur) => cur.map((b) => (b.id === key ? { ...created, renderState: 'text' as const } : b)));
         bufs.current.delete(key);
@@ -419,6 +445,11 @@ export function StudyEditor({
           next[created.id] = 'saved';
           return next;
         });
+        setSaveErrors((cur) => {
+          const next = { ...cur };
+          delete next[key];
+          return next;
+        });
         currentKey = created.id;
         setEverSaved(true);
       } else {
@@ -427,7 +458,12 @@ export function StudyEditor({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ op: 'update_text', blockId: key, body: text }),
         });
-        if (!res.ok) { setSave(key, 'failed'); return; }
+        if (!res.ok) {
+          const message = await readServerMessage(res);
+          setSave(key, 'failed');
+          if (message) setSaveError(key, message);
+          return;
+        }
         buf.lastSaved = text;
         setSave(key, 'saved');
         setEverSaved(true);
@@ -869,11 +905,12 @@ export function StudyEditor({
                       onChange={(v) => onTextChange(block, v)}
                       autoFocus={isLocal(block.id)}
                       ariaLabel={`Text block ${i + 1}`}
+                      maxLength={20000}
                     />
-                    {saveStates[block.id] === 'failed' && (
-                      <div className="flex min-h-[1.5rem] items-center gap-3 font-sans text-xs tracking-[0.03em]">
+                    <div className="flex min-h-[1.5rem] flex-wrap items-center justify-between gap-3 font-sans text-xs tracking-[0.03em]">
+                      {saveStates[block.id] === 'failed' ? (
                         <span role="alert" className="flex items-center gap-2 text-red-800 dark:text-red-200">
-                          Save failed —
+                          {saveErrors[block.id] ?? 'Save failed'} —
                           <button
                             type="button"
                             onClick={() => void saveText(block.id)}
@@ -882,8 +919,15 @@ export function StudyEditor({
                             Retry
                           </button>
                         </span>
-                      </div>
-                    )}
+                      ) : (
+                        <span aria-hidden={saveStates[block.id] !== 'saved'} className={`${saveStates[block.id] === 'saved' ? 'text-stone-400 dark:text-stone-500' : 'text-transparent'}`}>
+                          Saved
+                        </span>
+                      )}
+                      <span className="text-stone-400 dark:text-stone-500" aria-live="polite">
+                        {(block.body ?? '').length.toLocaleString()} / 20,000
+                      </span>
+                    </div>
                   </div>
                 ) : block.renderState === 'clipping' ? (
                   <figure className="border-l-2 border-stone-300 py-1 pl-4 dark:border-stone-700">

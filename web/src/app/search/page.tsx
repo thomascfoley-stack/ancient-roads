@@ -33,6 +33,7 @@ import { searchLexicons } from '@/lib/search-lexicons';
 import { searchNotes, searchPrayers, searchStudies } from '@/lib/search-personal';
 import { keywordSearch, type UserHit } from '@/lib/user-corpus/search';
 import { uploadDenial } from '@/lib/user-corpus/access';
+import { publicReadPageThrottle } from '@/lib/public-read-limit';
 import {
   buildSearchHref,
   CORPUS_GROUPS,
@@ -60,8 +61,9 @@ import {
 } from '@/components/search-groups';
 import type { NoteSearchHit, PrayerSearchHit, StudySearchHit } from '@/lib/search-personal';
 import type { SectionSearchResult } from '@/lib/search-sections';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Search' };
+export const metadata: Metadata = { title: 'Search' };
 // Per-user (the personal groups) and never cacheable: a cached search page is the worst cache.
 export const dynamic = 'force-dynamic';
 
@@ -165,13 +167,21 @@ function personalVisible(v: PersonalRows): boolean {
   return v.rows.length > 0 || v.total > 0;
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
   const state = parseSearchState(await searchParams);
   const q = state.q.trim();
   const user = await currentUser();
 
+  // F-168: /search runs up to six full-text queries per request and answers signed-out;
+  // apply the same per-IP public-read throttle the other unauthenticated read routes use.
+  const throttleResult = await publicReadPageThrottle('search-page');
+
   const includePersonal = user !== null && state.includePersonal;
-  const [corpus, personal] = q
+  const [corpus, personal] = q && throttleResult === null
     ? await Promise.all([
         fetchCorpusGroups(q, state),
         includePersonal ? fetchPersonalGroups(q, state, user.id) : Promise.resolve([]),
@@ -242,7 +252,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         )}
       </form>
 
-      {!q && (
+      {throttleResult !== null && (
+        <div role="alert" className="mb-8 border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+          {throttleResult.message}
+        </div>
+      )}
+
+      {!q && throttleResult === null && (
         <p className="max-w-2xl font-serif text-base leading-relaxed text-stone-500 dark:text-stone-400">
           One search across the library — commentaries, sermons, hymns and poetry, theology, and
           lexicons — grouped by register, each group with its own count. Type a subject, a phrase,

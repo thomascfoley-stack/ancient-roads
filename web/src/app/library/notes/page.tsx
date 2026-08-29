@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
+import { DISPLAY_LOCALE } from '@/lib/locale';
 
 interface Note { id: string; verse_id: number; body: string; updated_at: string }
 interface Highlight { id: string; verse_id: number; color: string }
@@ -131,7 +132,15 @@ export default function MyLibraryPage() {
                       <Link href={ref.href} className="inline-flex min-h-[32px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
                         {ref.label}
                       </Link>
-                      <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300 break-words">{n.body}</p>
+                      <p
+                        className="mt-1 line-clamp-3 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300 break-words"
+                        title={n.body}
+                      >
+                        {n.body}
+                      </p>
+                      <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+                        {new Date(n.updated_at).toLocaleDateString(DISPLAY_LOCALE, { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </p>
                     </div>
                   );
                 })}

@@ -12,7 +12,10 @@ import { CATALOGS, catalogTraditions, isCatalogId, isSubFilterOf, listCatalogWor
 import { CatalogSearch } from '@/components/catalog-search';
 import { StudyEntrance } from '@/components/study-entrance';
 import { catalogHref, toggleTradition, withFacet, type CatalogUrlState } from '@/lib/catalog-href';
-import { decodeDesk, deskHref as deskHrefWith, withPane } from '@/lib/desk';
+import { decodeDesk, deskHref as deskHrefWith, withPane, type WorkPane } from '@/lib/desk';
+import { findWorkOrdinalForVerseId } from '@/lib/work';
+import { encodeVerseId } from '@bible/verse-id';
+import { BOOK_BY_SLUG } from '@bible/books';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,8 +79,23 @@ export default async function CatalogPage({
   // "Add to desk" carries the CURRENT desk through the URL (`?desk=` from the desk's + button), so
   // adding a work appends to what is already open instead of replacing it. No hidden state: if
   // `desk` is absent the link simply opens a fresh desk with this one work on it.
+  // F-158: if a Scripture pane is open, resolve the work's ordinal for that passage so the pane
+  // lands near the passage instead of at Genesis 1.
   const openDesk = decodeDesk(desk ? [desk] : []);
-  const deskHrefFor = (slug: string): string => deskHrefWith(withPane(openDesk, { kind: 'work', slug }));
+  const scripturePane = openDesk.find((p): p is { kind: 'scripture'; book: string; chapter: number } => p.kind === 'scripture');
+  const deskHrefFor = async (slug: string): Promise<string> => {
+    let pane: WorkPane = { kind: 'work', slug };
+    if (scripturePane) {
+      const book = BOOK_BY_SLUG.get(scripturePane.book) ?? BOOK_BY_SLUG.get(scripturePane.book.replace(/-/g, ''));
+      if (book) {
+        const ordinal = await findWorkOrdinalForVerseId(slug, encodeVerseId({ book: book.bookNum, chapter: scripturePane.chapter, verse: 1 }));
+        if (ordinal !== null) pane = { kind: 'work', slug, ordinal };
+      }
+    }
+    return deskHrefWith(withPane(openDesk, pane));
+  };
+  const deskHrefs = await Promise.all(works.map((w) => deskHrefFor(w.slug)));
+  const deskHrefBySlug = new Map(works.map((w, i) => [w.slug, deskHrefs[i]!]));
 
   // THE WHOLE URL STATE, in one value. Every link below is built from this by `catalogHref`, so a
   // facet cannot be dropped by a link that predates it — which is exactly how `?desk=` was being
@@ -224,7 +242,7 @@ export default async function CatalogPage({
               </Link>
               {/* Open this work beside what is already on the desk. */}
               <Link
-                href={deskHrefFor(w.slug)}
+                href={deskHrefBySlug.get(w.slug) ?? `/desk?p=work:${w.slug}`}
                 aria-label={`Add ${w.title} to your desk`}
                 title="Add to desk"
                 className="my-2 flex min-h-[44px] w-11 shrink-0 items-center justify-center border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"

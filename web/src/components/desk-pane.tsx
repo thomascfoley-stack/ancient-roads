@@ -329,8 +329,8 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
   }, [pane.slug]);
 
   useEffect(() => {
-    loadInitial(null);
-  }, [loadInitial]);
+    loadInitial(pane.ordinal ?? null);
+  }, [loadInitial, pane.ordinal]);
 
   // ---- the render window (adapted from work-reader.tsx — the contract is above) -------------
 

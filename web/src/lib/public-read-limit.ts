@@ -2,6 +2,7 @@ import 'server-only';
 import { checkGateRateLimit } from './rate-limit';
 import { clientIp } from './client-ip';
 import { apiError } from './api-error';
+import { headers } from 'next/headers';
 
 // PER-IP THROTTLE FOR THE UNAUTHENTICATED READ SURFACES (2026-08-02 deep audit, H3).
 //
@@ -26,19 +27,43 @@ import { apiError } from './api-error';
 /** Generous for a reader, hostile to a scraper. Env-tunable without a deploy. */
 const PUBLIC_READ_PER_MIN = Number(process.env.PUBLIC_READ_LIMIT_PER_MIN ?? 120);
 
+function throttleKey(ip: string | null, bucket: string): string {
+  // No trusted origin: share ONE bucket rather than handing out a free one per unknown caller.
+  // `clientIp` returns null instead of the old shared 'unknown' string precisely so this is a
+  // decision each caller makes rather than an accident.
+  return `read:${bucket}:${ip ?? 'no-trusted-ip'}`;
+}
+
 /**
  * @returns a 429 Response to return immediately, or null to proceed.
  */
 export async function publicReadThrottle(req: Request, bucket: string): Promise<Response | null> {
-  const ip = clientIp(req);
-  // No trusted origin: share ONE bucket rather than handing out a free one per unknown caller.
-  // `clientIp` returns null instead of the old shared 'unknown' string precisely so this is a
-  // decision each caller makes rather than an accident.
-  const key = `read:${bucket}:${ip ?? 'no-trusted-ip'}`;
+  const key = throttleKey(clientIp(req), bucket);
   const r = await checkGateRateLimit(key, undefined, PUBLIC_READ_PER_MIN);
   if (r.ok) return null;
   return apiError('RATE_LIMIT_MINUTE', {
     message: 'Too many requests. Please slow down and try again in a moment.',
     retryAfterSec: r.retryAfterSec ?? 60,
   });
+}
+
+export interface PageThrottleResult {
+  message: string;
+  retryAfterSec: number;
+}
+
+/**
+ * Page-level variant. Server Components cannot easily hand a Request around, but the IP resolution
+ * only needs headers. Returns a throttle result or null.
+ */
+export async function publicReadPageThrottle(bucket: string): Promise<PageThrottleResult | null> {
+  const h = await headers();
+  const ip = clientIp({ headers: { get: (name) => h.get(name) ?? null } });
+  const key = throttleKey(ip, bucket);
+  const r = await checkGateRateLimit(key, undefined, PUBLIC_READ_PER_MIN);
+  if (r.ok) return null;
+  return {
+    message: 'Too many searches. Please slow down and try again in a moment.',
+    retryAfterSec: r.retryAfterSec ?? 60,
+  };
 }

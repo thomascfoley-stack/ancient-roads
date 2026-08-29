@@ -135,7 +135,7 @@ export default function RootLayout({
             // Still inline and still in <head>: it must run BEFORE first paint or the reader sees
             // a flash of the wrong theme. That is also why `<html suppressHydrationWarning>` is on
             // the element below — this script mutates it before React arrives, by design.
-            __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('reader-theme');d.classList.toggle('reader-dark',t==='dark');var s=localStorage.getItem('reader-size');if(s)d.style.setProperty('--reading-size',s);var m=localStorage.getItem('reader-measure');if(m)d.style.setProperty('--reading-measure',m);}catch(e){}})();`,
+            __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('reader-theme');var dark=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;d.classList.toggle('reader-dark',dark);var s=localStorage.getItem('reader-size');if(s)d.style.setProperty('--reading-size',s);var m=localStorage.getItem('reader-measure');if(m)d.style.setProperty('--reading-measure',m);}catch(e){}})();`,
           }}
         />
       </head>

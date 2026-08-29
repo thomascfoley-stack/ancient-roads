@@ -129,6 +129,14 @@ function eraOf(year?: number) {
   return ERAS.modern;
 }
 
+/** Present a tradition label: title-cased, and never the raw word "unassigned". */
+function formatTradition(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const t = raw.trim().toLowerCase();
+  if (t === 'unassigned') return null;
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 // Which register lanes to search, alongside the always-on commentary answer.
 // History became a real lane 2026-08-14 (corpus-backlog #6: SERVED_HISTORIAN_WORKS +
 // retrieveHistorianLane + the josephus serve-flip) — it joined LANE_OPTIONS then, and the
@@ -267,7 +275,20 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
         body: JSON.stringify({ question: q, lanes, ...(threadIdRef.current ? { threadId: threadIdRef.current } : {}) }),
       });
       if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.', needsSignIn: true }); return; }
-      if (!res.ok || !res.body) { patch(id, { stage: 'error', error: 'Something went wrong. Please try again.' }); return; }
+      if (!res.ok) {
+        let message = 'Something went wrong. Please try again.';
+        try {
+          const data = (await res.json()) as { error?: { message?: string } | string; message?: string };
+          if (typeof data.error === 'string') message = data.error;
+          else if (typeof data.error?.message === 'string') message = data.error.message;
+          else if (typeof data.message === 'string') message = data.message;
+        } catch {
+          // an unparseable body keeps the generic message
+        }
+        patch(id, { stage: 'error', error: message });
+        return;
+      }
+      if (!res.body) { patch(id, { stage: 'error', error: 'Something went wrong. Please try again.' }); return; }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -953,12 +974,20 @@ function Answer({ result, onRetry, busy, contextTitle, withdrawnIds, askOutcomeI
                   {/* PRD §5: the quote is 17px Literata at 1.75 line-height, 62ch measure.
                       17px sits between the type ladder's 16/18 steps, so it stays a literal. */}
                   <blockquote className="max-w-[62ch] break-words font-serif text-[17px] leading-[1.75] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
-                  <figcaption className="small-caps mt-2.5 font-serif text-sm tracking-[0.05em] text-stone-500 dark:text-stone-400">
+                  <figcaption className="small-caps mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-serif text-sm tracking-[0.05em] text-stone-500 dark:text-stone-400">
                     <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-200 dark:group-hover:text-accent-300">{v.attribution.author}</span>
-                    <span aria-hidden="true" className={`ml-1.5 text-xs ${era.ornamentClass}`}>{era.ornament}</span>
-                    {`, ${v.attribution.work}`}
-                    <span className="ml-2">{v.attribution.tradition}</span>
-                    {v.attribution.slug && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
+                    <span aria-hidden="true" className={`text-xs ${era.ornamentClass}`}>{era.ornament}</span>
+                    {v.attribution.year != null && (
+                      <span className="text-xs text-stone-500 dark:text-stone-400">
+                        {v.attribution.year < 0 ? `${Math.abs(v.attribution.year)} BC` : v.attribution.year}
+                      </span>
+                    )}
+                    {formatTradition(v.attribution.tradition) && (
+                      <span className="rounded-full bg-stone-200/50 px-2 py-0.5 text-micro font-medium text-stone-600 dark:bg-stone-700/50 dark:text-stone-300">
+                        {formatTradition(v.attribution.tradition)}
+                      </span>
+                    )}
+                    {v.attribution.slug && <span className="text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
                   </figcaption>
                   {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
                 </figure>
@@ -1086,7 +1115,7 @@ function Fallback({ retrieval, onRetry, busy, contextTitle, gone }: { retrieval:
               </blockquote>
               <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
                 <span className="font-semibold text-stone-800 dark:text-stone-300">{r.metadata.author}</span>, {r.metadata.sourceTitle}
-                {r.metadata.tradition ? ` · ${r.metadata.tradition}` : ''}
+                {formatTradition(r.metadata.tradition) ? ` · ${formatTradition(r.metadata.tradition)}` : ''}
               </figcaption>
             </figure>
             {/* Save to study here too — R3 is "one verb on EVERY surfaced item", and the

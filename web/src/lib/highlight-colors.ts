@@ -17,16 +17,16 @@
 // when it is viewed outside the translation it was anchored in (the §1.3 pin; verse-display.tsx).
 // It must never read as the native mark — same colour family, unmistakably fainter.
 export const HIGHLIGHT_COLORS = [
-  { id: 'yellow', bg: 'bg-yellow-200/70', dot: 'bg-yellow-400', wash: 'bg-yellow-200/30' },
-  { id: 'amber', bg: 'bg-amber-300/70', dot: 'bg-amber-500', wash: 'bg-amber-300/30' },
-  { id: 'lime', bg: 'bg-lime-200/70', dot: 'bg-lime-400', wash: 'bg-lime-200/30' },
-  { id: 'green', bg: 'bg-green-200/70', dot: 'bg-green-400', wash: 'bg-green-200/30' },
-  { id: 'teal', bg: 'bg-teal-200/70', dot: 'bg-teal-400', wash: 'bg-teal-200/30' },
-  { id: 'sky', bg: 'bg-sky-200/70', dot: 'bg-sky-400', wash: 'bg-sky-200/30' },
-  { id: 'violet', bg: 'bg-violet-200/70', dot: 'bg-violet-400', wash: 'bg-violet-200/30' },
-  { id: 'purple', bg: 'bg-purple-200/70', dot: 'bg-purple-400', wash: 'bg-purple-200/30' },
-  { id: 'pink', bg: 'bg-pink-200/70', dot: 'bg-pink-400', wash: 'bg-pink-200/30' },
-  { id: 'rose', bg: 'bg-rose-200/70', dot: 'bg-rose-400', wash: 'bg-rose-200/30' },
+  { id: 'yellow', bg: 'bg-yellow-200/70 dark:bg-yellow-700/70', dot: 'bg-yellow-400', wash: 'bg-yellow-200/30 dark:bg-yellow-700/30' },
+  { id: 'amber', bg: 'bg-amber-300/70 dark:bg-amber-700/70', dot: 'bg-amber-500', wash: 'bg-amber-300/30 dark:bg-amber-700/30' },
+  { id: 'lime', bg: 'bg-lime-200/70 dark:bg-lime-700/70', dot: 'bg-lime-400', wash: 'bg-lime-200/30 dark:bg-lime-700/30' },
+  { id: 'green', bg: 'bg-green-200/70 dark:bg-green-700/70', dot: 'bg-green-400', wash: 'bg-green-200/30 dark:bg-green-700/30' },
+  { id: 'teal', bg: 'bg-teal-200/70 dark:bg-teal-700/70', dot: 'bg-teal-400', wash: 'bg-teal-200/30 dark:bg-teal-700/30' },
+  { id: 'sky', bg: 'bg-sky-200/70 dark:bg-sky-700/70', dot: 'bg-sky-400', wash: 'bg-sky-200/30 dark:bg-sky-700/30' },
+  { id: 'violet', bg: 'bg-violet-200/70 dark:bg-violet-700/70', dot: 'bg-violet-400', wash: 'bg-violet-200/30 dark:bg-violet-700/30' },
+  { id: 'purple', bg: 'bg-purple-200/70 dark:bg-purple-700/70', dot: 'bg-purple-400', wash: 'bg-purple-200/30 dark:bg-purple-700/30' },
+  { id: 'pink', bg: 'bg-pink-200/70 dark:bg-pink-700/70', dot: 'bg-pink-400', wash: 'bg-pink-200/30 dark:bg-pink-700/30' },
+  { id: 'rose', bg: 'bg-rose-200/70 dark:bg-rose-700/70', dot: 'bg-rose-400', wash: 'bg-rose-200/30 dark:bg-rose-700/30' },
 ] as const;
 
 export const HIGHLIGHT_BG: Record<string, string> = Object.fromEntries(

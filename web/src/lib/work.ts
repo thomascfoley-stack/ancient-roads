@@ -75,6 +75,31 @@ export interface WorkTocUnit {
   verseEnd: number | null;
 }
 
+/**
+ * Find the first unit in a work whose verse anchor range overlaps a target verse id.
+ * Returns the unit's firstOrdinal, or null when the work has no anchors overlapping the passage.
+ * Used by the desk so a commentary added beside an open Scripture pane opens near the passage.
+ */
+export async function findWorkOrdinalForVerseId(
+  slug: string,
+  verseId: number,
+): Promise<number | null> {
+  const sourceId = await publishedSourceId(slug);
+  if (sourceId === null) return null;
+  const sql = getDb();
+  const rows = (await sql.query(
+    `SELECT min(s.ordinal) AS ordinal
+       FROM sections s
+       JOIN section_anchors a ON a.section_id = s.id
+      WHERE s.source_id = $1
+        AND a.verse_id_start <= $2
+        AND a.verse_id_end >= $2
+      LIMIT 1`,
+    [sourceId, verseId],
+  )) as Array<{ ordinal: number }>;
+  return rows[0]?.ordinal ?? null;
+}
+
 export interface WorkSectionsPage {
   sections: WorkSectionRow[];
   /** Keyset cursor for the next page: the last returned ordinal, or null when this

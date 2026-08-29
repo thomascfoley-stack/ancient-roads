@@ -32,6 +32,13 @@ function hashOrdinal(): number | null {
   return m ? Math.max(1, Number(m[1])) : null;
 }
 
+function resolveLanding(slug: string) {
+  const deep = hashOrdinal();
+  if (deep !== null) return { ordinal: deep, scrollPct: 0, deepLinked: true };
+  const saved = loadWorkProgress(slug);
+  return { ordinal: saved?.ordinal ?? null, scrollPct: saved?.scrollPct ?? 0, deepLinked: false };
+}
+
 export default function WorkPage() {
   const { slug } = useParams<{ slug: string }>();
   const [work, setWork] = useState<{ source: WorkSource; toc: WorkTocUnit[] } | null>(null);
@@ -44,21 +51,40 @@ export default function WorkPage() {
   const [progress, setProgress] = useState<{ ordinal: number; scrollPct: number } | null>(null);
   const [seek, setSeek] = useState<WorkReaderSeek | null>(null);
 
-  // The landing position, resolved once: deep-link hash beats the saved position (a shared
-  // link must land where it points); otherwise resume restores the saved ordinal + offset.
-  const [landing] = useState(() => {
-    const deep = hashOrdinal();
-    if (deep !== null) return { ordinal: deep, scrollPct: 0, deepLinked: true };
-    const saved = loadWorkProgress(slug);
-    return { ordinal: saved?.ordinal ?? null, scrollPct: saved?.scrollPct ?? 0, deepLinked: false };
-  });
+  // The landing position, resolved on mount AND on every hash change (F-088/F-155/F24):
+  // client-side navigation sets the URL hash AFTER the new page mounts, so resolving it once
+  // in a useState initializer reads the previous page's (empty) hash. A shared link must land
+  // where it points; otherwise resume restores the saved ordinal + offset.
+  const [landing, setLanding] = useState(() => resolveLanding(slug));
+
+  useEffect(() => {
+    const onHashChange = () => setLanding(resolveLanding(slug));
+    window.addEventListener('hashchange', onHashChange);
+    // Next.js client-side nav completes after mount; re-check once the task queue clears.
+    const id = setTimeout(onHashChange, 0);
+    return () => {
+      window.removeEventListener('hashchange', onHashChange);
+      clearTimeout(id);
+    };
+  }, [slug]);
+
+  // When the resolved landing changes (client-side nav with a new hash), tell WorkReader to
+  // seek there. This also re-arms the hash-write guard for deep links.
+  useEffect(() => {
+    suppressHashWrite.current = landing.deepLinked;
+    if (landing.ordinal !== null) {
+      setSeek({ ordinal: landing.ordinal, scrollPct: landing.scrollPct, nonce: Date.now() });
+    }
+  }, [landing]);
+
   // The frozen "where you left off" snapshot for the Continue chip — only meaningful when a
   // deep-link took the reader somewhere else (after an auto-restore there is nothing to
   // continue TO; the live record keeps updating as they read).
   const [continueTarget, setContinueTarget] = useState<WorkProgress | null>(() => {
-    if (!landing.deepLinked) return null;
+    const initial = resolveLanding(slug);
+    if (!initial.deepLinked) return null;
     const saved = loadWorkProgress(slug);
-    return saved && saved.ordinal !== landing.ordinal ? saved : null;
+    return saved && saved.ordinal !== initial.ordinal ? saved : null;
   });
 
   useEffect(() => {
@@ -87,21 +113,30 @@ export default function WorkPage() {
     last: 0,
     timer: null,
   });
+  // F-088/F-155/F24: suppress the hash rewrite until the reader has actually scrolled to a
+  // deep-linked section. On client-side nav the spy otherwise writes #s1 before the scroll lands.
+  const suppressHashWrite = useRef(landing.deepLinked);
   const handleProgress = useCallback(
     (ordinal: number, scrollPct: number) => {
       setProgress({ ordinal, scrollPct });
       const save = () => {
         persist.current.last = Date.now();
         saveWorkProgress({ slug, ordinal, scrollPct, savedAt: Date.now() });
-        window.history.replaceState(null, '', `#s${ordinal}`);
+        if (!suppressHashWrite.current) {
+          window.history.replaceState(null, '', `#s${ordinal}`);
+        }
       };
       if (Date.now() - persist.current.last >= 500) save();
       else {
         if (persist.current.timer) clearTimeout(persist.current.timer);
         persist.current.timer = setTimeout(save, 500);
       }
+      // Once the reported ordinal matches the deep-linked target, the landing scroll is done.
+      if (suppressHashWrite.current && ordinal === landing.ordinal) {
+        suppressHashWrite.current = false;
+      }
     },
-    [slug],
+    [slug, landing.ordinal],
   );
   useEffect(
     () => () => {
