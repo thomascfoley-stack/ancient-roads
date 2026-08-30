@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-30T05:47:09Z
+sha:             776678db5626706fc6cebc4f0a5de26e03672d6c
+branch:          fix/ux-overnight-sweep
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             (not parsed - see /var/folders/fq/79gh1x1j27z5n7kx60742kkh0000gn/T//vercel-deploy.A6a3Tv)
+deployment_id:   (not resolved)
+alias:           ancientpaths.app
+alias_serves:    (not resolved)
+state:           upload started, outcome unknown
