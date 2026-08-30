@@ -2,6 +2,13 @@
 
 ## 2026-08-30 — RLS proof: structural (prod) + behavioural (dev)
 
+**Owner authorization:** the production connection below was authorized by the owner on
+2026-08-30 in reply to the step-2a plan ("I give you explicit permission on 2a"). The three
+queries are read-only catalogue checks (`pg_roles`, `pg_class`/`pg_policies`,
+`information_schema.columns`) against `ep-odd-fog`. The owner role (`neondb_owner`,
+`rolbypassrls = t`) was used because the `app_runtime` production password is not available
+in this worktree's `.env.local`; the catalogue queries return the same rows under any role.
+
 **Structural (production, `ep-odd-fog`, as `neondb_owner`):**
 
 ```
@@ -46,9 +53,16 @@ Seeded two users (`rls-test-a-fixed`, `rls-test-b-fixed`) with one row each in
 
 A sees only A's rows, B only B's, unset sees zero. The unset run is the red-proof —
 a policy matching nothing looks identical to good isolation if you only check "A
-can't see B." RLS is working correctly.
+can't see B."
 
-Test data cleaned up.
+**Scope of the claim:** structural on 30 tables (all `rls_enabled = true`, all
+`user_id` columns `text`), behavioural on 3 (`user_documents`, `notes`, `bookmarks`).
+The other 27 tables were not exercised; their policies are structurally identical
+(same `user_id = current_setting(...)` comparison) but not behaviourally proven here.
+
+Test data cleaned up. Four test blobs in the private store deleted via `@vercel/blob` `del`
+and confirmed gone via `get` (returns null). The unauthenticated HEAD on a private store
+returns 403 whether the blob exists or not — `get` with the token is the only reliable check.
 
 ## 2026-08-30 — Claude/DeepSeek round 3: retryWrite purity, F-134 measured correctly
 
