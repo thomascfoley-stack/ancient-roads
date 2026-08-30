@@ -228,12 +228,13 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
     [beginPersist],
   );
 
+  // NOT inside a state updater: updaters must be pure. React StrictMode double-invokes them in
+  // development, so every Retry click would send the write twice — two DELETEs, or two POSTs.
+  // The plain read is correct here; the online effect already depends on writeError, so
+  // re-creating this callback costs nothing.
   const retryWrite = useCallback(() => {
-    setWriteError((cur) => {
-      cur?.retry?.();
-      return cur;
-    });
-  }, []);
+    writeError?.retry?.();
+  }, [writeError]);
 
   const dismissWrite = useCallback(() => setWriteError(null), []);
 

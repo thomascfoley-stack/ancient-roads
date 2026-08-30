@@ -1,5 +1,26 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-30 — Claude/DeepSeek round 3: retryWrite purity, F-134 measured correctly
+
+**retryWrite impure updater.** The `setWriteError((cur) => { cur?.retry?.(); return cur; })`
+updater had a side effect inside it. React StrictMode double-invokes updaters in development,
+so every Retry click would send the write twice. Fixed: `writeError?.retry?.()` with
+`[writeError]` dep. The online effect already re-subscribes on `writeError`, so the
+re-created callback costs nothing.
+
+**F-134 measurement corrected.** The earlier "4MB and 6MB return 500 on localhost" measured
+the D3 blob-token gap (`blob.ts:21-28`), not a platform body cap — there is no Vercel proxy in
+front of `next start`. The correct probe: a 6MB POST to `/api/gate` on production (excluded
+from the middleware matcher, same `nodejs` runtime as the upload route). Result: **413** —
+Vercel rejects the body before the function runs. The platform body cap is real.
+`middlewareClientMaxBodySize: '25mb'` governs the middleware layer only, not the function body
+limit. The real fix is a client-direct Blob upload (presigned URL from the browser to Vercel
+Blob, bypassing the serverless function entirely).
+
+**Stale figure killed.** `LAUNCH_BLOCKERS.md:128` said "fail at ~10 MB" — the old Next
+middleware default, now stale. Replaced with the 413-confirmed 6 MB figure and a pointer to
+the verification doc.
+
 ## 2026-08-30 — Claude review: three blockers fixed, evidence corrected
 
 **Claude's runtime review found three blocking defects and four evidence problems in my work.

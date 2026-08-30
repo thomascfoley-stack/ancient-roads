@@ -22,7 +22,7 @@ builds its own artifact, so "byte-identical" is not checkable.
 | **F-144** scroll restore | Scroll to 500 on `/read/jhn/1`, navigate to `/read/jhn/2`, navigate back. Lands at **500**. The fix targets `<main id="main">` (AppShell's scroll container), not `window`. |
 | **F-157** page titles | `/home` → "Today", `/search` → "Search", `/read/jhn/3` → "John 3". No more eleven surfaces sharing "Ancient Paths". |
 | **F15** search reference jump | `/search?q=John+3:16` renders **"Go to John 3:16 →"** above the text results. |
-| **F-134** upload body cap | `middlewareClientMaxBodySize: '25mb'` in `next.config.ts`. **Platform cap confirmed still blocking:** 4MB and 6MB uploads return 500 on the local production build. The real fix is a client-direct Blob upload, not a config value. |
+| **F-134** upload body cap | `middlewareClientMaxBodySize: '25mb'` in `next.config.ts`. **Platform cap confirmed by a 6MB POST to `/api/gate` on production: 413** — Vercel rejects the body before the function runs. The config only governs the middleware layer, not the function body limit. The real fix is a client-direct Blob upload (presigned URL from the browser to Vercel Blob, bypassing the serverless function entirely). |
 
 ## Code-reading only (not runtime-verified)
 
