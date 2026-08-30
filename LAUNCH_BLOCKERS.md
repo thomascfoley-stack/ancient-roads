@@ -14,7 +14,26 @@ Compiled for owner review. Items are marked **[DECISION]** (needs owner ruling),
 
 **Owner ruling (2026-08-30):** Keep the gate. Launch is waitlist-only: the marketing page collects emails, the owner invites readers a few at a time. No public sign-up until the Neon console toggle is re-attested.
 
-**Owner action:** Re-attest "Verify at Sign-up" in the Neon console, then decide whether to open publicly.
+**Verify at Sign-up attested 2026-08-30 by Claude (owner-authorized), from the Neon console:**
+production branch `br-nameless-brook-atzgh1gq` (Default). **ON** — verification method: code (not link).
+Full auth config: Sign-up with Email ON, Verify at Sign-up ON (code), Sign-in with Email ON,
+Google OAuth ON (shared keys), Email provider Shared (sender `auth@mail.myneon.app`),
+Trusted domains `https://ancientpaths.app` only, Allow Localhost ON, Webhooks OFF, 7 users signed up.
+
+**Owner ruling (2026-08-30, follow-up):** sign-ups stay open. No invite-only gate. Google OAuth
+stays on Neon's shared keys until the owner sets up their own OAuth client. The console banner
+"Anyone on the web can sign up for your app" is accurate — restricted signups aren't supported
+by Neon; the gate (if any) is in app code, not Neon's.
+
+**Three flags Claude raised (not blocking, owner's call when ready):**
+- **Allow Localhost ON in production** — Neon's own text says this reduces security in production.
+  Dev has its own branch; this can be turned off.
+- **Google OAuth on shared keys** — consent screen shows Neon's app identity, not yours.
+  Swap to your own client ID when you set up your OAuth app.
+- **Email provider Shared** — fine for 7 users; verification codes will hit deliverability limits
+  on a real batch, and the sender is `myneon.app`, not your domain.
+
+**Owner action:** None blocking. The three flags are for when you're ready.
 
 ### 1a. Waitlist workflow — how to invite a reader
 
