@@ -12,6 +12,14 @@ import { UploadRefused } from '@/lib/user-corpus/types';
 // zlib (the docx reader) and pdfjs both need Node, not the edge runtime.
 export const runtime = 'nodejs';
 
+// KEPT FOR SMALL FILES ONLY (< 4 MB). The product's upload path is the two-call
+// direct-to-Blob flow (upload-url → PUT → upload-complete, docs/DIRECT_UPLOAD_DESIGN.md),
+// which bypasses the serverless function's body cap. This route remains mounted for
+// backward compatibility and for files small enough to fit through the platform's
+// ~4 MB function body cap (413 confirmed on production, docs/evidence/f134-probe-2026-08-30.txt).
+// The 25 MB app limit in sniff.ts applies to the direct-to-Blob flow; this route is
+// effectively capped at the platform limit regardless of what MAX_UPLOAD_BYTES says.
+//
 // NOTE ON maxDuration, deliberately NOT exported here. Every `maxDuration` segment config under
 // web/src/app is held equal to ASK_MAX_DURATION_SEC by test/ask-max-duration-literal.test.ts,
 // because for the ask routes the ceiling and the in-process budget are one number with two
@@ -72,6 +80,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   try {
+    // This route's own cap: 4 MB, the platform's function body limit. MAX_UPLOAD_BYTES
+    // (25 MB) governs the direct-to-Blob flow; bytes over ~4 MB never reach this handler
+    // anyway (Vercel returns 413 before the function runs), but refusing here gives a
+    // clean message instead of a bare platform error.
+    const ROUTE_CAP = 4 * 1024 * 1024;
+    if (bytes.byteLength > ROUTE_CAP) {
+      return NextResponse.json(
+        { error: `Larger than the ${ROUTE_CAP / (1024 * 1024)} MB limit for this upload path. Use the direct upload for files over 4 MB.` },
+        { status: 413 },
+      );
+    }
     assertWithinSizeCap(bytes.byteLength);
     // Sniffed here as well as in the parser so an unsupported file is refused at the door with a
     // 400, rather than accepted, stored, queued, and failed asynchronously. Same function, so the

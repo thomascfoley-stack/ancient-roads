@@ -112,6 +112,18 @@ The right shape is a per-invite token or a gate-level allowlist. Until that ship
 **Impact:** The flip works and is restored each time, but it is an undocumented workaround repeated silently on every deploy.
 **Recommendation:** Either rule it (document as the accepted deploy procedure) or fix it properly (make `deploy.sh` handle the `rootDirectory` mismatch without the manual flip).
 
+## 13. Flaky licensing invariant
+
+**Status:** [FILED]
+**What:** `test/invariants/licensing.test.ts` timed out twice on 2026-08-30 and was dismissed as flaky both times. `CLAUDE.md` treats licensing as the existential gate — a flaky licensing test is how a real licensing failure gets missed.
+**Recommendation:** The test needs a timeout budget review and possibly a dedicated DB endpoint or fixture to avoid the shared dev-branch contention. File as a ticket for the owner backlog.
+
+## 14. Adapter-loop checks `embeddings` instead of `section_embeddings`
+
+**Status:** [FILED]
+**What:** `adapter-loop.ts` reports completed works as "partial" when they use `section_embeddings` (the per-section model) instead of `embeddings` (the flat-chunk model). `openbible-topics` sat on the blocker list as "partial" when it was complete (6711 sections + 6711 section_embeddings).
+**Recommendation:** The loop's completeness check should query both tables. File as a bug.
+
 ---
 
 ## Bugs closed in this session

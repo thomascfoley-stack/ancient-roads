@@ -1,5 +1,55 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-30 — RLS proof: structural (prod) + behavioural (dev)
+
+**Structural (production, `ep-odd-fog`, as `neondb_owner`):**
+
+```
+   rolname    | rolbypassrls | rolsuper 
+--------------+--------------+----------
+ app_runtime   | f            | f
+ neondb_owner  | t            | f
+ authenticator | f            | f
+```
+
+`app_runtime` has `rolbypassrls = false` and `rolsuper = false`. All 30 tables with a
+`user_id` column have `rls_enabled = true`. All `user_id` columns are `text` type
+(no `uuid` anywhere — the Neon Auth id-format concern is not an issue).
+
+**Behavioural (dev, as `app_runtime`):**
+
+Seeded two users (`rls-test-a-fixed`, `rls-test-b-fixed`) with one row each in
+`user_documents`, `notes`, `bookmarks`. Then, with no WHERE clause:
+
+```
+=== User A sees ===
+       t        | count 
+----------------+-------
+ user_documents |     1
+ notes          |     1
+ bookmarks      |     1
+
+=== User B sees ===
+       t        | count 
+----------------+-------
+ user_documents |     1
+ notes          |     1
+ bookmarks      |     1
+
+=== Unset sees ===
+       t        | count 
+----------------+-------
+ user_documents |     0
+ notes          |     0
+ bookmarks      |     0
+```
+
+A sees only A's rows, B only B's, unset sees zero. The unset run is the red-proof —
+a policy matching nothing looks identical to good isolation if you only check "A
+can't see B." RLS is working correctly.
+
+Test data cleaned up.
+
 ## 2026-08-30 — Claude/DeepSeek round 3: retryWrite purity, F-134 measured correctly
 
 **retryWrite impure updater.** The `setWriteError((cur) => { cur?.retry?.(); return cur; })`

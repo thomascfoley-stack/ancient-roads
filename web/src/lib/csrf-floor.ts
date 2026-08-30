@@ -10,11 +10,10 @@
 //
 // The rejection rides the standard error envelope (docs/API_ERRORS.md): 400 INVALID_REQUEST.
 // The registry has no 415 code and the plans/[id] precedent already answered with this shape.
-import { NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
 
 /** 400 INVALID_REQUEST unless the request's Content-Type is application/json; null when it is. */
-export function requireJsonContentType(req: Request): NextResponse | null {
+export function requireJsonContentType(req: Request): Response | null {
   const contentType = req.headers.get('content-type') ?? '';
   if (!contentType.toLowerCase().includes('application/json')) {
     return apiError('INVALID_REQUEST', { message: 'Content-Type must be application/json' });

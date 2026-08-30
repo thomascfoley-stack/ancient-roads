@@ -448,6 +448,15 @@ does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION
   verse-presence scan); the tradition-gap join (ADR-104 discharged — `LEGAL_CORPUS_FILTER` is
   `(served)`); suggested readings; the `/library/uploads` UI ("My Works"). Multi-user is ON in
   prod (`USER_CORPUS_MULTI_USER=true`).
+- **Direct-to-Blob upload (2026-08-30):** the product's upload path is now the two-call
+  presigned-URL flow (`/api/user-corpus/upload-url` → browser PUT → `/api/user-corpus/upload-complete`),
+  bypassing the serverless function's ~4 MB platform body cap (413 confirmed on production,
+  `docs/evidence/f134-probe-2026-08-30.txt`). The original `/api/user-corpus/upload` route remains
+  mounted for small files (< 4 MB) with its own explicit cap. Guards: auth + CSRF + tenancy shape
+  regex, separate rate-limit buckets (`corpus-upload:*` 10/min/100/day, `corpus-complete:*`
+  60/min/500/day), quota pre-flight in upload-url plus real enforcement in upload-complete, blob
+  cleanup on every failure path including 429. `MAX_UPLOAD_BYTES` is 25 MB again, and it is the
+  real limit. Verified at 6 MB end-to-end on a local production build.
 - **Measured through the SHIPPED pipeline** (2026-08-20/21, evidence under
   `docs/evidence/uploader-deep-dive-2026-08-20/`): stated-text recall at the shipped K=3 was
   **70% chapter-level** on fresh held-out (the design's 90% belongs to K=1, which does not ship);

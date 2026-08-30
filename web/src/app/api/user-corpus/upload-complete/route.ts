@@ -20,7 +20,7 @@ import { UploadRefused } from '@/lib/user-corpus/types';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
   const csrf = requireJsonContentType(req);
   if (csrf) return csrf;
   const guard = await guardUser();
