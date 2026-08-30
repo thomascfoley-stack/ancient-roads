@@ -20,7 +20,7 @@ import { UploadRefused } from '@/lib/user-corpus/types';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const csrf = requireJsonContentType(req);
   if (csrf) return csrf;
   const guard = await guardUser();
@@ -124,11 +124,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ document: doc }, { status: 201 });
   } catch (e) {
-    // Every failure path deletes the uploaded blob. A 25 MB file that fails the sniff,
-    // the quota check, or the dedupe leaves the bytes in Blob storage permanently —
-    // unbounded cost from any invited user, no malice required. The duplicate paths
-    // above already do this; the catch must too. The delete is best-effort: a blob
-    // that was never uploaded (or already deleted) is a logged no-op, not a 500.
+    // Every failure path deletes the uploaded blob — with one exception worth naming.
+    // A 25 MB file that fails the sniff, the quota check, or the dedupe leaves the
+    // bytes in Blob storage permanently (unbounded cost, no malice required). The
+    // duplicate paths above already do this; the catch must too.
+    //
+    // THE EXCEPTION: if setBlobPathname throws, createDocument has ALREADY succeeded —
+    // the catch then deletes the blob out from under an existing document row. The row
+    // outlives the bytes. That is the right trade (a recoverable corrupt document the
+    // drain reports and isHealable lets the reader re-upload, vs. an anonymous blob
+    // nobody owns), but the next person to read this should know it can happen.
     await deleteUserDocument(pathname).catch((delErr) => {
       console.error('[upload-complete] could not delete blob on failure:', (delErr as Error).message);
     });

@@ -37,15 +37,17 @@ const SPECS: Record<ApiErrorCode, Spec> = {
 
 // Build the error response. `opts.message` overrides only for the same code's safe
 // wording (e.g. a specific INVALID_REQUEST reason); it must never carry internals.
+import { NextResponse } from 'next/server';
+
 export function apiError(
   code: ApiErrorCode,
   opts: { message?: string; retryAfterSec?: number } = {},
-): Response {
+): NextResponse {
   const spec = SPECS[code];
   const retryAfterSec = opts.retryAfterSec ?? spec.retryAfterSec;
   const headers: Record<string, string> = {};
   if (retryAfterSec != null) headers['Retry-After'] = String(retryAfterSec);
-  return Response.json(
+  return NextResponse.json(
     { error: { code, message: opts.message ?? spec.message, ...(retryAfterSec != null ? { retryAfterSec } : {}) } },
     { status: spec.status, headers },
   );

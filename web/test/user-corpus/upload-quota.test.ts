@@ -6,6 +6,13 @@
 // table (seeded through runAsUser, so RLS binds), and the upload route's wiring: 429 when the
 // spend meter refuses, 403 naming the limit and the current usage when the quota does, dedupe
 // answered BEFORE quota (a re-upload adds nothing to usage).
+//
+// NOTE (2026-08-30): this suite still covers the ORIGINAL /api/user-corpus/upload route, which
+// remains mounted for small files (< 4 MB, the platform body cap). The product's upload path is
+// now the two-call direct-to-Blob flow (upload-url → PUT → upload-complete). The quota ENFORCEMENT
+// is the same — createDocument's transaction throws QuotaExceeded in both paths — but the NEW
+// pre-flight check in upload-url (checkUploadQuota before the presign) has no test coverage here.
+// A dedicated suite for the new routes' pre-flight is the follow-up.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
