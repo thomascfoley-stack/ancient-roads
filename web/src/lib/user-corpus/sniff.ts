@@ -9,13 +9,13 @@
 import { UploadRefused, type SniffedType } from './types';
 
 /**
- * Hard byte ceiling on an upload. 4 MB is the largest body Vercel's platform lets through to a
- * Node.js serverless function (confirmed 2026-08-30: a 6 MB POST to /api/gate on production
- * returns 413 before the function runs). The UI must not advertise a limit the platform cannot
- * honour — the direct-to-Blob slice (presigned browser→Blob upload, bypassing the function)
- * is the path back to 25 MB. Enforced on the RAW bytes, before anything is decompressed.
+ * Hard byte ceiling on an upload. 25 MB comfortably holds a scanned book chapter or a
+ * 400-page docx of prose; it is small enough that a request holding one in memory is not itself
+ * the outage. The bytes reach the store via a presigned URL (direct-to-Blob,
+ * docs/DIRECT_UPLOAD_DESIGN.md), so the serverless function's ~4 MB platform body cap does not
+ * apply. Enforced on the RAW bytes, before anything is decompressed.
  */
-export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 /**
  * Ceiling on DECOMPRESSED bytes drawn out of a container (docx is a zip). This is the zip-bomb

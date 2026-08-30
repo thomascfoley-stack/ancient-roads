@@ -404,21 +404,47 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
         let outcome: UploadItemState;
         let message: string | undefined;
         try {
-          const body = new FormData();
-          body.append('file', file);
-          const r = await fetch('/api/user-corpus/upload', { method: 'POST', body });
-          const d = await readJson<{ error?: unknown; message?: string; duplicateOf?: string }>(r);
-          if (!r.ok) {
-            // A refusal is shown as itself. The route writes messages a person can act on
-            // ("That PDF has no readable text layer… it needs OCR") — surfaced verbatim.
+          // Two-call direct-to-Blob flow (DIRECT_UPLOAD_DESIGN.md): the bytes never
+          // touch the serverless function, so the ~4 MB platform body cap does not apply.
+          // 1. Get a presigned URL. 2. PUT directly to Blob. 3. Record the document.
+          const urlRes = await fetch('/api/user-corpus/upload-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: file.name, size: file.size }),
+          });
+          const urlData = await readJson<{ uploadUrl?: string; pathname?: string; error?: unknown }>(urlRes);
+          if (!urlRes.ok || !urlData?.uploadUrl || !urlData?.pathname) {
+            outcome = 'failed';
+            message = errorMessage(urlData, 'The upload could not be prepared. Please try again.');
+            settled.set(it.key, { ...it, state: outcome, message });
+            patch(it.key, { state: outcome, message });
+            continue;
+          }
+
+          // Direct PUT to Blob — the browser talks to the store, not to us.
+          const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', body: file });
+          if (!putRes.ok) {
+            outcome = 'failed';
+            message = 'The file could not be stored. Please try again.';
+            settled.set(it.key, { ...it, state: outcome, message });
+            patch(it.key, { state: outcome, message });
+            continue;
+          }
+
+          // Record the document (sniff + checksum + dedupe + queue happen here).
+          const completeRes = await fetch('/api/user-corpus/upload-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pathname: urlData.pathname, name: file.name }),
+          });
+          const d = await readJson<{ error?: unknown; message?: string; duplicateOf?: string }>(completeRes);
+          if (!completeRes.ok) {
             outcome = 'failed';
             message = errorMessage(d, 'The upload failed. Please try again.');
           } else if (!d) {
-            // B021 — a non-JSON 200 (the gate's HTML, a platform error page).
             outcome = 'failed';
             message = 'The upload could not be confirmed. Please try again.';
           } else if (d.duplicateOf) {
-            // The dedupe 200 — its own state, never an error (D13).
             outcome = 'duplicate';
           } else {
             outcome = 'done';

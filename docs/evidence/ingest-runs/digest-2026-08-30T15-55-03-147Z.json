@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "startedAt": "2026-08-30T15:55:03.147Z",
+    "endedAt": "2026-08-30T15:56:04.550Z",
+    "outcome": "halted",
+    "outcomeReason": "quarantine-rate: quarantine rate 2/4 > 30% — investigate before resuming"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 0,
+    "skipped": 0,
+    "quarantined": 2,
+    "escalated": 2
+  },
+  "staged": [],
+  "escalations": [
+    {
+      "slug": "openbible-topics",
+      "adapter": "topical-index",
+      "sourceType": "topical_index",
+      "result": "escalated",
+      "reason": "adapter \"topical-index\" not run by this loop"
+    },
+    {
+      "slug": "thayers-lexicon",
+      "adapter": "thayers",
+      "sourceType": "lexicon",
+      "result": "escalated",
+      "reason": "adapter \"thayers\" not run by this loop"
+    }
+  ],
+  "quarantined": [
+    {
+      "slug": "spurgeon-catechism",
+      "adapter": "ccel",
+      "sourceType": "confession",
+      "result": "quarantined",
+      "code": "parse",
+      "reason": "parse: only 1 units — structure not recognized"
+    },
+    {
+      "slug": "vincent-word-studies",
+      "adapter": "ccel",
+      "sourceType": "lexicon",
+      "result": "quarantined",
+      "code": "parse",
+      "reason": "parse: author page enumeration empty (vincent)"
+    }
+  ]
+}
