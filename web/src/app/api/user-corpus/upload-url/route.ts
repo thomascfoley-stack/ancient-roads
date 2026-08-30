@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
-import { checkUploadQuota, QuotaExceeded } from '@/lib/user-corpus/quota';
+import { checkUploadQuota } from '@/lib/user-corpus/quota';
+import { requireJsonContentType } from '@/lib/csrf-floor';
 import { issueSignedToken, presignUrl } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
 
@@ -24,6 +25,8 @@ function ext(name: string): string {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const csrf = requireJsonContentType(req);
+  if (csrf) return csrf;
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;

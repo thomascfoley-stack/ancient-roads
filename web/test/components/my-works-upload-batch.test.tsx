@@ -40,13 +40,26 @@ let respond: (name: string) => Response | Promise<Response> = () =>
 beforeEach(() => {
   uploads = [];
   respond = () => Response.json({ document: { id: 'new' } }, { status: 201 });
-  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: { method?: string; body?: FormData }) => {
+  let docCounter = 0;
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: { method?: string; body?: FormData | string }) => {
     const u = String(url);
-    if (u.includes('/api/user-corpus/upload') && init?.method === 'POST') {
-      const f = init.body?.get('file');
-      const name = f instanceof File ? f.name : 'unknown';
-      uploads.push(name);
-      return respond(name);
+    // Two-call direct-to-Blob flow: upload-url → PUT → upload-complete
+    if (u.includes('/api/user-corpus/upload-url') && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)) as { name: string };
+      docCounter++;
+      return Response.json({
+        uploadUrl: `https://blob.example.com/put/${docCounter}`,
+        pathname: `user-corpus/u-test/doc-${docCounter}`,
+        documentId: `doc-${docCounter}`,
+      });
+    }
+    if (u.includes('blob.example.com/put/') && init?.method === 'PUT') {
+      return Response.json({ pathname: 'ok' }, { status: 200 });
+    }
+    if (u.includes('/api/user-corpus/upload-complete') && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)) as { name: string };
+      uploads.push(body.name);
+      return respond(body.name);
     }
     if (u.includes('/api/user-corpus/documents')) return Response.json({ documents: [DOC] });
     return Response.json({});

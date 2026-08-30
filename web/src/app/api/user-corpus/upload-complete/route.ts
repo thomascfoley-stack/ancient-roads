@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { after } from 'next/server';
 import { guardUser } from '@/lib/user-corpus/route-guard';
-import { getUserDocument, deleteUserDocument, blobPathname } from '@/lib/user-corpus/blob';
+import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
+import { requireJsonContentType } from '@/lib/csrf-floor';
+import { getUserDocument, deleteUserDocument } from '@/lib/user-corpus/blob';
 import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument } from '@/lib/user-corpus/documents';
 import { checksum, sniffType } from '@/lib/user-corpus/sniff';
 import { drain } from '@/lib/user-corpus/queue';
@@ -19,9 +21,22 @@ import { UploadRefused } from '@/lib/user-corpus/types';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const csrf = requireJsonContentType(req);
+  if (csrf) return csrf;
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
+
+  // METERED — this route spends money: it reads the blob back (bandwidth) and kicks
+  // the drain (embedding). The rate limiter must fire here as well as on upload-url,
+  // or a caller can bypass the cap by presigning once and completing many times.
+  const limit = await checkCorpusUploadRateLimit(user.id);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many uploads. Please wait a moment and try again.', retryAfterSec: limit.retryAfterSec },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec ?? 60) } },
+    );
+  }
 
   let pathname = '';
   let name = '';
