@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-30T06:44:12Z
+sha:             eb4e1c8cc7b2a3ebef772bbc6fb6dde85fdfbc2a
+branch:          fix/ux-overnight-sweep
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-fi7qz9aaw-home-network-hardening.vercel.app
+deployment_id:   dpl_CGVTEdRn8FJNfTq6p8TMxvX3ChQ2
+alias:           ancientpaths.app
+alias_serves:    dpl_CGVTEdRn8FJNfTq6p8TMxvX3ChQ2
+state:           live
