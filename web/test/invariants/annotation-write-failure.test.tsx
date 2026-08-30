@@ -242,7 +242,7 @@ describe('useAnnotationWrites — a failed rollback must not clobber a newer wri
       { start: 0, end: 4, color: 'green', translation: 'kjv' },
       { start: 5, end: 9, color: 'blue', translation: 'kjv' },
     ]);
-    expect(result.current.writeError?.message).toBe("Couldn't clear the highlight");
+    expect(result.current.writeError?.message).toBe("Couldn't remove the old highlight — both colours are saved.");
   });
 
   it('a failed note save does not roll back a NEWER save that landed during the retry window', async () => {

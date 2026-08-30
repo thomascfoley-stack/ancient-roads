@@ -98,6 +98,20 @@ The right shape is a per-invite token or a gate-level allowlist. Until that ship
 **What:** Needs a Neon fork; branch creation forbidden by standing rails.
 **Recommendation:** Table until owner creates the fork.
 
+## 11. PREDEPLOY_DB_URL pointed at dev for all production deploys
+
+**Status:** [DECISION]
+**What:** The served-column preflight (`predeploy-gate.ts:77`) requires `PREDEPLOY_DB_URL` to be the deploy target. For the last five production deploys it was exported from the worktree's `.env.local`, which contains only `ep-tiny-hat` (dev). Production is `ep-odd-fog`. The gate printed green about dev on every deploy.
+**Impact:** Almost certainly harmless (migration 044 was applied to prod in P4.0), but the gate proved nothing and five receipts record it green.
+**Recommendation:** The prod URL belongs in `~/.neon_prod_url` per `WORKLOG.md:6818`. Owner to confirm the prod URL is stored there and `deploy.sh` reads it from that file, not from `.env.local`.
+
+## 12. `rootDirectory` flip is undocumented and unruled
+
+**Status:** [DECISION]
+**What:** Every CLI production deploy requires flipping the Vercel project's `rootDirectory` from `'web'` to `null`, deploying, then restoring to `'web'`. The WORKLOG called this "owner-ruled procedure"; `2026-08-24-revisit.md:302` records the same flip as "a third session's change, unruled" and at `:335` as "my error." No ruling exists.
+**Impact:** The flip works and is restored each time, but it is an undocumented workaround repeated silently on every deploy.
+**Recommendation:** Either rule it (document as the accepted deploy procedure) or fix it properly (make `deploy.sh` handle the `rootDirectory` mismatch without the manual flip).
+
 ---
 
 ## Bugs closed in this session

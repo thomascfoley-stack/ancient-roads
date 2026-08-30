@@ -46,10 +46,15 @@ interface ApiHighlight {
 }
 
 /** A write that failed after retries. `id` is internal (races an older write's late resolution
- *  against a newer one's failure); callers just render `message` and offer `retryWrite`. */
+ *  against a newer one's failure); callers just render `message` and offer `retry` when present.
+ *  `retry` is carried ON the error, not in a ref beside it — a ref can go stale (an earlier
+ *  failed write's retry firing for a newer error) or go missing (a path that sets the error
+ *  without the ref, which is exactly what the superseded-clear branch does). Carrying it on the
+ *  object makes "the banner can never offer a retry that isn't its own" structural. */
 export interface WriteFailure {
   id: number;
   message: string;
+  retry?: () => void;
 }
 
 export function useAnnotationWrites(bookNum: number | undefined, chapterNum: number, translationId: string) {
@@ -146,7 +151,6 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   // and then just... stay there. `id` still does useful work beyond that: it's what stops an
   // OLDER write's late resolution from clobbering a NEWER write's still-showing failure banner.
   const writeSeq = useRef(0);
-  const lastFailedAttempt = useRef<(() => void) | null>(null);
 
   /**
    * Persists a write that has ALREADY been painted, retrying transient failures
@@ -170,12 +174,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         if (isAborted?.()) {
           // F-119: a superseded clear that FAILED still needs its error reported — the old
           // highlight is still on the server beside the new one, and silence is exactly the
-          // "looks saved, isn't" bug this hook exists to close. Report it, but do NOT arm
-          // lastFailedAttempt: the clear's retry() calls paint() which deletes EVERY span on
-          // the verse (including the newer one) and re-issues the verse-level DELETE, which
-          // destroys the new highlight server-side too. The online listener would fire that
-          // automatically. The rollback below is safe: it re-adds only the members still
-          // missing and leaves anything painted since (a newer highlight) untouched.
+          // "looks saved, isn't" bug this hook exists to close. Report it, but do NOT carry a
+          // retry: the clear's retry() calls paint() which deletes EVERY span on the verse
+          // (including the newer one) and re-issues the verse-level DELETE, which destroys the
+          // new highlight server-side too. The online listener would fire that automatically.
+          // The rollback below is safe: it re-adds only the members still missing and leaves
+          // anything painted since (a newer highlight) untouched.
           if (!ok) {
             rollback();
             setWriteError({ id, message: typeof message === 'function' ? message() : message });
@@ -190,8 +194,7 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           return;
         }
         rollback();
-        lastFailedAttempt.current = retry;
-        setWriteError({ id, message: typeof message === 'function' ? message() : message });
+        setWriteError({ id, message: typeof message === 'function' ? message() : message, retry });
         onSettled?.();
       });
     },
@@ -226,7 +229,10 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   );
 
   const retryWrite = useCallback(() => {
-    lastFailedAttempt.current?.();
+    setWriteError((cur) => {
+      cur?.retry?.();
+      return cur;
+    });
   }, []);
 
   const dismissWrite = useCallback(() => setWriteError(null), []);
@@ -290,7 +296,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           signal: entry.controller.signal,
         });
       const settled = runPersist(
-        "Couldn't clear the highlight",
+        // A superseded clear's rollback re-adds the old spans beside the new one, so the reader
+        // sees BOTH colours plus this banner. A regular clear's rollback restores only the old
+        // spans. The message names what actually happened in each case.
+        () => entry.superseded
+          ? "Couldn't remove the old highlight — both colours are saved."
+          : "Couldn't clear the highlight",
         paint,
         request,
         rollback,
