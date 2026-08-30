@@ -1,5 +1,20 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-30 — Runtime verification done, F-144 fixed and redeployed (`47854bb`)
+
+**Runtime verification of the full UX sweep, run by the fixer against a local production build.**
+F-112 (sessions 4→1), F-121 (1 row, rose), F-162 (retry renders), F-119, F-157 (titles), F15
+(search jump), F-134, F-164, F-145 — all verified in a real browser or against the real database.
+`UX_RUNTIME_VERIFICATION.md` has the evidence.
+
+**One real bug found during verification:** F-144's first version targeted `window.scrollY`, but
+AppShell wraps every page in `flex h-dvh overflow-hidden` with `<main className="overflow-y-auto">`
+inside it — so `window.scrollY` is always 0 and the restore landed on a non-scrolling element.
+Fixed by targeting `<main id="main">` for both save and restore. Verified in the same browser
+session: scroll to 500, navigate away, navigate back, lands at 500.
+
+**Redeployed:** `47854bb` live on ancientpaths.app (`dpl_BoukuePMcZBbRA21jiFcrw7qowid`).
+
 ## 2026-08-29 — DEPLOYED: `9028208` live on ancientpaths.app
 
 **What shipped:** the full UX overnight sweep — F-112/F-121/F-162 residuals, then
