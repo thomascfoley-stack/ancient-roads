@@ -254,6 +254,39 @@ export async function checkCorpusUploadRateLimit(userId: string, sql: Sql = getD
   }
 }
 
+// Upload-complete (the second half of the direct-to-Blob flow). Its OWN bucket — sharing
+// corpus-upload:* would halve the documented limit (every upload burns two: one at presign,
+// one at complete). The presign is the act worth metering; this is the backstop against a
+// caller completing many pathnames without presigning. Generous because a legitimate batch
+// upload completes many files in one minute.
+const CORPUS_COMPLETE_PER_MIN = Number(process.env.CORPUS_COMPLETE_LIMIT_PER_MIN ?? 60);
+const CORPUS_COMPLETE_PER_DAY = Number(process.env.CORPUS_COMPLETE_LIMIT_PER_DAY ?? 500);
+
+export async function checkCorpusCompleteRateLimit(userId: string, sql: Sql = getDb()): Promise<RateLimitResult> {
+  try {
+    const now = Date.now();
+    const minStart = new Date(Math.floor(now / 60_000) * 60_000).toISOString();
+    const d = new Date(now);
+    const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString();
+
+    const minCount = await bump(sql, userId, 'corpus-complete:min', minStart);
+    if (minCount > CORPUS_COMPLETE_PER_MIN) {
+      logEvent('rate_limit_hit', { userId, cap: 'corpus-complete:min', count: minCount, limit: CORPUS_COMPLETE_PER_MIN });
+      return { ok: false, limited: 'min', retryAfterSec: 60 };
+    }
+    const dayCount = await bump(sql, userId, 'corpus-complete:day', dayStart);
+    if (dayCount > CORPUS_COMPLETE_PER_DAY) {
+      logEvent('rate_limit_hit', { userId, cap: 'corpus-complete:day', count: dayCount, limit: CORPUS_COMPLETE_PER_DAY });
+      return { ok: false, limited: 'day', retryAfterSec: 3600 };
+    }
+    await maybeSweep(sql);
+    return { ok: true };
+  } catch (e) {
+    logEvent('rate_limit_fail_closed', { userId, error: (e as Error).message });
+    return { ok: false, limited: 'unavailable', retryAfterSec: 30 };
+  }
+}
+
 const HISTORY_SEARCH_PER_MIN = Number(process.env.HISTORY_SEARCH_LIMIT_PER_MIN ?? 30);
 const HISTORY_SEARCH_PER_DAY = Number(process.env.HISTORY_SEARCH_LIMIT_PER_DAY ?? 500);
 

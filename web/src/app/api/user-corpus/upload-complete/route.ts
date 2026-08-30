@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { after } from 'next/server';
 import { guardUser } from '@/lib/user-corpus/route-guard';
-import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
+import { checkCorpusCompleteRateLimit } from '@/lib/rate-limit';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { getUserDocument, deleteUserDocument } from '@/lib/user-corpus/blob';
 import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument } from '@/lib/user-corpus/documents';
@@ -20,23 +20,12 @@ import { UploadRefused } from '@/lib/user-corpus/types';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
   const csrf = requireJsonContentType(req);
   if (csrf) return csrf;
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
-
-  // METERED — this route spends money: it reads the blob back (bandwidth) and kicks
-  // the drain (embedding). The rate limiter must fire here as well as on upload-url,
-  // or a caller can bypass the cap by presigning once and completing many times.
-  const limit = await checkCorpusUploadRateLimit(user.id);
-  if (!limit.ok) {
-    return NextResponse.json(
-      { error: 'Too many uploads. Please wait a moment and try again.', retryAfterSec: limit.retryAfterSec },
-      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec ?? 60) } },
-    );
-  }
 
   let pathname = '';
   let name = '';
@@ -59,6 +48,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    // METERED — this route spends money (blob read bandwidth + embedding drain). It gets
+    // its OWN bucket, not corpus-upload:*: sharing the upload bucket would halve the
+    // documented limit (every upload burns two — one at presign, one at complete) and a
+    // 429 here would orphan the blob it refuses (the check would sit before the cleanup
+    // scope). The presign is the act worth metering; this bucket is the backstop against
+    // a caller completing many pathnames without presigning.
+    const limit = await checkCorpusCompleteRateLimit(user.id);
+    if (!limit.ok) {
+      await deleteUserDocument(pathname).catch((delErr) => {
+        console.error('[upload-complete] could not delete blob on 429:', (delErr as Error).message);
+      });
+      return NextResponse.json(
+        { error: 'Too many uploads. Please wait a moment and try again.', retryAfterSec: limit.retryAfterSec },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec ?? 60) } },
+      );
+    }
     // Read the bytes back from the store. This is what makes the direct upload
     // verifiable: a forged pathname fails here, and a partial upload reads as
     // truncated rather than silently accepted.

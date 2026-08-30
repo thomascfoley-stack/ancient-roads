@@ -24,7 +24,7 @@ function ext(name: string): string {
   return /\.([A-Za-z0-9]+)$/.exec(name)?.[1]?.toLowerCase() ?? '';
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
   const csrf = requireJsonContentType(req);
   if (csrf) return csrf;
   const guard = await guardUser();
