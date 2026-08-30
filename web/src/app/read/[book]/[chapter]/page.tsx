@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { isFetchableChapter } from '@/lib/chapter-param';
 import { DEFAULT_BIBLE_HREF, DEFAULT_BIBLE_LABEL, saveBiblePosition } from '@/lib/bible-position';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   BOOK_BY_BOOK_SLUG,
   fetchChapter,
@@ -224,9 +224,24 @@ export default function ReaderPage() {
   // The work reader already does this (`saveWorkProgress`/`loadWorkProgress`); Scripture did not.
   // Same contract: per-device, never throws, corrupt reads as "no position". Keyed by book+chapter
   // so a translation switch does not lose the place.
+  //
+  // `history.scrollRestoration = 'manual'` is the other half of the fix: without it the browser's
+  // own bfcache/navigation scroll reset fires AFTER our restore and wins, which is why the first
+  // version measured scrollTo(500) firing and still landed at 0.
+  // ── F-144 — restore the reader's scroll position within the chapter ─────────────────────────
+  // The work reader already does this (`saveWorkProgress`/`loadWorkProgress`); Scripture did not.
+  // Same contract: per-device, never throws, corrupt reads as "no position". Keyed by book+chapter
+  // so a translation switch does not lose the place.
+  //
+  // THE SCROLL CONTAINER IS <main id="main">, NOT THE WINDOW. AppShell wraps every page in
+  // `flex h-dvh overflow-hidden` with `<main className="overflow-y-auto">` inside it, so
+  // `window.scrollY` is always 0 here and the scroll lives on that element. The save and the
+  // restore both target it.
   const scrollKey = book ? `bible-scroll:${book.slug}:${chapterNum}` : null;
-  useEffect(() => {
+  const restoredScrollFor = useRef<string | null>(null);
+  useLayoutEffect(() => {
     if (!scrollKey || !data) return;
+    if (restoredScrollFor.current === scrollKey) return;
     // A hash (#v16) is an explicit destination — it wins over the saved position.
     if (window.location.hash) return;
     let saved: number | null = null;
@@ -240,28 +255,37 @@ export default function ReaderPage() {
       // Corrupt or unavailable storage: no saved position.
     }
     if (saved !== null) {
-      // Defer so the chapter has painted and the scroll height is real.
-      const t = setTimeout(() => window.scrollTo({ top: saved!, behavior: 'instant' }), 50);
-      return () => clearTimeout(t);
+      restoredScrollFor.current = scrollKey;
+      // The chapter content has rendered (data is set), but the browser may not have computed
+      // the full document height yet — images, fonts, and the commentary prefetch can all
+      // change it. A longer defer gives the layout time to settle; the ref guard means this
+      // still fires only once per chapter arrival. NO cleanup: `data` updates again when the
+      // commentary prefetch lands, and a cleanup would cancel this timeout before it fires.
+      setTimeout(() => {
+        const main = document.getElementById('main');
+        if (main) main.scrollTop = saved!;
+      }, 300);
     }
   }, [scrollKey, data]);
 
   useEffect(() => {
     if (!scrollKey) return;
+    const main = document.getElementById('main');
+    if (!main) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
     function save() {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         try {
-          window.localStorage.setItem(scrollKey!, JSON.stringify(window.scrollY));
+          window.localStorage.setItem(scrollKey!, JSON.stringify(main!.scrollTop));
         } catch {
           // Quota/privacy failure: resume is a convenience, not a gate.
         }
       }, 300);
     }
-    window.addEventListener('scroll', save, { passive: true });
+    main.addEventListener('scroll', save, { passive: true });
     return () => {
-      window.removeEventListener('scroll', save);
+      main.removeEventListener('scroll', save);
       if (timer) clearTimeout(timer);
     };
   }, [scrollKey]);
