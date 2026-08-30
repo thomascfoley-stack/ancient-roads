@@ -170,10 +170,14 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         if (isAborted?.()) {
           // F-119: a superseded clear that FAILED still needs its error reported — the old
           // highlight is still on the server beside the new one, and silence is exactly the
-          // "looks saved, isn't" bug this hook exists to close. Skip only the rollback (the
-          // newer write owns the verse now), never the error.
+          // "looks saved, isn't" bug this hook exists to close. Report it, but do NOT arm
+          // lastFailedAttempt: the clear's retry() calls paint() which deletes EVERY span on
+          // the verse (including the newer one) and re-issues the verse-level DELETE, which
+          // destroys the new highlight server-side too. The online listener would fire that
+          // automatically. The rollback below is safe: it re-adds only the members still
+          // missing and leaves anything painted since (a newer highlight) untouched.
           if (!ok) {
-            lastFailedAttempt.current = retry;
+            rollback();
             setWriteError({ id, message: typeof message === 'function' ? message() : message });
           }
           onSettled?.();
