@@ -6,11 +6,28 @@ Compiled for owner review. Items are marked **[DECISION]** (needs owner ruling),
 
 ## 1. SEC-1 — Public launch is blocked by Neon Auth CVEs
 
-**Status:** [DECISION]
+**Status:** **RULED 2026-08-30 — waitlist-only (option C).**
 **What:** The site-password gate stays up until the `@neondatabase/auth` / better-auth CVEs resolve. This IS the public-launch decision.
 **Impact:** Nothing reaches `/api/ask` while gated; Phase-D training data is blocked.
-**Recommendation:** Keep the gate. Deploy code to production behind it, but do not remove the gate until the CVEs are patched and verified.
-**Owner action:** Confirm whether to launch publicly with the gate (private beta) or wait for CVE resolution.
+**Owner ruling:** Keep the gate. Launch is waitlist-only: the marketing page collects emails, the owner invites readers a few at a time. No public sign-up until the CVEs patch.
+**Owner action:** Export waitlist emails and send invitations manually (see §1a below).
+
+### 1a. Waitlist workflow — how to invite a reader
+
+The waitlist is live and working. To invite someone:
+
+```sql
+-- Export the list (deduplicated, newest first)
+SELECT DISTINCT ON (email) email, attribution->>'utm_source' as source, created_at
+FROM waitlist
+ORDER BY email, created_at DESC;
+```
+
+Then for each approved reader:
+1. Send them the site password (`SITE_PASSWORD` in Vercel env) and the URL `https://ancientpaths.app`.
+2. They sign in through the gate, then create their account via `/auth/sign-up`.
+
+No code change needed — the flow works today.
 
 ## 2. D3 — Blob store write credential
 
