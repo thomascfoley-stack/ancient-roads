@@ -35,9 +35,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!pathname) return NextResponse.json({ error: 'A pathname is required.' }, { status: 400 });
   if (!name) return NextResponse.json({ error: 'A filename is required.' }, { status: 400 });
 
-  // The pathname must be user-scoped — a caller cannot record a document against
-  // another user's prefix.
-  if (!pathname.startsWith(`user-corpus/${user.id}/`)) {
+  // The pathname must be user-scoped AND well-formed — `startsWith` alone admits
+  // `user-corpus/{me}/../{other}/{doc}`, which would record against another user's prefix.
+  // The shape is exactly `user-corpus/<uuid>/<uuid>` — two UUIDs, no traversal.
+  const PATHNAME_RE = new RegExp(`^user-corpus/${user.id}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`);
+  if (!PATHNAME_RE.test(pathname)) {
     return NextResponse.json({ error: 'That pathname is not yours.' }, { status: 403 });
   }
 
@@ -102,6 +104,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ document: doc }, { status: 201 });
   } catch (e) {
+    // Every failure path deletes the uploaded blob. A 25 MB file that fails the sniff,
+    // the quota check, or the dedupe leaves the bytes in Blob storage permanently —
+    // unbounded cost from any invited user, no malice required. The duplicate paths
+    // above already do this; the catch must too. The delete is best-effort: a blob
+    // that was never uploaded (or already deleted) is a logged no-op, not a 500.
+    await deleteUserDocument(pathname).catch((delErr) => {
+      console.error('[upload-complete] could not delete blob on failure:', (delErr as Error).message);
+    });
     if (e instanceof QuotaExceeded) {
       return NextResponse.json({ error: e.message, code: 'quota_exceeded' }, { status: 403 });
     }

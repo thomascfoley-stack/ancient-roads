@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
+import { checkUploadQuota, QuotaExceeded } from '@/lib/user-corpus/quota';
 import { issueSignedToken, presignUrl } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
 
@@ -58,6 +59,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       { error: `.${extension} files cannot be read here — PDF, Word (.docx), text or Markdown only.` },
       { status: 400 },
+    );
+  }
+
+  // Quota is checked BEFORE the presign — refusing here costs one SELECT and no bytes
+  // transferred. Checking it in upload-complete (after the file lands) would still be
+  // enforced, but the blob would already be stored and the catch would have to delete it.
+  const quota = await checkUploadQuota(user.id, size);
+  if (!quota.ok) {
+    return NextResponse.json(
+      { error: quota.message, code: 'quota_exceeded' },
+      { status: 403 },
     );
   }
 
