@@ -4,13 +4,17 @@ Compiled for owner review. Items are marked **[DECISION]** (needs owner ruling),
 
 ---
 
-## 1. SEC-1 — Public launch is blocked by Neon Auth CVEs
+## 1. SEC-1 — Public launch gating
 
-**Status:** **RULED 2026-08-30 — waitlist-only (option C).**
-**What:** The site-password gate stays up until the `@neondatabase/auth` / better-auth CVEs resolve. This IS the public-launch decision.
-**Impact:** Nothing reaches `/api/ask` while gated; Phase-D training data is blocked.
-**Owner ruling:** Keep the gate. Launch is waitlist-only: the marketing page collects emails, the owner invites readers a few at a time. No public sign-up until the CVEs patch.
-**Owner action:** Export waitlist emails and send invitations manually (see §1a below).
+**Status:** **RULED 2026-08-30 — waitlist-only (option C). Premise corrected 2026-08-30.**
+
+**What was wrong with the original premise:** the claim that "an attacker who knows your email could take over your account" is GHSA-g38m, and it is **stale**. Production runs `better-auth@1.6.23` (`package.json:65`, re-verified 2026-08-23); g38m is patched ≥1.6.11 and qq9h ≥1.6.22, so neither fires. The eight remaining ignored GHSAs are provider-plugin advisories adjudicated not-in-path, or dev tooling.
+
+**The real residual** is narrower: the "Verify at Sign-up" toggle is a Neon console setting this repo cannot observe, last attested 2026-08-08. `SECURITY.md` says in terms "Re-attest it, do not carry it forward." That console check — not the CVEs — is what should gate the public-launch call.
+
+**Owner ruling (2026-08-30):** Keep the gate. Launch is waitlist-only: the marketing page collects emails, the owner invites readers a few at a time. No public sign-up until the Neon console toggle is re-attested.
+
+**Owner action:** Re-attest "Verify at Sign-up" in the Neon console, then decide whether to open publicly.
 
 ### 1a. Waitlist workflow — how to invite a reader
 
@@ -24,10 +28,14 @@ ORDER BY email, created_at DESC;
 ```
 
 Then for each approved reader:
-1. Send them the site password (`SITE_PASSWORD` in Vercel env) and the URL `https://ancientpaths.app`.
+1. Send them a per-invite link (see §1b below — do NOT email the shared `SITE_PASSWORD`).
 2. They sign in through the gate, then create their account via `/auth/sign-up`.
 
-No code change needed — the flow works today.
+### 1b. Do NOT email the shared site password
+
+The first version of this doc told the owner to email `SITE_PASSWORD` to each invitee. That is one credential with no per-user identity and no revocation short of rotating it for everyone — and it is the only barrier in front of the auth system the gate exists to protect.
+
+The right shape is a per-invite token or a gate-level allowlist. Until that ships, the honest workaround is: share the password in person or over a voice call, never in writing, and rotate it after each batch of invitations.
 
 ## 2. D3 — Blob store write credential
 

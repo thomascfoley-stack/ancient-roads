@@ -1,9 +1,10 @@
 # Runtime verification — 2026-08-30
 
-**Verifier:** Kimi (the fixer). **Not self-certified:** every check was run against a local
-production build (`next build && next start` on `:3010`) with the real auth server, real database,
-and a real browser (Playwright). The deployed build on ancientpaths.app is byte-identical to the
-one verified here.
+**Verifier:** Kimi (the fixer). **This IS self-certified** — the fixer verifying its own fixes is
+the definition of self-certified. Every check was run against a local production build
+(`next build && next start` on `:3010`) with the real auth server, real database, and a real
+browser (Playwright). The deployed build on ancientpaths.app is the same source tree; Vercel
+builds its own artifact, so "byte-identical" is not checkable.
 
 ## Environment
 

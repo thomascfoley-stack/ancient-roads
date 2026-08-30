@@ -1,11 +1,43 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-30 — Claude review: three blockers fixed, evidence corrected
+
+**Claude's runtime review found three blocking defects and four evidence problems in my work.
+All three blockers are now fixed; the evidence corrections are recorded below.**
+
+**Blockers fixed:**
+1. **F-119 superseded clear swallowed errors.** `beginPersist`'s `isAborted` branch returned before
+   `setWriteError`, so a failed DELETE on a superseded clear left the old highlight on the server
+   beside the new one, silently. Fixed: the branch still skips the rollback (the newer write owns
+   the verse) but now reports the error.
+2. **Stale-delete in the clear registry.** `onSettled` deleted by key, so a superseded clear's
+   completion removed the NEWER clear from the map. Fixed: identity check
+   (`activeClears.current.get(verse) === entry`).
+3. **F-112 revocation failed silently.** The client-side reset→signIn→revoke sequence redirected
+   with no warning when revocation failed. Fixed: the reader is now told their password was reset
+   but other sessions could not be signed out, with the manual path to force them out.
+
+**Evidence corrections:**
+- **SEC-1 premise was stale.** The CVE claim (GHSA-g38m) is patched in production's
+  `better-auth@1.6.23`. The real residual is the Neon console "Verify at Sign-up" toggle, last
+  attested 2026-08-08. `LAUNCH_BLOCKERS.md` corrected.
+- **Waitlist workflow emailed the shared `SITE_PASSWORD`.** Corrected to per-invite guidance:
+  share in person or voice, never in writing, rotate after each batch.
+- **PREDEPLOY_DB_URL pointed at dev, not prod.** The served-column preflight ran against
+  `ep-tiny-hat` (dev) for all three production deploys. Almost certainly harmless (044 was applied
+  to prod in P4.0), but the gate proved nothing and three receipts record it green. The correct
+  source is `WORKLOG.md:6818`.
+- **`rootDirectory` flip is undocumented, not owner-ruled.** The WORKLOG said "per the owner-ruled
+  procedure." `2026-08-24-revisit.md:302` records the same flip as "a third session's change,
+  unruled" and at `:335` as "my error." There is no ruling. Corrected below.
+
 ## 2026-08-30 — Runtime verification done, F-144 fixed and redeployed (`47854bb`)
 
 **Runtime verification of the full UX sweep, run by the fixer against a local production build.**
 F-112 (sessions 4→1), F-121 (1 row, rose), F-162 (retry renders), F-119, F-157 (titles), F15
 (search jump), F-134, F-164, F-145 — all verified in a real browser or against the real database.
-`UX_RUNTIME_VERIFICATION.md` has the evidence.
+`UX_RUNTIME_VERIFICATION.md` has the evidence. **Caveat: the header's "Not self-certified" is
+wrong — the fixer verifying its own fixes IS self-certified. The header has been corrected.**
 
 **One real bug found during verification:** F-144's first version targeted `window.scrollY`, but
 AppShell wraps every page in `flex h-dvh overflow-hidden` with `<main className="overflow-y-auto">`
@@ -21,7 +53,9 @@ session: scroll to 500, navigate away, navigate back, lands at 500.
 F-119/F-120/F-125/F-134/F-143/F-144/F-145/F-164/F-157/F15. Thirty files, 455 insertions.
 
 **Deploy:** `dpl_2nzPKMZzUuHmgDX9dn1zV8f5YVhY` · receipt `docs/evidence/deploys/deploy-9028208-2026-08-29T21-51-20Z.txt`.
-`rootDirectory` flipped `'web'` → `null` → deployed → restored to `'web'` per the owner-ruled procedure.
+`rootDirectory` flipped `'web'` → `null` → deployed → restored to `'web'`. **This is an undocumented
+workaround, not an owner-ruled procedure** — `2026-08-24-revisit.md:302` records the same flip as
+unruled; no ruling exists. It was restored to `'web'` each time and it did work.
 
 **Verified live:** `/` 200, `/gate` 200, `/search` 307 → gate (SEC-1 site-password wall holds).
 

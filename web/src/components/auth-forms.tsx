@@ -293,10 +293,14 @@ export function AuthForm({ path }: { path: AuthMode }) {
           setVerifyFor(email);
           return;
         }
-        // The reset succeeded; only the automatic sign-in or revocation failed. Send them to
-        // sign-in manually rather than pretending the whole thing failed.
-        router.push('/auth/sign-in');
-        router.refresh();
+        // The reset succeeded; only the automatic sign-in or revocation failed. The reader must
+        // KNOW: they believe they have evicted every other session, and they have not. Redirecting
+        // silently is the "looks saved, isn't" shape this repo's own rules exist to prevent.
+        setError(
+          'Your password was reset, but other sessions could not be signed out. ' +
+          'Sign in with your new password, then change it again in Account Settings to force every other session out.',
+        );
+        return;
       }
       return;
     } catch (e) {

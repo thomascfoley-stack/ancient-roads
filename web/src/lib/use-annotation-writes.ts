@@ -168,6 +168,14 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
     ) => {
       return persistWrite(request).then((ok) => {
         if (isAborted?.()) {
+          // F-119: a superseded clear that FAILED still needs its error reported — the old
+          // highlight is still on the server beside the new one, and silence is exactly the
+          // "looks saved, isn't" bug this hook exists to close. Skip only the rollback (the
+          // newer write owns the verse now), never the error.
+          if (!ok) {
+            lastFailedAttempt.current = retry;
+            setWriteError({ id, message: typeof message === 'function' ? message() : message });
+          }
           onSettled?.();
           return;
         }
@@ -283,7 +291,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         request,
         rollback,
         () => entry.superseded,
-        () => { activeClears.current.delete(verse); },
+        () => {
+          // Identity, not key: a superseded clear's completion must not remove the NEWER clear
+          // that replaced it in the registry — otherwise the next addHighlight finds no
+          // pendingClear and POSTs with no sequencing, which is the race F-121 exists to close.
+          if (activeClears.current.get(verse) === entry) activeClears.current.delete(verse);
+        },
       );
       entry.settled = settled ?? Promise.resolve();
     },
