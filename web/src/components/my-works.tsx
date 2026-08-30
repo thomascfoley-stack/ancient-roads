@@ -197,7 +197,7 @@ const REFUSED_EXTENSIONS = new Set([
 
 /**
  * The pre-transfer refusal for one file, or null when it should travel (D15). `file.size` and the
- * filename are in hand before any network; a 30 MB file must not upload for 25 MB before being
+ * filename are in hand before any network; a 5 MB file must not upload for 4 MB before being
  * told about a limit the client knew the whole time. Exported for the component tests.
  */
 export function clientRefusal(file: { name: string; size: number }): string | null {

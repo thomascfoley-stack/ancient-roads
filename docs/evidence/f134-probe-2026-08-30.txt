@@ -1,0 +1,24 @@
+F-134 probe — Vercel platform body cap on production
+=====================================================
+
+Date: 2026-08-30T05:55Z
+Probe: 6 MB POST to /api/gate on https://ancientpaths.app
+Why /api/gate: excluded from the middleware matcher (middleware.ts:58), same
+`nodejs` runtime as the upload route, no credentials required.
+
+Command:
+  head -c 6000000 /dev/zero > /tmp/6mb.bin
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST https://ancientpaths.app/api/gate --data-binary @/tmp/6mb.bin
+
+Result: 413
+
+Interpretation: Vercel's platform rejected the 6 MB body before the function
+ran. The `middlewareClientMaxBodySize: '25mb'` config (next.config.ts:66)
+governs the middleware layer only, not the function body limit. The upload
+route hits the same cap identically.
+
+Conclusion: F-134 is a platform cap, not a config gap. The real fix is a
+client-direct Blob upload (presigned URL from the browser to Vercel Blob,
+bypassing the serverless function entirely).
+
+Caveat: /api/gate is rate-limited (checkGateRateLimit). One request only.

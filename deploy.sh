@@ -447,6 +447,35 @@ echo "Deploying to Vercel..."
 # the trailing suffix and created a file named LITERALLY `vercel-deploy.XXXXXX.log` — the fixed
 # shared path this line exists to remove, wearing the disguise of a fix. Measured, not assumed;
 # test/deploy-sh-gates.sh asserts the resulting path contains no 'XXXXXX'.
+# ---------------------------------------------------------------------------
+# rootDirectory FLIP — CLI production deploys need `rootDirectory` empty, but the Vercel
+# project keeps it at 'web' for GitHub builds. The manual flip (recorded in WORKLOG as
+# undocumented and unruled) is now automated here: read the CLI's auth token, call the Vercel
+# API to set rootDirectory to null, deploy, then restore to 'web' via a trap so it fires
+# even if the deploy dies.
+# ---------------------------------------------------------------------------
+VERCEL_TOKEN="$(python3 -c "import json; print(json.load(open('$HOME/Library/Application Support/com.vercel.cli/auth.json'))['token'])" 2>/dev/null || true)"
+if [ -z "$VERCEL_TOKEN" ]; then
+  echo "STOP: could not read Vercel auth token from ~/Library/Application Support/com.vercel.cli/auth.json" >&2
+  exit 1
+fi
+
+restore_root_directory() {
+  curl -s -X PATCH "https://api.vercel.com/v9/projects/$EXPECT_PROJECT_ID" \
+    -H "Authorization: Bearer $VERCEL_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"rootDirectory": "web"}' > /dev/null 2>&1 || true
+}
+
+# Flip to null for the CLI deploy.
+curl -s -X PATCH "https://api.vercel.com/v9/projects/$EXPECT_PROJECT_ID" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"rootDirectory": null}' > /dev/null 2>&1 || true
+
+# Restore on exit, success or failure.
+trap restore_root_directory EXIT
+
 DEPLOY_LOG="$(mktemp "${TMPDIR:-/tmp}/vercel-deploy.XXXXXX")"
 UPLOAD_STARTED=1
 VERIFY_STATE="upload started, outcome unknown"

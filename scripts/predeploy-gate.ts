@@ -74,13 +74,26 @@ const gateFail = (msg: string): void => {
 // check" is a refusal, not a skip — the same rule the corpus-absence leg above already enforces.
 if (DEPLOYING) {
   console.log('\n=== Pre-deploy gate: embeddings.served exists on the deploy target (P0.3) ===');
-  const dbUrl = process.env.PREDEPLOY_DB_URL;
+  // PREDEPLOY_DB_URL is the deploy target's database URL. It must NOT come from .env.local
+  // (which is dev — ep-tiny-hat). The production URL is stored in ~/.neon_prod_url per
+  // WORKLOG.md:6818. Read it from the file, fall back to the env var for CI/override.
+  let dbUrl = process.env.PREDEPLOY_DB_URL;
+  if (!dbUrl) {
+    try {
+      const { readFileSync } = await import('node:fs');
+      const { homedir } = await import('node:os');
+      dbUrl = readFileSync(`${homedir()}/.neon_prod_url`, 'utf8').trim();
+    } catch {
+      // File absent or unreadable — fall through to the refusal below.
+    }
+  }
   if (!dbUrl) {
     FAIL(
-      'PREDEPLOY_DB_URL is not set, so the served-column preflight cannot run.\n' +
+      'PREDEPLOY_DB_URL is not set and ~/.neon_prod_url is absent or unreadable.\n' +
+        'The served-column preflight cannot run without the deploy target\'s database URL.\n' +
         'The bundle queries embeddings.served (migration 044); deploying without proving the\n' +
-        'column exists on the TARGET database 500s every /ask. Export PREDEPLOY_DB_URL with a\n' +
-        'read-capable URL for the deploy target (the pooled app URL is fine) and re-run.',
+        'column exists on the TARGET database 500s every /ask. Store the production URL in\n' +
+        '~/.neon_prod_url (one line, no quotes) and re-run.',
     );
   }
   const { Client } = await import('pg');
