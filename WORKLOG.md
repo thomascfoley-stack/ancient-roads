@@ -1,5 +1,97 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-31 — Pre-open pass: five launch fixes live (`602bd9e`), bait n=100 [Kimi Code session]
+
+**Authorization:** owner's blanket go for the full pre-open sequence, handed over from the
+Claude Code session with the itemized plan (strip-span · bait · envInt · public-read ceilings ·
+deploy.sh red-proofs; stale-GET race promoted in during handover review). Work done in worktree
+`/tmp/ap-kimi-launch` on `fix/ux-overnight-sweep` (the old `/tmp/ap-uxsweep` worktree had been
+reaped; branch state came from origin).
+
+**Item 1 — fallback no longer ships model text** (`f23202f`). `teach.ts` maps fallback
+violations to `{ check, message }` at the response boundary (same bounds as `recordRejection`,
+`span` dropped entirely — it is the model's rejected quote / a regex match against model
+output). Client type already declared exactly this shape; `meta.rejections` keeps its bounded
+server-only copy. Test drives real `teach()` with a canary in the rejected quote; red-proofed
+(canary shipped pre-fix).
+
+**Stale-GET race — promoted from deferred and fixed** (`a5255e6`). Re-examination during
+handover review showed it was not display-wrong data: a late old-chapter GET paints phantom
+highlights keyed by verse number, `verseId()` encodes from the CURRENT chapter, so clearing a
+phantom DELETEs a real annotation in the chapter the reader moved to. AbortController on the
+chapter-load GET; regression test drives the real hook through the exact race. Red-proof
+caught the misdirected DELETE in the act (`verseId 43004005` = ch.4 v.5).
+
+**Items 3+4 — limiter hardening** (`ab13bf4`). `envInt()` fail-loud guard on all 18 limiter
+env vars (unset→fallback; set-but-not-decimal-digits→throw at module load; hex/exponent forms
+rejected — a wrong limit passing the guard is the same silent failure). `checkGateRateLimit`
+gains `perHour` (default 60 preserved for gate/waitlist callers), completing the 2026-08-02
+H3 loosening: public reads now 120/min AND 600/hr (`PUBLIC_READ_LIMIT_PER_HOUR`). Both
+public-read throttles (API + SSR search page) bump `search:global:day`
+(`PUBLIC_READ_GLOBAL_PER_DAY`, default 20,000) mirroring `ask:global:day`, same fail-open
+posture, logging `rate_limit_hit` with `cap: 'global'` (the field the owner alert watches)
+and `rate_limit_fail_open` on fault. Daily trips return `RATE_LIMIT_DAY`, matching ask.
+
+**Item 6 — deploy.sh trap fixes independently red-proved** (`5819749`). 6a structural:
+executes the SUT's real trap lines through bash replace-not-chain semantics, asserts the
+EFFECTIVE trap names both `write_receipt` and `restore_root_directory`. 6b behavioural:
+shimmed npx fails the deploy after `UPLOAD_STARTED=1`; one run asserts receipt written AND
+restore PATCH (`"rootDirectory": "web"`) strictly after the flip. Both red-proofed against
+the verbatim H-1 shape and the split-trap shape. **Live hazard found and fixed in the same
+pass:** the harness's fake curl was on PATH for one case only — cases 11–18 ran deploy.sh's
+flip/restore against the REAL Vercel API on credentialed machines (real PATCH attempts
+observed during review, 403'd only because the token had expired). Fake curl now leads PATH
+for all cases with a dummy-token HOME; `audit.sh`'s "no network, no credentials" claim is
+now true. Harness 69/69. deploy.sh itself unchanged.
+
+**Vercel token finding (affects every deploy).** deploy.sh reads the RAW `token` field from
+the CLI's `auth.json`, which expires independently of the CLI (the CLI auto-refreshes via
+`refreshToken`). With a stale token every flip/restore 403s silently into `|| true`, and
+`get_root_directory` maps the error JSON to `'null'` — the flip-proof passes VACUOUSLY.
+Mitigation used tonight and recommended until hardened: `npx vercel whoami` before
+`deploy.sh`. Filed: LAUNCH_BLOCKERS §15–16.
+
+**Review:** one independent reviewer (zero prior context) over the full diff — all four fixes
+SOUND; three follow-ups fixed pre-ship (`RATE_LIMIT_DAY` semantics, SSR-page global-bucket
+gap, envInt digits-only). Explicitly verified: `meta.rejections` does NOT reach the browser;
+no missed env vars; all `checkGateRateLimit` callers keep 60/hr.
+
+**QA:** web suite 1917 passed with the one filed flaky licensing invariant (#13 — timeout
+under dev-DB contention; passes 6/6 isolated and in a clean full re-run; NOT a licensing
+violation); root rate-limit 30/30; deploy-sh harness 69/69.
+
+**Deploy:** first attempt BLOCKED by the ancestry gate (origin/main carried the
+`merge/final-to-main` merge + an evidence commit); merged `origin/main` in (`602bd9e`,
+evidence files only), then deployed. Live: `602bd9e` at 2026-08-31T14:54Z, receipt
+`docs/evidence/deploys/deploy-602bd9e-2026-08-31T14-54-37Z.txt`, `dpl_23XTyox8H3YN56A4w8t22LiGLwwb`.
+Post-deploy verified: gate page 200, `rootDirectory = 'web'` restored by the trap.
+
+**Bait (the gate that matters most): 100/100, 0 breaches.** n=100 (35 original + 65 v2,
+unique ids/prompts) through the welded harness (real `teach()`) at the deployed commit
+`602bd9e`: 77 composed / 23 fallback / 0 empty, **0 production-screen leaks**, 1 wide-net
+flag (bait-008 — FALSE POSITIVE, the known refusal-clause match, same judgment as
+2026-08-15), 180 compose attempts, harness exit 0. Stated with its denominator: **0
+breaches at n=100 = ~97% lower bound (rule of three)** — NOT ≥99% (needs ~300 new vectors).
+Fallback rate up 16→23 vs 2026-08-15: the verifier refusing MORE, never less — a
+product-quality look post-launch, not a faithfulness concern. Evidence:
+`docs/evidence/ask-latency/bait-100-run-2026-08-31.md` (+ `.log`).
+
+**NOT DONE / UNVERIFIED:**
+- Gate NOT opened — owner action, and only after the alert exists. Vercel log-drain alert on
+  `cap: 'global'` + `rate_limit_fail_open` NOT wired (owner dashboard; nothing in repo can do it).
+- Neon "Allow Localhost" still ON in production (owner console toggle).
+- Persisted `span` in historical research rows NOT scrubbed (data at rest; pre-fix fallback
+  rows may re-serve model text — filed LAUNCH_BLOCKERS §15).
+- `npm run audit` NOT green at HEAD for a PRE-EXISTING reason: `tsc -p web/tsconfig.test.json`
+  fails in `web/test/user-corpus/upload-direct-guards.test.ts:161` (`Request.status`) —
+  untouched by this pass, filed LAUNCH_BLOCKERS §15. `npm run qa` (the handover's bar) is green.
+- Bait ran through shipped `teach()` at the deployed commit against the DEV corpus branch
+  (what `.env.local` carries; same published cohort the qa/licensing suites use), not the
+  prod DB — the 2026-08-15 n=100 ran the same harness; DB target difference recorded, not hidden.
+- The EVAL_HARNESS_SECRET blocker in the 2026-08-31 entry above applies only to the
+  `/api/eval/bait` HTTP route; the script path (`bait-run.mts`, the handover's method) does
+  not need it.
+
 ## 2026-08-31 — Step 1 + Step 3: red tests fixed, accuracy diagnostic recorded
 
 **Step 1:** three red tests fixed. study-editor ×2 (Save failed always shows, Saved uses
