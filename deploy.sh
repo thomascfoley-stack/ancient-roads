@@ -460,21 +460,43 @@ if [ -z "$VERCEL_TOKEN" ]; then
   exit 1
 fi
 
+# Assert the rootDirectory is what we expect. A failed flip or restore is not silent —
+# the GET-before/after pattern makes both loud. The flip must end at null; the restore
+# must end at 'web'.
+get_root_directory() {
+  curl -s "https://api.vercel.com/v9/projects/$EXPECT_PROJECT_ID" \
+    -H "Authorization: Bearer $VERCEL_TOKEN" 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin).get('rootDirectory') or 'null')" 2>/dev/null || echo 'unknown'
+}
+
 restore_root_directory() {
+  local before after
+  before="$(get_root_directory)"
   curl -s -X PATCH "https://api.vercel.com/v9/projects/$EXPECT_PROJECT_ID" \
     -H "Authorization: Bearer $VERCEL_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{"rootDirectory": "web"}' > /dev/null 2>&1 || true
+  after="$(get_root_directory)"
+  if [ "$after" != "web" ]; then
+    echo "⚠ rootDirectory restore FAILED (before=$before, after=$after) — project left misconfigured." >&2
+  fi
 }
 
-# Flip to null for the CLI deploy.
+# Flip to null for the CLI deploy, and prove it took.
+FLIP_BEFORE="$(get_root_directory)"
 curl -s -X PATCH "https://api.vercel.com/v9/projects/$EXPECT_PROJECT_ID" \
   -H "Authorization: Bearer $VERCEL_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"rootDirectory": null}' > /dev/null 2>&1 || true
+FLIP_AFTER="$(get_root_directory)"
+if [ "$FLIP_AFTER" != "null" ]; then
+  echo "STOP: rootDirectory flip FAILED (before=$FLIP_BEFORE, after=$FLIP_AFTER) — cannot deploy safely." >&2
+  exit 1
+fi
 
-# Restore on exit, success or failure.
-trap restore_root_directory EXIT
+# Restore on exit, success or failure. ONE trap does both restore and receipt — bash trap
+# replaces, not chains, so the old `trap restore_root_directory EXIT` clobbered the receipt
+# trap and any failure after upload produced no receipt (H-1).
+trap 'rc=$?; restore_root_directory; write_receipt; exit $rc' EXIT
 
 DEPLOY_LOG="$(mktemp "${TMPDIR:-/tmp}/vercel-deploy.XXXXXX")"
 UPLOAD_STARTED=1
