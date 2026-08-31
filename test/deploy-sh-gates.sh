@@ -12,9 +12,14 @@
 # without deploying.
 #
 # HOW. A throwaway git repo per case (with a real bare 'origin', so the ancestry gate is exercised
-# rather than mocked), and a fake `npx` on PATH standing in for the three commands deploy.sh
-# shells out to: the licensing gate, `next build`, and the Vercel CLI. Everything else — every
-# gate, every branch, the trap, the receipt — is the real code under test.
+# rather than mocked), a fake `npx` on PATH standing in for the three commands deploy.sh shells
+# out to (the licensing gate, `next build`, and the Vercel CLI), and a stateful fake `curl` on
+# PATH for EVERY case, standing in for the Vercel project API so the rootDirectory flip/restore
+# is exercised with no network. HOME points at a throwaway directory whose only credential file
+# holds a dummy token, so deploy.sh's token read succeeds without touching the operator's real
+# ~/.vercel credentials — and any curl call that escaped the fake would carry that dummy token,
+# fail auth, and turn the flip-proof red. Everything else — every gate, every branch, the trap,
+# the receipt — is the real code under test.
 #
 # RED-PROOF. Run it against the previous deploy.sh and watch the new cases fail:
 #     git show HEAD:deploy.sh > /tmp/old-deploy.sh
@@ -108,12 +113,57 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- the fake curl ----------------------------------------------------------
+# In $FAKEBIN alongside the fake npx, so it is first on PATH for EVERY case — not just the
+# flip/restore one. It used to live in a separate dir that only reached PATH via EXTRA_PATH for
+# one case, which let cases 11–18 run deploy.sh's flip/restore curl calls against the REAL
+# Vercel API on any machine holding ~/.vercel credentials (observed: real PATCH attempts against
+# the production project). Stateful — PATCHes mutate $FAKE_CURL_STATE, GETs read it back — so
+# deploy.sh's flip-proof (FLIP_AFTER must read 'null') and the restore-proof inside
+# restore_root_directory (after must read 'web') see the transitions the real API would show.
+# Every invocation is appended to $FAKE_CURL_LOG; begin() seeds both per case.
+cat > "$FAKEBIN/curl" <<'FAKE'
+#!/bin/bash
+log="${FAKE_CURL_LOG:-/dev/null}"
+state="${FAKE_CURL_STATE:?FAKE_CURL_STATE must name the rootDirectory state file}"
+method="GET"; data=""; url=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -X) method="$2"; shift 2 ;;
+    -d) data="$2"; shift 2 ;;
+    http*) url="$1"; shift ;;
+    *) shift ;;
+  esac
+done
+printf 'curl -X %s %s -d %s\n' "$method" "$url" "${data:-<none>}" >> "$log"
+if [ "$method" = "PATCH" ]; then
+  case "$data" in
+    *'"rootDirectory": null'*)  printf 'null\n' > "$state" ;;
+    *'"rootDirectory": "web"'*) printf 'web\n'  > "$state" ;;
+  esac
+fi
+printf '{"rootDirectory": %s}\n' "$(cat "$state")"
+FAKE
+chmod +x "$FAKEBIN/curl"
+
+# --- the fake HOME ------------------------------------------------------------
+# deploy.sh reads its Vercel API token from $HOME/Library/Application Support/
+# com.vercel.cli/auth.json and STOPs without it. Point HOME at a throwaway dir holding a DUMMY
+# token: the harness needs no real credentials, the operator's real token is never read, and the
+# dummy value doubles as the escape detector — a curl call that slipped past the fake would hit
+# the real API with an invalid token, fail the flip-proof, and go red.
+FAKEHOME="$SANDBOX/home"
+mkdir -p "$FAKEHOME/Library/Application Support/com.vercel.cli"
+printf '%s\n' '{"token":"deploy-gates-DUMMY-token-not-real"}' \
+  > "$FAKEHOME/Library/Application Support/com.vercel.cli/auth.json"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
         FAKE_WHOAMI_RC FAKE_WHOAMI_OUT FAKE_PROJECT_LS_RC FAKE_PROJECT_LS_OUT \
         FAKE_ENV_LS_RC FAKE_ENV_LS_OUT FAKE_ENV_DROP \
         FAKE_DEPLOY_RC FAKE_DEPLOY_OUT FAKE_INSPECT_RC FAKE_DEPLOY_ID FAKE_ALIAS_ID \
+        FAKE_CURL_LOG FAKE_CURL_STATE \
         DEPLOY_ALLOW_BEHIND
 }
 
@@ -155,12 +205,22 @@ begin() {
   ) >/dev/null 2>&1
   ARGV_LOG="$SANDBOX/argv-$CASE_N.log"
   : > "$ARGV_LOG"
+  # Every case gets the fake curl's state seeded to 'web' (the production value) and an empty
+  # intercept log — the fake is on PATH for all cases now, so the knobs are per-case fixtures,
+  # not opt-ins. reset_knobs clears them; re-arm here. Exported so run_deploy's env passes them
+  # through to deploy.sh's curl invocations.
+  export FAKE_CURL_LOG="$SANDBOX/curl-$CASE_N.log"
+  : > "$FAKE_CURL_LOG"
+  export FAKE_CURL_STATE="$SANDBOX/curl-state-$CASE_N"
+  printf 'web\n' > "$FAKE_CURL_STATE"
 }
 
-# run_deploy [subdir] — executes the real script with the fakes in front
+# run_deploy [subdir] — executes the real script with the fakes in front. $FAKEBIN leads PATH,
+# so `npx` AND `curl` both resolve to the fakes for every case; HOME is the throwaway with the
+# dummy token (see the fake HOME block above).
 run_deploy() {
   local from="${1:-$REPO}"
-  OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
+  OUT="$(cd "$from" && HOME="$FAKEHOME" FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
     PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }
@@ -400,6 +460,17 @@ if grep -q "vercel@" "$ARGV_LOG" && ! grep "vercel@" "$ARGV_LOG" | grep -qv "cwd
 else
   bad "a vercel call ran outside web/: $(grep 'vercel@' "$ARGV_LOG" | grep -v 'cwd=web' | head -1)"
 fi
+# NETWORK ISOLATION PROOF, pinned on the happiest path: deploy.sh issues 6 curl calls in a full
+# run (flip: GET, PATCH, GET; the EXIT-trap restore: GET, PATCH, GET) and every one must land in
+# the fake's intercept log. A real call would carry the dummy token (HOME is the fake), fail the
+# real API's auth, and turn the flip-proof above red — but the line count makes the interception
+# direct evidence rather than inference.
+CURL_CALLS="$(wc -l < "$FAKE_CURL_LOG" | tr -d ' ')"
+if [ "$CURL_CALLS" = "6" ]; then
+  ok "all 6 curl calls intercepted by the fake (flip GET/PATCH/GET + restore GET/PATCH/GET)"
+else
+  bad "expected 6 intercepted curl calls, found $CURL_CALLS: $(tr '\n' '|' < "$FAKE_CURL_LOG")"
+fi
 
 # --------------------------------------------------------------------------
 # 17. Runs correctly from a subdirectory (root anchoring)
@@ -423,6 +494,79 @@ case "$(basename "${R:-none}")" in
   deploy-*-*Z.txt) ok "receipt name is timestamped: $(basename "$R")" ;;
   *) bad "receipt name is not timestamped: $(basename "${R:-<none>}")" ;;
 esac
+
+# --------------------------------------------------------------------------
+# 19. H-1 STRUCTURAL — the EFFECTIVE EXIT trap keeps BOTH the restore and the
+#     receipt. bash `trap` REPLACES rather than chains: the old
+#     `trap restore_root_directory EXIT` clobbered the receipt trap armed
+#     earlier, so any failure after the upload started wrote no receipt.
+#     Part 1 executes every trap-setting line of the SUT in order, in a
+#     subshell, and asks bash what actually survives on EXIT. Part 2 is the
+#     generalized static property: no `trap ... EXIT` line after the
+#     receipt-arming trap may omit write_receipt.
+# --------------------------------------------------------------------------
+begin "exit-trap-keeps-restore-and-receipt"
+EFFECTIVE_TRAP="$(
+  # Stub the two functions so the armed trap fires harmlessly when this subshell exits.
+  write_receipt() { :; }
+  restore_root_directory() { :; }
+  while IFS= read -r t; do eval "$t"; done \
+    < <(grep -E '^[[:space:]]*trap[[:space:]].*EXIT' "$SUT")
+  trap -p EXIT
+)"
+case "$EFFECTIVE_TRAP" in
+  *write_receipt*) ok "effective EXIT trap names write_receipt" ;;
+  *) bad "effective EXIT trap drops the receipt: ${EFFECTIVE_TRAP:-<empty>}" ;;
+esac
+case "$EFFECTIVE_TRAP" in
+  *restore_root_directory*) ok "effective EXIT trap names restore_root_directory" ;;
+  *) bad "effective EXIT trap drops the rootDirectory restore: ${EFFECTIVE_TRAP:-<empty>}" ;;
+esac
+ARM_LINE="$(awk '/^[[:space:]]*trap[[:space:]].*EXIT/ && /write_receipt/ { print NR; exit }' "$SUT")"
+if [ -z "$ARM_LINE" ]; then
+  bad "no EXIT trap anywhere arms write_receipt"
+else
+  DROPS="$(awk -v arm="$ARM_LINE" \
+    'NR > arm && /^[[:space:]]*trap[[:space:]].*EXIT/ && !/write_receipt/ \
+     { printf "  line %d: %s\n", NR, $0 }' "$SUT")"
+  if [ -z "$DROPS" ]; then
+    ok "no EXIT trap after the receipt trap (line $ARM_LINE) omits write_receipt"
+  else
+    bad "EXIT trap(s) after the receipt trap drop the receipt:$DROPS"
+  fi
+fi
+
+# --------------------------------------------------------------------------
+# 20. H-1/H-2 BEHAVIOURAL — the upload fails, and the EXIT trap must BOTH
+#     restore rootDirectory to 'web' AND write the receipt. The stateful fake
+#     curl (on PATH for every case since the network-isolation fix) logs every
+#     call and answers from its state file, so the run needs no network. The
+#     fake npx's deploy prints an upload progress line and exits 1, so the
+#     failure lands AFTER UPLOAD_STARTED=1. A PATCH carrying "web" can only
+#     come from restore_root_directory, which deploy.sh calls only from the
+#     EXIT trap — so that call appearing in the log after the flip-to-null
+#     proves the trap fired across the failure.
+# --------------------------------------------------------------------------
+begin "failed-upload-restores-rootdir-and-writes-receipt"
+export FAKE_DEPLOY_OUT="> Uploading web [====================] 14.2MB/14.2MB"
+export FAKE_DEPLOY_RC=1
+run_deploy
+if [ "$RC" != "0" ]; then ok "exit $RC (non-zero)"; else bad "failed upload exited 0"; fi
+assert_not_out "Done —"
+assert_argv "--prod"
+assert_receipt "outcome unknown"
+FLIP_LINE="$(grep -n 'PATCH .*"rootDirectory": null' "$FAKE_CURL_LOG" | head -1 | cut -d: -f1)"
+RESTORE_LINE="$(grep -n 'PATCH .*"rootDirectory": "web"' "$FAKE_CURL_LOG" | head -1 | cut -d: -f1)"
+if [ -n "$FLIP_LINE" ] && [ -n "$RESTORE_LINE" ] && [ "$RESTORE_LINE" -gt "$FLIP_LINE" ]; then
+  ok 'restore call ({"rootDirectory": "web"}) followed the flip across the failed upload'
+else
+  bad "curl log lacks flip-to-null then restore-to-web: $(tr '\n' '|' < "$FAKE_CURL_LOG")"
+fi
+if [ "$(cat "$FAKE_CURL_STATE")" = "web" ]; then
+  ok "rootDirectory ends at 'web'"
+else
+  bad "rootDirectory left as: $(cat "$FAKE_CURL_STATE")"
+fi
 
 reset_knobs
 echo ""
