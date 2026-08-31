@@ -32,7 +32,10 @@ export {
 type LanePayloads = { song_verse?: SongVerseChunk[]; sermons?: RegisterLaneChunk[]; theology?: RegisterLaneChunk[]; historians?: RegisterLaneChunk[] };
 export type TeacherResult =
   | ({ kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] } & LanePayloads)
-  | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] } & LanePayloads)
+  // The fallback payload is serialized into the /api/ask response body, so its violations are
+  // stripped to check+message: `span` is model-authored text (see RejectedAttempt below) and the
+  // "never emit unverified model text to a user" rule applies to the fallback path most of all.
+  | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: { check: string; message: string }[] } & LanePayloads)
   | { kind: 'empty'; reason: string };
 
 /** Per-stage wall-clock, ms (plan 2026-08-13 B1). compose/verify are PER-ATTEMPT arrays so
@@ -355,5 +358,11 @@ export async function teach(
     recordRejection(attempt, lastViolations);
   }
 
-  return finish(withRegister({ kind: 'fallback', retrieval, violations: lastViolations }), metaBase);
+  // Strip before this crosses the response boundary: same bounds as recordRejection, minus
+  // `span` entirely. meta.rejections keeps its own bounded copy for the server-only log.
+  const clientViolations = lastViolations.slice(0, MAX_VIOLATIONS_PER_ATTEMPT).map((v) => ({
+    check: v.check,
+    message: v.message.slice(0, MAX_VIOLATION_FIELD_CHARS),
+  }));
+  return finish(withRegister({ kind: 'fallback', retrieval, violations: clientViolations }), metaBase);
 }
