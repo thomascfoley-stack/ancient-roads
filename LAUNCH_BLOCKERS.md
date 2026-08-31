@@ -145,6 +145,55 @@ The right shape is a per-invite token or a gate-level allowlist. Until that ship
 
 ---
 
+## 15. Post-launch queue — deferred mediums (filed 2026-08-31, pre-open pass)
+
+**Status:** [TABLED] — deliberately NOT fixed before opening. Batching them into the launch-eve
+deploy risks a fresh regression; each is real and should be worked after the doors open.
+
+From the 2026-08-31 deep audit (`docs/evidence/deep-audit-2026-08-31.md`), deferred:
+
+- **Orphan-blob sweeper** — presign → PUT → never complete leaves unbilled blobs.
+- **CSRF `includes()` substring match** on origin checking.
+- **Auth-table RLS posture** — `auth_accounts.password` protected by an invariant test rather
+  than the database. **First-week item** (weakest point in the data layer per the audit).
+- **CSP nonce** — CSP is not currently an XSS backstop.
+- **ENABLE-vs-FORCE asymmetry** on the 16 older user tables.
+- **HSTS verification** not done.
+- **`toggleBookmark` impure updater** — fetch inside a setState updater.
+- **Log sampling on hot events** — no sampling; log volume/cost unbounded.
+
+Promoted OUT of the deferred list and FIXED pre-open (2026-08-31): the **stale-GET race on
+chapter switch** — on re-examination it was not display-wrong data but a misdirected DELETE
+that silently destroys a real annotation (fix + regression test in
+`web/src/lib/use-annotation-writes.ts` / `web/test/invariants/annotation-stale-chapter-load.test.tsx`).
+
+New findings from the 2026-08-31 pre-open pass itself, filed here:
+
+- **Persisted `span` in historical research rows (data at rest).** The fallback strip (item 1
+  of the pre-open pass) stops NEW writes, but fallback answers persisted to research history
+  BEFORE the fix may still carry model-authored `span` and are re-served verbatim. One-off
+  scrub or read-time sanitize; needs a prod-data decision first.
+- **`deploy.sh` `get_root_directory` maps any non-project JSON to `'null'`.** With an expired
+  Vercel token the API returns an error body; `get_root_directory` reads it as `rootDirectory
+  null`, so the flip-proof passes VACUOUSLY and the flip never actually happened. Mitigation
+  until hardened: run `npx vercel whoami` before `deploy.sh` so the CLI refreshes the token
+  (observed 2026-08-31: `auth.json` token expired; `whoami` refreshed it). Hardening =
+  treat error responses as `unknown`, not `null`.
+- **Pre-existing audit red at HEAD:** `tsc -p web/tsconfig.test.json` fails in
+  `web/test/user-corpus/upload-direct-guards.test.ts:161` (`Request.status`). Not from this
+  pass; blocks `npm run audit` being the definition of green.
+
+## 16. Item 12 addendum — the `rootDirectory` flip, further documented (2026-08-31)
+
+Still unruled, but the mechanism is now better understood: the flip/restore reads the RAW
+`token` field from the CLI's `auth.json`, which expires independently of the CLI (the CLI
+auto-refreshes via `refreshToken`; the raw field goes stale). A stale token silently turns
+every flip/restore into a 403 swallowed by `|| true`. The H-2 GET-before/after assertions
+catch a failed restore only when the token is valid. See the `get_root_directory` finding
+above. This strengthens the case for ruling item 12.
+
+---
+
 ## Bugs closed in this session
 
 - F-112 (password reset session revocation)
