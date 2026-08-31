@@ -1,5 +1,33 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-31 — Step 1 + Step 3: red tests fixed, accuracy diagnostic recorded
+
+**Step 1:** three red tests fixed. study-editor ×2 (Save failed always shows, Saved uses
+findAllByText), date-locale ×1 (character counter pinned with DISPLAY_LOCALE). Full suite:
+1 failed | 1903 passed — the flaky licensing invariant (#13, already filed).
+
+**ASK_LIMIT_GLOBAL_PER_DAY:** not set in Vercel — code default 5,000 applies. Worst-case
+daily cost: 5,000 asks × ~$0.0013/ask ≈ $6.50/day (3 upstream calls per ask: embed query +
+rerank + compose).
+
+**Step 3a:** interpretation_bait harness requires `EVAL_HARNESS_SECRET`, which is not set in
+this worktree's `.env.local` or in Vercel production env. **Blocked — needs the secret.**
+
+**Step 3b:** accuracy diagnostic (held-out v4, 120 queries, evidence
+`docs/evidence/evals/pre-open-v4-2026-08-31T00-59-31Z.log`):
+
+```
+category        n   HIT@1  HIT@2   pass / <2 / wrong / none
+  verse-ref     40    98%  100%    40 / 0 / 0 / 0
+  pericope      15    80%  100%    15 / 0 / 0 / 0
+  epistle       25    92%  100%    25 / 0 / 0 / 0
+  topical       20    85%   95%    19 / 0 / 1 / 0
+  proper-noun   10    70%  100%    10 / 0 / 0 / 0
+  control       10   clean 10/10  hijacks=0
+```
+
+proper-noun 70% meets the ≥70% bar. Control clean. No retrieval regression on the current build.
+
 ## 2026-08-30 — RLS proof: structural (prod) + behavioural (dev)
 
 **Owner authorization:** the production connection below was authorized by the owner on
