@@ -34,18 +34,21 @@ export default defineConfig({
       // The DB-backed invariant tests call the REAL public route handlers, which throttle
       // per `read:{bucket}:no-trusted-ip` in the shared gate table: a minute leg
       // (PUBLIC_READ_LIMIT_PER_MIN=120, passed as checkGateRateLimit's perMin override) and
-      // an HOUR leg (GATE_LIMIT_PER_HOUR=60 — publicReadThrottle reuses the gate limiter and
-      // cannot override this one). Run the whole suite against a real DB and the files'
-      // combined traffic exhausts both buckets — and the hour bucket stays exhausted across
-      // runs, so EVERY public-route call 429s for the rest of the hour (2026-08-10 full-qa:
-      // work-reader's malformed-params check got 429 where it expected 400, register-end-to-end
-      // got 429s on every reader call, library-published-boundary got 429 where it expected 404).
+      // an hour leg (PUBLIC_READ_LIMIT_PER_HOUR=600, the perHour override), plus the
+      // cross-caller daily ceiling (PUBLIC_READ_GLOBAL_PER_DAY=20,000). Run the whole suite
+      // against a real DB and the files' combined traffic can exhaust a bucket — and the
+      // hour/global buckets stay exhausted across runs, so EVERY public-route call 429s for
+      // the rest of the window (2026-08-10 full-qa: work-reader's malformed-params check got
+      // 429 where it expected 400, register-end-to-end got 429s on every reader call,
+      // library-published-boundary got 429 where it expected 404).
       // These caps are a production flood control, not the property under test anywhere in this
       // suite: the throttle wiring is covered by mocks (api-hardening.test.ts,
       // catalog-filter-wiring.test.ts) and the limiter mechanics by the root
       // test/rate-limit.test.ts (separate vitest process, unaffected by this block).
-      // Lift both here so DB-backed tests are deterministic.
+      // Lift them all here so DB-backed tests are deterministic.
       PUBLIC_READ_LIMIT_PER_MIN: '100000',
+      PUBLIC_READ_LIMIT_PER_HOUR: '100000',
+      PUBLIC_READ_GLOBAL_PER_DAY: '100000000',
       GATE_LIMIT_PER_HOUR: '100000',
     },
     server: {

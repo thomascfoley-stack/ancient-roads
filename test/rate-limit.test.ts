@@ -3,8 +3,8 @@
 // logic and the deliberate FAIL-OPEN path are tested hermetically (no DB). A
 // real-DB atomic-upsert check is run separately (seed-and-confirm rail).
 
-import { describe, expect, it } from 'vitest';
-import { checkAskRateLimit, checkGateRateLimit } from '../web/src/lib/rate-limit';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { checkAskRateLimit, checkGateRateLimit, envInt } from '../web/src/lib/rate-limit';
 
 type SqlArg = NonNullable<Parameters<typeof checkAskRateLimit>[1]>;
 
@@ -125,10 +125,73 @@ describe('checkGateRateLimit', () => {
     await checkGateRateLimit('9.9.9.9', spy);
     expect(keys.every((k) => k === 'gate:9.9.9.9')).toBe(true);
   });
+  it('honours the perHour override — the completed H3 loosening for public reads', async () => {
+    // The loosening first landed on the minute leg only: public readers got 120/minute and
+    // still hard-stopped at the gate's 60/hour, so one busy shared IP (carrier NAT, library
+    // wifi) was throttled like a brute-force script. With the override, 70/hour passes.
+    // SEED: restore `hourCount > GATE_LIMIT_PER_HOUR` in checkGateRateLimit -> RED.
+    const r = await checkGateRateLimit('1.2.3.4', mockGateSql({ min: 2, hour: 70 }), 120, 600);
+    expect(r).toEqual({ ok: true });
+  });
+  it('the hour cap DEFAULT is unchanged at 60 for the gate callers (no override)', async () => {
+    // Same shape as the override case, one call short of the loosened cap — the default
+    // must still bind, or the gate's brute-force posture silently loosened with the fix.
+    const r = await checkGateRateLimit('1.2.3.4', mockGateSql({ min: 2, hour: 61 }), 120);
+    expect(r).toEqual({ ok: false, limited: 'hour', retryAfterSec: 3600 });
+  });
   // The site gate KEEPS failing open, deliberately and unlike the ask limiter above: here the
   // password is still required regardless, and locking real visitors out is the worse failure.
   it('FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller', async () => {
     const throwing = { query: async () => { throw new Error('db down'); } } as unknown as SqlArg;
     expect(await checkGateRateLimit('1.2.3.4', throwing)).toEqual({ ok: true });
+  });
+});
+
+// envInt — every limiter env var is parsed through one guard (2026-08-31). A typo'd value
+// used to parse to NaN, `count > NaN` is always false, and the cap silently passed
+// EVERYTHING while looking configured. Now: unset/empty is the fallback, anything set must
+// be a finite positive integer, and a bad value kills module LOAD, not a runtime request.
+describe('envInt — limiter env vars fail LOUD, never NaN-open', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('returns the fallback when the var is unset or empty', () => {
+    delete process.env.THIS_VAR_IS_NOT_SET_ANYWHERE;
+    expect(envInt('THIS_VAR_IS_NOT_SET_ANYWHERE', 42)).toBe(42);
+    vi.stubEnv('EMPTY_LIMIT_VAR', '');
+    expect(envInt('EMPTY_LIMIT_VAR', 7)).toBe(7);
+  });
+
+  it('parses a valid positive integer', () => {
+    vi.stubEnv('VALID_LIMIT_VAR', '25');
+    expect(envInt('VALID_LIMIT_VAR', 10)).toBe(25);
+  });
+
+  it('throws on anything that is not a positive integer, naming var AND value', () => {
+    // '0x10' (16) and '1e3' (1000) PARSE as positive integers under Number() — a wrong limit
+    // that passes the guard silently is the exact failure class this guard exists to kill, so
+    // only decimal digits are accepted. Whitespace-only is rejected, not treated as empty.
+    for (const bad of ['abc', '1.5', '-3', '0', '1e999', 'NaN', '0x10', '1e3', '10abc', '   ']) {
+      vi.stubEnv('BAD_LIMIT_VAR', bad);
+      expect(() => envInt('BAD_LIMIT_VAR', 10), bad).toThrowError(/BAD_LIMIT_VAR/);
+      expect(() => envInt('BAD_LIMIT_VAR', 10), bad).toThrowError(new RegExp(JSON.stringify(bad)));
+    }
+  });
+
+  it('accepts surrounding whitespace around decimal digits (trimmed before the digit check)', () => {
+    vi.stubEnv('PADDED_LIMIT_VAR', ' 25 ');
+    expect(envInt('PADDED_LIMIT_VAR', 10)).toBe(25);
+  });
+
+  it('a typo in a shipped limit var throws at MODULE LOAD (dynamic import, env stubbed)', async () => {
+    // The exit test: not a unit call, the real module-top evaluation. A NaN here used to
+    // mean the ask limiter allowed everything from the first request.
+    // SEED: restore `Number(process.env.ASK_LIMIT_PER_MIN ?? 10)` in rate-limit.ts -> RED.
+    vi.stubEnv('ASK_LIMIT_PER_MIN', 'abc');
+    vi.resetModules();
+    await expect(import('../web/src/lib/rate-limit')).rejects.toThrowError(/ASK_LIMIT_PER_MIN/);
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 });
