@@ -113,14 +113,21 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
     // `?book=43&chapter=NaN` on every load of `/read/jhn/abc`. The shared predicate answers the
     // one question all three dispatchers were each answering for themselves.
     if (!isFetchableChapter(bookNum, chapterNum)) return;
+    // A chapter switch (or retryAnnotations) makes any earlier load's response STALE: highlights
+    // are keyed by verse number only (verse_id % 1000 below), so a late chapter-A response would
+    // plant chapter A's spans on chapter B's verses — and clearing one of those phantoms would
+    // DELETE a real annotation of the CURRENT chapter (verseId is computed from current state).
+    const controller = new AbortController();
     setHighlights(new Map());
     setNotes(new Map());
     setBookmarks(new Set());
     setFreshSpans(new Set());
     setLoadFailed(false);
-    fetch(`/api/annotations?book=${bookNum}&chapter=${chapterNum}`)
+    fetch(`/api/annotations?book=${bookNum}&chapter=${chapterNum}`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((d: { highlights: ApiHighlight[]; notes: { verse_id: number; body: string }[]; bookmarks?: { verse_id: number }[] }) => {
+        // The reader has already moved on (the cleanup aborted this fetch) — drop the response.
+        if (controller.signal.aborted) return;
         const byVerse = new Map<number, StoredSpan[]>();
         for (const h of d.highlights) {
           const v = h.verse_id % 1000;
@@ -135,7 +142,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         // annotations rather than just its bookmarks.
         setBookmarks(new Set((d.bookmarks ?? []).map((b) => b.verse_id % 1000)));
       })
-      .catch(() => setLoadFailed(true));
+      .catch(() => {
+        // An aborted load is not a failure — the next chapter's own fetch reports its own result.
+        if (controller.signal.aborted) return;
+        setLoadFailed(true);
+      });
+    return () => controller.abort();
   }, [bookNum, chapterNum, loadNonce]);
 
   // ── the shared failure path ────────────────────────────────────────────────────────────────
