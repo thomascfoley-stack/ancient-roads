@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { StudyLibraryPanel } from './study-library-panel';
 import { clippingDisplay } from '@/lib/clipping-display';
+import { DISPLAY_LOCALE } from '@/lib/locale';
 
 /** The block shape the editor renders — StudyBlock minus the server-only fields, plus the
  *  server-computed render state (see the header: licensing arrives decided, not derivable). */
@@ -910,7 +911,7 @@ export function StudyEditor({
                     <div className="flex min-h-[1.5rem] flex-wrap items-center justify-between gap-3 font-sans text-xs tracking-[0.03em]">
                       {saveStates[block.id] === 'failed' ? (
                         <span role="alert" className="flex items-center gap-2 text-red-800 dark:text-red-200">
-                          {saveErrors[block.id] ?? 'Save failed'} —
+                          Save failed{saveErrors[block.id] ? `: ${saveErrors[block.id]}` : ''} —
                           <button
                             type="button"
                             onClick={() => void saveText(block.id)}
@@ -925,7 +926,7 @@ export function StudyEditor({
                         </span>
                       )}
                       <span className="text-stone-400 dark:text-stone-500" aria-live="polite">
-                        {(block.body ?? '').length.toLocaleString()} / 20,000
+                        {(block.body ?? '').length.toLocaleString(DISPLAY_LOCALE)} / 20,000
                       </span>
                     </div>
                   </div>

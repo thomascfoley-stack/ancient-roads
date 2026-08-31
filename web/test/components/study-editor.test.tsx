@@ -156,7 +156,8 @@ describe('StudyEditor — autosave and save state', () => {
 
     // The visible confirmation (S-13): the quiet "Saved", not a toast, banner, or modal.
     // SEED: never set the 'saved' state -> RED.
-    expect(await screen.findByText('Saved')).toBeTruthy();
+    // The header status and the block status both render "Saved" — findAll, not findByText.
+    expect((await screen.findAllByText('Saved')).length).toBeGreaterThan(0);
   });
 
   it('S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it', async () => {
@@ -188,7 +189,7 @@ describe('StudyEditor — autosave and save state', () => {
       blockId: TEXT1.id,
       body: 'the spies went out by another way',
     });
-    expect(await screen.findByText('Saved')).toBeTruthy();
+    expect((await screen.findAllByText('Saved')).length).toBeGreaterThan(0);
     expect(calls).not.toHaveLength(0); // the failing attempt really did go out first
   });
 });
