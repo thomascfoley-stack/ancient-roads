@@ -169,19 +169,27 @@ that silently destroys a real annotation (fix + regression test in
 
 New findings from the 2026-08-31 pre-open pass itself, filed here:
 
-- **Persisted `span` in historical research rows (data at rest).** The fallback strip (item 1
-  of the pre-open pass) stops NEW writes, but fallback answers persisted to research history
-  BEFORE the fix may still carry model-authored `span` and are re-served verbatim. One-off
-  scrub or read-time sanitize; needs a prod-data decision first.
+- **Persisted `span` in historical research rows (data at rest) — DOWNGRADED.** The fallback
+  strip (item 1 of the pre-open pass) stops NEW writes, and on independent check the old
+  rows are unreachable from the app: nothing renders violations from research history and
+  `app_runtime` holds no SELECT on `ask_outcomes`. Scrub whenever convenient; not a launch
+  issue.
 - **`deploy.sh` `get_root_directory` maps any non-project JSON to `'null'`.** With an expired
   Vercel token the API returns an error body; `get_root_directory` reads it as `rootDirectory
   null`, so the flip-proof passes VACUOUSLY and the flip never actually happened. Mitigation
   until hardened: run `npx vercel whoami` before `deploy.sh` so the CLI refreshes the token
   (observed 2026-08-31: `auth.json` token expired; `whoami` refreshed it). Hardening =
   treat error responses as `unknown`, not `null`.
-- **Pre-existing audit red at HEAD:** `tsc -p web/tsconfig.test.json` fails in
-  `web/test/user-corpus/upload-direct-guards.test.ts:161` (`Request.status`). Not from this
-  pass; blocks `npm run audit` being the definition of green.
+- **A test that could not fail, guarding the upload budget (FIXED 2026-08-31).** The
+  `tsconfig.test.json` type error at `upload-direct-guards.test.ts:161` was TypeScript
+  correctly reporting a broken test: a nested `completeReq(completeReq(...) as never)` meant
+  the route was never invoked and the assertion passed unconditionally — and the request
+  never reached the limiter anyway (non-UUID pathname rejected pre-limiter). The
+  bucket-independence guarantee (every upload burns one of each budget, not two) had no
+  working test while the suite reported 6/6. Fixed with per-limiter call counters and
+  red-proved (shared bucket → "expected 2 to be 1"). Remaining risk class: other `as never`
+  casts in the suite may hide similar can't-fail assertions — one false-confidence-audit
+  pass in week one.
 
 ## 16. Item 12 addendum — the `rootDirectory` flip, further documented (2026-08-31)
 

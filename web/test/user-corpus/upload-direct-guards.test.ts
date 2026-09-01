@@ -22,9 +22,13 @@ vi.mock('@/lib/session', () => ({
 
 let uploadLimit: { ok: boolean; retryAfterSec?: number } = { ok: true };
 let completeLimit: { ok: boolean; retryAfterSec?: number } = { ok: true };
+// Call counters: bucket independence is proven by WHICH limiter function each route burned,
+// not by statuses — a shared bucket shows up as a double-increment of one of these.
+let uploadLimitCalls = 0;
+let completeLimitCalls = 0;
 vi.mock('@/lib/rate-limit', () => ({
-  checkCorpusUploadRateLimit: async () => uploadLimit,
-  checkCorpusCompleteRateLimit: async () => completeLimit,
+  checkCorpusUploadRateLimit: async () => { uploadLimitCalls++; return uploadLimit; },
+  checkCorpusCompleteRateLimit: async () => { completeLimitCalls++; return completeLimit; },
 }));
 
 let quotaOk = true;
@@ -99,6 +103,8 @@ describe('upload-url — pre-flight guards', () => {
     quotaOk = true;
     quotaMessage = '';
     BYTES.clear();
+    uploadLimitCalls = 0;
+    completeLimitCalls = 0;
   });
 
   it('quota refusal returns 403 BEFORE a presign is issued', async () => {
@@ -139,11 +145,13 @@ describe('upload-complete — bucket independence and cleanup', () => {
     quotaOk = true;
     quotaMessage = '';
     BYTES.clear();
+    uploadLimitCalls = 0;
+    completeLimitCalls = 0;
   });
 
   it('corpus-upload:* and corpus-complete:* increment independently', async () => {
-    // One upload burns ONE of each bucket, not two of one. The mocks are separate
-    // functions, so if the routes shared a bucket the test would see double-increment.
+    // One upload burns ONE of each bucket, not two of one. The mocks count calls per
+    // limiter function, so a shared bucket shows up as a double-increment of one counter.
     const { POST: urlPOST } = await import('@/app/api/user-corpus/upload-url/route');
     const { POST: completePOST } = await import('@/app/api/user-corpus/upload-complete/route');
 
@@ -151,14 +159,21 @@ describe('upload-complete — bucket independence and cleanup', () => {
     const urlRes = await urlPOST(jsonReq({ name: 'sermon.pdf', size: 1_000_000 }) as never);
     expect(urlRes.status).toBe(200);
 
-    // Complete (burns corpus-complete:*)
-    BYTES.set(`user-corpus/${USER.id}/doc-1`, new TextEncoder().encode('hello'));
-    const completeRes = await completeReq(
-      completeReq({ pathname: `user-corpus/${USER.id}/doc-1`, name: 'sermon.pdf' }) as never,
+    // Complete (burns corpus-complete:*). The pathname must be a UUID — the route's
+    // ownership regex rejects anything else BEFORE the limiter (a 403 there leaves
+    // completeLimitCalls at 0, which is exactly how the old version of this test passed
+    // without ever reaching the limiter).
+    const pathname = `user-corpus/${USER.id}/0f3f8c1e-1111-4aa2-9c3c-426614174001`;
+    BYTES.set(pathname, new TextEncoder().encode('hello'));
+    const completeRes = await completePOST(
+      completeReq({ pathname, name: 'sermon.pdf' }) as never,
     );
-    // The complete route may fail for other reasons (no real DB), but the rate limit
-    // mock was called — proving the bucket exists and is separate.
+    // A real Response — it may fail for other reasons (no real DB), but not a rate-limit
+    // denial. The strong assertion is the counters: presign burned corpus-upload exactly
+    // once, complete burned corpus-complete exactly once. A shared bucket reads as 2 and 0.
     expect(completeRes.status).not.toBe(429);
+    expect(uploadLimitCalls, 'presign must burn corpus-upload exactly once').toBe(1);
+    expect(completeLimitCalls, 'complete must burn corpus-complete exactly once').toBe(1);
   });
 
   it('a 429 at complete-time leaves no blob behind', async () => {

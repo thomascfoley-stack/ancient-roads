@@ -1,5 +1,36 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-31 — Follow-up: a test that could not fail, guarding the upload budget
+
+Independent review of the overnight pass (Claude Code session) caught that the
+`tsconfig.test.json` type error at `upload-direct-guards.test.ts:161` was not a type
+nuisance — TypeScript was correctly reporting a broken test. The bucket-independence test
+called `completeReq(completeReq(...) as never)` — the route handler was never invoked;
+`completeRes` was a Request, `.status` was `undefined`, and
+`expect(undefined).not.toBe(429)` passed unconditionally. The `as never` silenced the
+checker instead of being read. Worse, once unwrapped, the request used a non-UUID pathname
+(`doc-1`), which the route's ownership regex rejects BEFORE the limiter — so even a
+correctly-written call would have passed without reaching the thing under test. This was
+the assertion for "corpus-upload and corpus-complete increment independently" — the guard
+against every upload burning two of the budget — reporting 6/6 green while testing nothing.
+
+Fix: unwrap the call (real Response), use a UUID pathname, and make the mocks count calls
+per limiter function — bucket independence is now proven by `uploadLimitCalls = 1` /
+`completeLimitCalls = 1`, which a shared bucket reads as 2/0. Red-proved exactly as
+specified: pointed the complete route at `checkCorpusUploadRateLimit`, watched the test go
+red with "expected 2 to be 1" (and the 429-cleanup test red alongside it), restored the
+route (git diff empty). 6/6 green; `tsc -p tsconfig.test.json` clean — `npm run audit`'s
+typecheck leg is unblocked.
+
+Note for week one: `as never` appears across the suite mostly as legitimate Request/route
+signature casts, but this instance proves the pattern can hide a can't-fail assertion.
+Worth one false-confidence-audit pass over the test suites (this one was written across
+the same rushed passes as the rest of the upload work).
+
+Also amended below: the bait fallback-rate line now states the corpus confound with its
+evidence (33 retries in 2026-08-15 vs 51 last night) instead of asserting verifier
+strictness as fact.
+
 ## 2026-08-31 — Pre-open pass: five launch fixes live (`602bd9e`), bait n=100 [Kimi Code session]
 
 **Authorization:** owner's blanket go for the full pre-open sequence, handed over from the
@@ -72,19 +103,28 @@ unique ids/prompts) through the welded harness (real `teach()`) at the deployed 
 flag (bait-008 — FALSE POSITIVE, the known refusal-clause match, same judgment as
 2026-08-15), 180 compose attempts, harness exit 0. Stated with its denominator: **0
 breaches at n=100 = ~97% lower bound (rule of three)** — NOT ≥99% (needs ~300 new vectors).
-Fallback rate up 16→23 vs 2026-08-15: the verifier refusing MORE, never less — a
-product-quality look post-launch, not a faithfulness concern. Evidence:
+Fallback rate up 16→23 vs 2026-08-15 — cause UNDETERMINED, and the first writing of this
+line ("the verifier refusing more") stated one hypothesis as fact. The confound: 2026-08-15
+ran against the production corpus, this run against the dev branch; a thinner corpus weakens
+retrieval, which produces more verifier rejections. The retry counts point the same way:
+33 prompts needed a retry in 2026-08-15 vs 51 here — compose attempts failing verification
+more often is what weaker retrieval produces. Both readings are safe (every fallback serves
+raw attributed sources; zero leaks), so this is product-quality, not faithfulness. Prod
+ask_outcomes in the first days after opening disambiguates for free: ~23% says verifier,
+~16% says corpus. Evidence:
 `docs/evidence/ask-latency/bait-100-run-2026-08-31.md` (+ `.log`).
 
 **NOT DONE / UNVERIFIED:**
 - Gate NOT opened — owner action, and only after the alert exists. Vercel log-drain alert on
   `cap: 'global'` + `rate_limit_fail_open` NOT wired (owner dashboard; nothing in repo can do it).
 - Neon "Allow Localhost" still ON in production (owner console toggle).
-- Persisted `span` in historical research rows NOT scrubbed (data at rest; pre-fix fallback
-  rows may re-serve model text — filed LAUNCH_BLOCKERS §15).
-- `npm run audit` NOT green at HEAD for a PRE-EXISTING reason: `tsc -p web/tsconfig.test.json`
-  fails in `web/test/user-corpus/upload-direct-guards.test.ts:161` (`Request.status`) —
-  untouched by this pass, filed LAUNCH_BLOCKERS §15. `npm run qa` (the handover's bar) is green.
+- Persisted `span` in historical research rows: DOWNGRADED on independent check — nothing
+  renders violations from research history and `app_runtime` holds no SELECT on
+  `ask_outcomes`, so the old rows are unreachable from the app. Scrub is hygiene, not a
+  launch issue (LAUNCH_BLOCKERS §15).
+- `npm run audit` was red on `tsc -p web/tsconfig.test.json` at
+  `upload-direct-guards.test.ts:161` — FIXED the same day (see next entry): the type error
+  was TypeScript correctly reporting a test that could not fail.
 - Bait ran through shipped `teach()` at the deployed commit against the DEV corpus branch
   (what `.env.local` carries; same published cohort the qa/licensing suites use), not the
   prod DB — the 2026-08-15 n=100 ran the same harness; DB target difference recorded, not hidden.
