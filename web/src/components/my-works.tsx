@@ -422,7 +422,11 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
           }
 
           // Direct PUT to Blob — the browser talks to the store, not to us.
-          const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', body: file });
+          const putRes = await fetch(urlData.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file,
+          });
           if (!putRes.ok) {
             outcome = 'failed';
             message = 'The file could not be stored. Please try again.';
