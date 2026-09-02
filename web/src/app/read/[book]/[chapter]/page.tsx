@@ -225,14 +225,6 @@ export default function ReaderPage() {
   // Same contract: per-device, never throws, corrupt reads as "no position". Keyed by book+chapter
   // so a translation switch does not lose the place.
   //
-  // `history.scrollRestoration = 'manual'` is the other half of the fix: without it the browser's
-  // own bfcache/navigation scroll reset fires AFTER our restore and wins, which is why the first
-  // version measured scrollTo(500) firing and still landed at 0.
-  // ── F-144 — restore the reader's scroll position within the chapter ─────────────────────────
-  // The work reader already does this (`saveWorkProgress`/`loadWorkProgress`); Scripture did not.
-  // Same contract: per-device, never throws, corrupt reads as "no position". Keyed by book+chapter
-  // so a translation switch does not lose the place.
-  //
   // THE SCROLL CONTAINER IS <main id="main">, NOT THE WINDOW. AppShell wraps every page in
   // `flex h-dvh overflow-hidden` with `<main className="overflow-y-auto">` inside it, so
   // `window.scrollY` is always 0 here and the scroll lives on that element. The save and the
