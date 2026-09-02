@@ -31,7 +31,11 @@ import { sweepQaResidue } from '../helpers/qa-residue';
 ensureDbEnv();
 
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/session', async () => ({
+  // D43: routes answer auth failures through authFailureResponse, which tells an auth-SERVICE
+  // outage (503) from an absent session (401). The real helper lives in lib/auth-failure, which
+  // imports nothing but api-error, so it loads here without the Neon Auth SDK.
+  ...(await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure')),
   requireUser: async () => {
     if (!signedIn) throw new Error('Unauthorized');
     return signedIn;

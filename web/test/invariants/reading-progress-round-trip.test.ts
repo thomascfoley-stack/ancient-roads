@@ -36,7 +36,11 @@ ensureDbEnv();
 // The session, faked at the module boundary the route actually imports. `signedIn` is flipped
 // per-case so the 401 leg is the SAME route under a different session, not a different code path.
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/session', async () => ({
+  // D43: routes answer auth failures through authFailureResponse, which tells an auth-SERVICE
+  // outage (503) from an absent session (401). The real helper lives in lib/auth-failure, which
+  // imports nothing but api-error, so it loads here without the Neon Auth SDK.
+  ...(await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure')),
   requireUser: async () => {
     if (!signedIn) throw new Error('Unauthorized');
     return signedIn;
