@@ -13,7 +13,7 @@ import { CatalogSearch } from '@/components/catalog-search';
 import { StudyEntrance } from '@/components/study-entrance';
 import { catalogHref, toggleTradition, withFacet, type CatalogUrlState } from '@/lib/catalog-href';
 import { decodeDesk, deskHref as deskHrefWith, withPane, type WorkPane } from '@/lib/desk';
-import { findWorkOrdinalForVerseId } from '@/lib/work';
+import { findWorkOrdinalsForVerseId } from '@/lib/work';
 import { encodeVerseId } from '@bible/verse-id';
 import { BOOK_BY_SLUG } from '@bible/books';
 import { resolveBookSlug } from '@bible/ref-parse';
@@ -82,21 +82,37 @@ export default async function CatalogPage({
   // `desk` is absent the link simply opens a fresh desk with this one work on it.
   // F-158: if a Scripture pane is open, resolve the work's ordinal for that passage so the pane
   // lands near the passage instead of at Genesis 1.
+  //
+  // BATCHED OVER THE WHOLE PAGE. The pre-batch form awaited `findWorkOrdinalForVerseId` per work —
+  // one slug→id lookup + one ordinal join PER work, across up to `PAGE_SIZE` works. Each
+  // `sql.query` is its own HTTPS fetch under the Neon HTTP driver, so that was two waves of up to
+  // ~100 concurrent fetches each (~200 per render) where one fetch does the same work. The
+  // `sources.id` carried out of `listCatalogWorks` above supplies the slug→id, and the one grouped
+  // query inside `findWorkOrdinalsForVerseId` supplies the ordinals for every work at once.
   const openDesk = decodeDesk(desk ? [desk] : []);
   const scripturePane = openDesk.find((p): p is { kind: 'scripture'; book: string; chapter: number } => p.kind === 'scripture');
-  const deskHrefFor = async (slug: string): Promise<string> => {
-    let pane: WorkPane = { kind: 'work', slug };
-    if (scripturePane) {
-      const book = BOOK_BY_SLUG.get(scripturePane.book) ?? resolveBookSlug(scripturePane.book);
-      if (book) {
-        const ordinal = await findWorkOrdinalForVerseId(slug, encodeVerseId({ book: book.bookNum, chapter: scripturePane.chapter, verse: 1 }));
-        if (ordinal !== null) pane = { kind: 'work', slug, ordinal };
-      }
-    }
-    return deskHrefWith(withPane(openDesk, pane));
-  };
-  const deskHrefs = await Promise.all(works.map((w) => deskHrefFor(w.slug)));
-  const deskHrefBySlug = new Map(works.map((w, i) => [w.slug, deskHrefs[i]!]));
+  // The book slug goes through `resolveBookSlug`, NOT a bare Map lookup with a hyphen-strip
+  // fallback: `BOOK_BY_SLUG` is keyed only by canonical 3-letter slugs, so an aliased pane slug
+  // ('john', '1-john') never resolved and the ordinal lookup was silently skipped (F-158 alias
+  // regression, `web/test/library/catalog-desk-ordinal.test.tsx`). Batching moved WHERE the lookup
+  // happens, not which resolver it uses.
+  const scriptureBook = scripturePane
+    ? (BOOK_BY_SLUG.get(scripturePane.book) ?? resolveBookSlug(scripturePane.book))
+    : undefined;
+  const ordinalBySlug =
+    scripturePane && scriptureBook
+      ? await findWorkOrdinalsForVerseId(
+          works.map((w) => ({ id: w.id, slug: w.slug })),
+          encodeVerseId({ book: scriptureBook.bookNum, chapter: scripturePane.chapter, verse: 1 }),
+        )
+      : new Map<string, number | null>();
+  const deskHrefBySlug = new Map(
+    works.map((w) => {
+      const ordinal = ordinalBySlug.get(w.slug) ?? null;
+      const pane: WorkPane = ordinal !== null ? { kind: 'work', slug: w.slug, ordinal } : { kind: 'work', slug: w.slug };
+      return [w.slug, deskHrefWith(withPane(openDesk, pane))];
+    }),
+  );
 
   // THE WHOLE URL STATE, in one value. Every link below is built from this by `catalogHref`, so a
   // facet cannot be dropped by a link that predates it — which is exactly how `?desk=` was being
