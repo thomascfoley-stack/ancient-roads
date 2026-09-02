@@ -335,3 +335,177 @@ describe('useAnnotationWrites — bookmark double-tap safety survives the refact
     expect(writes.map((c) => c.method)).toEqual(['POST', 'DELETE']);
   });
 });
+
+// ── F-119 network-ordering race ──────────────────────────────────────────────────────────────
+// A whole-verse recolour REPLACES the prior colour (clearVerse then POST). The POST is gated
+// behind its own clear's DELETE round-trip (`await pendingClear.settled`), but a second rapid
+// recolour's DELETE fires immediately and can land first, so the first POST then dispatches onto
+// an empty verse and re-adds the intermediate colour — a stale server row the reader never sees
+// while editing. These tests use a latency-modeling fetch (each POST/DELETE resolves only when
+// `landNext()` is called) to assert the PERSISTED server state, not just the optimistic UI. Two
+// taps are issued as separate `act()` calls = two React batches = the production path.
+//
+// SEED: remove the `activeHighlights` supersession guard in addHighlight (use-annotation-writes.ts)
+// -> the "rapid separate-batch double recolour" test fails: server holds [blue, red], not [red].
+
+interface ServerSpan { color: string; spanStart: number | null; spanEnd: number | null; }
+interface DispatchedWrite { method: string; kind?: string; color?: string }
+
+function createDeferred<T>() {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => { resolve = r; });
+  return { resolve, promise };
+}
+
+/** A latency-modeling /api/annotations mock: GET returns the seeded chapter immediately; every
+ *  POST/DELETE returns a deferred the test resolves with `landNext()`, so the test controls the
+ *  ORDER in which writes land and can assert the final PERSISTED server state. `dispatchedWrites`
+ *  records each fetch call at dispatch time (before it lands), proving which POSTs ever left the
+ *  client at all. */
+function createLatencyFetch(initial: ServerSpan[]) {
+  const server: ServerSpan[] = [...initial];
+  const pending: { method: string; body?: { kind?: string; color?: string; spanStart?: number | null; spanEnd?: number | null }; deferred: ReturnType<typeof createDeferred<Response>> }[] = [];
+  const dispatched: DispatchedWrite[] = [];
+  const VERSE_ID = 43003016; // encodeVerseId({ book: 43, chapter: 3, verse: 16 })
+  const mock = vi.fn((input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const method = (init?.method ?? 'GET').toUpperCase();
+    const body = init?.body ? (JSON.parse(String(init.body)) as { kind?: string; color?: string; spanStart?: number | null; spanEnd?: number | null; verseId?: number }) : undefined;
+    if (method === 'GET') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({
+          highlights: server.map((s, i) => ({
+            id: `h${i}`,
+            verse_id: VERSE_ID,
+            span_start: s.spanStart,
+            span_end: s.spanEnd,
+            color: s.color,
+            text_color: null,
+            translation: 'kjv',
+          })),
+          notes: [],
+          bookmarks: [],
+        }),
+      } as Response);
+    }
+    const d = createDeferred<Response>();
+    pending.push({ method, body, deferred: d });
+    dispatched.push({ method, kind: body?.kind, color: body?.color });
+    return d.promise;
+  });
+  vi.stubGlobal('fetch', mock);
+
+  async function landNext(): Promise<void> {
+    const e = pending.shift();
+    if (!e) return;
+    if (e.method === 'DELETE' && e.body?.kind === 'highlight') {
+      server.length = 0; // a verse-level highlight DELETE wipes every row for the verse
+    } else if (e.method === 'POST' && e.body?.kind === 'highlight') {
+      server.push({ color: e.body.color ?? '', spanStart: e.body.spanStart ?? null, spanEnd: e.body.spanEnd ?? null });
+    }
+    e.deferred.resolve({ ok: true, status: 201, json: () => Promise.resolve({}) } as Response);
+    // Let the resolver's .then chain (persistWrite → beginPersist → a gated POST's `await
+    // pendingClear.settled` resuming → its fetch / skip) advance before the test inspects state.
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+  }
+  function pendingMethods(): string[] { return pending.map((p) => p.method); }
+  function dispatchedWrites(): DispatchedWrite[] { return dispatched.filter((d) => d.method !== 'GET'); }
+
+  return { server, landNext, pendingMethods, dispatchedWrites };
+}
+
+describe('useAnnotationWrites — F-119 network-ordering race (separate-batch double recolour)', () => {
+  it('rapid separate-batch double recolour persists only the latest colour on the server', async () => {
+    const f = createLatencyFetch([{ color: 'yellow', spanStart: null, spanEnd: null }]);
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await act(async () => { await flushInitialLoad(); });
+
+    // Tap 1 — a separate DOM event = a separate React batch (the production path).
+    await act(async () => { result.current.addHighlight(16, null, 'blue'); });
+    expect(result.current.highlights.get(16)?.map((h) => h.color)).toEqual(['blue']);
+    expect(f.pendingMethods()).toEqual(['DELETE']); // only the first clear's DELETE dispatched; the blue POST is gated behind it
+
+    // Tap 2 — a second DOM event, milliseconds later.
+    await act(async () => { result.current.addHighlight(16, null, 'red'); });
+    expect(result.current.highlights.get(16)?.map((h) => h.color)).toEqual(['red']); // UI: red only
+    expect(f.pendingMethods()).toEqual(['DELETE', 'DELETE']); // both clears' DELETEs dispatched; both POSTs still gated
+
+    // FIFO landing = realistic: the first-tap DELETE resolves first and releases the blue POST.
+    await f.landNext(); // DELETE 1 -> server: []. The gated blue POST checks its superseded flag.
+    await f.landNext(); // DELETE 2 -> server: []. The gated red POST dispatches.
+    await f.landNext(); // POST red -> server: [red].
+    await f.landNext(); // any trailing microtask (the blue POST was skipped, so this is a no-op).
+
+    expect(result.current.highlights.get(16)?.map((h) => h.color)).toEqual(['red']); // UI: red only
+    expect(f.server).toEqual([{ color: 'red', spanStart: null, spanEnd: null }]); // server: red only — not [blue, red]
+  });
+
+  it('the superseded intermediate POST never reaches the server (no fetch is issued for it)', async () => {
+    const f = createLatencyFetch([{ color: 'yellow', spanStart: null, spanEnd: null }]);
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await act(async () => { await flushInitialLoad(); });
+
+    await act(async () => { result.current.addHighlight(16, null, 'blue'); });
+    await act(async () => { result.current.addHighlight(16, null, 'red'); });
+
+    for (let i = 0; i < 6; i++) await f.landNext(); // drain everything
+
+    // Exactly one highlight POST was ever dispatched (red's). The intermediate blue POST was
+    // suppressed before it left the client — the fix prevents dispatch, it does not just
+    // tolerate a late landing. Two DELETEs: one per whole-verse recolour's internal clear.
+    expect(f.dispatchedWrites().filter((w) => w.method === 'POST' && w.kind === 'highlight').map((w) => w.color))
+      .toEqual(['red']);
+    expect(f.dispatchedWrites().filter((w) => w.method === 'DELETE' && w.kind === 'highlight')).toHaveLength(2);
+    expect(f.server).toEqual([{ color: 'red', spanStart: null, spanEnd: null }]);
+  });
+
+  it('a clear while a recolour is in flight leaves the verse empty, not the recoloured colour', async () => {
+    const f = createLatencyFetch([{ color: 'yellow', spanStart: null, spanEnd: null }]);
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await act(async () => { await flushInitialLoad(); });
+
+    await act(async () => { result.current.addHighlight(16, null, 'blue'); }); // blue POST gated on its clear of yellow
+    await act(async () => { result.current.clearVerse(16); });                 // the reader changes their mind: clear
+
+    for (let i = 0; i < 6; i++) await f.landNext(); // drain
+
+    expect(result.current.highlights.has(16)).toBe(false); // UI: cleared
+    expect(f.server).toEqual([]); // server: empty — the in-flight blue POST was suppressed by the clear
+    expect(f.dispatchedWrites().filter((w) => w.method === 'POST' && w.kind === 'highlight')).toHaveLength(0);
+  });
+
+  it('a single whole-verse recolour persists that colour (control)', async () => {
+    const f = createLatencyFetch([{ color: 'yellow', spanStart: null, spanEnd: null }]);
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await act(async () => { await flushInitialLoad(); });
+
+    await act(async () => { result.current.addHighlight(16, null, 'blue'); });
+    await f.landNext(); // DELETE the old yellow
+    await f.landNext(); // POST blue
+
+    expect(result.current.highlights.get(16)?.map((h) => h.color)).toEqual(['blue']);
+    expect(f.server).toEqual([{ color: 'blue', spanStart: null, spanEnd: null }]);
+    expect(f.dispatchedWrites().filter((w) => w.method === 'POST' && w.kind === 'highlight').map((w) => w.color))
+      .toEqual(['blue']); // the non-superseded POST is NOT skipped
+  });
+});
+
+describe('useAnnotationWrites — F-119 fix does not regress sub-verse spans (append semantics)', () => {
+  it('two sub-verse spans both persist (the supersession guard never engages for range !== null)', async () => {
+    const f = createLatencyFetch([]); // empty verse
+    const { result } = renderHook(() => useAnnotationWrites(43, 3, 'kjv'));
+    await act(async () => { await flushInitialLoad(); });
+
+    await act(async () => { result.current.addHighlight(16, { start: 0, end: 4 }, 'green'); });
+    await act(async () => { result.current.addHighlight(16, { start: 5, end: 9 }, 'blue'); });
+
+    for (let i = 0; i < 6; i++) await f.landNext();
+
+    expect(result.current.highlights.get(16)?.map((h) => h.color)).toEqual(['green', 'blue']);
+    expect(f.server).toEqual([
+      { color: 'green', spanStart: 0, spanEnd: 4 },
+      { color: 'blue', spanStart: 5, spanEnd: 9 },
+    ]);
+  });
+});
