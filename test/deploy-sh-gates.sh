@@ -108,6 +108,89 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- shared state file for rootDirectory flip simulation -------------------
+# deploy.sh calls: python3 to read the auth token, then curl+python3 to GET/PATCH
+# the project rootDirectory. Since these run in subprocesses, a temp file carries
+# the simulated state across the GET → PATCH → GET sequence.
+FAKE_ROOT_STATE="$SANDBOX/root_directory_state"
+printf 'web\n' > "$FAKE_ROOT_STATE"
+
+# --- fake python3 -----------------------------------------------------------
+# 1. auth.json read  -> always returns a fake token.
+# 2. rootDirectory parse (stdin from curl) -> reads $FAKE_ROOT_STATE.
+# 3. Anything else  -> falls through to the real python3 outside $FAKEBIN.
+cat > "$FAKEBIN/python3" <<FAKEPY
+#!/bin/bash
+case "\${1:-}" in
+  -c)
+    case "\${2:-}" in
+      *auth.json*)
+        printf 'fake-vercel-token\n'
+        exit 0
+        ;;
+      *rootDirectory*)
+        cat > /dev/null   # drain the curl pipe
+        rd="\$(cat "$FAKE_ROOT_STATE" 2>/dev/null || printf 'web')"
+        printf '%s\n' "\$rd"
+        exit 0
+        ;;
+    esac
+    ;;
+esac
+real_py3="\$(PATH="\${PATH#"$FAKEBIN":}" command -v python3 2>/dev/null || true)"
+if [ -n "\$real_py3" ]; then exec "\$real_py3" "\$@"; fi
+echo "python3: no fallback available" >&2; exit 1
+FAKEPY
+chmod +x "$FAKEBIN/python3"
+
+# --- fake curl --------------------------------------------------------------
+# Intercepts deploy.sh's Vercel API calls (GET/PATCH project rootDirectory).
+# PATCH updates $FAKE_ROOT_STATE; GET emits JSON whose rootDirectory matches it.
+cat > "$FAKEBIN/curl" <<FAKECURL
+#!/bin/bash
+method="GET"
+url=""
+data=""
+prev=""
+for a in "\$@"; do
+  case "\$prev" in
+    -X) method="\$a" ;;
+    -d) data="\$a" ;;
+  esac
+  case "\$a" in http*) url="\$a" ;; esac
+  prev="\$a"
+done
+
+case "\$url" in
+  *api.vercel.com/v9/projects/*)
+    case "\$method" in
+      PATCH)
+        case "\$data" in
+          *'"rootDirectory": null'*|*'"rootDirectory":null'*)
+            printf 'null\n' > "$FAKE_ROOT_STATE" ;;
+          *'"rootDirectory": "web"'*|*'"rootDirectory":"web"'*)
+            printf 'web\n' > "$FAKE_ROOT_STATE" ;;
+        esac
+        printf '{}\n'
+        ;;
+      *) # GET — emit JSON; python3 on the other end of the pipe reads rootDirectory
+        rd="\$(cat "$FAKE_ROOT_STATE" 2>/dev/null || printf 'web')"
+        if [ "\$rd" = "null" ]; then
+          printf '{"rootDirectory":null}\n'
+        else
+          printf '{"rootDirectory":"%s"}\n' "\$rd"
+        fi
+        ;;
+    esac
+    exit 0
+    ;;
+  *)
+    exit 0  # unknown URL — succeed silently
+    ;;
+esac
+FAKECURL
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -118,6 +201,7 @@ reset_knobs() {
 }
 
 begin() {
+  printf 'web\n' > "$FAKE_ROOT_STATE"
   CASE_N=$((CASE_N + 1))
   CURRENT="$1"
   reset_knobs
