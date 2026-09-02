@@ -39,7 +39,7 @@ vi.mock('@/lib/catalog', async (importOriginal) => {
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: async () => [] }) }));
 vi.mock('@/components/catalog-search', () => ({ CatalogSearch: () => null }));
 vi.mock('@/components/study-entrance', () => ({ StudyEntrance: () => null }));
-vi.mock('@/lib/work', () => ({ findWorkOrdinalForVerseId: async () => null }));
+vi.mock('@/lib/work', () => ({ findWorkOrdinalsForVerseId: async () => new Map<string, number | null>() }));
 
 // ── 4c/4d: the client-component collaborators ──────────────────────────────────────────────
 vi.mock('@/components/marketing/footer', () => ({ MarketingFooter: () => null }));
