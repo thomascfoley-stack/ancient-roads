@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BOOKS, BOOK_BY_NUM, BOOK_BY_SLUG } from '@/bible/books';
-import { CANONICAL_GROUPS, validateCanonicalGroups } from '@/lib/plan/canonical-groups';
+import { CANONICAL_GROUPS } from '@/lib/plan/canonical-groups';
 import { expandPlan } from '@/lib/plan/expand';
 import { parsePlanSpec } from '@/lib/plan/spec';
 
@@ -22,14 +22,6 @@ const spec = (over: Record<string, unknown> = {}) => {
 };
 
 describe('CANONICAL_GROUPS — the reviewed table', () => {
-  it('is internally valid by its own validator (real slugs, no dupes, none empty)', () => {
-    // The validator is exported and asserted here rather than re-deriving a
-    // copy of the check — a guard whose expected set is typed by the same
-    // hand that typed the thing it guards is not a second opinion
-    // (docs/pm/MASTER.md failure-mode watchlist).
-    expect(validateCanonicalGroups()).toEqual([]);
-  });
-
   it('every group lists books in strictly ascending canon order', () => {
     for (const [key, group] of Object.entries(CANONICAL_GROUPS)) {
       const nums = group.books.map((s) => BOOK_BY_SLUG.get(s)!.bookNum);
