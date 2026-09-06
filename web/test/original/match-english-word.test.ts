@@ -12,7 +12,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isSingleWord, matchEnglishWord, singleWordOf, type LexEntry, type OWord } from '@/lib/original';
+import { matchEnglishWord, singleWordOf, type LexEntry, type OWord } from '@/lib/original';
 
 const ORIGINAL = path.resolve(__dirname, '../../public/original/jhn/10.json');
 const LEXICON = path.resolve(__dirname, '../../public/lexicon/greek.json');
@@ -94,20 +94,7 @@ describe('matchEnglishWord — the ranking property, on data built to isolate it
   });
 });
 
-describe('isSingleWord', () => {
-  it('accepts one word, including hyphens and apostrophes', () => {
-    expect(isSingleWord('shepherd')).toBe(true);
-    expect(isSingleWord(' shepherd ')).toBe(true);
-    expect(isSingleWord("shepherd's")).toBe(true);
-    expect(isSingleWord('well-beloved')).toBe(true);
-  });
-
-  it('rejects anything that is not one word', () => {
-    expect(isSingleWord('good shepherd')).toBe(false);
-    expect(isSingleWord('')).toBe(false);
-    expect(isSingleWord('10:11')).toBe(false);
-  });
-
+describe('singleWordOf', () => {
   // THE CASE THAT KEPT "Define" OFF THE POPOVER IN THE BROWSER. The reader's word-snapping hands
   // back the canonical substring, which carries the sentence's punctuation with it. A strict
   // anchored test called `shepherd.` "not a word" and the button silently never rendered, while
