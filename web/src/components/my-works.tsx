@@ -9,6 +9,7 @@ import { DISPLAY_LOCALE } from '@/lib/locale';
 // two ends cannot disagree (D15).
 import { MAX_UPLOAD_BYTES } from '@/lib/user-corpus/sniff';
 import { formatVerseId } from '@bible/verse-id';
+import { parseRef } from '@bible/ref-parse';
 
 // "My Works" — the personal-corpus surface. Never "Sermons": that word is the corpus register.
 
@@ -579,13 +580,22 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       // the same box because "have I written on Romans 8" and "what did I say about grace" are the
       // same question to the person asking.
       const looksLikeRef = /^[1-3]?\s?[A-Za-z][A-Za-z.]*\s+\d/.test(q);
+      // AND-GATED with the real parser. `looksLikeRef` alone over-matches: any "<word> <digit>"
+      // shape passes it, so "sermon 1" was sent as `{ ref }` to the presence scan, where the
+      // server's whole-input `parseRef` contractually rejects it with a 400 ("Could not read
+      // 'sermon 1' as a passage.") and the fused path never ran — a dead end the one box exists to
+      // fall through. Routing to the presence scan now needs BOTH the shape regex AND `parseRef`,
+      // which is the SAME parser the route handler applies, so the two ends cannot disagree about
+      // what counts as a reference. The regex stays as the conservative pre-filter that keeps a
+      // bare "Romans" (whole-book presence) from hijacking a fused-search intent.
+      const parsed = looksLikeRef ? parseRef(q) : null;
       // POST + application/json, not a GET query string: the search route is state-changing (a paid
       // embedding on the request path + a victim-attributed audit row), so it sits behind the CSRF
       // Content-Type floor (csrf-floor.ts). A GET has no Content-Type to gate, so a cross-site
       // top-level navigation could carry the SameSite=Lax session cookie and run the handler as the
       // victim; requiring application/json forces a preflight on cross-origin callers, which the
       // browser then refuses.
-      const payload = looksLikeRef ? { ref: q } : { q };
+      const payload = parsed && parsed.ok ? { ref: parsed.ref.display } : { q };
       let r: Response;
       try {
         r = await fetch('/api/user-corpus/search', {
