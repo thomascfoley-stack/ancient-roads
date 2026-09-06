@@ -43,11 +43,17 @@ export function CatalogSearch({
   catalog,
   label,
   traditions = [],
+  sub,
 }: {
   catalog: CatalogId;
   label: string;
   /** The active tradition selection, owned by the page URL. Empty means unfiltered. */
   traditions?: readonly string[];
+  /** The active sub-filter (Hymns vs Poetry on `hymns-poetry`), owned by the page URL. Omitted
+   *  means the whole catalog. The route applies it via `typesFor(catalog, sub)`, narrowing the
+   *  catalog fence the SAME way `listCatalogWorks` narrows the work list — so a lit sub chip
+   *  cannot scope the list while the search box queries the union. */
+  sub?: string;
 }) {
   const [q, setQ] = useState('');
   const [state, setState] = useState<State | null>(null);
@@ -58,6 +64,10 @@ export function CatalogSearch({
   // Stable key for the selection, so the re-run effect below depends on the VALUES rather than on
   // the array identity a server component hands us fresh on every render (which would loop).
   const tradKey = [...traditions].sort().join(',');
+  // Same shape for the sub-filter: a derived primitive key so `run`'s identity changes on a
+  // VALUE change and the re-run effect re-fires. The list already narrowed on `?sub=`; the box
+  // now reads the same `?sub=`, closing the divergence that already held for tradition (2026-08-01).
+  const subKey = sub ?? '';
 
   // `offset` drives BOTH a fresh search (0, replaces `state`) and Load More (results.length so
   // far, appends). One function for both, distinguished by the offset, keeps "what a page looks
@@ -78,6 +88,11 @@ export function CatalogSearch({
         // form; repeating is used here because a tradition containing a comma would corrupt the
         // joined form and silently drop a filter.
         for (const t of tradKey ? tradKey.split(',') : []) params.append('tradition', t);
+        // The sub-filter narrows the catalog fence the SAME way it narrows the work list. Omit
+        // the param when no chip is lit so the route treats the request as the whole catalog — an
+        // empty `sub` must not become a server-side filter (the route 400s on any unknown sub,
+        // and `''` is not an own key of any catalog's `subFilters`).
+        if (subKey) params.set('sub', subKey);
 
         const res = await fetch(`/api/search/works?${params.toString()}`);
         if (!res.ok) {
@@ -109,12 +124,15 @@ export function CatalogSearch({
         }
       }
     },
-    [catalog, tradKey],
+    [catalog, tradKey, subKey],
   );
 
   // Re-run from the top when the filter changes, so results can never be stale against the lit
   // chips — a filter change always replaces (offset 0), never appends. Guarded on a non-empty
-  // query: toggling chips with an empty box must not fire a search.
+  // query: toggling chips with an empty box must not fire a search. The sub-filter rides this same
+  // path transitively: `run`'s identity changes when `subKey` changes (see its deps), so a sub-chip
+  // toggle re-fires this effect — without that, the box would show the prior sub's results under a
+  // newly-lit chip (the staleness shape the send-half of the fix would otherwise reintroduce).
   const submitted = useRef('');
   useEffect(() => {
     if (submitted.current) void run(submitted.current, 0);

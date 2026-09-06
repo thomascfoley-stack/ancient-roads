@@ -134,7 +134,7 @@ export default async function CatalogPage({
       {catalog === 'historians' ? (
         <StudyEntrance catalog={catalog} label={def.label} traditions={selected} />
       ) : (
-        <CatalogSearch catalog={catalog} label={def.label} traditions={selected} />
+        <CatalogSearch catalog={catalog} label={def.label} traditions={selected} sub={subFilter} />
       )}
 
       {/* aria-current, NOT aria-pressed. These chips are anchors — implicit role `link` — and

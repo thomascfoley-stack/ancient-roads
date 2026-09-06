@@ -91,6 +91,54 @@ describe('CatalogSearch sends the filter it is showing', () => {
     expect(new URL(calls.at(-1)!, 'https://x.test').searchParams.getAll('tradition')).toEqual(['reformed']);
   });
 
+  it('forwards the sub-filter to /api/search/works when a sub chip is lit — the line whose omission nothing caught', async () => {
+    // SEED: delete the `if (subKey) params.set('sub', subKey);` line from catalog-search.tsx → RED
+    // here, and ONLY here. The route (`/api/search/works`) has accepted `sub` since it was written
+    // and applies it via `typesFor(catalog, sub)`; until this test the component never sent one, so
+    // every layer was individually correct and the feature did not exist — the SAME structural gap
+    // that let the tradition twin go undetected (see the test above). A lit "Hymns" chip narrowed
+    // the work list (`listCatalogWorks({ subFilter })`) while the search box queried the union.
+    const p = await search({ catalog: 'hymns-poetry', label: 'Hymns & Poetry', traditions: [], sub: 'hymns' });
+    expect(p.get('sub')).toBe('hymns');
+  });
+
+  it('sends NO sub param when no sub-filter is lit — empty must not become a filter', async () => {
+    // The route 400s on an unknown `sub`; an empty `sub` is not an own key of any `subFilters`, so
+    // the box must OMIT it when no chip is lit rather than hand the server a filter it will reject.
+    const p = await search({ catalog: 'hymns-poetry', label: 'Hymns & Poetry', traditions: [] });
+    expect(p.get('sub')).toBeNull();
+  });
+
+  it('re-runs the search when the sub-filter changes, so results cannot be stale against the lit sub chip', async () => {
+    // SEED: remove `subKey` from `run`'s useCallback deps (revert to `[catalog, tradKey]`) → RED
+    // here. The send-half alone is not enough: clicking a sub chip soft-navigates and updates the
+    // `sub` prop on the preserved (unkeyed) component instance. Without `subKey` in `run`'s deps,
+    // `run`'s identity would not change and the re-run effect (`[tradKey, run]`) would not fire —
+    // leaving the box showing the PRIOR sub's results under the newly-lit chip. This test pins the
+    // re-run wiring the same way the tradition re-run test above pins its sibling facet.
+    const { container, rerender } = render(
+      <CatalogSearch catalog="hymns-poetry" label="Hymns & Poetry" traditions={[]} />,
+    );
+    fireEvent.change(container.querySelector('input')!, { target: { value: 'grace' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await waitFor(() => {
+      if (calls.length === 0) throw new Error('no first request');
+    });
+    // The first (unfiltered) request must not carry a `sub` — no chip is lit yet.
+    expect(new URL(calls.at(-1)!, 'https://x.test').searchParams.get('sub')).toBeNull();
+    const before = calls.length;
+
+    // Toggling the "Hymns" sub chip is a soft-nav on the same route: the page re-renders the
+    // (unkeyed) component with a new `sub` prop. The box must re-run from the top, scoped to hymns.
+    rerender(<CatalogSearch catalog="hymns-poetry" label="Hymns & Poetry" traditions={[]} sub="hymns" />);
+    await waitFor(() => {
+      if (calls.length <= before) throw new Error('sub-filter change did not re-run the search');
+    }, { timeout: 3000 });
+    expect(new URL(calls.at(-1)!, 'https://x.test').searchParams.get('sub')).toBe('hymns');
+    // A re-run is a REPLACE (offset 0), never an append.
+    expect(new URL(calls.at(-1)!, 'https://x.test').searchParams.get('offset')).toBe('0');
+  });
+
   it('sends offset=0 on a fresh search, and Load More asks for the next page', async () => {
     // First page: 25 results out of 60 total, so "Load more" should render and, on click,
     // request offset=25 (the count already shown) — not a hardcoded page number.
