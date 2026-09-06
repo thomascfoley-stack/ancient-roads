@@ -79,6 +79,24 @@ describe('decodeDeskReport counts the panes the cap refused', () => {
     expect(r.overflow).toBe(0);
   });
 
+  it('a same-work DIFFERENT-ORDINAL entry beyond the cap is not a loss', () => {
+    // w0:42 is the same work as w0 — the ordinal is a landing position, not identity — so it is a
+    // duplicate the reader already has, not a pane the cap refused. Counting it as overflow would
+    // announce a loss that did not happen (the contract `overflow` promises).
+    const r = decodeDeskReport([...works(16), 'work:w0:42']);
+    expect(r.panes.map(encodePane)).toEqual(works(16));
+    expect(r.overflow).toBe(0);
+  });
+
+  it('a same-work different-ordinal duplicate in-band is dropped without spending a slot', () => {
+    // w0 then w0:42 then 15 distinct works: the duplicate collapses (no slot spent on it), so the
+    // desk fills to sixteen distinct works and nothing is reported as refused.
+    const r = decodeDeskReport(['work:w0', 'work:w0:42', ...works(15, 1)]);
+    expect(r.panes.map(encodePane)).toEqual(['work:w0', ...works(15, 1)]);
+    expect(r.panes).toHaveLength(MAX_PANES);
+    expect(r.overflow).toBe(0);
+  });
+
   it('separates the two reasons in one URL: 1 refused, the rest merely malformed or duplicate', () => {
     // 17 distinct valid panes (w0..w16) → w16 alone is refused; 'nonsense' is malformed and the
     // repeated w0 is a duplicate, and neither of those is a loss.
