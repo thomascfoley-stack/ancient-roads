@@ -85,6 +85,15 @@ describe('posthog wiring — analytics must not be embedded in the product', () 
     expect(CLIENT).toMatch(/sanitize_properties:\s*stripProductText/);
     expect(CLIENT).toMatch(/\$current_url/);
     expect(CLIENT).toMatch(/\$el_text/);
+    // The sanitizer must cover the $session_entry_* family. posthog-js's SessionPropsManager
+    // attaches $session_entry_url (the entry page's full href, with ?q=<question>) to EVERY
+    // event in a session, merged before sanitize_properties runs — the leak that reopened audit
+    // defect #3. If the source's URL-key match ever shrinks back to a hand-list that omits it,
+    // this goes red. The match is pinned to the actual CODE mechanism — the `(session_entry_)?`
+    // alternation in the RegExp — rather than the bare word `session_entry`, which this file's
+    // own JSDoc also mentions and which would therefore stay green on the reverted hand-list.
+    expect(CLIENT, 'the sanitizer must match $session_entry_* keys by code, not just JSDoc')
+      .toMatch(/\(session_entry_\)\?/);
     // An allowlist membership test, not a denylist comparison. If someone "fixes" a missing
     // parameter by switching to `k !== 'q'`, this goes red before the leak ships.
     expect(CLIENT, 'the URL filter must be an allowlist (CAMPAIGN_PARAMS.has), never a denylist')
