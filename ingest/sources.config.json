@@ -2825,7 +2825,8 @@
         "ccel_ids": [
           "spurgeon/catechism"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -8333,7 +8334,8 @@
         "ccel_ids": [
           "chesterton/rightworld"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -8685,7 +8687,9 @@
         "ccel_ids": [
           "luther/prefacetoromans"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1,
+        "matter_allow": "^preface"
       }
     }
   },
@@ -8793,7 +8797,8 @@
         "ccel_ids": [
           "luther/christianliberty"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -8874,7 +8879,8 @@
         "ccel_ids": [
           "luther/theses"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -8901,7 +8907,8 @@
         "ccel_ids": [
           "luther/translating"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9009,7 +9016,8 @@
         "ccel_ids": [
           "law/clergy"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9144,7 +9152,8 @@
         "ccel_ids": [
           "law/errors"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9171,7 +9180,8 @@
         "ccel_ids": [
           "law/grounds"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9738,7 +9748,8 @@
         "ccel_ids": [
           "tolstoy/maupassant"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9765,7 +9776,8 @@
         "ccel_ids": [
           "tolstoy/kreutzer"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -10251,7 +10263,8 @@
         "ccel_ids": [
           "pink/law"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -11898,7 +11911,8 @@
         "ccel_ids": [
           "edwards/trinity"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12789,7 +12803,8 @@
         "ccel_ids": [
           "charnock/cleansing"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12816,7 +12831,8 @@
         "ccel_ids": [
           "charnock/instr_regen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12843,7 +12859,8 @@
         "ccel_ids": [
           "charnock/efficient_regeneration"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12870,7 +12887,9 @@
         "ccel_ids": [
           "charnock/nat_regen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1,
+        "matter_allow": "^title pages?$"
       }
     }
   },
@@ -12924,7 +12943,8 @@
         "ccel_ids": [
           "charnock/nec_regen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -13113,7 +13133,8 @@
         "ccel_ids": [
           "flavel/life"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -13923,7 +13944,8 @@
         "ccel_ids": [
           "bangs/alphabetic"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -14301,7 +14323,8 @@
         "ccel_ids": [
           "boethius/trinity"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -14517,7 +14540,8 @@
         "ccel_ids": [
           "bushnell/character"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15057,7 +15081,8 @@
         "ccel_ids": [
           "neander_a/expo_phil"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15165,7 +15190,8 @@
         "ccel_ids": [
           "tulloch/religion"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15867,7 +15893,8 @@
         "ccel_ids": [
           "donne/spital"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15921,7 +15948,8 @@
         "ccel_ids": [
           "donne/deaths_duel"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15975,7 +16003,8 @@
         "ccel_ids": [
           "donne/easter"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -16299,7 +16328,8 @@
         "ccel_ids": [
           "knox/prayer"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -16478,17 +16508,14 @@
     "license": "Public Domain",
     "tier": 3,
     "provenance": {
-      "url": "https://www.ccel.org/ccel/newman/apologia",
-      "edition": "Newman's Apologia Pro Vita Sua (CCEL)",
+      "url": "https://www.gutenberg.org/ebooks/22088",
+      "edition": "Newman, Apologia pro Vita Sua (Gutenberg #22088, 1864 'history of his religious opinions' text)",
       "year": 1913,
       "year_basis": "printSourceInfo",
       "licence_basis": "rightsDeclared",
       "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "newman/apologia"
-        ],
-        "strip_markup": true
+        "adapter": "gutenberg",
+        "ebook_id": 22088
       }
     }
   },
@@ -17568,7 +17595,8 @@
         "ccel_ids": [
           "erasmus/against_war"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -18055,7 +18083,8 @@
         "ccel_ids": [
           "pascal/memorial"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -18163,7 +18192,8 @@
         "ccel_ids": [
           "penn/sermon"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -18487,7 +18517,8 @@
         "ccel_ids": [
           "whyte/behmen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -19836,7 +19867,8 @@
         "ccel_ids": [
           "kierkegaard/untruth"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -19890,7 +19922,8 @@
         "ccel_ids": [
           "lardner_n/mosaic"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -20511,7 +20544,8 @@
         "ccel_ids": [
           "shepard/sabbath"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -21618,7 +21652,9 @@
         "ccel_ids": [
           "clarke/entire_sanct"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1,
+        "heading_filter": "^Entire Sanctification"
       }
     }
   },
@@ -21645,7 +21681,8 @@
         "ccel_ids": [
           "clarkson/owenfuneral"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -21726,7 +21763,8 @@
         "ccel_ids": [
           "cranmer/doctrine"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -23535,7 +23573,8 @@
         "ccel_ids": [
           "kronstadt/christlife"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },

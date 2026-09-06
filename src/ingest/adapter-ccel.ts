@@ -143,9 +143,13 @@ function onDeclaredBook(a: { verseIdStart: number; verseIdEnd: number } | null, 
 // Pick the div selector (type= OR class=) that yields the most units — CCEL works
 // vary: Olney uses type="Hymn", the Scottish Psalter uses class="hymn". Works with
 // NO typed/classed divs (Treasury of David: bare <div2 title="Psalm I">) fall back
-// to the div LEVEL with the most title-bearing divs.
-function chooseUnitSelector(xml: string): { attr: 'type' | 'class'; value: string } | { level: string } | null {
-  let best: { attr: 'type' | 'class'; value: string } | null = null, bestN = MIN_UNITS - 1;
+// to the div LEVEL with the most title-bearing divs. minUnits is the per-work floor
+// (acquire.min_units, default MIN_UNITS): 38 cached works are ONE genuine discourse
+// in a single div1 (law-clergy 271k chars, kronstadt-christlife 1.4M), which the
+// default 3-unit floor refuses even though the parse is correct — register-writer
+// chunks the big bodies, so a single giant unit is safe (triage 2026-09-06).
+function chooseUnitSelector(xml: string, minUnits = MIN_UNITS): { attr: 'type' | 'class'; value: string } | { level: string } | null {
+  let best: { attr: 'type' | 'class'; value: string } | null = null, bestN = minUnits - 1;
   for (const attr of ['type', 'class'] as const) {
     for (const t of UNIT_TYPE_ORDER) {
       const n = (xml.match(new RegExp(`<div[1-4]\\s[^>]*${attr}="${t}"`, 'gi')) ?? []).length;
@@ -153,7 +157,7 @@ function chooseUnitSelector(xml: string): { attr: 'type' | 'class'; value: strin
     }
   }
   if (best) return best;
-  let bestLevel: string | null = null; let bestLevelN = MIN_UNITS - 1;
+  let bestLevel: string | null = null; let bestLevelN = minUnits - 1;
   for (const lvl of ['div2', 'div3', 'div1']) {
     const n = (xml.match(new RegExp(`<${lvl}\\s[^>]*title="[^"]`, 'gi')) ?? []).length;
     if (n > bestLevelN) { bestLevel = lvl; bestLevelN = n; }
@@ -172,9 +176,20 @@ const MATTER_RE = /^(title pages?|preface|introduction|index(es)? (of|to)|indexe
 // work to the section the manifest actually claims (e.g. scottish-psalter-1650
 // → ^Psalm — the CCEL file appends the 1781 Translations & Paraphrases, which
 // must not ride under the 1650 Psalter's attribution).
-export function buildCcelSections(xml: string, headingFilter?: string, primaryBook?: number): RegisterSection[] {
-  const sel = chooseUnitSelector(xml);
+// Optional per-work acquire profile (from the manifest entry):
+//   minUnits   — per-work unit floor (acquire.min_units), default MIN_UNITS.
+//   matterAllow — regex source (acquire.matter_allow): a heading MATTER_RE would
+//     drop is kept when it matches. charnock-nat-regen's whole 331k-char discourse
+//     is nested inside a div1 titled "Title Page" (triage 2026-09-06); without the
+//     override MATTER_RE refuses the book even at min_units=1. When the override
+//     fires, the unit's own h-tag ("Discourse of the Nature of Regeneration")
+//     becomes the heading — serving "Title Page" as a section heading would be
+//     the front-matter bug the filter exists to prevent.
+export interface CcelAcquireProfile { minUnits?: number; matterAllow?: string }
+export function buildCcelSections(xml: string, headingFilter?: string, primaryBook?: number, profile?: CcelAcquireProfile): RegisterSection[] {
+  const sel = chooseUnitSelector(xml, profile?.minUnits ?? MIN_UNITS);
   if (!sel) return [];
+  const matterAllow = profile?.matterAllow ? new RegExp(profile.matterAllow, 'i') : null;
   const out: RegisterSection[] = [];
   let m: RegExpExecArray | null;
   // Fallback mode: capture from each title-bearing div to the NEXT title-bearing
@@ -198,13 +213,17 @@ export function buildCcelSections(xml: string, headingFilter?: string, primaryBo
     const inner = (isFallback ? m[2] : m[3])!;
     const titleAttr = openTag.match(/\btitle="([^"]*)"/i)?.[1];
     const headTag = inner.match(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i)?.[1];
-    const heading = (titleAttr || (headTag ? thmlText(headTag) : undefined) || '').replace(/\s+/g, ' ').trim() || undefined;
+    let heading = (titleAttr || (headTag ? thmlText(headTag) : undefined) || '').replace(/\s+/g, ' ').trim() || undefined;
+    if (heading && MATTER_RE.test(heading)) {
+      if (!(matterAllow && matterAllow.test(heading))) continue; // front/back matter, any path
+      // matter-allowed (nat-regen's "Title Page"): the div's own h-tag is the real title
+      if (headTag) heading = thmlText(headTag).replace(/\s+/g, ' ').trim() || heading;
+    }
     const anchor = primaryBook
       ? primaryBookAnchor(heading, primaryBook) ?? onDeclaredBook(unitAnchor(inner), primaryBook)
       : unitAnchor(inner) ?? titleAnchor(heading);
     const body = thmlText(inner);
     if (body.length < 40) continue; // skip empty/structural shells
-    if (heading && MATTER_RE.test(heading)) continue; // front/back matter, any path
     if (headingFilter && !(heading && new RegExp(headingFilter, 'i').test(heading))) continue;
     out.push({ heading, body, anchors: anchor ? [anchor] : undefined });
   }
@@ -233,7 +252,7 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
   // write — the historian/sermon line, which this path was missing entirely.
   assertNotQuarantined(entry);
   const prov = entry.provenance as Record<string, unknown>;
-  const acq = prov.acquire as { ccel_ids?: string[]; ccel_id_pattern?: string; ccel_author?: string };
+  const acq = prov.acquire as { ccel_ids?: string[]; ccel_id_pattern?: string; ccel_author?: string; min_units?: number; matter_allow?: string };
   // resolve the id list
   let ids: string[] = [];
   if (acq.ccel_ids) ids = acq.ccel_ids;
@@ -259,12 +278,16 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
   const pbSlug = (acq as { primary_book?: string }).primary_book;
   const primaryBook = pbSlug ? BOOKS.findIndex((b) => b.slug === pbSlug) + 1 : undefined;
   if (pbSlug && !primaryBook) return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `unknown primary_book slug: ${pbSlug}` };
+  // Per-work acquire profile (see CcelAcquireProfile): min_units defaults to
+  // MIN_UNITS — a work WITHOUT the profile gates exactly as before.
+  const minUnits = typeof acq.min_units === 'number' && acq.min_units >= 1 ? Math.floor(acq.min_units) : MIN_UNITS;
+  const profile: CcelAcquireProfile = { minUnits, matterAllow: acq.matter_allow };
   const allSections: RegisterSection[] = [];
   const emptyIds: string[] = [];
   for (const id of ids) {
     const xml = await fetchCcelXml(id);
     if (!xml) { if (enumerated) { emptyIds.push(`${id}(no-thml)`); continue; } return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `fetch failed / not ThML: ${id}` }; }
-    const secs = buildCcelSections(xml, (acq as { heading_filter?: string }).heading_filter, primaryBook || undefined);
+    const secs = buildCcelSections(xml, (acq as { heading_filter?: string }).heading_filter, primaryBook || undefined, profile);
     if (secs.length === 0) emptyIds.push(id);
     allSections.push(...secs);
   }
@@ -279,7 +302,7 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
   // boundaries. The old pre-chunk pass re-prefixed headings ("(2/2)") and made
   // register-writer chunk the already-chunked text a second time (A6 audit).
   const sections = allSections;
-  if (sections.length < MIN_UNITS) return { slug: entry.slug as string, units: sections.length, anchored: 0, embedded: 0, skipped: true, reason: `only ${sections.length} units — structure not recognized` };
+  if (sections.length < minUnits) return { slug: entry.slug as string, units: sections.length, anchored: 0, embedded: 0, skipped: true, reason: `only ${sections.length} units — structure not recognized` };
 
   const anchored = sections.filter((s) => s.anchors).length;
   if (!opts.write) return { slug: entry.slug as string, units: sections.length, anchored, embedded: 0, skipped: false };
