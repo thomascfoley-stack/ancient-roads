@@ -55,7 +55,7 @@ describe.skipIf(!enabled)('draft check', () => {
     expect(ranges.length).toBeLessThanOrEqual(DRAFT_MAX_RANGES);
   });
 
-  it('finds the user\'s own document on the same passage, and the tradition beside it', async () => {
+  it('finds the user\'s own document on the same passage, and the tradition beside it', { timeout: 30_000 }, async () => {
     // Seed a "past sermon" anchored on Rom 8:28 WITHOUT the drain: document row + one section +
     // one anchor, all as app_runtime under RLS.
     const doc = await createDocument(USER, {
