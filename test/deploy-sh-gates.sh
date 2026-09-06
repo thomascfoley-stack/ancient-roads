@@ -108,6 +108,54 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl — intercepts Vercel rootDirectory API calls ------------------
+# deploy.sh GETs the rootDirectory to assert the flip took, then PATCHes it.
+# In the harness there is no real Vercel token and no real API; the fake tracks
+# the virtual rootDirectory state so that the flip/restore assertions pass.
+cat > "$FAKEBIN/curl" <<'FAKECURL'
+#!/bin/bash
+# Track virtual rootDirectory in a temp file alongside the fake argv log.
+STATE_FILE="${FAKE_ROOTDIR_STATE:-}"
+[ -z "$STATE_FILE" ] && { exit 0; }
+
+method="GET"
+url=""
+body=""
+i=0
+while [ $i -lt $# ]; do
+  i=$((i+1))
+  eval "arg=\${$i}"
+  case "$arg" in
+    -X) i=$((i+1)); eval "method=\${$i}" ;;
+    -H) i=$((i+1)) ;;
+    -d) i=$((i+1)); eval "body=\${$i}" ;;
+    https://*) url="$arg" ;;
+  esac
+done
+
+case "$url" in
+  */v9/projects/*)
+    if [ "$method" = "PATCH" ]; then
+      case "$body" in
+        *'"rootDirectory": null'*|*'"rootDirectory":null'*)
+          printf 'null' > "$STATE_FILE" ;;
+        *'"rootDirectory": "web"'*|*'"rootDirectory":"web"'*)
+          printf 'web' > "$STATE_FILE" ;;
+      esac
+      printf '{}'
+    else
+      val="$(cat "$STATE_FILE" 2>/dev/null || printf 'web')"
+      if [ "$val" = "null" ]; then
+        printf '{"rootDirectory":null}'
+      else
+        printf '{"rootDirectory":"%s"}' "$val"
+      fi
+    fi
+    ;;
+esac
+FAKECURL
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -160,7 +208,11 @@ begin() {
 # run_deploy [subdir] — executes the real script with the fakes in front
 run_deploy() {
   local from="${1:-$REPO}"
+  local rootdir_state="$SANDBOX/rootdir-state-$CASE_N.txt"
+  echo "web" > "$rootdir_state"
   OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
+    FAKE_ROOTDIR_STATE="$rootdir_state" \
+    VERCEL_TOKEN="fake-test-token" \
     PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }
