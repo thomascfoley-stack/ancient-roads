@@ -14,7 +14,7 @@ import { count } from '@/lib/plural';
 import { CATALOGS, CATALOG_IDS, catalogTraditions } from '@/lib/catalog';
 import { libraryLabel } from '@/lib/library-nav';
 import { listContinueReading, type ContinueReadingRow } from '@/lib/library';
-import { requireUser } from '@/lib/session';
+import { requireUser, isAuthServiceUnavailable } from '@/lib/session';
 
 export const metadata = { title: 'Library' };
 export const dynamic = 'force-dynamic';
@@ -34,11 +34,15 @@ const YOURS = (['/library/notes', '/library/books', '/library/word-study', '/lib
 // per-request, RLS-scoped, sources-joined query on the busiest personal surface in the app, whose
 // result was discarded every single time. The shelf now has a page of its own (/library/books),
 // which is where that query belongs and where it now lives.
-async function personal(): Promise<{ reading: ContinueReadingRow[] } | null> {
+// 'transient' = the auth SERVICE is unreachable (D43), not a missing session: a signed-in reader
+// during an outage is NOT signed out, so the page renders a retry banner, not the sign-in CTA.
+// null stays "genuinely signed out". Both keep Promise.all resolving so the public catalogue stays.
+async function personal(): Promise<{ reading: ContinueReadingRow[] } | null | 'transient'> {
   let userId: string;
   try {
     userId = (await requireUser()).id;
-  } catch {
+  } catch (e) {
+    if (isAuthServiceUnavailable(e)) return 'transient';
     return null; // signed out — not an error, just no personal shelf
   }
   return { reading: await listContinueReading(userId, { limit: 6 }) };
@@ -63,7 +67,7 @@ export default async function LibraryHubPage({
     <div className="mx-auto w-full max-w-3xl px-5 pb-24 pt-8">
       <h1 className="mb-8 font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Library</h1>
 
-      {mine && mine.reading.length > 0 && (
+      {mine !== null && mine !== 'transient' && mine.reading.length > 0 && (
         <section className="mb-9">
           <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Continue reading</h2>
           {/* Hairline-separated rows, no cards (PRD §5 Library): 17px Literata title,
@@ -102,7 +106,7 @@ export default async function LibraryHubPage({
             </Link>
           ))}
         </div>
-        {!mine && (
+        {mine === null && (
           // WHAT SIGNING IN ACTUALLY ADDS, and nothing more.
           //
           // This line has now been wrong in both directions, which is why it carries a comment at
@@ -122,6 +126,14 @@ export default async function LibraryHubPage({
               Sign in
             </Link>{' '}
             to keep notes and highlights, and your place in a work across devices.
+          </p>
+        )}
+        {mine === 'transient' && (
+          // D43: the auth service is unreachable, not the reader's session. Offer a retry, not a
+          // sign-in: a signed-in reader sent to re-authenticate over an outage lands on a flow
+          // that cannot work, which is the exact defect this catch now distinguishes.
+          <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
+            We couldn’t reach your shelf just now. Please try again in a moment.
           </p>
         )}
       </section>

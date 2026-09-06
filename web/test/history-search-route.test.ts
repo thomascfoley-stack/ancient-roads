@@ -3,7 +3,13 @@
 // failed proves nothing.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/session', () => ({ requireUser: vi.fn() }));
+vi.mock('@/lib/session', async () => {
+  // D43: /api/history/search answers auth failures through authFailureResponse, which tells an
+  // auth-SERVICE outage (503) from an absent session (401). The real helper lives in
+  // lib/auth-failure, which imports nothing but api-error, so it loads here without the SDK.
+  const real = await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure');
+  return { requireUser: vi.fn(), authFailureResponse: real.authFailureResponse };
+});
 vi.mock('@/lib/rate-limit', () => ({ checkHistorySearchRateLimit: vi.fn() }));
 vi.mock('@/lib/history-search-db', () => ({ searchHistory: vi.fn() }));
 
