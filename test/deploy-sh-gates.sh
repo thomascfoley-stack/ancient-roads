@@ -38,9 +38,45 @@ FAILED_LIST=""
 CASE_N=0
 CURRENT=""
 
-# --- the fake npx -----------------------------------------------------------
+# --- fake python3 and curl (for the rootDirectory token/flip section) ------
 FAKEBIN="$SANDBOX/bin"
 mkdir -p "$FAKEBIN"
+
+# deploy.sh calls python3 twice:
+#   1) python3 -c "...open('...auth.json')['token']..."  -> return a dummy token
+#   2) python3 -c "...json.load(sys.stdin)..." (piped from curl) -> return "null"
+#      (representing rootDirectory=null after the flip, which is the expected state)
+cat > "$FAKEBIN/python3" <<'FAKEPY'
+#!/bin/bash
+script="${2:-}"
+case "$script" in
+  *auth.json*)
+    # Token retrieval — return a dummy value so the script continues.
+    echo "fake-vercel-token"
+    ;;
+  *)
+    # rootDirectory parse (piped from curl GET). Drain stdin, return "null"
+    # so FLIP_AFTER passes (the flip is expected to have set it to null).
+    cat > /dev/null
+    echo "null"
+    ;;
+esac
+exit 0
+FAKEPY
+chmod +x "$FAKEBIN/python3"
+
+# deploy.sh calls curl for:
+#   GET  api.vercel.com/v9/projects/... -> rootDirectory check (piped to python3 above)
+#   PATCH api.vercel.com/v9/projects/... -> flip/restore (output discarded)
+cat > "$FAKEBIN/curl" <<'FAKECURL'
+#!/bin/bash
+# Any curl call: exit 0. The GET output goes to python3 which ignores it.
+# PATCH output is redirected to /dev/null by deploy.sh itself.
+exit 0
+FAKECURL
+chmod +x "$FAKEBIN/curl"
+
+# --- the fake npx -----------------------------------------------------------
 cat > "$FAKEBIN/npx" <<'FAKE'
 #!/bin/bash
 printf 'npx [cwd=%s] %s\n' "${PWD##*/}" "$*" >> "${FAKE_ARGV_LOG:-/dev/null}"
