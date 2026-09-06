@@ -108,6 +108,80 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake python3 -----------------------------------------------------------
+# deploy.sh reads the Vercel CLI auth token via python3 from a macOS-specific
+# path. On Linux (and in CI) that file does not exist; the script exits 1 with
+# "STOP: could not read Vercel auth token" before reaching any upload logic,
+# causing all post-upload test cases to fail. Intercepting python3 here returns
+# a synthetic token so the harness can exercise those paths.
+FAKE_ROOTDIR_STATE="$SANDBOX/rootdir-state"
+echo 'web' > "$FAKE_ROOTDIR_STATE"
+cat > "$FAKEBIN/python3" <<PYFAKE
+#!/bin/bash
+# Intercept the two python3 calls deploy.sh makes:
+#   1. python3 -c "import json; print(...auth.json...['token'])"
+#   2. python3 -c "import json,sys; print(...rootDirectory...)"
+# Called as: python3 -c "<code>", so arg1=-c arg2=code.
+if [ "\${1:-}" = "-c" ]; then
+  expr="\${2:-}"
+else
+  expr="\${1:-}"
+fi
+case "\$expr" in
+  *auth.json*)
+    echo "fake-token-for-gate-tests"
+    ;;
+  *rootDirectory*)
+    state_file="${FAKE_ROOTDIR_STATE}"
+    val="\$(cat "\$state_file" 2>/dev/null || echo 'web')"
+    echo "\$val"
+    ;;
+  *)
+    exec /usr/bin/python3 "\$@"
+    ;;
+esac
+PYFAKE
+chmod +x "$FAKEBIN/python3"
+
+# --- fake curl --------------------------------------------------------------
+# deploy.sh uses curl to GET/PATCH rootDirectory on the Vercel API.
+# The fake tracks the current value in a sandbox file so GET-after-PATCH
+# returns the updated state (deploy.sh asserts FLIP_AFTER == "null").
+cat > "$FAKEBIN/curl" <<CURLFAKE
+#!/bin/bash
+state_file="${FAKE_ROOTDIR_STATE}"
+method="GET"
+body=""
+while [ \$# -gt 0 ]; do
+  case "\$1" in
+    -X) method="\$2"; shift 2 ;;
+    -d) body="\$2";   shift 2 ;;
+    -s) shift ;;
+    -H) shift 2 ;;
+    *)  shift ;;
+  esac
+done
+case "\$method" in
+  PATCH)
+    case "\$body" in
+      *'"rootDirectory": null'*) echo 'null' > "\$state_file" ;;
+      *'"rootDirectory": "web"'*) echo 'web' > "\$state_file" ;;
+    esac
+    exit 0
+    ;;
+  *)
+    val="\$(cat "\$state_file" 2>/dev/null || echo 'web')"
+    if [ "\$val" = "null" ]; then
+      printf '{"rootDirectory":null}\n'
+    else
+      printf '{"rootDirectory":"%s"}\n' "\$val"
+    fi
+    exit 0
+    ;;
+esac
+CURLFAKE
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -115,6 +189,9 @@ reset_knobs() {
         FAKE_ENV_LS_RC FAKE_ENV_LS_OUT FAKE_ENV_DROP \
         FAKE_DEPLOY_RC FAKE_DEPLOY_OUT FAKE_INSPECT_RC FAKE_DEPLOY_ID FAKE_ALIAS_ID \
         DEPLOY_ALLOW_BEHIND
+  # Reset rootDirectory state to 'web' at the start of each test case so the
+  # flip/restore cycle works independently for each case.
+  echo 'web' > "${FAKE_ROOTDIR_STATE}"
 }
 
 begin() {
