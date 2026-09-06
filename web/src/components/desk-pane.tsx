@@ -550,7 +550,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
           <Message tone="error">Could not load this work.</Message>
           <button
             type="button"
-            onClick={() => void loadInitial(null)}
+            onClick={() => void loadInitial(pane.ordinal ?? null)}
             className="mt-3 min-h-[44px] border edge px-4 font-sans text-sm text-stone-600 hover:bg-accent-50/50 dark:text-stone-300 dark:hover:bg-accent-950/20"
           >
             Try again
