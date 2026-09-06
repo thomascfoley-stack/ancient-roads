@@ -76,28 +76,55 @@ export interface WorkTocUnit {
 }
 
 /**
- * Find the first unit in a work whose verse anchor range overlaps a target verse id.
- * Returns the unit's firstOrdinal, or null when the work has no anchors overlapping the passage.
- * Used by the desk so a commentary added beside an open Scripture pane opens near the passage.
+ * The first section ordinal overlapping a target verse, for every work on a catalog page at once.
+ *
+ * BATCHED, for the desk's "add to desk" link (F-158): a commentary added beside an open Scripture
+ * pane opens near the passage. The catalog page renders that link for every work on the page
+ * (up to `PAGE_SIZE`), so the pre-batch form awaited a per-work lookup across the whole list —
+ * one `publishedSourceId` slug→id fetch plus one ordinal-join fetch PER work. Under the Neon HTTP
+ * driver each `sql.query` is its own HTTPS fetch, so that was two waves of up to ~100 concurrent
+ * fetches each (~200 per render) where ONE fetch does the same work. The caller already holds
+ * `sources.id` from `listCatalogWorks`, so the slug→id wave is never re-issued; this function
+ * collapses the ordinal wave to one fetch for every work on the page.
+ *
+ * The query is the SAME `min(s.ordinal) … JOIN section_anchors` shape the per-work function ran,
+ * grouped by `s.source_id` instead of filtered by `s.source_id = $1`. The correctness argument is
+ * the one `getWorkWithToc` makes for the unit query below: a section can carry SEVERAL
+ * `section_anchors` rows (PK `(section_id, verse_id_start)`), so a plain join multiplies section
+ * rows — but `min(s.ordinal)` absorbs the duplication: a multiply-anchored section contributes the
+ * same ordinal N times and `min` is unchanged. `GROUP BY s.source_id` returns one row per source
+ * and never groups by `unit_ordinal`, so the NULL-`unit_ordinal` hazard the unit query guards
+ * against does not arise here. A work with no anchor in the verse range contributes no row; the
+ * caller maps it to `null`, matching the per-work function's `rows[0]?.ordinal ?? null`.
  */
-export async function findWorkOrdinalForVerseId(
-  slug: string,
+export async function findWorkOrdinalsForVerseId(
+  works: ReadonlyArray<{ id: string | number; slug: string }>,
   verseId: number,
-): Promise<number | null> {
-  const sourceId = await publishedSourceId(slug);
-  if (sourceId === null) return null;
+): Promise<Map<string, number | null>> {
+  const result = new Map<string, number | null>();
+  for (const w of works) result.set(w.slug, null);
+  if (works.length === 0) return result;
   const sql = getDb();
   const rows = (await sql.query(
-    `SELECT min(s.ordinal) AS ordinal
+    `SELECT s.source_id, min(s.ordinal) AS ordinal
        FROM sections s
        JOIN section_anchors a ON a.section_id = s.id
-      WHERE s.source_id = $1
+      WHERE s.source_id = ANY($1::bigint[])
         AND a.verse_id_start <= $2
         AND a.verse_id_end >= $2
-      LIMIT 1`,
-    [sourceId, verseId],
-  )) as Array<{ ordinal: number }>;
-  return rows[0]?.ordinal ?? null;
+      GROUP BY s.source_id`,
+    [works.map((w) => w.id), verseId],
+  )) as Array<{ source_id: string | number; ordinal: number }>;
+  // `sources.id` is BIGINT; the driver returns it as a string, and the caller's ids come from the
+  // same column, so `String()` comparison is exact — never a Number() round-trip (BIGINT > 2^53
+  // would lose precision, though no real corpus reaches it).
+  const slugById = new Map<string, string>();
+  for (const w of works) slugById.set(String(w.id), w.slug);
+  for (const row of rows) {
+    const slug = slugById.get(String(row.source_id));
+    if (slug !== undefined) result.set(slug, row.ordinal);
+  }
+  return result;
 }
 
 export interface WorkSectionsPage {

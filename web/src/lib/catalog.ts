@@ -13,6 +13,11 @@ import { typesFor, type CatalogId } from './catalog-defs';
 export * from './catalog-defs';
 
 export interface CatalogWork {
+  /** `sources.id`. Carried out of `listCatalogWorks` so the F-158 ordinal lookup on the catalog
+   *  page can batch by id instead of re-resolving slug→id per work via `publishedSourceId` —
+   *  the pre-batch page issued that lookup once per work (up to PAGE_SIZE), as a separate HTTPS
+   *  fetch each. BIGINT; the Neon driver returns it as a string. */
+  id: string | number;
   slug: string;
   title: string;
   author: string | null;
@@ -74,7 +79,7 @@ export async function listCatalogWorks(opts: {
        AND ($2::text[] IS NULL OR s.tradition = ANY($2::text[]))`;
   const [rows, countRows] = await Promise.all([
     sql.query(
-      `SELECT s.slug, s.title, s.author, s.source_type AS "sourceType", s.tradition, s.era,
+      `SELECT s.id, s.slug, s.title, s.author, s.source_type AS "sourceType", s.tradition, s.era,
               (SELECT count(DISTINCT COALESCE(sec.unit_ordinal, -sec.ordinal))::int
                  FROM sections sec WHERE sec.source_id = s.id) AS units
        FROM sources s
