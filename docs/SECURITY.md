@@ -415,7 +415,7 @@ Six HIGH advisories (unrelated to the SEC-1 better-auth cluster) were CVE-disclo
 on existing deps. All fixed by bump/override, verified `deps-audit` green + full audit green:
 - **next 15.5.20 → 15.5.21** (`web/package.json`): clears GHSA-89xv-2m56-2m9x (SSRF), GHSA-m99w-x7hq-7vfj (DoS), GHSA-p9j2-gv94-2wf4 (SSRF). A patch, not the 14→15 major first assumed.
 - **postcss → 8.5.16** (root `pnpm.overrides`): 8.4.31 was exact-pinned by next. GHSA-6g55-p6wh-862q (arbitrary file read via sourceMappingURL).
-- **fast-uri → 3.1.4** (root `pnpm.overrides`): transitive via ajv. GHSA-v2hh-gcrm-f6hx (host confusion).
+- **fast-uri → 3.1.6** (root `pnpm.overrides`): transitive via ajv. GHSA-v2hh-gcrm-f6hx (host confusion); bumped again from 3.1.5 to clear GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp (all >=3.0.0 <3.1.6).
 - **sharp → 0.35.3** (root `pnpm.overrides`): transitive via next/image optionalDeps, one minor above next's `^0.34.3`. GHSA-f88m-g3jw-g9cj (libvips). Runtime-verified: native binary + libvips 8.18.3 load; webp/png encode (the next/image path) works.
 
 These are FIXES (real version moves), distinct from the ignored SEC-1 GHSAs above which remain unfixable until the auth move-off.
