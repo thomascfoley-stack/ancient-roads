@@ -42,6 +42,10 @@ vi.mock('@/lib/session', () => ({
     return signedIn;
   },
   currentUser: async () => signedIn,
+  authFailureResponse: (e: unknown) => {
+    const msg = e instanceof Error && e.name === 'AuthServiceUnavailableError' ? 'upstream_unavailable' : 'unauthenticated';
+    return Response.json({ error: msg }, { status: msg === 'upstream_unavailable' ? 503 : 401 });
+  },
 }));
 
 // The REAL shipped handler. If this import fails to resolve, the route does not exist and the
