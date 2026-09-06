@@ -740,7 +740,15 @@ function Progress({ turn }: { turn: Turn }) {
         {step('Verifying every quote is word-for-word', rank >= 4, turn.stage === 'verifying')}
         {slow && (
           <p role="status" className="mt-1 font-serif text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-            This one is taking longer than usual — still verifying every quote.
+            {/* The clause must name the stage the UI is actually in when the 90s timer fires. The
+                timer is stage-independent (useEffect deps `[]`), so it can trip during any long
+                stage; per-stage measurement puts `verifying` at ≤1ms (docs/evidence/ask-latency/),
+                so in practice it trips while `composing`. Naming "verifying" here unconditionally
+                painted "Composing a grounded answer" pulsing above a line claiming "still verifying
+                every quote" — a status and its contradiction, both visible at once (dc5f9eb). Track
+                turn.stage so the clause can only name the active step, and keep the verbatim-check
+                promise copy for the one stage it is true of. */}
+            This one is taking longer than usual — {turn.stage === 'verifying' ? 'still verifying every quote.' : 'still working on it.'}
           </p>
         )}
       </div>
