@@ -15,11 +15,21 @@
  * add/remove cycle left it alone. Every `dark:` utility keeps working; only the selector moved.
  *
  * THAT IMPORT IS NOW GONE (2026-08-05, the SEC-1 cutover off @neondatabase/auth), and with it
- * next-themes. So this app once again owns `.dark` and the rename is no longer load-bearing.
- * `.reader-dark` is KEPT anyway: it is referenced across the components and the pre-hydration
- * script, renaming it back buys nothing a reader can see, and a class rename is exactly the kind
- * of wide, untestable change that does not belong inside an auth migration. Recorded here so the
- * next reader does not conclude the constraint still exists and design around a ghost.
+ * next-themes. `.reader-dark` is KEPT rather than renamed back to `.dark`: it is referenced
+ * across the components, the pre-hydration script, and the plain-CSS rules below (color-scheme,
+ * the dark token block, and the dark :focus-visible override). Renaming it back buys nothing a
+ * reader can see, and a class rename is exactly the kind of wide, untestable change that does
+ * not belong inside an auth migration.
+ *
+ * NOTE on the previous wording. This comment once claimed "this app once again owns `.dark`
+ * and the rename is no longer load-bearing." That was aspirational, not operational: nothing
+ * was ever added to WRITE a bare `.dark` token onto <html>, so three plain-CSS rules left keyed
+ * on `.dark` never matched in production dark mode, and the dark-mode :focus-visible outline
+ * stayed at accent-600 (a WCAG 2.1 1.4.11 non-text-contrast failure on the passage-pane close
+ * button). Those rules are now keyed on `.reader-dark` like everything else. The claim that
+ * `.reader-dark` is "no longer load-bearing" is FALSE — it keys every dark-mode rule, not just
+ * the `dark:` utilities — and is recorded here so the next reader does not strand a rule on
+ * `.dark` again under the same ghost.
  */
 @custom-variant dark (&:where(.reader-dark, .reader-dark *));
 
@@ -162,7 +172,7 @@
  */
 
 html { color-scheme: light; }
-html.dark { color-scheme: dark; }
+html.reader-dark { color-scheme: dark; }
 
 /* Mobile fundamentals: no gray tap flash (we style active: states instead),
    and no horizontal scroll leaks from full-bleed surfaces. */
@@ -194,7 +204,7 @@ html {
   --neon-radius: 1rem;
 }
 
-.dark {
+.reader-dark {
   --background: var(--color-stone-950);
   --foreground: var(--color-stone-200);
   --card: var(--color-stone-900);
@@ -221,7 +231,7 @@ html {
   outline: 2px solid var(--color-accent-600);
   outline-offset: 2px;
 }
-.dark :focus-visible {
+.reader-dark :focus-visible {
   outline-color: var(--color-accent-400);
 }
 .focus-quiet:focus-visible {
