@@ -16,16 +16,20 @@
 import Link from 'next/link';
 import { listLibraryItems, type LibraryItem } from '@/lib/library';
 import { libraryLabel } from '@/lib/library-nav';
-import { requireUser } from '@/lib/session';
+import { requireUser, isAuthServiceUnavailable } from '@/lib/session';
 
 export const metadata = { title: 'My books' };
 export const dynamic = 'force-dynamic';
 
-async function shelved(): Promise<LibraryItem[] | null> {
+// 'transient' = the auth SERVICE is unreachable (D43), not a missing session: a signed-in reader
+// during an outage is NOT signed out, so the page renders a retry message, not the sign-in CTA.
+// null stays "genuinely signed out" and keeps the offer the Save control deliberately defers to.
+async function shelved(): Promise<LibraryItem[] | null | 'transient'> {
   let userId: string;
   try {
     userId = (await requireUser()).id;
-  } catch {
+  } catch (e) {
+    if (isAuthServiceUnavailable(e)) return 'transient';
     return null; // signed out — not an error
   }
   return listLibraryItems(userId);
@@ -58,6 +62,15 @@ export default async function MyBooksPage() {
           >
             Sign in
           </Link>
+        </div>
+      ) : items === 'transient' ? (
+        // D43: the auth service is unreachable, not the reader's session. The sign-in CTA this
+        // replaced bounces a signed-in reader to re-authenticate over an outage — a flow that
+        // cannot work. A retry message is the honest response; no sign-in link.
+        <div className="py-16 text-center">
+          <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
+            We couldn’t reach your shelf just now. Please try again in a moment.
+          </p>
         </div>
       ) : items.length === 0 ? (
         // An empty shelf says how to fill it. "No items" would be true and useless.

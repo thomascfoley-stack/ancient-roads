@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { listBookmarks, listHighlights, listNotes } from '@/lib/annotations';
 
 // All of the signed-in user's highlights, notes and bookmarks, for the "My library" page.
@@ -22,8 +22,8 @@ export async function GET() {
   let userId: string;
   try {
     userId = (await requireUser()).id;
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (e) {
+    return authFailureResponse(e);
   }
 
   try {
