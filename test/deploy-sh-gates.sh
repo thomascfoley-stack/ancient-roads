@@ -108,6 +108,39 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl — stubs the Vercel rootDirectory GET/PATCH calls --------------
+# deploy.sh calls `curl` twice per run to read and write the project's
+# rootDirectory. The GET must return JSON where rootDirectory is absent (so
+# `python3 … .get('rootDirectory') or 'null'` prints "null"), allowing the
+# flip-verify assertion at line ~491 to pass. PATCH requests are fire-and-forget
+# and already swallow errors; returning nothing is fine.
+cat > "$FAKEBIN/curl" <<'FAKE'
+#!/bin/bash
+# Swallow all flags; emit minimal JSON for GET requests.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -X) method="$2"; shift 2 ;;
+    -H|-d) shift 2 ;;
+    -s) shift ;;
+    *) shift ;;
+  esac
+done
+method="${method:-GET}"
+if [ "$method" = "GET" ]; then
+  printf '{}\n'
+fi
+exit 0
+FAKE
+chmod +x "$FAKEBIN/curl"
+
+# --- fake HOME — provides a Vercel auth token for deploy.sh ------------------
+# deploy.sh reads VERCEL_TOKEN from ~/Library/Application Support/com.vercel.cli/auth.json.
+# Create a stub in a sandbox HOME so the script does not exit 1 before the upload.
+FAKE_HOME="$SANDBOX/home"
+mkdir -p "$FAKE_HOME/Library/Application Support/com.vercel.cli"
+printf '{"token":"fake-token-for-testing"}\n' \
+  > "$FAKE_HOME/Library/Application Support/com.vercel.cli/auth.json"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -161,7 +194,7 @@ begin() {
 run_deploy() {
   local from="${1:-$REPO}"
   OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
-    PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
+    HOME="$FAKE_HOME" PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }
 
