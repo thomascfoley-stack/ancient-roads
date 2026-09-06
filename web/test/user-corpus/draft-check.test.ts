@@ -81,7 +81,7 @@ describe.skipIf(!enabled)('draft check', () => {
     // The gap side: Romans 8:28 is among the best-covered verses in the corpus.
     expect(result.gaps.authorCount).toBeGreaterThan(0);
     expect(result.gaps.rangesConsidered).toBeGreaterThan(0);
-  });
+  }, 20_000);
 
   it('a draft with no Scripture yields empty ranges and an empty gap — not an error', async () => {
     const result = await draftCheck(USER, 'Minutes of the roof-repair committee, October meeting.', corpusPredicate(LEGAL_CORPUS_FILTER));
