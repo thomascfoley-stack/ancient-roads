@@ -9,6 +9,7 @@ import { DISPLAY_LOCALE } from '@/lib/locale';
 // two ends cannot disagree (D15).
 import { MAX_UPLOAD_BYTES } from '@/lib/user-corpus/sniff';
 import { formatVerseId } from '@bible/verse-id';
+import { parseRef } from '@bible/ref-parse';
 
 // "My Works" — the personal-corpus surface. Never "Sermons": that word is the corpus register.
 
@@ -575,8 +576,9 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       // the same box because "have I written on Romans 8" and "what did I say about grace" are the
       // same question to the person asking.
       const looksLikeRef = /^[1-3]?\s?[A-Za-z][A-Za-z.]*\s+\d/.test(q);
-      const url = looksLikeRef
-        ? `/api/user-corpus/search?ref=${encodeURIComponent(q)}`
+      const parsed = looksLikeRef ? parseRef(q) : null;
+      const url = looksLikeRef && parsed && parsed.ok
+        ? `/api/user-corpus/search?ref=${encodeURIComponent(parsed.ref.display)}`
         : `/api/user-corpus/search?q=${encodeURIComponent(q)}`;
       let r: Response;
       try {
