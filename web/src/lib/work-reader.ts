@@ -11,19 +11,6 @@ import { BOOK_BY_NUM } from '@bible/books';
  *  scrolling fetches ahead without thrashing requests on a 3,448-section work. */
 export const WORK_READER_PAGE_LIMIT = 50;
 
-/** A reading unit (ADR-026): consecutive TOC rows sharing a `unit_ordinal`. */
-export interface TocUnit {
-  /** Null only for pre-024 rows that carry no unit_ordinal; such rows never group. */
-  unitOrdinal: number | null;
-  /** The unit's label — the first heading inside it (chunked ingest repeats a work's
-   *  title across its chunks, so the first row's heading names the whole unit). */
-  label: string;
-  rows: WorkTocRow[];
-}
-
-/** Group a (unit_ordinal, ordinal)-ordered TOC into reading units, preserving order.
- *  Rows with a null unit_ordinal stand alone (pre-024 data) rather than collapsing
- *  into one anonymous unit. */
 /**
  * What a section is CALLED.
  *
@@ -189,39 +176,6 @@ export function formatVerseRange(start: number | null, end: number | null): stri
   const b = decodeVerseId(end);
   if (b.book !== a.book) return head; // a cross-book range is not a thing this corpus produces
   return b.chapter === a.chapter ? `${head}-${b.verse}` : `${head} - ${b.chapter}:${b.verse}`;
-}
-
-/**
- * The label for a whole reading UNIT. For a verse-anchored work a unit is a CHAPTER (migration
- * 024 groups them that way), so the unit reads "John 3" and its sections read "John 3:16" — which
- * is what the owner asked for: chapter names, like the works that already have them.
- */
-function unitLabelFor(rows: WorkTocRow[]): string {
-  const first = rows[0]!;
-  if (first.heading && first.heading.trim() !== '') return first.heading;
-  if (first.verseStart != null && isStructurallyValidVerseId(first.verseStart)) {
-    const { book, chapter } = decodeVerseId(first.verseStart);
-    const b = BOOK_BY_NUM.get(book);
-    // One-chapter books (Jude, Obadiah…) read "Jude", not "Jude 1".
-    if (b) return b.chapterCount === 1 ? b.name : `${b.name} ${chapter}`;
-  }
-  return sectionLabel(first);
-}
-
-export function groupTocByUnit(toc: WorkTocRow[]): TocUnit[] {
-  const units: TocUnit[] = [];
-  for (const row of toc) {
-    const last = units[units.length - 1];
-    if (last && row.unitOrdinal !== null && last.unitOrdinal === row.unitOrdinal) {
-      last.rows.push(row);
-    } else {
-      units.push({ unitOrdinal: row.unitOrdinal, label: '', rows: [row] });
-    }
-  }
-  // The label is computed AFTER grouping, from the unit's own rows. Computing it while building
-  // meant it was decided by the first row alone, before the unit knew what it contained.
-  for (const u of units) u.label = unitLabelFor(u.rows);
-  return units;
 }
 
 /** Split a section body into paragraph slices at blank-line boundaries, KEEPING the
