@@ -1,5 +1,48 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — Finish-ingestion follow-ups: Calvin English Institutes, Menno explained, Luther Holman vols I–II [Kimi Code session]
+
+Three items from the finish-ingestion order (`docs/pm/orders/2026-09-06-finish-ingestion.md`
+"related open items"), under the owner ruling 2026-09-06 "english only, forget latin".
+
+**1. English Institutes.** `calvin-institutio1/2` (Latin page-scans, wrong ids) DELETED from
+the manifest per the owner ruling — 917 → 915 entries. The correct English entry already
+existed: `calvin-institutes` (ccel `calvin/institutes` = Beveridge 1845 translation, single
+id, ThML — verified at ccel.org/ccel/calvin/institutes.html), and is already PUBLISHED on
+both prod and dev: 3,448 sections + 3,448 flat embeddings; sampled body is the Beveridge
+English text. No new entry needed — adding one would have duplicated the work.
+
+**2. Menno Simons — the explanation.** `simon-works1/2` were never absent from prod: they
+were ingested via ccel and copied dev→prod in the 2026-08-19 theology batch
+(`docs/evidence/corpus-copy/corpus-copy-2026-08-19T02-01-47-395Z.json`), and sit on prod
+**staged** today — works1: 75 sections / 1,078 flat embeddings; works2: 87 / 1,626 (prod
+READ-ONLY re-measured 2026-09-06). That is why they were not in the 79-work absent-from-prod
+list. They are absent from dev only because dev is not a completeness mirror (635 prod-only
+works). They await the owner's staged→published batches like the other 441. No ingest needed
+(the order said run them only if absent from BOTH DBs). Note: the earlier probe that
+reported them "absent from both" was a `psql -c` multi-statement artifact (only the last
+statement's output prints).
+
+**3. Luther Philadelphia edition (Holman 1915-16).** Gutenberg carries ONLY vols I (#31604)
+and II (#34904) — vols 3–5 do not exist on gutenberg.org (gutendex author/title sweeps +
+PG site search, 2026-09-06; they would be archive.org OCR acquisitions, a separate lane
+under ADR-110). Declared `luther-works1` / `luther-works2` (gutenberg adapter) with
+scoped-contents PROFILES: each volume prints every treatise as indented CONTENTS line →
+flush part-title → editor INTRODUCTION → translation, and the part-title is sometimes
+byte-identical to the translation heading — so each treatise declares its part-title as a
+`marker` boundary and its translation heading as the section, walked in order; the Holman
+editors' introductions can never serve under Luther's name, and a missing declared piece
+aborts as structure drift. Red-proofed: test written first → 14/14 failed (profiles
+undefined); profiles added → 14/14 green. Real-text dry run: exactly the 8 declared
+treatises per volume, no editor-matter leaks. Ingested on dev via the loop: **luther-works1
+staged 8 sections / 575 flat embeddings; luther-works2 staged 8 sections / 770 flat
+embeddings**, 0 quarantined (digest `docs/evidence/ingest-runs/digest-2026-09-06T23-47-55-568Z.md`),
+independently re-measured on dev READ-ONLY. Root suite 1046 green.
+
+**NOT DONE / UNVERIFIED:**
+- Luther vols 3–5: not on Gutenberg; need archive.org sourcing (own slice, ADR-110 machinery).
+- Dev→prod copy + publish of luther-works1/2 — OWNER TTY tools, with the rest of the queue.
+
 ## 2026-09-06 — The 61 leftovers: ALL in end states (waves 2+3) [Kimi Code session]
 
 Continuation of the finish-ingestion order (`docs/pm/orders/2026-09-06-finish-ingestion.md`).

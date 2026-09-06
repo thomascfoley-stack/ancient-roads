@@ -4505,33 +4505,6 @@
     }
   },
   {
-    "id": "calvin-institutio2",
-    "slug": "calvin-institutio2",
-    "title": "Institutio Christianae Religionis vol. 2",
-    "author": "Calvin, John",
-    "author_died": 1564,
-    "year_written": 1834,
-    "source_type": "theology",
-    "tradition": "unassigned",
-    "era": "unassigned",
-    "license": "Public Domain",
-    "tier": 3,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/calvin/institutio2",
-      "edition": "Institutio Christianae Religionis vol. 2 (CCEL)",
-      "year": 1834,
-      "year_basis": "printSourceInfo",
-      "licence_basis": "rightsDeclared",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "calvin/institutio2"
-        ],
-        "strip_markup": true
-      }
-    }
-  },
-  {
     "id": "calvin-calcom03",
     "slug": "calvin-calcom03",
     "title": "Harmony of the Law - Volume 1",
@@ -5282,33 +5255,6 @@
         "adapter": "ccel",
         "ccel_ids": [
           "calvin/calcom37"
-        ],
-        "strip_markup": true
-      }
-    }
-  },
-  {
-    "id": "calvin-institutio1",
-    "slug": "calvin-institutio1",
-    "title": "Institutio Christianae Religionis vol. 1",
-    "author": "Calvin, John",
-    "author_died": 1564,
-    "year_written": 1564,
-    "source_type": "theology",
-    "tradition": "unassigned",
-    "era": "unassigned",
-    "license": "Public Domain",
-    "tier": 3,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/calvin/institutio1",
-      "edition": "Institutio Christianae Religionis vol. 1 (CCEL)",
-      "year": 1564,
-      "year_basis": "authorDeathUpperBound",
-      "licence_basis": "rightsDeclared",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "calvin/institutio1"
         ],
         "strip_markup": true
       }
@@ -8826,6 +8772,54 @@
           "luther/smalcald"
         ],
         "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "luther-works1",
+    "slug": "luther-works1",
+    "title": "Works of Martin Luther, with Introductions and Notes (Volume I)",
+    "author": "Luther, Martin",
+    "author_died": 1546,
+    "year_written": 1915,
+    "source_type": "theology",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/31604",
+      "edition": "Works of Martin Luther vol. I (Philadelphia: A. J. Holman Company, 1915) (Gutenberg #31604)",
+      "year": 1915,
+      "year_basis": "printSourceInfo",
+      "licence_basis": "authorPre1930",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 31604
+      }
+    }
+  },
+  {
+    "id": "luther-works2",
+    "slug": "luther-works2",
+    "title": "Works of Martin Luther, with Introductions and Notes (Volume II)",
+    "author": "Luther, Martin",
+    "author_died": 1546,
+    "year_written": 1916,
+    "source_type": "theology",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/34904",
+      "edition": "Works of Martin Luther vol. II (Philadelphia: A. J. Holman Company, 1916) (Gutenberg #34904)",
+      "year": 1916,
+      "year_basis": "printSourceInfo",
+      "licence_basis": "authorPre1930",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 34904
       }
     }
   },
