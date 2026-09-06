@@ -108,6 +108,55 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl (Vercel rootDirectory API) -----------------------------------
+# Tracks rootDirectory state via a file so GET reflects the last PATCH.
+ROOT_STATE_FILE="$SANDBOX/root-dir-state"
+export ROOT_STATE_FILE
+echo 'web' > "$ROOT_STATE_FILE"
+cat > "$FAKEBIN/curl" <<'FAKECURL'
+#!/bin/bash
+# Minimal fake for the Vercel rootDirectory GET/PATCH calls in deploy.sh.
+METHOD="GET"
+URL=""
+DATA=""
+i=1
+while [ $i -le $# ]; do
+  arg="${!i}"
+  case "$arg" in
+    -s|-S) ;;
+    -X) i=$((i+1)); METHOD="${!i}" ;;
+    -H) i=$((i+1)) ;;  # skip header
+    -d) i=$((i+1)); DATA="${!i}" ;;
+    --data) i=$((i+1)); DATA="${!i}" ;;
+    http*) URL="$arg" ;;
+  esac
+  i=$((i+1))
+done
+STATE_FILE="${ROOT_STATE_FILE:-/dev/null}"
+case "$METHOD" in
+  GET)
+    current="$(cat "$STATE_FILE" 2>/dev/null || echo 'web')"
+    if [ "$current" = "null" ]; then
+      printf '{"rootDirectory":null}'
+    else
+      printf '{"rootDirectory":"%s"}' "$current"
+    fi
+    ;;
+  PATCH)
+    # Extract rootDirectory value from JSON body
+    if printf '%s' "$DATA" | grep -q '"rootDirectory": *null'; then
+      echo 'null' > "$STATE_FILE"
+    else
+      val="$(printf '%s' "$DATA" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('rootDirectory') or 'web')" 2>/dev/null || echo 'web')"
+      echo "$val" > "$STATE_FILE"
+    fi
+    ;;
+esac
+FAKECURL
+chmod +x "$FAKEBIN/curl"
+
+export VERCEL_TOKEN="fake-token-for-testing"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -121,6 +170,7 @@ begin() {
   CASE_N=$((CASE_N + 1))
   CURRENT="$1"
   reset_knobs
+  echo 'web' > "$ROOT_STATE_FILE"
   REPO="$SANDBOX/repo-$CASE_N"
   ORIGIN="$SANDBOX/origin-$CASE_N.git"
   git init -q --bare "$ORIGIN"
