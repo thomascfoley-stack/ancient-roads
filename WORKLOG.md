@@ -1,5 +1,56 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — The 61 leftovers: ALL in end states (waves 2+3) [Kimi Code session]
+
+Continuation of the finish-ingestion order (`docs/pm/orders/2026-09-06-finish-ingestion.md`).
+Full root-cause diagnosis first (`/tmp/ap-triage-plan.json`, every work classified with
+evidence), then execution by class:
+
+**Wave 2 — one general fix unlocks 39 (`e5a8a4b`).** The parser was fine; MIN_UNITS=3 was
+wrong for real-text short works. New per-work `acquire.min_units` profile threaded through
+`chooseUnitSelector` and the final gate, plus `matter_allow` for heading overrides.
+Red-proofed (revert → 2 fail, restore → 6/6); root suite 1026 green. **39/39 staged, 0
+quarantined** (loop paused once at the 30-work digest breaker — by design). Includes
+kronstadt-christlife (1.39M chars in 2 units), 4 Charnock discourses, law×3, luther×4,
+donne×3. Two content traps caught and fixed: luther-prefacetoromans was about to ingest
+only a 586-char translator's note (MATTER_RE dropped the actual preface); clarke-entire-sanct
+carried a 14.5k-char CCEL staff bio (excluded via heading_filter). Three genuinely tiny
+works (pascal-memorial 3.6k, cranmer-doctrine 4.7k, donne-spital 5.9k chars) were ingested
+per the triage plan but flagged in the digest as **owner value calls** — one-line staged
+deletes if ruled out.
+
+**Wave 3 — the two specials (`9f936a5`).** newman-apologia: CCEL edition is page-scans;
+switched to Gutenberg #22088 with a scoped-contents profile (5 chapters, fail-closed on
+structure drift) → staged, 5 sections / 500 flat embeddings. foxe-martyrs: CCEL edition is
+the Forbush ABRIDGMENT in plain HTML (not ThML); scratch-crawled 23 pages → 155 heading-tree
+nodes → historian head → **1,334 sections staged, 1,334/1334 section_embeddings, 586
+gazetteer entity anchors**, edition label explicitly says ABRIDGMENT (order mandate).
+Red-proofed profile tests; root suite 1032 green.
+
+**Owner-skip roster (20, recorded in `docs/evidence/ingest-runs/topup-wave2-digest-2026-09-06.md`):**
+- 3 TOC-shell duplicates, PROD-VERIFIED before skipping: calvin-commentaries (all 45
+  calcom01–45 on prod, 1,790 sections), henry-mhc (mhc1–6, 1,189), macdonald-unspoken
+  (unspoken1–3, 36). "Follow first-id links" would have made ~1,000 duplicate sections —
+  not built, deliberately.
+- 15 page-scan-only (cyril×2, charles-otpseudepig, hastings×6, calvin-institutio1/2 — LATIN
+  scans, wrong id entirely, scrivener×2, hoskier-codexb2, spurgeon-treasury) — need
+  archive.org alt sources or correct ids; spurgeon-treasury pending owner alt-source ruling.
+- vincent-word-studies (does not exist on CCEL under any id), hodge-theology4 (index volume).
+
+**Score: 61/61 accounted for** — 41 staged on dev (39 wave-2 + newman + foxe), 20 escalated
+with per-work reasons and remedies. Session total across all waves: 58 works staged.
+
+**Follow-ups discovered:**
+- **calvin-institutio1/2 are Latin scans — the manifest ids are simply wrong.** The English
+  Institutes exists on CCEL under a different id (`calvin/institutes`). A Reformed-leaning
+  corpus is missing the Institutes entirely; adding the correct id is a new-acquisition
+  item, now top of that queue.
+- register-writer delete-order gap: re-ingest of sections-plane works fails on
+  `section_history_anchors_section_id_fkey` (schaff-npnf201 escalation, wave 1). Small fix
+  for whoever next touches register-writer.
+- Dev staging queue awaiting OWNER dev→prod copy + publish: this session's 58 works + the
+  441 already staged on prod. The digest batches are piling up — owner batch overdue.
+
 ## 2026-09-06 — "Finish the ingestion": census, counter fix, top-up wave 1 [Kimi Code session]
 
 **Order:** `docs/pm/orders/2026-09-06-finish-ingestion.md` (owner directive recorded per
