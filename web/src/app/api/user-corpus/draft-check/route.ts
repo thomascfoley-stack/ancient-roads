@@ -20,13 +20,6 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (guard.denied) return guard.denied;
   const user = guard.user;
 
-  const limit = await checkCorpusSearchRateLimit(user.id);
-  if (!limit.ok) {
-    return apiError(limit.limited === 'day' ? 'RATE_LIMIT_DAY' : 'RATE_LIMIT_MINUTE', {
-      retryAfterSec: limit.retryAfterSec,
-    });
-  }
-
   const csrfFloor = requireJsonContentType(req);
   if (csrfFloor) return csrfFloor;
 
@@ -42,6 +35,22 @@ export async function POST(req: NextRequest): Promise<Response> {
       { error: `That draft is ${Math.round(text.length / 1000)}k characters; the check reads up to ${DRAFT_MAX_CHARS / 1000}k. Try one sermon at a time.` },
       { status: 413 },
     );
+  }
+
+  // D42 ("charge only what could spend"), extended to this route's shared corpus-search bucket.
+  // The limiter used to run HERE-MINUS-TEN-LINES — before the CSRF floor and body validation — so
+  // a wrong-Content-Type, empty, or oversize request (the very inputs the floor and body guards
+  // exist to reject) returned 400/413 having already bumped corpus-search:min/day. Every sibling
+  // route carrying both guards puts the floor ahead of the limiter (ask, ask/stream, upload-url,
+  // upload-complete, history/search); this route alone had them inverted — commit f1d36b72 placed
+  // the new floor after the already-present limiter call. The shared corpus-search:* bucket is
+  // unchanged (rate-limit.ts:174-185); only the ordering is fixed. Still before draftCheck(), so
+  // any check that runs is metered.
+  const limit = await checkCorpusSearchRateLimit(user.id);
+  if (!limit.ok) {
+    return apiError(limit.limited === 'day' ? 'RATE_LIMIT_DAY' : 'RATE_LIMIT_MINUTE', {
+      retryAfterSec: limit.retryAfterSec,
+    });
   }
 
   // Matching telemetry (owner directive 2026-08-24), and this route is the one where the rule
