@@ -16,6 +16,7 @@ import { decodeDesk, deskHref as deskHrefWith, withPane, type WorkPane } from '@
 import { findWorkOrdinalForVerseId } from '@/lib/work';
 import { encodeVerseId } from '@bible/verse-id';
 import { BOOK_BY_SLUG } from '@bible/books';
+import { resolveBookSlug } from '@bible/ref-parse';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,7 +87,7 @@ export default async function CatalogPage({
   const deskHrefFor = async (slug: string): Promise<string> => {
     let pane: WorkPane = { kind: 'work', slug };
     if (scripturePane) {
-      const book = BOOK_BY_SLUG.get(scripturePane.book) ?? BOOK_BY_SLUG.get(scripturePane.book.replace(/-/g, ''));
+      const book = BOOK_BY_SLUG.get(scripturePane.book) ?? resolveBookSlug(scripturePane.book);
       if (book) {
         const ordinal = await findWorkOrdinalForVerseId(slug, encodeVerseId({ book: book.bookNum, chapter: scripturePane.chapter, verse: 1 }));
         if (ordinal !== null) pane = { kind: 'work', slug, ordinal };
