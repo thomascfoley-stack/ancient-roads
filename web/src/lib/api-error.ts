@@ -7,6 +7,7 @@
 // NextResponse — so this stays framework-free and unit-testable outside Next.
 export type ApiErrorCode =
   | 'RATE_LIMIT_MINUTE'
+  | 'RATE_LIMIT_HOUR'
   | 'RATE_LIMIT_DAY'
   | 'UNAUTHENTICATED'
   | 'GATE_LOCKED'
@@ -23,6 +24,11 @@ interface Spec {
 
 const SPECS: Record<ApiErrorCode, Spec> = {
   RATE_LIMIT_MINUTE: { status: 429, message: 'You’ve reached the per-minute question limit. Please wait a moment and try again.' },
+  // The hour leg of the reused gate limiter (checkGateRateLimit → limited:'hour'). Distinct from
+  // RATE_LIMIT_DAY, whose message names a daily reset; an hour cap resets continuously, so the
+  // wording says "a while", not "resets at {time}". The public-read surface (publicReadThrottle)
+  // branches on r.limited and emits this code the way the ask/user-corpus callers branch on theirs.
+  RATE_LIMIT_HOUR: { status: 429, message: 'You’ve reached the hourly limit for this page. Please try again in a while.' },
   RATE_LIMIT_DAY: { status: 429, message: 'You’ve reached today’s question limit. It resets at midnight UTC.' },
   UNAUTHENTICATED: { status: 401, message: 'Please sign in to continue.' },
   GATE_LOCKED: { status: 503, message: 'This site is temporarily unavailable.' },
