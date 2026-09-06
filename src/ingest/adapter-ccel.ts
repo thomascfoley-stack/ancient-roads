@@ -87,7 +87,10 @@ function unitAnchor(unitXml: string): { verseIdStart: number; verseIdEnd: number
   const m = unitXml.match(/<scripRef\b[^>]*>/i);
   if (!m) return null;
   const tag = m[0];
-  const osis = tag.match(/osisRef="(?:Bible:)?([A-Za-z0-9]+)\.(\d+)\.(\d+)(?:-(?:Bible:)?[A-Za-z0-9]+\.(\d+)\.(\d+))?/i);
+  // Tolerate OSIS version-qualified prefixes ("Bible.kjv:", "Bible.web:") in
+  // addition to "Bible:" and prefix-less; the old (?:Bible:)? arm missed the
+  // "Bible.<version>:" shape, dropping anchors on CCEL's KJV-tagged Owen corpus.
+  const osis = tag.match(/osisRef="(?:Bible(?:\.[A-Za-z0-9]+)?:)?([A-Za-z0-9]+)\.(\d+)\.(\d+)(?:-(?:Bible(?:\.[A-Za-z0-9]+)?:)?[A-Za-z0-9]+\.(\d+)\.(\d+))?/i);
   const passage = tag.match(/passage="([^"]+)"/i);
   const candidates: string[] = [];
   if (osis) candidates.push(osis[5] ? `${osis[1]} ${osis[2]}:${osis[3]}-${osis[4]}:${osis[5]}` : `${osis[1]} ${osis[2]}:${osis[3]}`);
