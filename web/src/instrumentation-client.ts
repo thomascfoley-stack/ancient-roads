@@ -83,14 +83,29 @@ export function sanitizeUrl(raw: string): string {
 /** Strip anything that could carry product text off an event before it leaves the browser.
  *
  *  `$current_url` is attached to EVERY event, not only pageviews, so this runs on all of them —
- *  including events added later by someone who has not read this file. The reader's question
- *  lives in the query string (`/ask?q=…`, `/search?q=…`, `/gate?next=%2Fask%3Fq%3D…`) and never
- *  survives `sanitizeUrl`. */
+ *  including events added later by someone who has not read this file. posthog-js's
+ *  `SessionPropsManager` re-emits the session's entry URL as `$session_entry_url` on every event
+ *  in the same session too, carrying that entry page's query string verbatim, so the same
+ *  sanitization runs on the whole `$session_entry_*` family. The reader's question lives in the
+ *  query string (`/ask?q=…`, `/search?q=…`, `/gate?next=%2Fask%3Fq%3D…`) and never survives
+ *  `sanitizeUrl` — on either key. */
 export function stripProductText(properties: Record<string, unknown>): Record<string, unknown> {
   const out = { ...properties };
-  for (const k of ['$current_url', '$referrer', '$pathname', '$initial_current_url', '$initial_referrer']) {
+  // Match the SHAPE of a URL-bearing key rather than a hand-kept list. The list above this file
+  // once named `$current_url`/`$referrer`/`$pathname`/`$initial_*` and nothing else, so
+  // `$session_entry_url` — which SessionPropsManager attaches to every event with the entry
+  // page's full `?q=<question>` for the whole session — slipped past it while `$current_url` next
+  // to it was stripped. The `$session_entry_?` and `initial_` alternations cover posthog-js's own
+  // prefixes, so a future rename cannot silently reopen the audit's defect #3.
+  for (const k of Object.keys(out)) {
+    // `title` is `document.title` on `$pageview`, not a URL; deleted outright because a future
+    // dynamic <title> could otherwise quote the question, and the title carries no campaign value.
+    if (k === 'title') { delete out[k]; continue; }
     const v = out[k];
-    if (typeof v === 'string') out[k] = sanitizeUrl(v);
+    if (typeof v !== 'string') continue;
+    if (/^\$(session_entry_)?(url|current_url|referrer|pathname|initial_(current_url|referrer))$/i.test(k)) {
+      out[k] = sanitizeUrl(v);
+    }
   }
   // Autocapture is off, so these should never appear; deleted anyway, because "should never" is
   // not a mechanism and a future config change is exactly how they would come back.
