@@ -108,6 +108,60 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl (mocks Vercel rootDirectory API calls) -----------------------
+# The rootDirectory state file: starts at "web", PATCH null -> null, PATCH web -> web.
+FAKE_ROOT_DIR_STATE="$SANDBOX/rootDirectory.state"
+echo "web" > "$FAKE_ROOT_DIR_STATE"
+cat > "$FAKEBIN/curl" <<FAKE
+#!/bin/bash
+# Only intercept api.vercel.com project calls; pass everything else through.
+state_file="${FAKE_ROOT_DIR_STATE}"
+args=("\$@")
+url=""
+method="GET"
+body=""
+for ((i=0; i<\${#args[@]}; i++)); do
+  case "\${args[i]}" in
+    -X) method="\${args[i+1]:-GET}" ;;
+    -d) body="\${args[i+1]:-}" ;;
+    https://*) url="\${args[i]}" ;;
+  esac
+done
+case "\$url" in
+  https://api.vercel.com/v9/projects/*)
+    case "\$method" in
+      PATCH)
+        case "\$body" in
+          *'"rootDirectory": null'*|*'"rootDirectory":null'*)
+            echo "null" > "\$state_file" ;;
+          *'"rootDirectory": "web"'*|*'"rootDirectory":"web"'*)
+            echo "web" > "\$state_file" ;;
+        esac
+        ;;
+      *)
+        dir=\$(cat "\$state_file" 2>/dev/null || echo "web")
+        if [ "\$dir" = "null" ]; then
+          printf '{"rootDirectory":null}'
+        else
+          printf '{"rootDirectory":"%s"}' "\$dir"
+        fi
+        ;;
+    esac
+    ;;
+  *) : ;;
+esac
+exit 0
+FAKE
+chmod +x "$FAKEBIN/curl"
+
+# --- fake Vercel auth token -------------------------------------------------
+# deploy.sh reads from ~/Library/Application Support/com.vercel.cli/auth.json.
+# Create a stub so the token check passes in the test sandbox.
+FAKE_VERCEL_AUTH_DIR="$SANDBOX/fakehome/Library/Application Support/com.vercel.cli"
+mkdir -p "$FAKE_VERCEL_AUTH_DIR"
+printf '{"token":"fake-test-token"}' > "$FAKE_VERCEL_AUTH_DIR/auth.json"
+FAKE_HOME="$SANDBOX/fakehome"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -160,8 +214,10 @@ begin() {
 # run_deploy [subdir] — executes the real script with the fakes in front
 run_deploy() {
   local from="${1:-$REPO}"
+  # Reset the rootDirectory state to "web" before each run.
+  echo "web" > "$FAKE_ROOT_DIR_STATE"
   OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
-    PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
+    HOME="$FAKE_HOME" PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }
 
