@@ -864,7 +864,7 @@ function PlanDetail({ open, onBack, onChanged, onDayPainted }: { open: OpenPlan;
             <button
               type="button"
               onClick={() => void reschedule()}
-              disabled={rescheduling}
+              disabled={rescheduling || busyDay !== null}
               className="inline-flex min-h-[44px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"
             >
               {rescheduling ? 'Moving the schedule…' : 'Resume from today'}
@@ -897,7 +897,7 @@ function PlanDetail({ open, onBack, onChanged, onDayPainted }: { open: OpenPlan;
               className="inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950">
               Read it
             </button>
-            <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index}
+            <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index || rescheduling}
               className="text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400">
               Mark as read
             </button>
@@ -921,7 +921,7 @@ function PlanDetail({ open, onBack, onChanged, onDayPainted }: { open: OpenPlan;
               className={`border-t edge px-3 py-2 ${isNext ? 'bg-accent-50 dark:bg-accent-950/30' : ''}`}>
               <div className="flex min-h-[44px] items-center gap-3">
                 <button
-                  onClick={() => void toggle(d)} disabled={busyDay === d.day_index}
+                  onClick={() => void toggle(d)} disabled={busyDay === d.day_index || rescheduling}
                   aria-label={d.completed_at ? `Mark day ${d.day_index} unread` : `Mark day ${d.day_index} read`}
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle ${
                     d.completed_at
