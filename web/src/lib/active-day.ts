@@ -52,6 +52,7 @@ async function insertActiveDay(userId: string, day: string): Promise<void> {
     if ((e as { code?: string }).code === '23505') return; // already active today — success
     const message = truncateCodePoints(String((e as Error)?.message ?? e), 200);
     console.error('[user_active_day] write failed:', message);
+    written.delete(`${userId}:${day}`); // release the key so the next request can retry the genuine first write
   }
 }
 
