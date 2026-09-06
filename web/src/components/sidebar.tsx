@@ -1111,7 +1111,7 @@ function IconRailLinks({ pathname, bibleHref }: { pathname: string; bibleHref: s
   const links = [
     { href: '/home', label: 'Home', icon: <HomeIcon /> },
     { href: bibleHref, label: 'Bible', icon: <BookIcon /> },
-    { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
+    { href: '/ask', label: 'Ask', icon: <AskIcon /> },
     { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
     { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
     { href: '/library', label: 'All items', icon: <BookStackIcon /> },
