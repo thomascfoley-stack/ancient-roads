@@ -454,7 +454,9 @@ echo "Deploying to Vercel..."
 # API to set rootDirectory to null, deploy, then restore to 'web' via a trap so it fires
 # even if the deploy dies.
 # ---------------------------------------------------------------------------
-VERCEL_TOKEN="$(python3 -c "import json; print(json.load(open('$HOME/Library/Application Support/com.vercel.cli/auth.json'))['token'])" 2>/dev/null || true)"
+if [ -z "${VERCEL_TOKEN:-}" ]; then
+  VERCEL_TOKEN="$(python3 -c "import json; print(json.load(open('$HOME/Library/Application Support/com.vercel.cli/auth.json'))['token'])" 2>/dev/null || true)"
+fi
 if [ -z "$VERCEL_TOKEN" ]; then
   echo "STOP: could not read Vercel auth token from ~/Library/Application Support/com.vercel.cli/auth.json" >&2
   exit 1
