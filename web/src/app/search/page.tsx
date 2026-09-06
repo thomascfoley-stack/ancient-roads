@@ -354,11 +354,22 @@ export default async function SearchPage({
           >
             {!result.ok ? (
               <SearchGroupError message="the search did not complete — try again" />
-            ) : result.value.results.length === 0 ? (
-              <SearchGroupEmpty label={def.label.toLowerCase()} />
+            ) : result.value.results.length === 0 &&
+              (groupOffset(state, def.id) === 0 || result.value.total === 0) ? (
+              <>
+                {/* Honest empty only when nothing is paged in or the count is genuinely zero. A
+                    group paged past its end (results empty, offset > 0, total > 0) is NOT
+                    honest-empty — its window is a truncation artefact of offset — so it falls
+                    through to the pager below, whose previousHref keeps the "First page" link
+                    reachable (mirrors the personal-group branch; Flow B.4: a paged URL survives a
+                    refresh and a share). */}
+                <SearchGroupEmpty label={def.label.toLowerCase()} />
+              </>
             ) : (
               <>
-                <CorpusGroupRows results={result.value.results} />
+                {/* Gated so a paged-past-end window renders no empty bordered <ul>; the pager alone
+                    carries the "First page" link back to the populated first page. */}
+                {result.value.results.length > 0 && <CorpusGroupRows results={result.value.results} />}
                 <SearchGroupPager
                   {...pagerProps(
                     def.id,
