@@ -108,12 +108,67 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl (for rootDirectory GET/PATCH calls in deploy.sh) -------------
+# FAKE_ROOT_DIR controls what GET returns (default "null" = already flipped).
+# PATCH calls are accepted silently. All other curl invocations are no-ops.
+cat > "$FAKEBIN/curl" <<'FAKE'
+#!/bin/bash
+# Only intercept Vercel project API calls; pass everything else through.
+IS_PATCH=0; URL=""
+for a in "$@"; do
+  case "$a" in -X) ;; PATCH) IS_PATCH=1 ;; https://api.vercel.com/*) URL="$a" ;; esac
+done
+if [ -n "$URL" ]; then
+  if [ "$IS_PATCH" = "0" ]; then
+    # GET: return a JSON object with the current rootDirectory value.
+    printf '{"rootDirectory":%s}' "${FAKE_ROOT_DIR:-null}"
+  fi
+  # PATCH: consume stdin/args silently, succeed.
+  exit 0
+fi
+# Not a Vercel API call — shouldn't happen in tests, but succeed silently.
+exit 0
+FAKE
+chmod +x "$FAKEBIN/curl"
+
+# --- fake python3 (for auth token read and rootDirectory JSON parse) --------
+# Handles two inline -c scripts from deploy.sh:
+#   1. json.load(open('...auth.json'))['token']  → emit a dummy token
+#   2. json.load(sys.stdin).get('rootDirectory') → parse STDIN JSON from fake curl
+cat > "$FAKEBIN/python3" <<'FAKE'
+#!/bin/bash
+script="${2:-}"
+case "$script" in
+  *auth.json*token*)
+    # Token read — always succeed with a dummy token so deploy.sh continues.
+    echo "fake-vercel-token"
+    ;;
+  *rootDirectory*)
+    # rootDirectory parse — read JSON from stdin (produced by fake curl).
+    read -r line
+    case "$line" in
+      *'"rootDirectory":null'*|*'"rootDirectory": null'*)
+        echo "null" ;;
+      *'"rootDirectory":"web"'*|*'"rootDirectory": "web"'*)
+        echo "web" ;;
+      *)
+        echo "null" ;;
+    esac
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+FAKE
+chmod +x "$FAKEBIN/python3"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
         FAKE_WHOAMI_RC FAKE_WHOAMI_OUT FAKE_PROJECT_LS_RC FAKE_PROJECT_LS_OUT \
         FAKE_ENV_LS_RC FAKE_ENV_LS_OUT FAKE_ENV_DROP \
         FAKE_DEPLOY_RC FAKE_DEPLOY_OUT FAKE_INSPECT_RC FAKE_DEPLOY_ID FAKE_ALIAS_ID \
+        FAKE_ROOT_DIR \
         DEPLOY_ALLOW_BEHIND
 }
 
