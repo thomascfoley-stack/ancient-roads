@@ -435,7 +435,9 @@ export function StudyEditor({
           return;
         }
         const created = data.block;
-        setBlocks((cur) => cur.map((b) => (b.id === key ? { ...created, renderState: 'text' as const } : b)));
+        setBlocks((cur) => cur.map((b) => (b.id === key ? { ...created, renderState: 'text' as const, body: buf.draft } : b)));
+        if (buf.timer) { clearTimeout(buf.timer); buf.timer = setTimeout(() => { void saveText(created.id); }, DEBOUNCE_MS); }
+        buf.pending = buf.draft !== text;
         bufs.current.delete(key);
         placements.current.delete(key);
         buf.lastSaved = text;
