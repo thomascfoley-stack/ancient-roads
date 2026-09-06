@@ -108,6 +108,29 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl (stubs the Vercel API rootDirectory GET/PATCH) ---------------
+cat > "$FAKEBIN/curl" <<'FAKE'
+#!/bin/bash
+# Only stub the Vercel projects API; let any other curl call fail gracefully.
+for a in "$@"; do
+  case "$a" in
+    *"/v9/projects/"*)
+      # GET => rootDirectory is already null (flip already applied).
+      # PATCH => silently succeed.
+      case "$*" in
+        *"-X PATCH"*|*"PATCH"*)
+          exit 0 ;;
+        *)
+          printf '{"rootDirectory":null}\n'
+          exit 0 ;;
+      esac
+      ;;
+  esac
+done
+exit 1
+FAKE
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -161,6 +184,7 @@ begin() {
 run_deploy() {
   local from="${1:-$REPO}"
   OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
+    VERCEL_TOKEN="fake-token-for-gate-tests" \
     PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }

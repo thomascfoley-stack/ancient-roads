@@ -83,7 +83,7 @@ describe.skipIf(!enabled)('draft check', () => {
     expect(result.gaps.rangesConsidered).toBeGreaterThan(0);
   // createDocument + two runAsUser inserts + draftCheck (FTS + corpus predicate scan)
   // regularly exceed the 5 s default on a cold Neon branch.
-  }, 20_000);
+  }, 60_000);
 
   it('a draft with no Scripture yields empty ranges and an empty gap — not an error', async () => {
     const result = await draftCheck(USER, 'Minutes of the roof-repair committee, October meeting.', corpusPredicate(LEGAL_CORPUS_FILTER));
