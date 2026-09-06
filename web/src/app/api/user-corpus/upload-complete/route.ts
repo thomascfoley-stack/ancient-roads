@@ -71,13 +71,29 @@ export async function POST(req: NextRequest) {
     const type = sniffType(bytes, name);
     const sum = await checksum(bytes);
 
-    // Dedupe — same rule as the original route. If the bytes already exist, the
-    // new blob is orphaned; delete it before returning the existing document.
+    // Dedupe — same rule as the original route, with one correction the two-call flow forces.
+    // If the bytes already exist the incoming blob is orphaned and is deleted before returning
+    // the existing document — UNLESS the incoming `pathname` IS the existing document's own blob.
+    //
+    // WHY THIS GUARD IS REQUIRED HERE AND NOT IN THE LEGACY /upload ROUTE. There the incoming blob
+    // is `put` AFTER the dedupe check, so the object being deleted is always a fresh, attempt-
+    // unique one — a genuine orphan. In this two-call flow the bytes already exist at `pathname`
+    // BEFORE upload-complete runs, and the first successful call stores that SAME `pathname` onto
+    // the row as `blob_url` (see setBlobPathname below). A client that replays the exact prior
+    // {pathname, name} body WITHOUT re-calling upload-url — a cached-session retry, a bulk-import
+    // script, a curl run twice — re-enters this branch with pathname === existing.blobUrl. Deleting
+    // it would destroy the surviving document's live blob; the next drain then re-reads via
+    // getUserDocument(row.blob_url) and throws UploadRefused('corrupt', '… could not be found'),
+    // reporting a healthy upload as corrupt. The shipped UI client is not such a trigger (its retry
+    // re-calls upload-url and mints a fresh randomUUID pathname — a genuine orphan), so this is a
+    // non-UI client hazard; it needs no concurrency and no malformed input — only a literal replay.
     const existing = await findByChecksum(user.id, sum);
     if (existing) {
-      await deleteUserDocument(pathname).catch((e) => {
-        console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
-      });
+      if (existing.blobUrl !== pathname) {
+        await deleteUserDocument(pathname).catch((e) => {
+          console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
+        });
+      }
       return NextResponse.json(
         { document: existing, duplicateOf: existing.id, message: 'You have already uploaded this file.' },
         { status: 200 },
@@ -96,9 +112,18 @@ export async function POST(req: NextRequest) {
       throw e;
     });
     if (created instanceof DuplicateDocument) {
-      await deleteUserDocument(pathname).catch((e) => {
-        console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
-      });
+      // Same guard as the pre-flight branch above. This path is the in-transaction dedupe LOSER:
+      // createDocument's advisory-locked re-check found a twin and threw DuplicateDocument. The
+      // incoming pathname is normally a fresh orphan (a different presigned session) and is safe
+      // to delete — BUT two concurrent completions of ONE presigned session share `pathname`, and
+      // the winner's setBlobPathname may have already pointed the winning row's blob_url at it.
+      // Deleting `pathname` here would then destroy the winner's live blob — the same corruption
+      // as the replay case, plus concurrency. Only a genuinely distinct orphan path is cleaned up.
+      if (created.existing.blobUrl !== pathname) {
+        await deleteUserDocument(pathname).catch((e) => {
+          console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
+        });
+      }
       return NextResponse.json(
         { document: created.existing, duplicateOf: created.existing.id, message: 'You have already uploaded this file.' },
         { status: 200 },
