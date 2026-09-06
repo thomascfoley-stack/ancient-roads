@@ -36,7 +36,8 @@ ensureDbEnv();
 // The session, faked at the module boundary the route actually imports. `signedIn` is flipped
 // per-case so the 401 leg is the SAME route under a different session, not a different code path.
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/session', async () => ({
+  ...(await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure')),
   requireUser: async () => {
     if (!signedIn) throw new Error('Unauthorized');
     return signedIn;

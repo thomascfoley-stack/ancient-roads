@@ -31,7 +31,8 @@ import { sweepQaResidue } from '../helpers/qa-residue';
 ensureDbEnv();
 
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/session', async () => ({
+  ...(await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure')),
   requireUser: async () => {
     if (!signedIn) throw new Error('Unauthorized');
     return signedIn;
