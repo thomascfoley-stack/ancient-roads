@@ -217,11 +217,6 @@ export function singleWordOf(text: string): string | null {
   return words.length === 1 ? words[0]! : null;
 }
 
-/** True when a selection is one word, i.e. the only shape this lookup can answer. */
-export function isSingleWord(text: string): boolean {
-  return singleWordOf(text) !== null;
-}
-
 /**
  * The original words in a verse whose gloss or KJV usage claims the given English word.
  *
