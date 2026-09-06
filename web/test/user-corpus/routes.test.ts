@@ -45,7 +45,7 @@ const { runAsUser } = await import('@/lib/db');
 const upload = (await import('@/app/api/user-corpus/upload/route')).POST;
 const list = (await import('@/app/api/user-corpus/documents/route')).GET;
 const byId = await import('@/app/api/user-corpus/documents/[id]/route');
-const search = (await import('@/app/api/user-corpus/search/route')).GET;
+const search = (await import('@/app/api/user-corpus/search/route')).POST;
 const { localEnv, runtimeDbUrl } = await import('../helpers/env');
 const { existsSync } = await import('node:fs');
 const path = (await import('node:path')).default;
@@ -100,9 +100,14 @@ const SERMON = [
 function req(url: string, init?: RequestInit): Request {
   return new Request(`http://localhost${url}`, init);
 }
-/** The search route reads `req.nextUrl`, which only a NextRequest carries — as production passes. */
-function nreq(url: string): NextRequest {
-  return new NextRequest(`http://localhost${url}`);
+/** POST /api/user-corpus/search is a CSRF-floor-gated JSON endpoint (see the route header); this
+ *  builds the application/json request a same-origin caller would issue. */
+function sreq(body: unknown): NextRequest {
+  return new NextRequest('http://localhost/api/user-corpus/search', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 function uploadReq(bytes: Uint8Array, filename: string): Request {
   const fd = new FormData();
@@ -124,7 +129,7 @@ describe.skipIf(!enabled)('the user-corpus routes', () => {
     it.each([
       ['upload', async () => upload(uploadReq(docxBytes(SERMON), 'a.docx') as never)],
       ['list', async () => list()],
-      ['search', async () => search(nreq('/api/user-corpus/search?q=grace'))],
+      ['search', async () => search(sreq({ q: 'grace' }))],
     ])('%s returns 401 with no user, and never touches the database', async (_n, call) => {
       currentUser = null;
       const res = await call();
@@ -196,18 +201,18 @@ describe.skipIf(!enabled)('the user-corpus routes', () => {
 
   describe('search', () => {
     it('400s with neither q nor ref', async () => {
-      expect((await search(nreq('/api/user-corpus/search'))).status).toBe(400);
+      expect((await search(sreq({}))).status).toBe(400);
     });
 
     it('answers a text query from the indexed rows', async () => {
-      const res = await search(nreq('/api/user-corpus/search?q=comfort%20in%20affliction'));
+      const res = await search(sreq({ q: 'comfort in affliction' }));
       expect(res.status).toBe(200);
       const d = (await res.json()) as { hits: { title: string }[] };
       expect(d.hits.length).toBeGreaterThan(0);
     }, 60_000);
 
     it('answers a passage reference through the presence scan', async () => {
-      const res = await search(nreq('/api/user-corpus/search?ref=Romans%208'));
+      const res = await search(sreq({ ref: 'Romans 8' }));
       expect(res.status).toBe(200);
       const d = (await res.json()) as { mode: string; anchors: unknown[] };
       expect(d.mode).toBe('verse');
@@ -215,7 +220,19 @@ describe.skipIf(!enabled)('the user-corpus routes', () => {
     }, 60_000);
 
     it('400s an unparseable reference rather than searching for it as text', async () => {
-      const res = await search(nreq('/api/user-corpus/search?ref=Hezekiah%2099'));
+      const res = await search(sreq({ ref: 'Hezekiah 99' }));
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects a cross-site-style simple Content-Type before any spend (CSRF floor)', async () => {
+      // A no-cors cross-origin POST arrives as text/plain; the floor 400s before the meter or the
+      // paid embedding. Same property history/search already carries; pinned here too so the
+      // route cannot regress to a bodyless GET-shaped mutator.
+      const res = await search(new NextRequest('http://localhost/api/user-corpus/search', {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain' },
+        body: JSON.stringify({ q: 'grace' }),
+      }));
       expect(res.status).toBe(400);
     });
   });
