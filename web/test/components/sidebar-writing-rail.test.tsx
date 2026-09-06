@@ -49,8 +49,10 @@ afterEach(() => {
 });
 
 // The full sidebar is the only state carrying a "Collapse sidebar" button: the rail does not,
-// and neither does the manually-collapsed rail. ("Ancient Paths" is unusable as the marker — it
-// names BOTH the wordmark and the /ask nav link.)
+// and neither does the manually-collapsed rail. ("Ancient Paths" is the wordmark → /home, not a
+// state marker — and until the rail's /ask entry was relabeled "Ask" to match the full nav it
+// named the rail's /ask link too, a cross-state collision that made the string useless as a
+// marker; "Collapse sidebar" pins the expanded state alone, and does not ride a destination.)
 const fullNav = () => screen.queryByRole('button', { name: 'Collapse sidebar' });
 
 describe('the sidebar drops to an icon rail while a prayer is being written', () => {
