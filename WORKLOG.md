@@ -1,5 +1,35 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — Search: corpus group paged past end no longer self-contradicts
+
+**Bug:** `/search` corpus groups whose `off_<group>` offset is past the distinct-unit `total`
+rendered `SearchGroupEmpty` ("No matches in {label}.") while the same group's header truthfully
+showed `N matches` — a self-contradiction with no in-page way back to page 1. The corpus branch
+keyed only on `results.length === 0`; the personal branch in the same file already kept the
+pager (and its `previousHref` "First page" link) on empty rows. Introduced in de38bbbd.
+
+**Fix:** `web/src/app/search/page.tsx` corpus branch now mirrors the personal branch —
+`SearchGroupEmpty` renders only for honest empty (offset 0 or total 0); a paged-past-end window
+(results empty, offset > 0, total > 0) falls through to the pager, and `CorpusGroupRows` is
+gated on `results.length > 0` so no empty bordered `<ul>` renders. Pager degrades cleanly:
+`hasMore = offset + 0 < total` is false past the end, so no malformed "Show more (N of M)"
+label — only the "First page" link.
+
+**Red-proof:** `web/test/invariants/search-corpus-paged-past-end.test.tsx` (no-DB, jsdom) stubs
+`searchSections` to the real paged-past-end shape `{results: [], total: 4}` and renders the
+shipped `SearchPage`. Watched RED on the buggy branch (2 paged-past-end tests fail on the
+absent "First page" link), GREEN after the fix (5/5). No regression: honest empty at offset 0,
+`total === 0` with offset, and populated groups all unchanged.
+
+**Verification:** new test 5/5 green; related no-DB suites (`search-groups`,
+`search-result-attribution`) 26/26 green; web app `tsc --noEmit` clean; `eslint` clean; full
+web vitest suite 271 files / 1664 tests green. The 3 `npm run audit` failures
+(`web/test` tsc — pre-existing `upload-direct-guards.test.ts:161`, deps advisory, deploy.sh
+harness) are identical at baseline and unrelated to this fix. DB-backed engine tests
+(`search-sections`, `search-register-groups`) and the e2e manual check could not run — the
+production DB driver (`@neondatabase/serverless` `neon()`) is HTTP-only and cannot reach a
+local TCP Postgres; no Neon dev endpoint was available.
+
 ## 2026-08-31 — Step 1 + Step 3: red tests fixed, accuracy diagnostic recorded
 
 **Step 1:** three red tests fixed. study-editor ×2 (Save failed always shows, Saved uses
