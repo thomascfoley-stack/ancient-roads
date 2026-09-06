@@ -12,6 +12,12 @@
 //      SEED: rethrow in insertActiveDay → the fail-open test goes red.
 //   4. runAsUser IS USED, so the row is written under the GUC the policy binds to. A plain getDb()
 //      insert would be refused by the policy in production while passing a naive mock.
+//   5. A NON-23505 FAILURE RELEASES THE CACHE KEY so the next request can retry the genuine first
+//      write. The add-before-await ordering still dedupes in-flight calls (the delete fires only
+//      after the await resolves); 23505 keeps the key (that is success, and the dedupe invariant
+//      depends on it). A retry after failure adds zero rows — the PK has nothing to no-op — so it
+//      is outside the "redundant INSERT" concern the cache exists for.
+//      SEED: remove the written.delete in the non-23505 catch → the retry test goes red.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { after } from 'next/server';
@@ -89,12 +95,48 @@ describe('markActiveDay — failure handling', () => {
     errSpy.mockRestore();
   });
 
+  it('keeps the cache key on 23505 so a duplicate stays a no-op, never a retry trigger', async () => {
+    const err = Object.assign(new Error('duplicate key value violates unique constraint'), { code: '23505' });
+    sqlMock.mockReturnValue(Promise.reject(err));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    markActiveDay('user-1');
+    await new Promise((r) => setImmediate(r));
+    expect(errSpy).not.toHaveBeenCalled();
+    // A second call on the same warm instance is suppressed — 23505 is success, and the dedupe
+    // invariant depends on the key staying cached.
+    sqlMock.mockClear();
+    markActiveDay('user-1');
+    await new Promise((r) => setImmediate(r));
+    expect(sqlMock, 'a 23505 duplicate is a no-op the cache should keep suppressing').not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
   it('fails open on a real error — logs once, never throws at the caller', async () => {
     sqlMock.mockReturnValue(Promise.reject(new Error('relation "user_active_day" does not exist')));
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => markActiveDay('user-1')).not.toThrow();
     await new Promise((r) => setImmediate(r));
     expect(errSpy).toHaveBeenCalledWith('[user_active_day] write failed:', expect.stringContaining('user_active_day'));
+    errSpy.mockRestore();
+  });
+
+  it('retries the same idempotent row after a transient non-23505 failure on a warm instance', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // First call: a transient, instance-surviving DB error drops the post-response insert. It is
+    // NOT 23505, so the row was never written — the next request should get the same opportunity to
+    // attempt the genuine first write the success-path cache dedupes for free.
+    sqlMock.mockReturnValueOnce(Promise.reject(new Error('connection dropped mid-flight')));
+    markActiveDay('user-1');
+    await new Promise((r) => setImmediate(r));
+    expect(sqlMock).toHaveBeenCalledTimes(1);
+    expect(errSpy).toHaveBeenCalledWith('[user_active_day] write failed:', expect.any(String));
+
+    // Second call, same user, same warm instance, same UTC day: the failure-path cache key was
+    // released, so the insert is reattempted.
+    sqlMock.mockReset().mockReturnValue(Promise.resolve([]));
+    markActiveDay('user-1');
+    await new Promise((r) => setImmediate(r));
+    expect(sqlMock, 'the next request should get the same opportunity to attempt the row the success-path cache dedupes for free').toHaveBeenCalledTimes(1);
     errSpy.mockRestore();
   });
 
