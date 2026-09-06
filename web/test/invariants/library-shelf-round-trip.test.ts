@@ -37,6 +37,8 @@ vi.mock('@/lib/session', () => ({
     return signedIn;
   },
   currentUser: async () => signedIn,
+  authFailureResponse: (e: unknown) =>
+    Response.json({ error: 'unauthenticated' }, { status: 401 }),
 }));
 
 // The REAL shipped handlers.
