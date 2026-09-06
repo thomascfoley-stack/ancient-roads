@@ -4,6 +4,7 @@ import { getDocument } from '@/lib/user-corpus/documents';
 import { relatedVoices } from '@/lib/user-corpus/related-voices';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { corpusPredicate } from '@/lib/user-corpus/tradition-gap';
+import type { DocStatus } from '@/lib/user-corpus/types';
 import { logEvent } from '@/lib/observability';
 
 export const runtime = 'nodejs';
@@ -18,6 +19,9 @@ export const maxDuration = 30;
  * corpus serves has exactly one definition.
  */
 const PREDICATE = corpusPredicate(LEGAL_CORPUS_FILTER);
+
+/** The four claim statuses — a row in one of these IS still being indexed, not yet searchable. */
+const IN_FLIGHT: DocStatus[] = ['queued', 'parsing', 'chunking', 'embedding'];
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -34,10 +38,25 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // Nothing is embedded before the document is indexed, so the honest answer is "still indexing",
-  // not an empty shelf that reads as "the library has nothing like this".
-  if (doc.status !== 'ready') {
+  // not an empty shelf that reads as "the library has nothing like this". That is only honest for
+  // the claim statuses — `failed` and `empty` are terminal/stopped, not in flight, and are surfaced
+  // by the next branch rather than reported as "still being indexed".
+  if (IN_FLIGHT.includes(doc.status)) {
     logEvent('match_outcome', { kind: 'semantic', documentId: id, userId: user.id, outcome: 'pending', voices: 0, ms: 0 });
     return NextResponse.json({ voices: [], comparable: false, pending: true }, { status: 200 });
+  }
+
+  // Terminal/stopped states are NOT "still indexing". `empty` is a permanent verdict (the retry
+  // endpoint refuses it with 409 — retrying cannot change the result); `failed` is stopped — the
+  // drain has given up on the row and it will not reach `ready` again until a manual retry. Report
+  // the verdict and its actionable `parseError` reason instead of a `pending: true` that lies about
+  // a finished failure and swallows the cause. The reason is returned to the caller, never logged.
+  if (doc.status === 'failed' || doc.status === 'empty') {
+    logEvent('match_outcome', { kind: 'semantic', documentId: id, userId: user.id, outcome: doc.status, voices: 0, ms: 0 });
+    return NextResponse.json(
+      { voices: [], comparable: false, pending: false, failed: doc.status, reason: doc.parseError },
+      { status: 200 },
+    );
   }
 
   // Same three outcomes as the anchor route, and the same rule: the operation is logged, the
