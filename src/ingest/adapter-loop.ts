@@ -45,17 +45,33 @@ interface LogRow { at: string; slug: string; adapter: string; result: 'published
 // 'staged' only AFTER the write succeeds — so status still 'ingesting' means a
 // crashed mid-write, i.e. partial. The sections-count check still catches the
 // 006 write-contract (historian) partials.
-async function ingestState(db: pg.Client, slug: string): Promise<'done' | 'partial' | 'absent'> {
+//
+// Vector coverage counts BOTH embedding planes (LAUNCH_BLOCKERS #14). The corpus
+// is dual-read during the sources/sections migration: live retrieval reads flat
+// `embeddings` (teacher/routing, related-voices), newer works carry one vector
+// per section in `section_embeddings` (Gate A --target=sections requires 1:1
+// sections↔section_embeddings). There is no per-work model-of-record column, so
+// the vector count is the GREATEST of the two planes' coverage — complete when
+// EITHER plane covers every section, partial when neither does. Checking only
+// the flat table misclassified both ways on prod: 668 sections-plane works with
+// e=0 fell through to 'done' with zero vectors anywhere, and openbible-topics
+// (6711 sections, 6711 section_embeddings, flat short by 41) read 'partial'.
+export async function ingestState(db: pg.Client, slug: string): Promise<'done' | 'partial' | 'absent'> {
   const r = await db.query(
     `SELECT (SELECT count(*) FROM embeddings WHERE metadata->>'work'=$1)::int e,
+            (SELECT count(*) FROM section_embeddings se
+               JOIN sections s ON s.id = se.section_id
+               JOIN sources src ON src.id = s.source_id
+              WHERE src.slug = $1)::int se,
             (SELECT count(*) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug=$1)::int s,
             (SELECT status FROM sources WHERE slug=$1) status`,
     [slug],
   );
-  const e = r.rows[0].e as number, s = r.rows[0].s as number, status = r.rows[0].status as string | null;
-  if (e === 0 && s === 0) return 'absent';
+  const e = r.rows[0].e as number, se = r.rows[0].se as number, s = r.rows[0].s as number, status = r.rows[0].status as string | null;
+  if (e === 0 && se === 0 && s === 0) return 'absent';
   if (status === 'ingesting') return 'partial'; // crashed mid-write (register path)
-  if (s > 0 && e > 0 && e < s) return 'partial'; // 006 write-contract partial (historian path)
+  const vectors = Math.max(e, se); // the plane that covers this work best is its vector of record
+  if (s > 0 && vectors < s) return 'partial'; // sections exist but their vectors don't (either plane)
   return 'done';
 }
 
@@ -233,4 +249,8 @@ async function main() {
   if (outcome === 'halted') process.exitCode = 1;
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+// Runnable loop when invoked directly; importable (ingestState) from tests —
+// same guard pattern as check-corpus-coverage.ts.
+if (process.argv[1] && /adapter-loop/.test(process.argv[1])) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

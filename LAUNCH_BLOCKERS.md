@@ -139,9 +139,16 @@ The right shape is a per-invite token or a gate-level allowlist. Until that ship
 
 ## 14. Adapter-loop checks `embeddings` instead of `section_embeddings`
 
-**Status:** [FILED]
-**What:** `adapter-loop.ts` reports completed works as "partial" when they use `section_embeddings` (the per-section model) instead of `embeddings` (the flat-chunk model). `openbible-topics` sat on the blocker list as "partial" when it was complete (6711 sections + 6711 section_embeddings).
-**Recommendation:** The loop's completeness check should query both tables. File as a bug.
+**Status:** **FIXED 2026-09-06** (Kimi Code ingestion session). `ingestState()` now counts BOTH
+planes (`embeddings` flat + `section_embeddings` per-section) with `vectors = GREATEST(e, se)`;
+a work with sections but zero vectors in either plane no longer classifies `done` (the 668-work
+prod false-done), and `openbible-topics` no longer false-partials. Red-proofed both directions;
+8/8 new tests in `test/invariants/adapter-loop-ingest-state.test.ts`; root suite 1020 green.
+The follow-up measurement this fix enabled: **no published work is retrieval-dead** — all 228
+works lacking `section_embeddings` are fully served via flat `embeddings`, and no serving path
+in `web/src` reads `section_embeddings` at all (it only feeds `history_embeddings` backfills).
+The 46,831-vector backfill is therefore optional hygiene, not a launch issue — decide whether
+that table has a planned consumer before spending the run.
 
 ---
 
