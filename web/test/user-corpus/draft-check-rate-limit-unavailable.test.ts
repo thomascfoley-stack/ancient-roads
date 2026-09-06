@@ -24,7 +24,10 @@ vi.mock('@/lib/rate-limit', () => ({
 
 // The route evaluates `PREDICATE = corpusPredicate(LEGAL_CORPUS_FILTER)` at module load, which
 // would need the gitignored bible corpus if imported for real. Mock these so the module loads
-// hermetically; the limiter short-circuits before any of them are reached on every !ok case.
+// hermetically. Note the CSRF floor and the DRAFT_MAX_CHARS body check now run BEFORE the limiter
+// (D42 ordering — see draft-check-limiter-charges-valid-only.test.ts), so those two mocks are on
+// the path to every case below rather than short-circuited past; each `post()` sends
+// application/json and an under-cap body precisely so the request reaches the limiter.
 vi.mock('@/lib/csrf-floor', () => ({ requireJsonContentType: () => null }));
 vi.mock('@/lib/user-corpus/draft-check', () => ({
   DRAFT_MAX_CHARS: 20000,
