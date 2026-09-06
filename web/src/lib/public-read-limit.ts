@@ -41,9 +41,17 @@ export async function publicReadThrottle(req: Request, bucket: string): Promise<
   const key = throttleKey(clientIp(req), bucket);
   const r = await checkGateRateLimit(key, undefined, PUBLIC_READ_PER_MIN);
   if (r.ok) return null;
-  return apiError('RATE_LIMIT_MINUTE', {
-    message: 'Too many requests. Please slow down and try again in a moment.',
-    retryAfterSec: r.retryAfterSec ?? 60,
+  // Branch on the binding cap, like the ask / user-corpus limiters (api/ask/route.ts,
+  // api/user-corpus/search/route.ts). The reused gate limiter returns limited:'hour' with
+  // retryAfterSec:3600 when its HOUR leg binds; squashing that into RATE_LIMIT_MINUTE + "in a
+  // moment" told an hour-throttled reader to retry at once while Retry-After: 3600 — the code
+  // (the contract's branch field, docs/API_ERRORS.md:23) and the human message both lied.
+  const hour = r.limited === 'hour';
+  return apiError(hour ? 'RATE_LIMIT_HOUR' : 'RATE_LIMIT_MINUTE', {
+    message: hour
+      ? 'You’ve reached the hourly limit for this page. Please try again in a while.'
+      : 'Too many requests. Please slow down and try again in a moment.',
+    retryAfterSec: r.retryAfterSec ?? (hour ? 3600 : 60),
   });
 }
 
@@ -62,8 +70,17 @@ export async function publicReadPageThrottle(bucket: string): Promise<PageThrott
   const key = throttleKey(ip, bucket);
   const r = await checkGateRateLimit(key, undefined, PUBLIC_READ_PER_MIN);
   if (r.ok) return null;
+  // Same branch as publicReadThrottle. The page surface is the worse case for the unbranched
+  // shape: an HTML page has no Retry-After header, and /search renders only `message` (drops
+  // retryAfterSec), so an hour trip reported as "in a moment" gave NO backoff signal at all.
+  // The hour message names the magnitude ("about an hour") so the page carries an honest signal
+  // in the prose itself, not just in the dropped retryAfterSec field.
+  const hour = r.limited === 'hour';
+  const retryAfterSec = r.retryAfterSec ?? (hour ? 3600 : 60);
   return {
-    message: 'Too many searches. Please slow down and try again in a moment.',
-    retryAfterSec: r.retryAfterSec ?? 60,
+    message: hour
+      ? 'You’ve reached the hourly limit. Please try again in about an hour.'
+      : 'Too many searches. Please slow down and try again in a moment.',
+    retryAfterSec,
   };
 }

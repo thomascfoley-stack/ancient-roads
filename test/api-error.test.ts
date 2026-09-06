@@ -15,6 +15,18 @@ describe('apiError (API error contract)', () => {
     expect(b.error.code).toBe('RATE_LIMIT_MINUTE');
     expect(b.error.retryAfterSec).toBe(60);
   });
+  it('RATE_LIMIT_HOUR → 429 + Retry-After + machine code (the hour leg of the gate limiter)', async () => {
+    // Distinct from RATE_LIMIT_MINUTE: the reused gate limiter's HOUR cap returns
+    // limited:'hour', retryAfterSec:3600, and publicReadThrottle now branches on that to emit
+    // this code. The contract is the same shape — a 429 with Retry-After and the machine code —
+    // so a client that branches on `code` (per docs/API_ERRORS.md:23) is told "hour", not "minute".
+    const r = apiError('RATE_LIMIT_HOUR', { retryAfterSec: 3600 });
+    expect(r.status).toBe(429);
+    expect(r.headers.get('Retry-After')).toBe('3600');
+    const b = await jsonOf(r);
+    expect(b.error.code).toBe('RATE_LIMIT_HOUR');
+    expect(b.error.retryAfterSec).toBe(3600);
+  });
   it('UNAUTHENTICATED → 401, no Retry-After', async () => {
     const r = apiError('UNAUTHENTICATED');
     expect(r.status).toBe(401);
@@ -39,7 +51,7 @@ describe('apiError (API error contract)', () => {
   });
   it('every registry code returns its declared status (no ad-hoc shapes)', async () => {
     const expected: Record<ApiErrorCode, number> = {
-      RATE_LIMIT_MINUTE: 429, RATE_LIMIT_DAY: 429, UNAUTHENTICATED: 401,
+      RATE_LIMIT_MINUTE: 429, RATE_LIMIT_HOUR: 429, RATE_LIMIT_DAY: 429, UNAUTHENTICATED: 401,
       GATE_LOCKED: 503, UPSTREAM_UNAVAILABLE: 503, INVALID_REQUEST: 400, INTERNAL: 500,
       // 403, and deliberately NOT 401: the caller is authenticated and still refused
       // (ADR-116 ruling 3, the gated-beta teacher gate). This map is `Record<ApiErrorCode, …>`
