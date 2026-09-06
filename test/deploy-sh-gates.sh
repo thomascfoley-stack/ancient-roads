@@ -108,6 +108,45 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake python3: supplies the Vercel auth token and rootDirectory reads ----
+cat > "$FAKEBIN/python3" <<'FAKE'
+#!/bin/bash
+# deploy.sh uses python3 in two ways:
+#   1. Read the Vercel auth token from ~/Library/.../auth.json (one-liner with -c)
+#   2. Parse get_root_directory curl JSON response (one-liner with -c)
+# Both are called with -c. Emit a fake token for the auth read; emit 'null' for
+# rootDirectory reads (so the flip check passes: after PATCH, we report 'null').
+case "$*" in
+  *auth.json*)  printf 'fake_token\n' ;;
+  *rootDirectory*) printf 'null\n' ;;
+  *) exec /usr/bin/python3 "$@" ;;
+esac
+FAKE
+chmod +x "$FAKEBIN/python3"
+
+# --- fake curl: stubs the Vercel project rootDirectory API calls -------------
+cat > "$FAKEBIN/curl" <<'FAKE'
+#!/bin/bash
+# deploy.sh calls curl for GET and PATCH on the Vercel project API.
+# GET  -> return JSON with rootDirectory: null (so get_root_directory prints 'null')
+# PATCH -> succeed silently
+METHOD=GET
+i=1
+while [ $i -le $# ]; do
+  eval "a=\$$i"
+  if [ "$a" = "-X" ]; then
+    i=$((i+1))
+    eval "METHOD=\$$i"
+  fi
+  i=$((i+1))
+done
+case "$METHOD" in
+  PATCH) exit 0 ;;
+  *) printf '{"rootDirectory":null}\n' ;;
+esac
+FAKE
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
