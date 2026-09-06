@@ -108,6 +108,52 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl for rootDirectory API calls ----------------------------------
+# deploy.sh uses curl to GET/PATCH the Vercel project's rootDirectory. The fake
+# tracks state in a file so flip (→ null) and restore (→ web) are observable.
+cat > "$FAKEBIN/curl" <<'FAKECURL'
+#!/bin/bash
+# Minimal stub for the two Vercel API shapes deploy.sh uses:
+#   GET  /v9/projects/<id>   → {"rootDirectory":"<state>"}  (or "null")
+#   PATCH /v9/projects/<id>  → silently accepted
+STATE_FILE="${FAKE_ROOT_DIR_STATE:-/dev/null}"
+args=("$@")
+method="GET"
+body=""
+for i in "${!args[@]}"; do
+  case "${args[$i]}" in
+    -X) method="${args[$((i+1))]:-GET}" ;;
+    -d) body="${args[$((i+1))]:-}" ;;
+  esac
+done
+# Only intercept Vercel project API calls; pass everything else to /dev/null.
+url=""
+for a in "${args[@]}"; do
+  case "$a" in https://api.vercel.com/*) url="$a" ;; esac
+done
+if [ -z "$url" ]; then exit 0; fi
+
+if [ "$method" = "PATCH" ]; then
+  case "$body" in
+    *'"rootDirectory": null'*|*'"rootDirectory":null'*)
+      [ -n "$STATE_FILE" ] && echo "null" > "$STATE_FILE" ;;
+    *'"rootDirectory": "web"'*|*'"rootDirectory":"web"'*)
+      [ -n "$STATE_FILE" ] && echo "web" > "$STATE_FILE" ;;
+  esac
+  exit "${FAKE_CURL_PATCH_RC:-0}"
+else
+  # GET
+  state="web"
+  [ -f "$STATE_FILE" ] && state="$(cat "$STATE_FILE")"
+  if [ "$state" = "null" ]; then
+    printf '{"rootDirectory":null}'
+  else
+    printf '{"rootDirectory":"%s"}' "$state"
+  fi
+fi
+FAKECURL
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -160,7 +206,11 @@ begin() {
 # run_deploy [subdir] — executes the real script with the fakes in front
 run_deploy() {
   local from="${1:-$REPO}"
+  local state_file="$SANDBOX/root-dir-state-$CASE_N.txt"
+  echo "web" > "$state_file"
   OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
+    FAKE_ROOT_DIR_STATE="$state_file" \
+    VERCEL_TOKEN="fake-test-token" \
     PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }
