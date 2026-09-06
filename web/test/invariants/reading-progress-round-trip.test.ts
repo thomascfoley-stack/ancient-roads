@@ -36,13 +36,17 @@ ensureDbEnv();
 // The session, faked at the module boundary the route actually imports. `signedIn` is flipped
 // per-case so the 401 leg is the SAME route under a different session, not a different code path.
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
-  requireUser: async () => {
-    if (!signedIn) throw new Error('Unauthorized');
-    return signedIn;
-  },
-  currentUser: async () => signedIn,
-}));
+vi.mock('@/lib/session', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/session')>();
+  return {
+    ...mod,
+    requireUser: async () => {
+      if (!signedIn) throw new Error('Unauthorized');
+      return signedIn;
+    },
+    currentUser: async () => signedIn,
+  };
+});
 
 // The REAL shipped handler. If this import fails to resolve, the route does not exist and the
 // defect is still open — which is the first red this file was written to produce.

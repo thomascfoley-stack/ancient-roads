@@ -31,13 +31,17 @@ import { sweepQaResidue } from '../helpers/qa-residue';
 ensureDbEnv();
 
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
-  requireUser: async () => {
-    if (!signedIn) throw new Error('Unauthorized');
-    return signedIn;
-  },
-  currentUser: async () => signedIn,
-}));
+vi.mock('@/lib/session', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/session')>();
+  return {
+    ...mod,
+    requireUser: async () => {
+      if (!signedIn) throw new Error('Unauthorized');
+      return signedIn;
+    },
+    currentUser: async () => signedIn,
+  };
+});
 
 // The REAL shipped handlers.
 import { DELETE, GET, PUT } from '@/app/api/work/[slug]/shelf/route';
