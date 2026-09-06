@@ -108,6 +108,54 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake python3 (returns a dummy token for the auth.json read) -------------
+# deploy.sh calls python3 in two ways:
+#   1. Read auth.json token: python3 -c "import json; print(json.load(open(...))['token'])"
+#   2. Parse curl JSON for rootDirectory: python3 -c "import json,sys; print(...)" (reads stdin)
+# The token read has no stdin; the rootDirectory parse reads stdin from curl.
+# We stub the token read to return a dummy; the rootDirectory parse receives {"rootDirectory":null}
+# from the fake curl below and real python3 handles it — but python3 may not be on PATH in CI
+# before our FAKEBIN. Override the whole thing: detect which call it is by whether -c contains
+# 'auth.json' or not.
+cat > "$FAKEBIN/python3" <<'FAKE'
+#!/bin/bash
+script=""
+for a in "$@"; do
+  case "$a" in -c) ;; *) script="$script $a" ;; esac
+done
+case "$script" in
+  *auth.json*)
+    # Token read — return a dummy token; ignore stdin.
+    printf 'fake-vercel-token\n'
+    exit 0
+    ;;
+  *)
+    # rootDirectory parse — read JSON from stdin and extract rootDirectory.
+    inp="$(cat)"
+    case "$inp" in
+      *'"rootDirectory":null'*|*'"rootDirectory": null'*)
+        printf 'null\n' ;;
+      *'"rootDirectory":"web"'*|*'"rootDirectory": "web"'*)
+        printf 'web\n' ;;
+      *)
+        printf 'null\n' ;;
+    esac
+    exit 0
+    ;;
+esac
+FAKE
+chmod +x "$FAKEBIN/python3"
+
+# --- fake curl (stubs the rootDirectory GET/PATCH Vercel API calls) ----------
+cat > "$FAKEBIN/curl" <<'FAKE'
+#!/bin/bash
+# PATCH calls are redirected to /dev/null by the caller; for GET calls emit rootDirectory=null
+# so the flip check sees null and proceeds. Both cases exit 0.
+printf '{"rootDirectory":null}\n'
+exit 0
+FAKE
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
