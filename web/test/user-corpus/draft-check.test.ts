@@ -55,6 +55,8 @@ describe.skipIf(!enabled)('draft check', () => {
     expect(ranges.length).toBeLessThanOrEqual(DRAFT_MAX_RANGES);
   });
 
+  // DB round-trips (seed + draftCheck corpus query) on the ephemeral Neon branch can exceed the
+  // 5 s vitest default; 30 s is generous enough to rule out slow cold-start without hiding hangs.
   it('finds the user\'s own document on the same passage, and the tradition beside it', async () => {
     // Seed a "past sermon" anchored on Rom 8:28 WITHOUT the drain: document row + one section +
     // one anchor, all as app_runtime under RLS.
@@ -81,7 +83,7 @@ describe.skipIf(!enabled)('draft check', () => {
     // The gap side: Romans 8:28 is among the best-covered verses in the corpus.
     expect(result.gaps.authorCount).toBeGreaterThan(0);
     expect(result.gaps.rangesConsidered).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it('a draft with no Scripture yields empty ranges and an empty gap — not an error', async () => {
     const result = await draftCheck(USER, 'Minutes of the roof-repair committee, October meeting.', corpusPredicate(LEGAL_CORPUS_FILTER));
