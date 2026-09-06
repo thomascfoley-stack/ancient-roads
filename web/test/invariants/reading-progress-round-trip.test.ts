@@ -42,7 +42,7 @@ vi.mock('@/lib/session', () => ({
     return signedIn;
   },
   currentUser: async () => signedIn,
-  authFailureResponse: (_e: unknown) =>
+  authFailureResponse: () =>
     new Response(JSON.stringify({ error: 'UNAUTHENTICATED' }), { status: 401 }),
 }));
 
