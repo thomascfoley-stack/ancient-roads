@@ -10,10 +10,12 @@
 // built returned 1 hit where the same call with `limit` omitted returned 20.
 //
 // NO DATABASE. The library is mocked to capture the scope the route hands it, because the defect
-// is entirely in how the route reads a query parameter — and a DB-gated test would not run in CI
+// is entirely in how the route reads the limit — and a DB-gated test would not run in CI
 // (the credentials live in the db-invariants job, this suite runs in audit).
+//
+// The route is a POST with an `application/json` body (CSRF Content-Type floor — see the route
+// header), so the request is constructed like history-search-route.test.ts.
 
-import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/user-corpus/route-guard', () => ({
@@ -44,49 +46,54 @@ vi.mock('@/lib/user-corpus/search', () => ({
   },
 }));
 
-const GET = (await import('@/app/api/user-corpus/search/route')).GET;
+const POST = (await import('@/app/api/user-corpus/search/route')).POST;
 
-const call = (qs: string) => GET(new NextRequest(`http://localhost/api/user-corpus/search?${qs}`));
+const call = (body: unknown) =>
+  POST(new Request('http://localhost/api/user-corpus/search', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  }));
 
 beforeEach(() => { seen.length = 0; });
 
 describe('search route — the limit the client does not send', () => {
   it('leaves limit unset for a fused search, so DEFAULT_LIMIT applies', async () => {
-    await call('q=grace');
+    await call({ q: 'grace' });
     expect(seen).toHaveLength(1);
     // The assertion that matters: NOT 0. A 0 here is the bug, because clampLimit floors it to 1.
     expect(seen[0]!.scope.limit).toBeUndefined();
   });
 
   it('leaves limit unset for keyword mode', async () => {
-    await call('q=grace&mode=keyword');
+    await call({ q: 'grace', mode: 'keyword' });
     expect(seen).toHaveLength(1);
     expect(seen[0]!.fn).toBe('keywordSearch');
     expect(seen[0]!.scope.limit).toBeUndefined();
   });
 
   it('leaves limit unset for the verse-presence scan', async () => {
-    await call(`ref=${encodeURIComponent('Romans 8')}`);
+    await call({ ref: 'Romans 8' });
     expect(seen).toHaveLength(1);
     expect(seen[0]!.fn).toBe('verseAnchorScan');
     expect(seen[0]!.scope.limit).toBeUndefined();
   });
 
   it('still honours an explicit limit', async () => {
-    await call('q=grace&limit=5');
+    await call({ q: 'grace', limit: 5 });
     expect(seen[0]!.scope.limit).toBe(5);
   });
 
   it('treats a non-numeric or empty limit as unset rather than as zero', async () => {
-    await call('q=grace&limit=abc');
+    await call({ q: 'grace', limit: 'abc' });
     expect(seen[0]!.scope.limit).toBeUndefined();
     seen.length = 0;
-    await call('q=grace&limit=');
+    await call({ q: 'grace', limit: '' });
     expect(seen[0]!.scope.limit).toBeUndefined();
   });
 
   it('passes documentId through unchanged', async () => {
-    await call('q=grace&documentId=doc-7');
+    await call({ q: 'grace', documentId: 'doc-7' });
     expect(seen[0]!.scope.documentId).toBe('doc-7');
   });
 });
