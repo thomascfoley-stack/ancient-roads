@@ -153,7 +153,7 @@ describe('upload-complete — bucket independence and cleanup', () => {
 
     // Complete (burns corpus-complete:*)
     BYTES.set(`user-corpus/${USER.id}/doc-1`, new TextEncoder().encode('hello'));
-    const completeRes = await completeReq(
+    const completeRes = await completePOST(
       completeReq({ pathname: `user-corpus/${USER.id}/doc-1`, name: 'sermon.pdf' }) as never,
     );
     // The complete route may fail for other reasons (no real DB), but the rate limit
