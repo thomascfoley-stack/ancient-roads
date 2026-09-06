@@ -173,6 +173,11 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
   const [pickerOpen, setPickerOpen] = useState(false);
   // The saved block, while its toast is up — `Change?` moves exactly this block.
   const [saved, setSaved] = useState<{ studyId: string; title: string; blockId: string } | null>(null);
+  // Snapshot of the block to move, taken when "Change?" is tapped. The 6s toast timer below
+  // clears `saved` even while the picker is open; `onPick` reads `pendingMove` (not `saved`)
+  // so the move's delete-source cannot be dropped by the timer racing the pick — keeping a
+  // duplicate a visible failure only, never a silent one (see the header's design intent).
+  const [pendingMove, setPendingMove] = useState<{ studyId: string; blockId: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -180,6 +185,12 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
     const t = setTimeout(() => setSaved(null), 6000);
     return () => clearTimeout(t);
   }, [saved]);
+
+  // The move snapshot is only meaningful while the picker is open; clear it on close so a
+  // stale {studyId, blockId} from a previous move cannot leak into a later save's `onPick`.
+  useEffect(() => {
+    if (!pickerOpen) setPendingMove(null);
+  }, [pickerOpen]);
 
   const postClip = useCallback(async (studyId: string): Promise<SaveOutcome> => {
     const body =
@@ -289,7 +300,7 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
         <StudyPicker
           busy={busy}
           newStudyTitle={newStudyTitle}
-          onPick={(target) => void saveTo(target, saved ? { studyId: saved.studyId, blockId: saved.blockId } : undefined)}
+          onPick={(target) => void saveTo(target, pendingMove ?? undefined)}
           onClose={closePicker}
         />
       )}
@@ -299,7 +310,10 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
           <span className="font-medium text-stone-700 dark:text-stone-300">Saved to {saved.title}.</span>{' '}
           <button
             type="button"
-            onClick={() => setPickerOpen(true)}
+            onClick={() => {
+              setPendingMove(saved ? { studyId: saved.studyId, blockId: saved.blockId } : null);
+              setPickerOpen(true);
+            }}
             className="font-medium text-accent-700 underline underline-offset-2 hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200"
           >
             Change?
