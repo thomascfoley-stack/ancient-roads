@@ -108,6 +108,40 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl (handles Vercel API calls for rootDirectory flip) -------------
+cat > "$FAKEBIN/curl" <<'FAKECURL'
+#!/bin/bash
+# Fake curl for the Vercel API calls in deploy.sh.
+# GET  /v9/projects/... -> {"rootDirectory":null}   (reports flip succeeded)
+# PATCH /v9/projects/... -> {} (success, ignored by deploy.sh via || true)
+# Everything else -> {}
+for arg in "$@"; do
+  case "$arg" in
+    *"/v9/projects/"*)
+      ;;
+  esac
+done
+# Return JSON that makes get_root_directory() return "null" (flip check passes)
+# and "web" for the restore check (restore succeeds cleanly).
+# We inspect the -d argument to decide what state to report.
+prev=""
+for arg in "$@"; do
+  if [ "$prev" = "-d" ]; then
+    case "$arg" in
+      *'"rootDirectory": "web"'*|*'"rootDirectory":"web"'*)
+        printf '{"rootDirectory":"web"}'
+        exit 0
+        ;;
+    esac
+  fi
+  prev="$arg"
+done
+# Default: return null (post-flip state or GET before any PATCH)
+printf '{"rootDirectory":null}'
+exit 0
+FAKECURL
+chmod +x "$FAKEBIN/curl"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -161,6 +195,7 @@ begin() {
 run_deploy() {
   local from="${1:-$REPO}"
   OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
+    VERCEL_TOKEN="fake-token-for-tests" \
     PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }
