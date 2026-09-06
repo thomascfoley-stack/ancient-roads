@@ -268,9 +268,20 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       // Captured by `paint`, read by `rollback` — always the freshest prior value, including on a
       // retry (where "prior" is whatever `rollback` already restored after the first failure).
       let previous: StoredSpan[] | undefined;
+      // The spans THIS clear was asked to remove, snapshotted once on the first paint. A clear
+      // whose DELETE ultimately fails and settles unregisters itself from `activeClears`, so a
+      // later addHighlight on the same verse can no longer mark it `superseded` — the banner's
+      // `retry` (the `attempt` closure below) stays armed and destructive. On a replay, any span
+      // present in the verse that was NOT in this snapshot is a newer write that arrived after
+      // the clear settled; re-running the verse-level DELETE would soft-delete it server-side
+      // too. Refusing the replay preserves the newer write; the banner is replaced with a
+      // no-retry message telling the reader to reload. See test/use-annotation-writes-clearverse-
+      // retry.test.tsx.
+      let originalSpans: StoredSpan[] | undefined;
       const paint = () => {
         setHighlights((prev) => {
           previous = prev.get(verse);
+          originalSpans ??= previous;
           const next = new Map(prev);
           next.delete(verse);
           return next;
@@ -296,27 +307,48 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           body: JSON.stringify({ kind: 'highlight', verseId: verseId(verse) }),
           signal: entry.controller.signal,
         });
-      const settled = runPersist(
-        // A superseded clear's rollback re-adds the old spans beside the new one, so the reader
-        // sees BOTH colours plus this banner. A regular clear's rollback restores only the old
-        // spans. The message names what actually happened in each case.
-        () => entry.superseded
+      // A superseded clear's rollback re-adds the old spans beside the new one, so the reader
+      // sees BOTH colours plus this banner. A regular clear's rollback restores only the old
+      // spans. The message names what actually happened in each case.
+      const message = () =>
+        entry.superseded
           ? "Couldn't remove the old highlight — both colours are saved."
-          : "Couldn't clear the highlight",
-        paint,
-        request,
-        rollback,
-        () => entry.superseded,
-        () => {
-          // Identity, not key: a superseded clear's completion must not remove the NEWER clear
-          // that replaced it in the registry — otherwise the next addHighlight finds no
-          // pendingClear and POSTs with no sequencing, which is the race F-121 exists to close.
-          if (activeClears.current.get(verse) === entry) activeClears.current.delete(verse);
-        },
-      );
-      entry.settled = settled ?? Promise.resolve();
+          : "Couldn't clear the highlight";
+      const onSettled = () => {
+        // Identity, not key: a superseded clear's completion must not remove the NEWER clear
+        // that replaced it in the registry — otherwise the next addHighlight finds no
+        // pendingClear and POSTs with no sequencing, which is the race F-121 exists to close.
+        if (activeClears.current.get(verse) === entry) activeClears.current.delete(verse);
+      };
+      // clearVerse builds its own `attempt` (rather than going through `runPersist`, like
+      // toggleBookmark) so it can guard the replay: the original clear always runs, but a replay
+      // that finds a newer span on the verse refuses instead of wiping it. `id` is minted here,
+      // once per logical clear, and reused across every retry of this one clear — the same
+      // invariant `runPersist` upholds for its callers.
+      const id = ++writeSeq.current;
+      const attempt = () => {
+        // Only guard REPLAYS: `originalSpans` is undefined until the first paint captures it, so
+        // the original clear always proceeds. On a replay, compare the current verse state to
+        // the original snapshot (identity, not value — the inverse of the rollback comparison).
+        // Copied to a const so TS keeps the narrowing — `originalSpans` is reassigned inside the
+        // `paint` closure, so its declared `| undefined` otherwise returns inside this check.
+        const original = originalSpans;
+        if (original !== undefined) {
+          const now = highlightsRef.current.get(verse) ?? [];
+          if (now.some((s) => !original.includes(s))) {
+            // Refuse the destructive replay. No `retry`: re-running would refuse again, and the
+            // verse has moved on from what this clear was supposed to clear. The reader is told
+            // to reload; the newer write is preserved on client and server.
+            setWriteError({ id, message: "Couldn't clear the highlight — a newer edit arrived; reload to refresh." });
+            return Promise.resolve();
+          }
+        }
+        paint();
+        return beginPersist(id, message, request, rollback, attempt, () => entry.superseded, onSettled);
+      };
+      entry.settled = attempt() ?? Promise.resolve();
     },
-    [verseId, runPersist],
+    [verseId, beginPersist],
   );
 
   // Add a highlight span. range === null → whole verse (the tap-a-verse path).
