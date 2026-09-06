@@ -1,5 +1,53 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — "Finish the ingestion": census, counter fix, top-up wave 1 [Kimi Code session]
+
+**Order:** `docs/pm/orders/2026-09-06-finish-ingestion.md` (owner directive recorded per
+bylaw 1). Worktree: `~/Projects/ap-ingest` (`/tmp/ap-kimi-launch` was reaped by macOS —
+second time; worktrees live under `~/Projects` from now on).
+
+**Census (READ ONLY, dev + prod, 2026-09-06).** Manifest 917; prod 838 sources = 394
+published / 441 staged / 3 quarantined; absent-from-prod = 80 (79 CCEL + manifest-quarantined
+geneva-notes). Dev is NOT a completeness mirror (635 prod-only works). Prior backlog numbers
+("800/890 complete", "713 absent") were artifacts: the loop counter queried the wrong table
+and different docs measured different databases.
+
+**Counter fixed (`7358e36`, LAUNCH_BLOCKERS #14).** `ingestState` now counts both embedding
+planes; red-proofed both directions; 8/8 new tests; root suite 1020 green.
+
+**The 46,831-vector alarm defused (measured).** All 228 published works lacking
+`section_embeddings` are fully served via flat `embeddings` (296,132 rows, all served=true,
+same model the app embeds with); NO serving path in `web/src` reads `section_embeddings`
+(it only feeds history_embeddings backfills; no history-lane work is in the gap). Live
+probes through the app's own pool SQL surface Spurgeon/Schaff-ANF fine; TCR serves via FTS
+by design. Backfill targets for serving: 0 — optional hygiene, owner cost call.
+
+**Top-up wave 1 (dev, staged).** Probed all 79 READ-ONLY: 18 parse-clean, 60
+empty (33 structure-unrecognized, 25 under MIN_UNITS, 1 page-scan, 1 enumeration-empty),
+1 excluded (foxe-martyrs = historian head). Ran the loop on dev for the 18 (owner URL from
+`~/.neon_dev_owner_url` — `app_runtime` is SELECT-only, runbook note added): **17 staged,
+0 quarantined, 21,544 flat embeddings**, no breaker trips; evidence
+`docs/evidence/ingest-runs/topup-dev-2026-09-06.log`. One escalation:
+`schaff-npnf201` — deleteWork violates `section_history_anchors_section_id_fkey`
+(register-writer delete-order gap; its prior sections-plane ingest is intact).
+
+**Leftover triage (61):** 1 page-scan (newman-apologia → archive.org alt), 1
+enumeration-empty (vincent → explicit ccel_ids profile), foxe-martyrs → historian head
+(abridged-edition label), 25 tiny tracts (adapter-profile or owner-skip), 33
+structure-unrecognized — high-value inspect-first subset: calvin-institutio1/2,
+calvin-commentaries, henry-mhc, spurgeon-treasury, hastings×6. Partition:
+`/tmp/ap-topup-partition.json`; triage table in the session report.
+
+**NOT DONE / UNVERIFIED:**
+- Dev→prod copy + publish of the 17 (and the 441 already staged on prod) — OWNER TTY tools.
+- High-value adapter profiles, foxe historian head, new gap acquisitions (translations,
+  Catena Aurea, Luther Philadelphia, Menno) — queued, see the order file.
+- thayers-lexicon publish still gate-blocked on `docs/evidence/thayers-source-verification.md`
+  (the gate is working; something keeps auto-attempting the flip and STOPping — worth finding
+  what schedules those attempts; latest 2026-09-06T19:56Z).
+- `hort-james1909` status contradiction (manifest-quarantined + serve:false + staged on prod)
+  needs an owner ruling, not a flip.
+
 ## 2026-08-31 — Follow-up: a test that could not fail, guarding the upload budget
 
 Independent review of the overnight pass (Claude Code session) caught that the
