@@ -16,6 +16,7 @@
 //   * remove the try/catch → the error test goes red (the throw escapes instead of being logged).
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DocStatus } from '@/lib/user-corpus/types';
 
 const { guardUser, getDocument, traditionGap, relatedVoices } = vi.hoisted(() => ({
   guardUser: vi.fn(),
@@ -124,6 +125,83 @@ describe('semantic match (documents/[id]/related) — successes, failures, error
     const res = await GET(req, ctx);
     expect(res.status).toBe(500);
     expect(event().outcome).toBe('error');
+  });
+});
+
+// The "still indexing" short-circuit must distinguish the four claim statuses (queued/parsing/
+// chunking/embedding — genuinely in flight) from terminal/stopped states. `failed` and `empty`
+// are NOT in flight: `empty` is a permanent verdict (the retry endpoint refuses it with 409 —
+// retrying cannot change the result) and `failed` is stopped — the drain has given up on the row
+// and it will not reach `ready` again until a manual retry. Reporting either as `pending: true`
+// lies about a finished failure and swallows the actionable `parseError` reason.
+//
+// Seeds that turn these red:
+//   * widen the gate back to `status !== 'ready'` → the failed/empty tests see `pending: true` and
+//     `outcome: 'pending'`, and the in-flight test still passes (a strict subset, so it cannot
+//     catch the widening on its own — the terminal tests are what pin the distinction).
+//   * drop the terminal branch → failed/empty fall through to `relatedVoices`, which the test
+//     asserts was never called.
+describe('semantic match (documents/[id]/related) — pending vs terminal document states', () => {
+  it.each(['queued', 'parsing', 'chunking', 'embedding'] as DocStatus[])(
+    'logs PENDING and short-circuits before relatedVoices for an in-flight (%s) document',
+    async (status) => {
+      getDocument.mockResolvedValue({ id: 'doc-uuid-1', status, title: SERMON_TITLE });
+      const { GET } = await import('@/app/api/user-corpus/documents/[id]/related/route');
+      const res = await GET(req, ctx);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ voices: [], comparable: false, pending: true });
+      const e = event();
+      expect(e.kind).toBe('semantic');
+      expect(e.outcome).toBe('pending');
+      expect(e.voices).toBe(0);
+      expect(relatedVoices).not.toHaveBeenCalled();
+    },
+  );
+
+  it('logs the document verdict — not pending — for a FAILED document, and surfaces the reason', async () => {
+    const parseError = 'Gave up after 3 attempts. The last error was: embedder returned 0 vectors for 4 chunks';
+    getDocument.mockResolvedValue({ id: 'doc-uuid-1', status: 'failed', parseError, title: SERMON_TITLE });
+    const { GET } = await import('@/app/api/user-corpus/documents/[id]/related/route');
+    const res = await GET(req, ctx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      voices: [], comparable: false, pending: false, failed: 'failed', reason: parseError,
+    });
+    const e = event();
+    expect(e.kind).toBe('semantic');
+    expect(e.outcome).toBe('failed');
+    expect(e.voices).toBe(0);
+    expect(relatedVoices).not.toHaveBeenCalled();
+    // A terminal verdict is still a logged operation; the document's title/text are still not.
+    const all = logged.join('\n');
+    expect(all).not.toContain(SERMON_TITLE);
+    expect(all).not.toContain(SERMON_TEXT);
+  });
+
+  it('logs EMPTY-as-verdict for an EMPTY document (permanent, not "still indexing")', async () => {
+    const parseError = 'The document produced no indexable text.';
+    getDocument.mockResolvedValue({ id: 'doc-uuid-1', status: 'empty', parseError, title: SERMON_TITLE });
+    const { GET } = await import('@/app/api/user-corpus/documents/[id]/related/route');
+    const res = await GET(req, ctx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      voices: [], comparable: false, pending: false, failed: 'empty', reason: parseError,
+    });
+    const e = event();
+    expect(e.kind).toBe('semantic');
+    expect(e.outcome).toBe('empty');
+    expect(e.voices).toBe(0);
+    expect(relatedVoices).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a null parseError honestly for a terminal document', async () => {
+    getDocument.mockResolvedValue({ id: 'doc-uuid-1', status: 'failed', parseError: null, title: SERMON_TITLE });
+    const { GET } = await import('@/app/api/user-corpus/documents/[id]/related/route');
+    const res = await GET(req, ctx);
+    expect(await res.json()).toEqual({
+      voices: [], comparable: false, pending: false, failed: 'failed', reason: null,
+    });
+    expect(event().outcome).toBe('failed');
   });
 });
 
