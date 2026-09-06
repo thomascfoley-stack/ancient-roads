@@ -69,13 +69,25 @@ export default function WorkPage() {
   }, [slug]);
 
   // When the resolved landing changes (client-side nav with a new hash), tell WorkReader to
-  // seek there. This also re-arms the hash-write guard for deep links.
+  // seek there. This also re-arms the hash-write guard for deep links. The Continue chip's
+  // frozen snapshot is recomputed here too — mirroring the initializer's rule — because on
+  // client-side nav the hash arrives AFTER mount, so the initializer read an empty hash and
+  // froze `continueTarget` at null; only this re-resolved `landing` knows the real deep-link
+  // ordinal. (The chip's render guard `progress?.ordinal !== continueTarget.ordinal` and the
+  // fact that `replaceState` never fires `hashchange` keep this from resurrecting the chip
+  // after the reader clicks it: `landing` cannot change during reading.)
   useEffect(() => {
     suppressHashWrite.current = landing.deepLinked;
     if (landing.ordinal !== null) {
       setSeek({ ordinal: landing.ordinal, scrollPct: landing.scrollPct, nonce: Date.now() });
     }
-  }, [landing]);
+    if (landing.deepLinked) {
+      const saved = loadWorkProgress(slug);
+      setContinueTarget(saved && saved.ordinal !== landing.ordinal ? saved : null);
+    } else {
+      setContinueTarget(null);
+    }
+  }, [landing, slug]);
 
   // The frozen "where you left off" snapshot for the Continue chip — only meaningful when a
   // deep-link took the reader somewhere else (after an auto-restore there is nothing to
