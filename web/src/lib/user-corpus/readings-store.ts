@@ -137,18 +137,6 @@ export async function listReadings(userId: string, documentId: string): Promise<
     }));
 }
 
-/** Counts per document, for the list view — one query, not one per card. */
-export async function readingCounts(userId: string, documentIds: string[]): Promise<Map<string, number>> {
-  if (documentIds.length === 0) return new Map();
-  const [rows] = await runAsUser(userId, (sql) => [
-    sql`SELECT document_id, count(*)::int AS n
-          FROM user_document_readings
-         WHERE user_id = ${userId} AND document_id = ANY(${documentIds})
-         GROUP BY document_id`,
-  ]);
-  return new Map((rows as { document_id: string; n: number }[]).map((r) => [r.document_id, r.n]));
-}
-
 /**
  * Should a new readings run be REFUSED because one is already live? (B015)
  *
