@@ -15,8 +15,7 @@
 //
 // It is written this way anyway because the alternative — bundling ~5 MB of JSON into the function,
 // or fetching it over HTTP from our own origin — is a bigger decision than an unverified read, and
-// making it now would be guessing. `indexHealth()` exists so the answer is a check rather than a
-// surprise, and step 7's browser DoD is where it gets exercised for real.
+// making it now would be guessing.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -166,15 +165,4 @@ export function getAnchorIndexFor(translation: string): VerseShingleIndex {
 /** Detect a document's translation. Throws BibleIndexUnavailable rather than guessing silently. */
 export function detectDocumentTranslation(text: string): Detection {
   return detectTranslation(text, getDetectionIndex());
-}
-
-/** Is the index reachable, and does it look right? For the deploy check, not for the hot path. */
-export function indexHealth(): { ok: boolean; translation: string; dir: string; verses?: number; shingles?: number; error?: string } {
-  const dir = bibleDir(ANCHOR_TRANSLATION);
-  try {
-    const idx = getAnchorIndex();
-    return { ok: true, translation: idx.translation, dir, verses: idx.verseCount, shingles: idx.shingleToVerses.size };
-  } catch (e) {
-    return { ok: false, translation: ANCHOR_TRANSLATION, dir, error: String((e as Error)?.message ?? e) };
-  }
 }
