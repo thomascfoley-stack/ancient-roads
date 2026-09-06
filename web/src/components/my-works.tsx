@@ -575,12 +575,20 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       // the same box because "have I written on Romans 8" and "what did I say about grace" are the
       // same question to the person asking.
       const looksLikeRef = /^[1-3]?\s?[A-Za-z][A-Za-z.]*\s+\d/.test(q);
-      const url = looksLikeRef
-        ? `/api/user-corpus/search?ref=${encodeURIComponent(q)}`
-        : `/api/user-corpus/search?q=${encodeURIComponent(q)}`;
+      // POST + application/json, not a GET query string: the search route is state-changing (a paid
+      // embedding on the request path + a victim-attributed audit row), so it sits behind the CSRF
+      // Content-Type floor (csrf-floor.ts). A GET has no Content-Type to gate, so a cross-site
+      // top-level navigation could carry the SameSite=Lax session cookie and run the handler as the
+      // victim; requiring application/json forces a preflight on cross-origin callers, which the
+      // browser then refuses.
+      const payload = looksLikeRef ? { ref: q } : { q };
       let r: Response;
       try {
-        r = await fetch(url);
+        r = await fetch('/api/user-corpus/search', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
       } catch {
         setSearchNote('That search could not be run. Check your connection and try again.');
         return;

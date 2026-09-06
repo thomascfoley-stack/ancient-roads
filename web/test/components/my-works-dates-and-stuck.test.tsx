@@ -30,10 +30,13 @@ beforeEach(() => {
   searchHits = [];
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: { method?: string }) => {
     const u = String(url);
-    if (init?.method === 'POST') { posts.push(u); return Response.json({ document: {} }); }
+    // The search route is now a POST to /api/user-corpus/search (CSRF Content-Type floor), so it
+    // must be matched by URL before the generic POST branch below — otherwise the search POST
+    // falls into the upload path and returns { document: {} }.
     if (u.includes('/api/user-corpus/search')) {
       return Response.json({ mode: 'fused', q: 'grace', hits: searchHits });
     }
+    if (init?.method === 'POST') { posts.push(u); return Response.json({ document: {} }); }
     if (u.includes('/api/user-corpus/documents')) return Response.json({ documents });
     return Response.json({});
   }));
