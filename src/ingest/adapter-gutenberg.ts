@@ -30,7 +30,7 @@ interface Profile {
   // takes precedence over sacred/splitUnits when present
   sections?: ScopedSpec;
   // pull a title/heading from a unit (first non-empty line by default)
-  register: 'hymn' | 'poetry';
+  register: 'hymn' | 'poetry' | 'prose';
   paraphrase?: boolean;
 }
 
@@ -238,6 +238,28 @@ export const PROFILES: Record<string, Profile> = {
   'wheatley-poems': { register: 'poetry' },
   'watts-hymns': { register: 'hymn' },
   'watts-psalms': { register: 'hymn', paraphrase: true }, // metrical psalms — PARAPHRASE voice
+  'newman-apologia': {
+    // PG #22088 (1890 Longmans ed. of the 1864 Apologia). The work proper is
+    // the five chapters between the part-title "MY RELIGIOUS OPINIONS." (a
+    // unique whole line) and "NOTES." — Notes A–G, the saints' calendar, the
+    // approbation letters and the publisher catalog are back matter; the 1865
+    // Preface is front matter (the shared GUT_MATTER filter drops it anyway).
+    // The CONTENTS list carries bare "CHAPTER I.".. lines too, but they sit
+    // BEFORE the scope start and cannot pre-match. Each chapter heading is the
+    // edition's own two-line pair ("CHAPTER I." / "HISTORY OF MY RELIGIOUS
+    // OPINIONS TO THE YEAR 1833."); the title line opens the body as printed.
+    sections: {
+      scope: { start: /^MY RELIGIOUS OPINIONS\.$/, end: /^NOTES\.$/ },
+      contents: [
+        { match: /^CHAPTER I\.$/ },
+        { match: /^CHAPTER II\.$/ },
+        { match: /^CHAPTER III\.$/ },
+        { match: /^CHAPTER IV\.$/ },
+        { match: /^CHAPTER V\.$/ },
+      ],
+    },
+    register: 'prose',
+  },
 };
 
 export function stripBoilerplate(raw: string): string {

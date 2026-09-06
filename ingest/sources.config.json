@@ -24360,17 +24360,15 @@
     "tier": 3,
     "provenance": {
       "url": "https://www.ccel.org/ccel/foxe/martyrs",
-      "edition": "Foxe’s Book of Martyrs (CCEL)",
+      "edition": "Foxe’s Book of Martyrs, ed. William Byron Forbush (CCEL) — the Forbush ABRIDGMENT, NOT Foxe’s complete Acts and Monuments",
       "year": 1563,
       "year_basis": "authorDeathUpperBound",
       "licence_basis": "authorPre1930",
-      "note": "Author died 1587, so the WORK is unambiguously PD. The Book of Martyrs was re-edited for centuries and the CCEL edition year is NOT yet confirmed — capture it at ingest before serving. Availability and full text confirmed against the CCEL page 2026-08-20.",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "foxe/martyrs"
-        ],
-        "strip_markup": true
+      "note": "Author died 1587, so the WORK is unambiguously PD. 2026-09-06: the CCEL files edition (https://www.ccel.org/ccel/f/foxe/martyrs/files/, begin.htm + fox101..fox122.htm, plain HTML not ThML) is the Forbush abridgment — labeled ABRIDGED per the finish-ingestion order; the abridgment is a pre-1930 US edition. Historian-head ingest (staged, never served), so the earlier edition-year capture concern does not gate.",
+      "rebuild": {
+        "source": "ccel-html",
+        "files": "https://www.ccel.org/ccel/f/foxe/martyrs/files/ (begin.htm + fox101..fox122.htm)",
+        "decoder": "H1/H2/H3 tree crawl -> data/raw/historians/foxe-martyrs.jsonl -> src/ingest/ingest-historian.ts --slug=foxe-martyrs"
       }
     }
   },
