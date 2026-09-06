@@ -196,6 +196,24 @@ export function SelectionPopover({
     };
   }, [reposition]);
 
+  // Re-place when the card's OWN content grows after placement. The card's size is part of the
+  // placement input (`offsetWidth`/`offsetHeight` above), but it changes AFTER the layout effect
+  // runs — the `define` row (Bible reader) resolves asynchronously over a fetch and inserts into
+  // the subtree, and `SaveToStudy`'s "Saved to <study>." toast grows the card from its own useState
+  // (Work reader). Neither changes a `SelectionPopover` prop, so a deps-array fix keyed on `define`
+  // would miss the toast; observing the card catches every growth source. Without this the card
+  // keeps its old `top` and its grown bottom edge intrudes into the selection (above placement) or
+  // past the viewport-bottom clearance it was placed to clear (below). Guarded like study-editor's
+  // observer (jsdom/old browsers carry no ResizeObserver); `reposition` early-returns while the
+  // mobile `display:none` card reports 0 width, so the observer is a no-op there.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => reposition());
+    ro.observe(card);
+    return () => ro.disconnect();
+  }, [reposition]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onDismiss();
