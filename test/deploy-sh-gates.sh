@@ -108,6 +108,27 @@ esac
 FAKE
 chmod +x "$FAKEBIN/npx"
 
+# --- fake curl — stands in for the Vercel API calls deploy.sh makes to flip/restore rootDirectory
+cat > "$FAKEBIN/curl" <<'FAKE'
+#!/bin/bash
+# Absorb all flags. Detect method from -X arg; default GET.
+METHOD="GET"
+for a in "$@"; do
+  case "$a" in -X) shift; METHOD="${1:-GET}" ;; esac
+done
+case "$METHOD" in
+  PATCH) exit 0 ;;
+  *)     printf '{"rootDirectory":null}\n'; exit 0 ;;
+esac
+FAKE
+chmod +x "$FAKEBIN/curl"
+
+# --- fake auth token — deploy.sh reads $HOME/Library/Application Support/com.vercel.cli/auth.json
+FAKE_HOME="$SANDBOX/home"
+mkdir -p "$FAKE_HOME/Library/Application Support/com.vercel.cli"
+printf '{"token":"fake-token-for-gate-tests"}\n' \
+  > "$FAKE_HOME/Library/Application Support/com.vercel.cli/auth.json"
+
 # --- harness ----------------------------------------------------------------
 reset_knobs() {
   unset FAKE_GATE_RC FAKE_BUILD_RC FAKE_BUILD_DIRTIES \
@@ -161,7 +182,7 @@ begin() {
 run_deploy() {
   local from="${1:-$REPO}"
   OUT="$(cd "$from" && FAKE_REPO="$REPO" FAKE_ARGV_LOG="$ARGV_LOG" \
-    PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
+    HOME="$FAKE_HOME" PATH="$FAKEBIN:$PATH" bash "$REPO/deploy.sh" 2>&1)"
   RC=$?
 }
 
