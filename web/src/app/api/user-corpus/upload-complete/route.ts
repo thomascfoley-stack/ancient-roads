@@ -43,17 +43,46 @@ function kickDrain(userId: string): void {
  *  match a HEALABLE row (`blobUrl` null because the blob was never stored, or `status === 'failed'`)
  *  is the repair gesture the drain/retry messages prescribe — store the fresh bytes onto the
  *  existing row's canonical pathname, re-queue it, and kick the drain. The just-uploaded blob at
- *  `orphanPathname` is orphaned in every dedupe outcome, so it is deleted before returning. */
+ *  `orphanPathname` is orphaned in every dedupe outcome, so it is deleted before returning —
+ *  UNLESS it IS the pathname the surviving row points at. See `deleteOrphanUnless` below. */
 async function healOrDuplicate(
   user: { id: string },
   existing: UserDocument,
   bytes: Uint8Array,
   orphanPathname: string,
 ): Promise<NextResponse> {
-  const deleteOrphan = () =>
-    deleteUserDocument(orphanPathname).catch((e) => {
+  /**
+   * Delete the just-uploaded blob — unless `livePathname`, the pathname the surviving document
+   * row now points at, IS that same object.
+   *
+   * WHY THIS GUARD IS REQUIRED HERE AND NOT IN THE LEGACY /upload ROUTE. There the incoming blob
+   * is `put` AFTER the dedupe check, so the object being deleted is always a fresh, attempt-unique
+   * one — a genuine orphan. In this two-call flow the bytes already exist at `pathname` BEFORE
+   * upload-complete runs, and the first successful call stores that SAME `pathname` onto the row
+   * as `blob_url` (see `setBlobPathname` in POST). A client that replays the exact prior
+   * {pathname, name} body WITHOUT re-calling upload-url — a cached-session retry, a bulk-import
+   * script, a curl run twice — re-enters dedupe with `orphanPathname === existing.blobUrl`.
+   * Deleting it would destroy the surviving document's live blob; the next drain then re-reads via
+   * `getUserDocument(row.blob_url)` and throws `UploadRefused('corrupt', '… could not be found')`,
+   * reporting a healthy upload as corrupt. The shipped UI client is not such a trigger (its retry
+   * re-calls upload-url and mints a fresh randomUUID pathname — a genuine orphan), so this is a
+   * non-UI client hazard; it needs no concurrency and no malformed input — only a literal replay.
+   *
+   * The same collision reaches the in-transaction dedupe LOSER (`DuplicateDocument`): two
+   * concurrent completions of ONE presigned session share `pathname`, and the winner's
+   * `setBlobPathname` may already have pointed the winning row's `blob_url` at it.
+   *
+   * `livePathname` is passed rather than read off `existing` because the `store-and-requeue` heal
+   * MOVES the row's blob: after it, the live object is `blobPathname(user.id, existing.id)`, not
+   * the `existing.blobUrl` this function was handed (which is null on that path).
+   */
+  const deleteOrphanUnless = async (livePathname: string | null): Promise<void> => {
+    if (livePathname === orphanPathname) return;
+    await deleteUserDocument(orphanPathname).catch((e) => {
       console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
     });
+  };
+  const deleteOrphan = () => deleteOrphanUnless(existing.blobUrl);
 
   if (!isHealable(existing)) {
     await deleteOrphan();
@@ -79,13 +108,17 @@ async function healOrDuplicate(
     );
   }
 
+  // Where the row's bytes live once this heal is done. `store-and-requeue` re-homes them onto the
+  // canonical `blobPathname`; `requeue` leaves them where `existing.blobUrl` already points.
+  let livePathname = existing.blobUrl;
   if (plan.action === 'store-and-requeue') {
     await putUserDocument(user.id, existing.id, bytes);
     await setBlobPathname(user.id, existing.id, blobPathname(user.id, existing.id));
+    livePathname = blobPathname(user.id, existing.id);
   }
   const requeued = await requeueForRetry(user.id, existing.id, { resetAttempts: plan.resetAttempts });
   kickDrain(user.id);
-  await deleteOrphan();
+  await deleteOrphanUnless(livePathname);
   return NextResponse.json(
     {
       document: existing,
