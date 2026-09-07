@@ -54,9 +54,14 @@ export async function claimReadingsStart(userId: string, documentId: string, sta
           readings_status = 'pending', readings_progress = 0, readings_step = NULL,
           readings_error = NULL, updated_at = now()
         WHERE user_id = ${userId} AND id = ${documentId}
-          AND (readings_status IS NULL
-               OR NOT (readings_status IN ('pending', 'running')
-                       AND updated_at > now() - (${Math.floor(staleMs / 1000)} || ' seconds')::interval))
+          -- COALESCE, because NULL IN (...) is NULL rather than false, and NOT (NULL AND true) is
+          -- NULL — which excludes the row from the UPDATE entirely. Every document starts with
+          -- readings_status NULL and a fresh updated_at, so without this the FIRST claim on a
+          -- brand-new document silently matched nothing and the route answered 409 "already
+          -- running" for a search that had never run. The repo's three-valued-logic class, on the
+          -- one predicate that decides whether suggested readings can start at all.
+          AND NOT (COALESCE(readings_status IN ('pending', 'running'), false)
+                   AND updated_at > now() - (${Math.floor(staleMs / 1000)} || ' seconds')::interval))
         RETURNING id`,
   ]);
   return (rows as unknown[]).length > 0;

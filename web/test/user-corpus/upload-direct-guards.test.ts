@@ -192,11 +192,28 @@ describe('upload-complete — bucket independence and cleanup', () => {
     expect(BYTES.has(pathname)).toBe(false);
   });
 
-  it('a cross-tenant pathname returns 403', async () => {
+  it('a cross-tenant pathname returns 403 — including the traversal a prefix check would admit', async () => {
     const { POST } = await import('@/app/api/user-corpus/upload-complete/route');
-    const res = await POST(
-      completeReq({ pathname: 'user-corpus/other-user/doc-1', name: 'sermon.pdf' }) as never,
-    );
-    expect(res.status).toBe(403);
+    // THE TRAVERSAL IS THE POINT. This test used to send only `user-corpus/other-user/doc-1`, a
+    // string that fails even a bare `startsWith` — so replacing the route's anchored regex with
+    // `pathname.startsWith(\`user-corpus/${'${user.id}'}/\`)` left it green, and the route's own
+    // comment names exactly the string that then gets through (false-confidence audit,
+    // 2026-09-07). Both are sent now, and the traversal is the one that discriminates.
+    const OTHER = '11111111-2222-4333-8444-555555555555';
+    const DOC = '99999999-8888-4777-8666-555555555555';
+    for (const pathname of [
+      `user-corpus/other-user/doc-1`,
+      // Prefixed with THIS user, so a prefix check passes it, and it resolves to another user's key.
+      `user-corpus/${USER.id}/../${OTHER}/${DOC}`,
+      `user-corpus/${USER.id}/%2e%2e/${OTHER}/${DOC}`,
+      // Right shape, wrong owner.
+      `user-corpus/${OTHER}/${DOC}`,
+      // Right owner, but a second segment that is not a document key.
+      `user-corpus/${USER.id}/${DOC}/../${DOC}`,
+      `user-corpus/${USER.id}/not-a-uuid`,
+    ]) {
+      const res = await POST(completeReq({ pathname, name: 'sermon.pdf' }) as never);
+      expect(res.status, `accepted a pathname that is not this user's: ${pathname}`).toBe(403);
+    }
   });
 });

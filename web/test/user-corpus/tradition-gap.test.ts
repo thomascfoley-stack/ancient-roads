@@ -30,6 +30,7 @@ const { drain } = await import('@/lib/user-corpus/queue');
 const { checksum } = await import('@/lib/user-corpus/sniff');
 const { MAX_VOICES, corpusPredicate, traditionGap } = await import('@/lib/user-corpus/tradition-gap');
 const { localEnv, runtimeDbUrl, seedOwnerUrl } = await import('../helpers/env');
+const { announceSkip } = await import('../helpers/loud-skip');
 const { existsSync } = await import('node:fs');
 const path = (await import('node:path')).default;
 
@@ -37,6 +38,27 @@ const KEY = localEnv('DEEPINFRA_API_KEY');
 if (KEY && !process.env.DEEPINFRA_API_KEY) process.env.DEEPINFRA_API_KEY = KEY;
 const enabled = Boolean(runtimeDbUrl() && KEY && existsSync(path.resolve(__dirname, '../../public/bible/kjv')));
 if (!enabled) console.warn('⚠ SKIPPED (visibly): tradition-gap suite needs APP_DATABASE_URL, DEEPINFRA_API_KEY and public/bible/kjv.');
+
+/**
+ * The OWNER connection, resolved once — the three seeded legs below (A2, D9, D8) need it because
+ * `app_runtime` can no longer write `embeddings` (migration 101), which is itself the point.
+ *
+ * HOISTED SO THE LEGS CAN `it.skipIf` ON IT. Each of them used to open with
+ * `if (!ownerUrl) { console.warn(…); return; }` INSIDE the `it()` — and a bare return from a test
+ * body is a PASS, not a skip. So wherever the owner connection is absent (which is CI, and this
+ * machine) all three reported a green tick having asserted nothing — including A2, the only test
+ * in the repo that seeds a user-owned row into `embeddings` and proves no platform pool surfaces
+ * it, whose own comment records that deleting the fence once left the suite green because nothing
+ * was there to hold back. Found by the false-confidence audit, 2026-09-07; the honest sibling is
+ * `queue-never-drops.test.ts`, which gates the same precondition with `announceSkip` + `it.skipIf`
+ * and is reported as skipped.
+ */
+const OWNER_URL = seedOwnerUrl();
+announceSkip(
+  'the tradition-gap fence (A2/D9/D8)',
+  [{ name: 'DATABASE_URL (owner, to seed embeddings directly)', present: Boolean(OWNER_URL) }],
+  'the seeded legs that prove a user-owned or forbidden-provenance row never surfaces',
+);
 
 const RUN = `gap-${Date.now().toString(36)}`;
 const USER = `${RUN}-user`;
@@ -149,14 +171,22 @@ describe.skipIf(!enabled)('the tradition-gap join', () => {
     expect(new Set(pairs).size).toBe(pairs.length);
   }, 120_000);
 
-  it('never returns the user’s own words — the trust boundary (§7)', async () => {
-    // User content is additive, never load-bearing, and this function is a CORPUS query. A user
-    // section leaking in here would be presented as an attributed historical voice.
+  it('every returned voice is a corpus row, and the user’s document is not among them', async () => {
+    // WHAT THIS CAN AND CANNOT SEE, stated because the previous version of this test claimed the
+    // whole trust boundary and could not fail (false-confidence audit, 2026-09-07): `origin` is a
+    // hardcoded literal in the row mapper, `USER` is never a value of `metadata->>'author'`, and
+    // the user's title lives in `user_documents`, a table this statement never reads — so all
+    // three assertions were unfalsifiable by any change to the SQL.
+    //
+    // The behavioural proof of the fence is A2 below, which seeds a user-owned row INTO
+    // `embeddings` and needs the owner connection. The structural proof is the sibling test after
+    // this describe, which runs everywhere. This leg keeps only what it can honestly check: the
+    // query returns rows, they are shaped as corpus voices, and the reachability control holds.
     const r = await traditionGap(USER, docId, EVERYTHING);
+    expect(r.voices.length, 'nothing surfaced — the assertions below would be vacuous').toBeGreaterThan(0);
     for (const v of r.voices) {
       expect(v.origin).toBe('corpus');
-      expect(v.author).not.toBe(USER);
-      expect(v.work).not.toContain('Good Shepherd'); // the user's own title
+      expect(v.author).toBeTruthy();
     }
   }, 120_000);
 
@@ -181,7 +211,7 @@ describe.skipIf(!enabled)('the tradition-gap join', () => {
     expect(r.voices).toEqual([]);
   }, 180_000);
 
-  it('A2 — a user-owned row seeded INTO the corpus table never surfaces', async () => {
+  it.skipIf(!OWNER_URL)('A2 — a user-owned row seeded INTO the corpus table never surfaces', async () => {
     // THIS TEST EXISTS BECAUSE THE RED-PROOF FOUND IT MISSING. Deleting `e.user_id IS NULL` from
     // the corpus fence left the suite GREEN, because no test user had a row in `embeddings` — the
     // fence had nothing to hold back and could not be observed.
@@ -193,8 +223,7 @@ describe.skipIf(!enabled)('the tradition-gap join', () => {
     //
     // Seeded as the OWNER, because app_runtime can no longer write this table (migration 101) —
     // which is itself the point.
-    const ownerUrl = seedOwnerUrl();
-    if (!ownerUrl) { console.warn('⚠ A2 leg SKIPPED: no owner URL'); return; }
+    const ownerUrl = OWNER_URL!;
     const { Client } = (await import('pg')).default;
     const c = new Client({ connectionString: ownerUrl, ssl: { rejectUnauthorized: false } });
     await c.connect();
@@ -240,15 +269,14 @@ describe.skipIf(!enabled)('the tradition-gap join', () => {
     expect(r.voices.length).toBeLessThanOrEqual(MAX_VOICES);
   }, 120_000);
 
-  it('D9 — a corpus row with forbidden provenance never surfaces, even under the widest predicate', async () => {
+  it.skipIf(!OWNER_URL)('D9 — a corpus row with forbidden provenance never surfaces, even under the widest predicate', async () => {
     // The uploader deep-dive's D9: this join gated on `(served)` + `user_id IS NULL` while
     // servability.ts / studies.ts / research.ts also apply the forbidden-provenance denylist —
     // and ADR-044's served-but-forbidden rows are live exposure, so `(served)` does not subsume
     // it. Seeded exactly like A2 above (owner connection; markers sort FIRST so the LIMIT cannot
     // cut them — the A2 lesson), with a CLEAN twin as the reachability control: if the clean row
     // does not surface, the dirty row's absence is the empty-set tautology and proves nothing.
-    const ownerUrl = seedOwnerUrl();
-    if (!ownerUrl) { console.warn('⚠ D9 leg SKIPPED: no owner URL'); return; }
+    const ownerUrl = OWNER_URL!;
     const { Client } = (await import('pg')).default;
     const c = new Client({ connectionString: ownerUrl, ssl: { rejectUnauthorized: false } });
     await c.connect();
@@ -280,14 +308,13 @@ describe.skipIf(!enabled)('the tradition-gap join', () => {
     }
   }, 180_000);
 
-  it('D8 — a USER-owned embeddings row is invisible to the clip-failure probe', async () => {
+  it.skipIf(!OWNER_URL)('D8 — a USER-owned embeddings row is invisible to the clip-failure probe', async () => {
     // The uploader deep-dive's D8: `probeEmbeddingClipFailure` in studies.ts was the ONE
     // `FROM embeddings` read of fifteen without `user_id IS NULL`. It returns a reason code, not
     // content — but pre-fix a user-owned row made it answer 'not_servable', i.e. "this corpus
     // source exists", about a row the corpus plane does not contain. It belongs with this suite
     // because it is the same fence A2 proves for the join, on a neighbouring read.
-    const ownerUrl = seedOwnerUrl();
-    if (!ownerUrl) { console.warn('⚠ D8 leg SKIPPED: no owner URL'); return; }
+    const ownerUrl = OWNER_URL!;
     const { createStudy, insertClippingFromEmbedding } = await import('@/lib/studies');
     const { Client } = (await import('pg')).default;
     const c = new Client({ connectionString: ownerUrl, ssl: { rejectUnauthorized: false } });
@@ -349,6 +376,34 @@ describe.skipIf(!enabled)('the tradition-gap join', () => {
       expect(row.author).toBeTruthy();
     }
   }, 300_000);
+});
+
+/**
+ * THE FENCE, CHECKED WHERE NO CREDENTIAL IS NEEDED.
+ *
+ * A2 is the behavioural proof that a user-owned row in `embeddings` never surfaces, and it needs
+ * an OWNER connection to seed one — which CI does not have, so A2 skips there. That left the
+ * repo's most important user-corpus boundary with no check at all in CI, and until 2026-09-07 the
+ * skip was reported as a PASS.
+ *
+ * This is the cheap half: the shipped statement carries `e.user_id IS NULL`. It cannot prove the
+ * fence WORKS — only A2 can — but it fails on the exact seed A2 exists for, runs with no database
+ * anywhere, and cannot be satisfied by a comment.
+ */
+describe('the corpus fence is in the shipped statement', () => {
+  it('the tradition-gap join filters embeddings to platform-owned rows', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(path.resolve(__dirname, '../../src/lib/user-corpus/tradition-gap.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    // Positive control: the scan is looking at the file that really builds this query.
+    expect(src, 'tradition-gap.ts no longer reads FROM embeddings — re-point this check').toMatch(/FROM\s+embeddings/i);
+    expect(
+      src,
+      'the corpus fence `e.user_id IS NULL` is gone from the join — a user-owned row in embeddings '
+        + 'would surface as an attributed historical voice (UPLOADER_DESIGN §8 A2)',
+    ).toMatch(/e\.user_id\s+IS\s+NULL/i);
+  });
 });
 
 describe('corpusPredicate — the tripwire, not a sanitiser', () => {

@@ -68,6 +68,81 @@ function toDocument(r: Row): UserDocument {
   };
 }
 
+/**
+ * The longest a document may be named.
+ *
+ * 200, the same ceiling the study library's query takes (`studies/library-search/route.ts`), and
+ * comfortably past any real title — the longest thing that arrives by default is a filename, and
+ * the file systems that produce them stop at 255 bytes. The column is TEXT and would take more;
+ * the point of a bound is that one row cannot make every list view unreadable.
+ */
+export const TITLE_MAX = 200;
+
+export type TitleVerdict =
+  | { ok: true; title: string }
+  | { ok: false; reason: 'empty' | 'too_long' };
+
+/**
+ * What a user typed, as a title — or why it is not one.
+ *
+ * ONE LINE, ALWAYS. A title arrives by paste as often as by typing, and a pasted heading brings
+ * its newlines with it; stored, they break the truncating list row, the document heading, and
+ * every place the name is echoed back. Control characters go the same way and for the same
+ * reason, plus the ordinary one: they are invisible, so a name containing them is a name nobody
+ * can retype.
+ *
+ * IT REFUSES RATHER THAN TRUNCATING. Silently cutting a title to 200 characters returns a
+ * different name from the one on screen when the user pressed save, which is the class of thing
+ * this repo calls a lie about what happened. The caller is told which way it failed so the
+ * message can say so.
+ *
+ * `unknown` in, because the only caller is a route reading an untrusted JSON body.
+ */
+export function titleVerdict(raw: unknown): TitleVerdict {
+  if (typeof raw !== 'string') return { ok: false, reason: 'empty' };
+  // \p{Cc} control, \p{Cf} format (zero-width joiners, bidi overrides — invisible, and the bidi
+  // ones reorder the text around them). Whitespace runs collapse after, so a newline leaves one
+  // space rather than none: "Romans 8\nno condemnation" is two words, not one.
+  const oneLine = raw.replace(/[\p{Cc}\p{Cf}]+/gu, ' ').replace(/\s+/g, ' ').trim();
+  if (!oneLine) return { ok: false, reason: 'empty' };
+  // Measured AFTER normalising: padding is not content, and refusing a good title for its
+  // whitespace would be a refusal the user cannot see the reason for.
+  if (oneLine.length > TITLE_MAX) return { ok: false, reason: 'too_long' };
+  return { ok: true, title: oneLine };
+}
+
+/**
+ * Rename one document. Returns the updated row, or null when this user has no such document.
+ *
+ * The FIRST user-driven UPDATE on this table, and deliberately the narrowest one that can exist:
+ * it sets `title` and nothing else. A rename that also touched `status` or `attempts` would put
+ * the document back through the drain and re-spend a paid embedding run on bytes that are already
+ * indexed — which is exactly why the only way to change a name until now (delete and re-upload)
+ * was the expensive way.
+ *
+ * `user_id` is in the predicate as well as in `runAsUser`'s RLS binding, like every other
+ * statement in this file: two independent filters, because SLICE_1_DATA_MODEL's first test is
+ * "verify with two accounts, not by reading policy". Null-for-not-found rather than a throw, so
+ * the route answers 404 for another account's id exactly as it does for one that never existed.
+ *
+ * The title is taken already-normalised (`titleVerdict`), so the rule lives in one place and is
+ * testable without a database.
+ */
+export async function renameDocument(
+  userId: string,
+  id: string,
+  title: string,
+): Promise<UserDocument | null> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`UPDATE user_documents
+           SET title = ${title}, updated_at = now()
+         WHERE user_id = ${userId} AND id = ${id}
+     RETURNING *`,
+  ]);
+  const r = (rows as Row[])[0];
+  return r ? toDocument(r) : null;
+}
+
 export async function listDocuments(userId: string): Promise<UserDocument[]> {
   const [rows] = await runAsUser(userId, (sql) => [
     // Bounded: CLAUDE.md forbids unbounded result sets. 200 is far above any plausible personal

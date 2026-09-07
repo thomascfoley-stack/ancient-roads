@@ -336,6 +336,159 @@ another session active on main today; merged).
   committed in `bca2459b`). Still unidentified; it runs in THIS worktree.
 - Deep-audit of the wave (owner deferred until translations ship).
 - The 454-file materialization vs publish state reconciliation — owner ruling needed.
+## 2026-09-07 (later still) — landing the `detail/*` backlog: 49 PRs, not 35
+
+**Owner:** "push 35 fixes". There are **49** open `detail/*` PRs, not 35 — the earlier count was of
+one sweep; two older batches (2026-08-29, 09-02) were still open too.
+
+**Why they were all red, and why it was never their code.** Every branch was cut from the same old
+base and carries its ONE product commit plus one or more CI-plumbing commits added later to get
+that old base green — the session-mock `authFailureResponse` gap, the `fast-uri` advisory, a
+typecheck error, the deploy.sh gate harness. Tonight's work on `main` fixed every one of those
+properly, so the plumbing commits are superseded AND they are exactly what conflicts.
+
+**What was done.** Each PR branch was rebuilt as `origin/main` + its own product commit, selected by
+matching the commit subject to the PR title (this repo commits one logical change per PR, so the
+title names it). 40 replayed cleanly. 1 was superseded outright and closed with its reasoning
+(#224, the icon-rail "Ask" label — ADR-122 derives that label now, so `label: 'Ancient Paths'`
+exists nowhere for it to fix). 2 needed only main's version of a file (#210, #202). **6 needed real
+ports** onto files tonight's work had rewritten, delegated in pairs and each red-proved:
+
+* **#219** — the /ask slow-response notice hardcoded "verifying" while the 90s timer is
+  stage-independent. Real; the file split moved it to `ask-progress.tsx`.
+* **#208** — the reader's Continue chip. **Code superseded by F24** (which recomputes on the same
+  beat), but the TEST was kept: deleting F24's line reddens 2 of its 6 cases while every existing
+  F24 test stays green — that half of the contract was unguarded.
+* **#149** — rate-limit fail-fast. **Superseded, nothing pushed**: `envInt` landed 2026-08-31 and is
+  strictly stricter (it refuses `0x10` and `1e3`, which the PR's `Number()` accepted — a wrong limit
+  that PASSES validation). Filed: main has no test for `envInt`.
+* **#205, #215, #151** — real ports, resolved as unions rather than by taking a side.
+
+**Two operational failures, both mine, both now in `AGENTS.md`.**
+1. **Branch names are repo-wide, not per-worktree.** My replay script and three agents all used
+   `probe`. One agent's push carried a foreign commit onto a PR branch; another built a commit whose
+   parent was a sibling's work, sweeping in a revert of it. Both caught before anything wrong reached
+   the remote — then **all 48 branches were verified**: each is exactly `main` + one commit whose
+   subject is its own PR title.
+2. **`db-invariants` provisions a Neon branch per run and the account has a concurrency cap.**
+   Pushing 40 branches at once put 40 runs in flight: some died on `exceeded the limit of
+   concurrently active endpoints`, the rest on 120s test timeouts under database contention (one run
+   took 589s). **38 of the 44 remaining PRs are `audit=SUCCESS, db-invariants=FAILURE` for that
+   reason and no other.** The remedy is re-running 3 at a time, which is producing green.
+
+**My own new guard fired on someone else's work, correctly** — `session-mock-surface.test.ts` caught
+two PRs whose test files hand-list their session mocks (#202's `search-corpus-paged-past-end`,
+#210's `d43-bare-catch-repro`, the latter naming the real helpers one by one). Both fixed to spread.
+
+**DONE: 51 merged, 2 closed as superseded, 0 open.** `origin/main` is `08f21d22`, and its tree is
+**byte-identical** to the tree the full gate was run on (`git rev-parse main^{tree}` = the verified
+tree) — the strongest form of the combined check this could have.
+
+**The long tail was database contention, measured rather than assumed.** 38 PRs sat at
+`audit=SUCCESS, db-invariants=FAILURE`. PR #226 failed FOUR consecutive attempts alongside other
+runs and passed on the fifth when it was the only run in the account, so the bar is not "a few at a
+time" but **one at a time** — the heavy suites (tradition-gap, register-end-to-end, licensing,
+section-vector-pairing) time out at 60s/120s under any concurrency. Rather than spend ~4h serially,
+the remainder were verified by building the exact resulting tree and running the full gate on it
+once, uncontended, then merging.
+
+**A REGRESSION I INTRODUCED, and the audit that bounded it.** The replay rule — take the PR's
+product commit, drop its CI-plumbing commits — is wrong whenever a product fix is BUNDLED INTO a
+plumbing commit. PR #152's was: `fix(ci): use importOriginal for session mocks; fix
+claimReadingsStart NULL handling`. Dropping it removed a three-valued-logic fix, and
+`claimReadingsStart`'s `NOT (readings_status IN (...) AND ...)` evaluates to NULL for a brand-new
+document (status NULL), excluding the row from the UPDATE: **suggested readings could not start on
+any fresh document**, the route answering 409 "already running" for a search that had never run.
+Caught by the test #152 itself shipped. Fixed in #236 with `COALESCE(..., false)`.
+**Then bounded, not assumed:** each branch's pre-replay head is still recoverable from its CI run
+history, so every merged PR's dropped commits were re-read for product-file changes —
+**46 clean, 1 to review (this one), 0 indeterminate** (`scratchpad/audit-dropped.sh`).
+
+**A bad fixture, not a conflict.** `voices-related-envelope.test.ts` seeded `status: 'processing'`,
+which is not a `DocStatus` (queued|parsing|chunking|embedding|ready|failed|empty). It passed only
+because the route asked `status !== 'ready'`, which swept unreal values into "pending" too; #217
+replaces that with an explicit IN_FLIGHT list so `failed`/`empty` stop reading as "still indexing",
+and the invalid status stopped passing with them. Fixture corrected.
+
+**TWO CORRECTIONS TO MY OWN EARLIER CLAIMS IN THIS SESSION.**
+1. I said the dev-database residue was "from my own interrupted red-proof runs". **It is not.** It
+   is six rows — `rls-test-a-1788111749` / `rls-test-b-1788111749`, one each in `user_documents`,
+   `notes`, `bookmarks` — seeded **2026-08-30 17:42 UTC** by the RLS *behavioural* proof recorded in
+   this very WORKLOG (entry 2026-08-30, "Seeded two users … with one row each"). That proof was
+   hand-run, so no suite teardown ever swept it. Eight days old and nothing to do with tonight.
+2. I said an earlier `npm run audit` on main "passed hygiene". It did not check: with no owner
+   `DATABASE_URL` the gate prints `⚠ SKIPPED (visibly): no target to inspect` and exits 0. Honest
+   and loud, but a pass I read as coverage. The residue only became visible once I started running
+   the gate WITH the database attached.
+
+**NOT DONE / UNVERIFIED.**
+* The remaining ~40 merges wait on throttled CI. **The combined result is unverified until a full
+  `npm run audit` runs on `main` after the last merge** — every PR was checked against the main that
+  existed when its run started, which tests each change but not the set.
+* `docs/UX_REMEDIATION.md:691` still quotes the L1b block's original slow-notice copy as the whole
+  prescribed string; #219 makes it the `verifying`-only branch. Second divergence in that block.
+* No browser leg for #219's copy change.
+
+## 2026-09-07 (later) — PR #235 merged, My Works rename shipped (#3), My Works test audit (#4)
+
+**Owner:** "od the pr #235 merge. ok fix #3 the best way. do #4 as well."
+
+**PR #235 merged** at `df6783da`. `origin/main` now contains the live sha `d323fff3` and the whole
+night's work. **The merge-to-main gap every board header has recorded since 2026-08-18 is closed.**
+The earlier attempt failed only because a direct push to the default branch is refused by this
+session's permission policy; `gh pr merge` is the supported path and needed no new permission.
+
+**#3 — My Works editing (ADR-123).** A title was the filename minus its extension, written once at
+upload and writable by nothing: no PATCH on any user-corpus route, no update function in
+`documents.ts`. The only way to rename was delete and re-upload, which re-spends the paid embedding
+run. Shipped: `PATCH /api/user-corpus/documents/[id]` behind `guardUser` and the CSRF floor;
+`renameDocument` sets `title` and `updated_at` and nothing else; `titleVerdict` is the rule (one
+line, no control characters, never empty, ≤200 measured after normalising, **refuses rather than
+truncating**). The "Looks like: Romans 8 · 21 March 1871" chip becomes actionable — "Use this" opens
+the rename prefilled and does NOT save, which is the confirm flow the design deferred. Answers
+outstanding decision **B2** with the title, not a `preached_on` column: a date nothing sorts by is
+speculative generality. Not optimistic, unlike the sibling delete — the old name stands until the
+server agrees, and the editor keeps what you typed on a failure. Red first (`titleVerdict is not a
+function`, `PATCH is not a function`); 16 lib/route tests against the dev database + 6 component
+tests green.
+
+**The other half of #3 could not ship, and the reason is structural.** Citing your own upload inside
+a study needs a `study_blocks` column: `CHECK (kind <> 'clipping' OR (source_id IS NOT NULL OR
+section_id IS NOT NULL))` requires every clipping to resolve to a CORPUS key, and the library panel
+is corpus-only by design. That is a migration, which must reach production BEFORE the code that
+reads it — the ordering this repo inverted once already. Design, SQL and the single owner action:
+`docs/pm/orders/2026-09-07-cite-your-own-work.md`.
+
+**#4 — the false-confidence pass owed since 2026-08-31.** Three read-only agents over ~55 files,
+partitioned so none overlapped. **No product defect found; every finding is a check that would not
+notice one.** 5 CRITICAL (all closed, each red-proved), 13 HIGH and the rest filed with their exact
+seeds — `docs/evidence/my-works-false-confidence-2026-09-07/findings.md`, backlog entries in
+`UX_REMEDIATION.md`. Two shapes dominate: **a bare `return` inside `it()` reports PASS, not skip**
+(three tradition-gap legs, including the only test that proves a user-owned row cannot surface, were
+green ticks asserting nothing wherever the owner credential is absent — which is CI), and **a mocked
+`runAsUser` means the SQL under test never runs** (the claim CAS and the D8 dedupe clause can both
+be deleted green).
+
+**One audit claim I disproved rather than took on trust.** The proposed seed for the NULL-`byte_size`
+quota finding — "drop the COALESCE" — is not a reddening change: SQL `sum()` skips nulls rather than
+being poisoned by one, and where it genuinely is null the driver returns `null`, which `Number()`
+already makes 0. The COALESCE has no observable behaviour and `quota.ts`'s own comment overstates
+it. Taking the finding on trust would have produced a test with a false SEED comment, which is the
+defect the pass exists to remove. Recorded in the findings.
+
+**Also corrected mid-fix:** my first repair of the SEC-1 ceiling went GREEN against its own seed —
+while `MULTI_USER_UPLOADS` is `true`, no runtime assertion can distinguish `true && B` from `B`.
+The check is structural now and says so.
+
+**NOT DONE / UNVERIFIED.**
+* The 13 HIGH findings are filed, not fixed. The 2026-08-31 `as never` at
+  `upload-direct-guards.test.ts:161` was not re-examined by this pass and remains open.
+* The rename has no browser leg: exercised in jsdom only, like the rest of tonight's UI work.
+* `main` is merged but NOT deployed — live is still `d323fff3`, which does not carry the rename or
+  the audit fixes.
+* The 35 `detail/*` PRs (the second half of "#2") are still not landed. They are now unblocked:
+  main carries the deploy-harness and session-mock fixes their CI needs.
+
 ## 2026-09-07 — Sidebar C, four UX sweeps merged, and main's hidden red — LIVE `d323fff3` (`dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a`, 04:47Z); PR #235 to main waits on the owner
 
 **Owner, in session (2026-09-07):** on the build menu (`docs/pm/orders/2026-09-07-build-menu.md`):
