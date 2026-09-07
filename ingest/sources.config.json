@@ -24756,5 +24756,59 @@
         "strip_markup": true
       }
     }
+  },
+  {
+    "id": "strongs-concordance",
+    "slug": "strongs-concordance",
+    "title": "Strong's Exhaustive Concordance — Greek and Hebrew Dictionaries",
+    "author": "James Strong",
+    "author_died": 1911,
+    "year_written": 1890,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "CC BY-SA",
+    "attribution": "Open Scriptures JSON e-text CC BY-SA (openscriptures/strongs); underlying dictionaries public domain (James Strong, d. 1911)",
+    "tier": 1,
+    "provenance": {
+      "url": "https://github.com/openscriptures/strongs",
+      "edition": "Strong's Greek Dictionary (1890) + Hebrew Dictionary (1894) — Open Scriptures JSON e-text (strongs-greek-dictionary.js, strongs-hebrew-dictionary.js); edition verified by reading each file's header comment 2026-09-07 (greek last-touch commit f4f1881c1a7423926a1378b08355864d90a23a96, hebrew 1ed4e8121506572d86af2c9ae21108adc1db4ae1; fetched SHA256 greek 7624ee738ae47e80f1a352223e28a26d011c9cd4898822cee52f47a010c04efd, hebrew 5ce6aeed551c709f49bcfa341cadf2f34bc7599b85d9de9e6ac2ecbf60fc3739, data/raw/github/strongs/)",
+      "year": 1890,
+      "license_ref": "CC BY-SA — declared verbatim in each file's header (\"Copyright 2009/2010, Open Scriptures. CC-BY-SA.\"); underlying Strong's dictionaries PD (1890/1894, Strong d. 1911)",
+      "acquire": {
+        "adapter": "github",
+        "repo": "openscriptures/strongs",
+        "path": "greek/strongs-greek-dictionary.js + hebrew/strongs-hebrew-dictionary.js",
+        "commit": "f4f1881c1a7423926a1378b08355864d90a23a96",
+        "note": "Hand-run structured path (like bdb-lexicon): src/ingest/adapter-strongs.ts parses both dictionaries to {key,text} JSONL, 100% Strong's-number-keyed (\"G<n> lemma\" / \"H<n> lemma\"), then src/ingest/reference-register-bridge.ts stages topic-keyed sections. 14,197 entries (5,523 Greek, 8,674 Hebrew)."
+      }
+    },
+    "note": "Concordance DICTIONARY volume only (the G/H lexical entries) — the concordance proper (English word → verse index) is a separate artifact not in this repo's structured form. Staged; lexicons are served by no lane (see thayers-lexicon note)."
+  },
+  {
+    "id": "openhymnal",
+    "slug": "openhymnal",
+    "title": "The Open Hymnal Project (public-domain hymns, scripture- and meter-tagged)",
+    "author": "Community-compiled (Open Hymnal Project, maintainer Brian J. Dumont)",
+    "year_written": 2014,
+    "source_type": "hymn",
+    "tradition": "unassigned",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://github.com/mzealey/openhymnal",
+      "edition": "Open Hymnal Project data (ABC Plus sources, Complete/), pinned commit d35811b2d5c9b0bbc5887d60a2936454815416e8 (2017-01-21, repo HEAD; tarball SHA256 037ee8e562f533b79bf0403c8a72b5391e2c98c39c095c6e437496e9276cd94d, data/raw/github/openhymnal/)",
+      "year": 2014,
+      "license_ref": "Public Domain — per openhymnal.org/copying: compilation, indices and data files \"placed into the public domain\"; hymn WORDS gated per-file: 285 of 301 abc sources declare words public domain in their C: copyright line and are ingested; 16 excluded (worship-use-only word licences, tune/setting-only PD, one file with no copyright line — gate fails closed). Every non-matching copyright line read individually 2026-09-07.",
+      "acquire": {
+        "adapter": "github",
+        "repo": "mzealey/openhymnal",
+        "path": "Complete/**/*.abc",
+        "commit": "d35811b2d5c9b0bbc5887d60a2936454815416e8",
+        "note": "Hand-run structured path: src/ingest/adapter-openhymnal.ts (licence gate + ABC w:/W: lyric extraction, 13 unit tests) → {key,text} JSONL → src/ingest/reference-register-bridge.ts stages topic-keyed sections, one per hymn, with %OHSCRIP scripture refs, %OHMETRICAL meter and %OHCATEGORY carried in the text."
+      }
+    },
+    "note": "A genuine MULTI-AUTHOR compilation by construction (that is what a hymnal is) — expected to flag in the ADR-029 composite detector as Stage 3's positive control, not a failure. Staged; never wired to serving by the bridge."
   }
 ]
