@@ -19,12 +19,14 @@ const getChannels = vi.fn(), createChannel = vi.fn();
 const getChats = vi.fn(), createChat = vi.fn();
 const getMessages = vi.fn(), addMessage = vi.fn();
 
-vi.mock('@/lib/session', async () => {
-  // authFailureResponse lives in lib/auth-failure, which imports nothing but api-error — so the
-  // real one can be used here without loading the Neon Auth SDK.
-  const real = await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure');
-  return { requireUser: () => requireUser(), authFailureResponse: real.authFailureResponse };
-});
+// authFailureResponse lives in lib/auth-failure, which imports nothing but api-error — so the
+// real one can be used here without loading the Neon Auth SDK. SPREAD, not named: naming the one
+// export this file currently needs is what left sixteen sibling mocks waiting to throw when D43
+// added a third (test/invariants/session-mock-surface.test.ts holds the rule).
+vi.mock('@/lib/session', async () => ({
+  ...(await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure')),
+  requireUser: () => requireUser(),
+}));
 vi.mock('@/lib/chat', () => ({
   getChannels: (...a: unknown[]) => getChannels(...a),
   createChannel: (...a: unknown[]) => createChannel(...a),
