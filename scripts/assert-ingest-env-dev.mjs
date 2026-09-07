@@ -36,6 +36,24 @@ for (const name of SHELL_VARS) {
 }
 console.log('shell:  DATABASE_URL / APP_DATABASE_URL / DATABASE_URL_UNPOOLED on allow-list (or unset)');
 
+// ── 1b. Shell pairing: DATABASE_URL without APP_DATABASE_URL poisons qa ───────
+// web/test/helpers/env.ts promotes web/.env.local's APP_DATABASE_URL into the runtime ONLY
+// when BOTH shell vars are unset. DATABASE_URL set alone => every qa runtime connection is
+// that role — and if it is the owner (BYPASSRLS) the RLS-tenancy suites fail correctly,
+// BY DESIGN (their own red-proof). That red has already been misread as "contention" once
+// (deep-audit 2026-09-07, H-6). Refuse here with the remedy, not downstream with a
+// misleading signature.
+if (process.env.DATABASE_URL && !process.env.APP_DATABASE_URL) {
+  console.error(
+    'FAIL: DATABASE_URL is set but APP_DATABASE_URL is not. qa/vitest inherit the shell, ' +
+    'so the runtime role becomes the DATABASE_URL role (owner = BYPASSRLS) and the ' +
+    'RLS-tenancy suites will fail by design. Remedy: also export APP_DATABASE_URL from ' +
+    'web/.env.local (export APP_DATABASE_URL="$(grep \'^APP_DATABASE_URL\' web/.env.local | ' +
+    'cut -d= -f2-)"), or unset DATABASE_URL before npm run audit.',
+  );
+  process.exit(1);
+}
+
 // ── 2. Root ingest env file (local only) ─────────────────────────────────────
 if (!fs.existsSync(ENV_FILE)) {
   console.log('⚠ SKIPPED (visibly): no root .env.local — ingest-env probe not run (expected in CI).');
