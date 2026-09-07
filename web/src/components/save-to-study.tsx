@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { useDialog } from '@/lib/use-dialog';
 
 // THE ONE CANONICAL SAVE-TO-STUDY VERB (design §7.5, R3; build file P2/W4). Every surfaced
 // corpus item on every surface — ask answers today; reader and search surfaces import this
@@ -328,7 +329,12 @@ function StudyPicker({
 }) {
   const [studies, setStudies] = useState<StudySummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  // This picker already had `role="dialog"`, an Escape handler and a focus return; what it did not
+  // have was the TRAP, so Tab walked straight out of an open picker into the page beneath while
+  // its own click-away scrim still covered the screen. useDialog supplies all four, so the
+  // hand-rolled halves come out rather than run twice (its Escape listener is capture-phase and
+  // stops propagation, which would have swallowed the onKeyDown one anyway).
+  const { ref: dialogRef, dialogProps } = useDialog(onClose, 'Choose a study');
 
   useEffect(() => {
     let live = true;
@@ -359,13 +365,16 @@ function StudyPicker({
     };
   }, []);
 
-  // Move focus into the picker once its contents arrive. If the list is capped, the first
-  // focusable item is a study; otherwise it is "New study". Closing returns focus to the trigger.
+  // Move focus into the picker once its contents ARRIVE. useDialog has already put focus inside on
+  // open — at that moment the only focusable is "New study", because the list is still loading —
+  // and this moves it onto the first study once there is one. `dialogRef` is in the deps because
+  // it now comes from a hook rather than a bare useRef, so the linter cannot prove it stable; the
+  // ref object never changes identity, so the effect still runs only when `studies` does.
   useEffect(() => {
     if (studies === null) return;
     const first = dialogRef.current?.querySelector('button, a[href]') as HTMLElement | null;
     first?.focus();
-  }, [studies]);
+  }, [studies, dialogRef]);
 
   const createAndPick = async () => {
     try {
@@ -389,11 +398,7 @@ function StudyPicker({
       <div className="fixed inset-0 z-10" onClick={onClose} aria-hidden="true" />
       <div
         ref={dialogRef}
-        role="dialog"
-        aria-label="Choose a study"
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose();
-        }}
+        {...dialogProps}
         className="edge absolute left-0 z-20 mt-1 w-64 border bg-stone-50 p-2 dark:bg-stone-950"
       >
         {studies === null && (

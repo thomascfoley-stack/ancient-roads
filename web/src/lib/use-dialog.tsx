@@ -47,11 +47,32 @@ export function useDialog(onClose: () => void, label: string) {
   const ref = useRef<HTMLDivElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  // What to give focus back to. A REF, not a local, because an effect can run more than once on
+  // one mount and this must be captured only the first time.
+  const restoreTo = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const node = ref.current;
-    // Captured BEFORE focus moves, so it is the trigger rather than the sheet.
-    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Captured BEFORE focus moves, so it is the trigger rather than the sheet — and captured ONCE.
+    //
+    // It used to be a plain `const previouslyFocused = document.activeElement` read on every run of
+    // this effect, and React StrictMode runs an effect twice on purpose (mount, tear down, mount)
+    // — which Next.js turns on by default, so it is what `next dev` does on every page. By the
+    // second run focus is already INSIDE this panel, because the first run put it there, so the
+    // capture picked up one of the panel's own buttons. Closing then handed focus to an element
+    // being removed in the same commit and the reader landed on <body>.
+    //
+    // Measured, not reasoned about: Chrome at 375px on the reader's translation dropdown
+    // (2026-09-06). Patching HTMLElement.prototype.focus for the length of the Escape logged one
+    // call, `BUTTON:World English BibleWEB connected=false` — the first translation in the list,
+    // already detached, rather than the WEB trigger. Red-proved in
+    // test/components/use-dialog-focus-restore.test.tsx.
+    //
+    // Re-reading is still right when focus has genuinely moved OUTSIDE the panel between runs;
+    // what must never happen is re-capturing an element this hook focused itself.
+    if (restoreTo.current === null || !node?.contains(document.activeElement)) {
+      restoreTo.current = document.activeElement as HTMLElement | null;
+    }
 
     if (node) {
       const first = visibleFocusable(node)[0];
@@ -102,7 +123,7 @@ export function useDialog(onClose: () => void, label: string) {
       // already clicked something else, stealing it back would be worse than not restoring.
       const active = document.activeElement;
       if (!active || active === document.body || ref.current?.contains(active)) {
-        previouslyFocused?.focus?.({ preventScroll: true });
+        restoreTo.current?.focus?.({ preventScroll: true });
       }
     };
   }, []);
