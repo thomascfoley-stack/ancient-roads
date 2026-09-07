@@ -1092,7 +1092,7 @@ function StudySectionView({
               />
             }
             label={item.name}
-            active={pathname === href}
+            active={pathname === '/prayers'}
             row={row}
             onNavigate={onNavigate}
           />

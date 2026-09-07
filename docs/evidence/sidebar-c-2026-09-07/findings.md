@@ -40,6 +40,21 @@ red-proofed after the move: render the catalog leg at `/ask` → red; revert the
 - **The `/ask` icon-rail label is "Ask"**, not "Ancient Paths" (the wordmark). PR #224's finding,
   closed here by derivation.
 
+## Browser leg — what ran and what did not
+
+- **Ran:** the dev server (this worktree, port 3005), signed out, at 1440 and 390
+  (`live-home-signed-out-*.png`): five places, Prayer journal and Reading plans as plain rows,
+  Settings in the footer; the 390 view shows the bottom tab bar the sheet opens from. Console: only
+  the pane's `eval` notice, HMR, and a 401 from the session probe (signed out).
+- **Ran, as composites:** the signed-in states (`composite-*.png`) — the REAL component's markup at
+  `/ask`, `/studies` and `/library`, and the mobile sheet, wrapped in the app's compiled stylesheet
+  and screenshotted headlessly. Faithful render, no live session.
+- **NOT RUN:** a live tap inside the mobile Menu sheet, and any live signed-in state. The Browser
+  pane accepted screenshots but every click timed out while the pane was hidden, and Playwright is
+  not installed as a package here. The sheet's behaviour is covered in jsdom
+  (`desk-nav-and-session-note`, `mobile-menu-labels`, `sidebar-groups` with `touch`); the live tap
+  and the signed-in walk are owed to the owner, as for the /ask redesign.
+
 ## Kept as-is
 
 `StudySectionView` (legacy pre-N4 sections, localStorage) renders after the groups for the readers
