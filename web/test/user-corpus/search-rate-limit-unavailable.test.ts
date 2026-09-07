@@ -32,9 +32,19 @@ vi.mock('@/lib/user-corpus/search', () => ({
   verseAnchorScan: async () => [],
 }));
 
-const GET = (await import('@/app/api/user-corpus/search/route')).GET;
+// RE-POINTED: this route became POST-behind-the-CSRF-floor in the same commit that converts it,
+// so a private search query no longer rides in a URL (and therefore in history, referrers and
+// request logs). The limiter mapping this file asserts is unchanged — only how the request is
+// made. `content-type: application/json` is required by the route's CSRF floor, which runs
+// before the meter.
+const POST = (await import('@/app/api/user-corpus/search/route')).POST;
 
-const call = (qs: string) => GET(new NextRequest(`http://localhost/api/user-corpus/search?${qs}`));
+const call = (qs: string) =>
+  POST(new NextRequest('http://localhost/api/user-corpus/search', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(Object.fromEntries(new URLSearchParams(qs))),
+  }));
 
 beforeEach(() => { searchLimit = { ok: true }; });
 
