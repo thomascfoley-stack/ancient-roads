@@ -35,6 +35,9 @@ const slugsPath = opt('slugs') ?? 'docs/evidence/adr029-scan-2026-09-06/input-sl
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL is required (dev owner credential)');
+// Narrowed alias for use inside hoisted function declarations — TS treats them as
+// potentially called before the guard above, so `url` stays string|undefined in there.
+const DB_URL: string = url;
 if (process.env.NEON_BRANCH !== 'dev') throw new Error('STOP: NEON_BRANCH must be "dev"');
 if (!declared) throw new Error('--target=<endpoint-id> is required');
 if (isProdHost(url)) throw new Error(`REFUSING: ${hostOf(url)} is production`);
@@ -75,7 +78,7 @@ function span(findings: Finding[]): string {
 }
 
 async function main() {
-  const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false }, application_name: 'adr029-nonauthorial-scan' });
+  const client = new pg.Client({ connectionString: DB_URL, ssl: { rejectUnauthorized: false }, application_name: 'adr029-nonauthorial-scan' });
   await client.connect();
   try {
     await client.query('BEGIN');
@@ -84,7 +87,7 @@ async function main() {
       throw new Error('STOP: read-only transaction not in force');
     }
     report(`detector version : ${DETECTOR_VERSION}`);
-    report(`target           : ${hostOf(url)} (read-only txn; credentials not printed)`);
+    report(`target           : ${hostOf(DB_URL)} (read-only txn; credentials not printed)`);
 
     if (mode === 'labelled') await labelled(client);
     else if (mode === 'scan') await scan(client);
