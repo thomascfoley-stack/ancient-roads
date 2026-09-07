@@ -1,5 +1,47 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — /ask redesign + result→passage landing + sidebar: plan approved, mockups shipped (Lane C)
+
+**Owner brief (in session, 2026-09-06):** the /ask page is "too busy… a bit of a mess"; "when something is
+running it's not discernible that it's running"; clicking a result must go "into the EXACT spot that is
+listed in the search" with a clear way back — "when you go back, you start your search over, the original
+search is gone"; then "2-4 mock ups of the side bar… less busy, think collapsables… delightful."
+
+**Root causes found (read-only trace, not yet fixed):**
+* Empty state overlap: `ModeToggle` renders OUTSIDE the column `ask-client.tsx:336` sizes to the viewport,
+  so the document is always ~50px taller than the scrollport and the sticky composer covers the History card.
+* Running state: the only signals are a pulsing 12px ring and a 12px "Thinking…" — no bar, no Stop.
+* Result click → `/desk?p=work:<slug>`; the desk always `loadInitial(null)` (section 1) and has no return
+  affordance. Browser Back lands on an EMPTY /ask under the thread URL: Next 16.2 copies the current `/ask`
+  route tree onto the `replaceState`'d entry (`app-router.js:268-280`), so `/ask/[id]` is never fetched.
+* The full reader honours `#s<n>` on hard loads only; the client-nav fix (F24) exists at `83bcabc` on
+  `fix/ux-phase1-deepseek` and is NOT in HEAD.
+
+**Owner decisions (AskUserQuestion, 2026-09-06, this session) — verbatim option labels chosen:**
+1. Result click → "Full reader, exact section, with a return strip". (Desk-pane ordinal → backlog.)
+2. Lane chips → "Inside the composer, compact row, quiet permanent caption". **Re-rules Design C's
+   placement (2026-08-17 "ok deploy c")**; the "~10s" caption becomes "applies to your next ask" (R3 range
+   copy moves to the composer's busy hint).
+3. History invitation → "Quiet hairline row under the examples". **Re-rules ruling 4 (2026-08-20) from a
+   raised-paper block to a row**; resolves the PRD §5 "no cards" contradiction in the PRD's favour.
+4. Sidebar mockups → "Top bar, no left rail (your PRD)" and "Contextual rail". **Supersedes UX_REMEDIATION
+   N2's "Do NOT add an accordion" for the sidebar** (owner: "think collapsables").
+Also amended by the plan: L1's "do not touch the staged progress sequence" — colour tier of the active step
+only, plus an additive `.progress-travel` bar. To be recorded as ADRs in `docs/DECISIONS.md` when Phase 2 lands.
+
+**Shipped today:** the design canvas — https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1
+(10 artboards: /ask empty · answering · answer at desktop + 390, reader landing with `← Back to "<question>"`,
+sidebar A top bar + B contextual rail with mobile sheets; dark by default, theme tweak; built from
+`globals.css` tokens + the real `sidebar.tsx` icon paths). Plan file (outside the repo):
+`~/.claude/plans/magical-marinating-peacock.md` — Phase 2 `redesign/ask`, Phase 3 `fix/ask-result-landing`,
+both on linked worktrees, red-first tests named per step.
+
+**NOT DONE / UNVERIFIED.** No product code changed. Phase 3 step 0 (browser repro of Back + F24 landing,
+`EXPLAIN` of the `section_anchors` locator) needs an owner-signed-in session — the teacher is owner-only
+(ADR-116) and this session cannot sign in. Mockup quotes/excerpts are SAMPLE copy, not corpus text.
+`.claude/launch.json` was touched for a throwaway static server and restored to its prior (already
+modified) state. Sidebar implementation is its own plan after the owner picks A or B.
+
 ## 2026-08-24 — UNION DEPLOYED (ca433a6) — and I repeated the migration-before-code inversion
 
 **Owner instruction:** "do theirs and mine, do them both."
