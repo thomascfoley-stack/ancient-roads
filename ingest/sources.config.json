@@ -24861,5 +24861,55 @@
       }
     },
     "note": "The clean non-Christian corroboration of Christus and the Neronian persecution (XV.44). Staged; no history read path exists (historian contract)."
+  },
+  {
+    "id": "beza-christian-faith",
+    "slug": "beza-christian-faith",
+    "title": "A Briefe and Piththie Summe of the Christian Faith, Made in Forme of a Confession",
+    "author": "Theodore Beza",
+    "author_died": 1605,
+    "year_written": 1565,
+    "source_type": "theology",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://github.com/textcreationpartnership/A68595",
+      "edition": "trans. Robert Fills, 1565 (Richard Serll printing; STC 2007, ESTC S101755) — EEBO-TCP Phase I keyboarded transcription A68595, pinned file SHA256 6258e2184f68f2d23087b74c0270bfa741ef4216754256d92485f9ab5adbaf41 (data/raw/github/eebo-tcp/A68595.xml)",
+      "year": 1565,
+      "license_ref": "CC0 1.0 Universal — verbatim in the TEI header <availability> (\"available for reuse, according to the terms of Creative Commons 0 1.0 Universal\"), read 2026-09-07; underlying 1565 text PD. EDITION TRAP: the candidate card said 1563 — the TCP transcription <editionStmt> and transcribed title page say 1565; recorded as Fills 1565.",
+      "acquire": {
+        "adapter": "structured",
+        "repo": "textcreationpartnership/A68595",
+        "note": "src/ingest/adapter-beza-tcp.ts (poole-tcp precedent; 5 unit tests): TEI → 154 sections (Confession articles with point-group prefixes, Confutation topics, conclusion, second treatise); front matter excluded as non-authorial; long-s normalized (typography); EOL hyphens rejoined; gaps kept as lacunae. → src/ingest/reference-register-bridge.ts (default 100 floor holds)."
+      }
+    },
+    "note": "Staged. Translator attribution: title page says \"Translated out of Frenche by R.F.\" — Robert Fills (fl. 1562), per the TEI sourceDesc."
+  },
+  {
+    "id": "suetonius-twelve-caesars",
+    "slug": "suetonius-twelve-caesars",
+    "title": "The Lives of the Twelve Caesars, Complete",
+    "author": "Gaius Suetonius Tranquillus",
+    "author_died": 122,
+    "year_written": 121,
+    "source_type": "historian",
+    "tradition": "unassigned",
+    "era": "early-church",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/6400",
+      "edition": "trans. Alexander Thomson 1796, rev. & corrected T. Forester (Bohn 1855) — Gutenberg #6400, title page READ 2026-09-07: \"The Translation of Alexander Thomson, M.D. Revised and corrected by T. Forester, Esq., A.M.\"",
+      "year": 1855,
+      "license_ref": "Public Domain — Gutenberg header (US); underlying translation PD (Thomson 1796 / Forester 1855)",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 6400,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-suetonius.ts (reuses adapter-gutenberg fetch/strip machinery) sections the 12 lives into 541 chapters — canonical chapter counts verified per life (Julius 89 … Domitian 23); editor reign-summaries, bundled Grammarians/Rhetoricians/Poets and the FOOTNOTES block excluded as non-authorial — then src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "Claudius/Nero material for Acts chronology. Scope is the TWELVE CAESARS only: the #6400 Complete volume also carries the editor's per-reign literary essays and the Lives of the Grammarians, Rhetoricians and Poets — excluded at ingest as non-authorial/separate works, declared here. Staged via the historian path."
   }
 ]
