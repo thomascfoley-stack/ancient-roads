@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
-import { deleteDocument, getDocument, getDocumentSections, requeueForRetry } from '@/lib/user-corpus/documents';
+import {
+  TITLE_MAX,
+  deleteDocument,
+  getDocument,
+  getDocumentSections,
+  renameDocument,
+  requeueForRetry,
+  titleVerdict,
+} from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
+import { requireJsonContentType } from '@/lib/csrf-floor';
+import { apiError } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 
@@ -106,6 +116,54 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   }
 
   const updated = await getDocument(user.id, id);
+  return NextResponse.json({ document: updated });
+}
+
+/**
+ * Rename one document (PATCH { title }).
+ *
+ * A title was written once, at upload, from the filename — and no route could change it, so
+ * `sermon-draft-FINAL-v3` was a document's name forever unless you deleted it and paid for the
+ * embedding run again. PATCH rather than POST because POST on this route is already the retry,
+ * and because this is exactly a partial update of one field.
+ *
+ * NOT RATE-LIMITED, unlike POST above, and the difference is the reason: retry buys an embedding
+ * run, and renaming buys one UPDATE of one TEXT column on a row you already own. The bound that
+ * matters here is the title's own length, below. (`guardUser` still gates who may call it at all.)
+ */
+export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
+  const guard = await guardUser();
+  if (guard.denied) return guard.denied;
+  const user = guard.user;
+
+  // The CSRF content-type floor, before the body is read — a cross-origin form can deliver a
+  // JSON-shaped body under a simple content-type, and this is a cookie-authenticated mutation.
+  const floor = requireJsonContentType(req);
+  if (floor) return floor;
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    // A body that is not JSON is a bad request, not a 500.
+    return apiError('INVALID_REQUEST', { message: 'Expected a JSON body.' });
+  }
+
+  const verdict = titleVerdict((body as { title?: unknown } | null)?.title);
+  if (!verdict.ok) {
+    return apiError('INVALID_REQUEST', {
+      message:
+        verdict.reason === 'empty'
+          ? 'A document needs a name.'
+          : `That name is too long. Please keep it under ${TITLE_MAX} characters.`,
+    });
+  }
+
+  const { id } = await ctx.params;
+  const updated = await renameDocument(user.id, id, verdict.title);
+  // 404, and byte-identical to the answer for an id that never existed — distinguishing them
+  // would confirm that a given id exists to someone who cannot read it (see GET above).
+  if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json({ document: updated });
 }
 

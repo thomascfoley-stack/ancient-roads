@@ -281,6 +281,10 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   const [searchNote, setSearchNote] = useState<string | null>(null);
   /** Which row's Remove is armed (B017). One at a time; null when nothing is armed. */
   const [armedRemove, setArmedRemove] = useState<string | null>(null);
+  // The row being renamed, and the name being typed. One at a time: a rename is a small edit made
+  // deliberately, and two open editors is a way to save the wrong one.
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const [searching, setSearching] = useState(false);
   const [voices, setVoices] = useState<Record<string, VoicesState>>({});
   const fileInput = useRef<HTMLInputElement>(null);
@@ -498,6 +502,41 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
     }
     // The reclaim id restarts this document's stuck-clock inside load(), where the clock lives.
     await load(id);
+  }
+
+  /**
+   * Rename one document.
+   *
+   * NOT OPTIMISTIC, unlike the delete two functions down, and the asymmetry is deliberate: a
+   * delete that fails puts a row back, which reads as "that did not work"; a rename that fails
+   * after showing the new name leaves the reader believing their document is called something it
+   * is not, and the list is the only place they would ever find out. So the old name stands until
+   * the server has agreed to the new one.
+   */
+  async function rename(id: string) {
+    const wanted = renameValue;
+    setRowNote(id, null);
+    let r: Response;
+    try {
+      r = await fetch(`/api/user-corpus/documents/${id}`, {
+        method: 'PATCH',
+        // The route's CSRF floor refuses anything but application/json, before it reads the body.
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: wanted }),
+      });
+    } catch {
+      setRowNote(id, 'That document could not be renamed. Check your connection and try again.');
+      return;
+    }
+    if (!r.ok) {
+      const d = await readJson<{ error?: unknown }>(r);
+      // The server's refusals are written for a reader ("A document needs a name.", "That name is
+      // too long…"), so they are shown as sent; anything else falls back to this sentence.
+      setRowNote(id, errorMessage(d, 'That document could not be renamed.'));
+      return;
+    }
+    setRenamingId(null);
+    await load();
   }
 
   async function remove(id: string) {
@@ -924,7 +963,37 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     {/* D18 — min-w-0 + truncate (the library page's idiom): the title is a raw
                         filename minus extension and must not overflow at 390px. */}
-                    <span className="min-w-0 flex-1 truncate font-serif text-lg text-stone-900 dark:text-stone-100">{d.title}</span>
+                    {renamingId === d.id ? (
+                      <form
+                        className="min-w-0 flex-1"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void rename(d.id);
+                        }}
+                      >
+                        <input
+                          type="text"
+                          aria-label="Name for this document"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') setRenamingId(null);
+                          }}
+                          // NO onBlur COMMIT. The rail's InlineNameForm saves on blur, which is
+                          // right for a label nobody reads twice; a document's name is not that,
+                          // and clicking away mid-edit would commit a half-typed one. Escape
+                          // cancels, Enter saves, and nothing else writes.
+                          //
+                          // No maxLength either: the server states the bound and the reason
+                          // ("That name is too long…"), and an input that silently stops
+                          // accepting characters explains nothing.
+                          autoFocus
+                          className="focus-quiet w-full border edge bg-transparent px-2 py-1 font-serif text-lg text-stone-900 outline-none dark:text-stone-100"
+                        />
+                      </form>
+                    ) : (
+                      <span className="min-w-0 flex-1 truncate font-serif text-lg text-stone-900 dark:text-stone-100">{d.title}</span>
+                    )}
                     <span className={`shrink-0 text-[13px] font-semibold ${s.tone}`}>{s.label}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 font-sans text-sm text-stone-500 dark:text-stone-400">
@@ -934,17 +1003,61 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                     {d.byteSize != null && <span>{fmtBytes(d.byteSize)}</span>}
                     {d.pageCount != null && <span>{d.pageCount} pages</span>}
                     {/* Extracted, not typed (design §2): what the manuscript head appears to say.
-                        Display-only — a wrong suggestion is a chip, not a renamed document. */}
-                    {(d.suggestedReference || d.suggestedDate) && (
-                      <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[12px] text-stone-600 dark:bg-stone-800 dark:text-stone-300">
-                        Looks like: {[d.suggestedReference, d.suggestedDate ? when(d.suggestedDate) : null].filter(Boolean).join(' · ')}
-                      </span>
-                    )}
+                        Still not a renamed document — but no longer a dead end either. "Use this"
+                        OPENS THE RENAME with the suggestion filled in; it does not save. That is
+                        the confirm flow the design deferred, and it keeps the property the
+                        deferral protected ("a wrong suggestion is a chip"): nothing renames a
+                        document except a person looking at the words. */}
+                    {(d.suggestedReference || d.suggestedDate) && (() => {
+                      const suggested = [d.suggestedReference, d.suggestedDate ? when(d.suggestedDate) : null]
+                        .filter(Boolean)
+                        .join(' · ');
+                      return (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[12px] text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+                            Looks like: {suggested}
+                          </span>
+                          {/* Offered only where it would change something. On a document already
+                              called this, the button would do nothing and say otherwise. */}
+                          {d.title !== suggested && (
+                            <button
+                              type="button"
+                              aria-label={`Use this name: ${suggested}`}
+                              onClick={() => {
+                                setRowNote(d.id, null);
+                                setRenameValue(suggested);
+                                setRenamingId(d.id);
+                              }}
+                              className="min-h-[44px] px-1 text-[12px] font-semibold text-stone-600 underline underline-offset-2 hover:text-accent-800 dark:text-stone-300"
+                            >
+                              Use this
+                            </button>
+                          )}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {d.parseError && (
                     <p className="mt-2 font-serif text-[14px] leading-relaxed text-amber-800 dark:text-amber-300">{d.parseError}</p>
                   )}
                   <div className="mt-2 flex gap-2">
+                    {/* Rename, on every row and in every status: the name is the user's, and a
+                        document that failed to parse is exactly one someone may want to identify
+                        before deciding what to do with it. While the editor is open this becomes
+                        its Cancel, so the control that opened it also closes it. */}
+                    <button
+                      type="button"
+                      aria-label={renamingId === d.id ? `Stop renaming ${d.title}` : `Rename ${d.title}`}
+                      onClick={() => {
+                        if (renamingId === d.id) { setRenamingId(null); return; }
+                        setRowNote(d.id, null);
+                        setRenameValue(d.title);
+                        setRenamingId(d.id);
+                      }}
+                      className="min-h-[44px] px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                    >
+                      {renamingId === d.id ? 'Cancel' : 'Rename'}
+                    </button>
                     {/* Retry is offered only where it can change the answer. A scan with no text
                         layer and an empty file are verdicts about the file, not transient errors —
                         re-running the same parse over the same bytes cannot reach a different one,

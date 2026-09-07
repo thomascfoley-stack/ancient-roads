@@ -2414,3 +2414,61 @@ app's compiled stylesheet (`render/*.html` is the component's markup). The compo
 faithful render, not a live session: the groups are signed-in only and sign-in is owner-only, so the
 live signed-in walk is owed to the owner, as for ADR-121. Canvas:
 https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1 (Sidebar page, board C).
+
+## ADR-123 — A document's name is the user's: rename in My Works, and the suggestion becomes a confirm flow (owner, 2026-09-07)
+
+**Owner:** "ok fix #3 the best way" (2026-09-07), on the build menu's row A3 — the two gaps a My
+Works user hits today. This also settles outstanding decision **B2** ("does accepting a suggestion
+write a real `preached_on` column, or the title?").
+
+**The gaps.** A title was `sourceFilename` minus its extension, written once at `upload-complete`
+and writable by nothing: no PATCH on any user-corpus route, no update function in `documents.ts`.
+`sermon-draft-FINAL-v3` was a document's name for life, and the only way to change it — delete and
+re-upload — re-spends the paid embedding run on bytes already indexed. Beside it, migration 124's
+chip reads "Looks like: Romans 8 · 21 March 1871" and could not be acted on.
+
+**Ruled — one affordance, not two.**
+
+1. **Rename** — `PATCH /api/user-corpus/documents/[id]` with `{ title }`, behind `guardUser`, the
+   CSRF content-type floor, and `renameDocument`, which sets `title` and `updated_at` and nothing
+   else. A rename must never touch `status` or `attempts`: that would re-queue the document and
+   re-spend its embedding, which is the very cost the feature removes.
+2. **"Use this" is the same edit, prefilled** — it OPENS the rename with the suggestion in the
+   field; it does not save. That is the confirm flow `MY_WORKS_DRAFT_AND_METADATA_DESIGN`
+   deliberately left out of v1, and it keeps the property that deferral protected: nothing renames
+   a document except a person looking at the words. Offered only where the name would change.
+3. **B2 answered: the TITLE, no migration, no `preached_on` column.** A date column nothing sorts
+   or filters by is speculative generality, which this repo's coding standards ban outright. The
+   design doc named both spellings of the confirm flow ("into the title or a real `preached_on`
+   field") and the title is the one the product can already use everywhere it shows a document.
+   When something needs to sort by the date the sermon was preached, that is the slice that earns
+   the column.
+4. **The title rule refuses rather than truncating** (`titleVerdict`): one line, control characters
+   and whitespace runs collapsed, never empty, at most `TITLE_MAX` = 200 measured after
+   normalising. Silently storing a different name from the one on screen when the user pressed
+   save is the class of thing this repo calls a lie about what happened.
+5. **Not optimistic**, unlike the sibling delete. A delete that fails and puts a row back reads as
+   "that did not work"; a rename that fails after showing the new name leaves someone believing
+   their document is called something it is not. The old name stands until the server agrees, the
+   editor stays open holding what they typed, and the failure is announced on the row.
+6. **No blur commit** (the rail's `InlineNameForm` saves on blur; that is right for a label nobody
+   reads twice and wrong for a document's name), and **no `maxLength`** — the server states the
+   bound and the reason, and an input that silently stops accepting characters explains nothing.
+
+**Deferred, with the reason: citing your own upload inside a study.** The other half of the owner's
+A4 row, and it cannot ship in this slice. `study_blocks` carries
+`CHECK (kind <> 'clipping' OR (source_id IS NOT NULL OR section_id IS NOT NULL))` — every clipping
+must resolve to a CORPUS key — and `/api/studies/library-search` is corpus-groups-only by design
+("a clipping is a stored corpus quote; personal domains are searched on /search"). Citing a user
+section therefore needs a column plus a relaxed constraint, i.e. a migration, applied to production
+BEFORE the code that reads it — the ordering this repo has already inverted once. Design and
+migration: `docs/pm/orders/2026-09-07-cite-your-own-work.md`. Owner action named there.
+
+**Evidence:** `web/test/user-corpus/rename.test.ts` (the title rule as a pure function; the write
+user-scoped, proved with a second account; a rename touching no other field; the route's five
+refusals — no session, wrong content-type, empty title, over-length, not-JSON — and 404 for
+another account's id byte-identical to 404 for one that never existed) and
+`web/test/components/my-works-rename.test.tsx` (opens with the current title, Escape cancels, no
+blur commit, "Use this" fills the field with exactly what the chip claims and does not save, a
+failed save keeps what you typed and says so). Both red first against the unchanged tree —
+`titleVerdict is not a function`, `PATCH is not a function`.
