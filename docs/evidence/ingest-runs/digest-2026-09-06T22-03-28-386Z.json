@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "startedAt": "2026-09-06T22:03:28.386Z",
+    "endedAt": "2026-09-06T22:15:23.333Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 17,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 1
+  },
+  "staged": [
+    {
+      "slug": "adeney-expositorsonglament",
+      "adapter": "ccel",
+      "sourceType": "commentary",
+      "result": "staged",
+      "units": 29,
+      "anchored": 26,
+      "embedded": 505
+    },
+    {
+      "slug": "bennett-expositor10",
+      "adapter": "ccel",
+      "sourceType": "commentary",
+      "result": "staged",
+      "units": 30,
+      "anchored": 14,
+      "embedded": 683
+    },
+    {
+      "slug": "schaff-anf06",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 563,
+      "anchored": 144,
+      "embedded": 1425
+    },
+    {
+      "slug": "schaff-anf07",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 477,
+      "anchored": 161,
+      "embedded": 2613
+    },
+    {
+      "slug": "schaff-anf08",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 1255,
+      "anchored": 258,
+      "embedded": 2000
+    },
+    {
+      "slug": "schaff-npnf106",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 198,
+      "anchored": 175,
+      "embedded": 1163
+    },
+    {
+      "slug": "schaff-npnf107",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 143,
+      "anchored": 135,
+      "embedded": 2425
+    },
+    {
+      "slug": "schaff-npnf108",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 7,
+      "anchored": 6,
+      "embedded": 135
+    },
+    {
+      "slug": "schaff-npnf109",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 14,
+      "anchored": 4,
+      "embedded": 76
+    },
+    {
+      "slug": "schaff-npnf110",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 88,
+      "anchored": 87,
+      "embedded": 2183
+    },
+    {
+      "slug": "schaff-npnf111",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 91,
+      "anchored": 88,
+      "embedded": 2219
+    },
+    {
+      "slug": "schaff-npnf112",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 76,
+      "anchored": 1,
+      "embedded": 1928
+    },
+    {
+      "slug": "schaff-npnf113",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 6,
+      "anchored": 6,
+      "embedded": 200
+    },
+    {
+      "slug": "schaff-npnf114",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 125,
+      "anchored": 124,
+      "embedded": 2334
+    },
+    {
+      "slug": "schaff-npnf204",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "staged",
+      "units": 238,
+      "anchored": 133,
+      "embedded": 961
+    },
+    {
+      "slug": "chesterton-aquinas",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 8,
+      "anchored": 0,
+      "embedded": 277
+    },
+    {
+      "slug": "donne-devotions",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 95,
+      "anchored": 32,
+      "embedded": 417
+    }
+  ],
+  "escalations": [
+    {
+      "slug": "schaff-npnf201",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: update or delete on table \"sections\" violates foreign key constraint \"section_history_anchors_section_id_fkey\" on table \"section_history_anchors\""
+    }
+  ],
+  "quarantined": []
+}

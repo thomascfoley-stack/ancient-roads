@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "startedAt": "2026-09-06T21:51:24.915Z",
+    "endedAt": "2026-09-06T21:51:25.873Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 0,
+    "skipped": 0,
+    "quarantined": 1,
+    "escalated": 0
+  },
+  "staged": [],
+  "escalations": [],
+  "quarantined": [
+    {
+      "slug": "donne-deaths-duel",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "quarantined",
+      "code": "parse",
+      "reason": "parse: 1/1 named volumes parsed to 0 sections — structure not recognized: donne/deaths_duel"
+    }
+  ]
+}

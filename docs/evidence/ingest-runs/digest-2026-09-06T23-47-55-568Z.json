@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "startedAt": "2026-09-06T23:47:55.568Z",
+    "endedAt": "2026-09-06T23:49:11.699Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 2,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "luther-works1",
+      "adapter": "gutenberg",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 8,
+      "anchored": 0,
+      "embedded": 575
+    },
+    {
+      "slug": "luther-works2",
+      "adapter": "gutenberg",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 8,
+      "anchored": 0,
+      "embedded": 770
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

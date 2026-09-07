@@ -1,0 +1,162 @@
+{
+  "meta": {
+    "startedAt": "2026-09-06T22:00:41.513Z",
+    "endedAt": "2026-09-06T22:01:27.726Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 0,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 18
+  },
+  "staged": [],
+  "escalations": [
+    {
+      "slug": "adeney-expositorsonglament",
+      "adapter": "ccel",
+      "sourceType": "commentary",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "bennett-expositor10",
+      "adapter": "ccel",
+      "sourceType": "commentary",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf201",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-anf06",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-anf07",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-anf08",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf106",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf107",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf108",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf109",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf110",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf111",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf112",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf113",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf114",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "schaff-npnf204",
+      "adapter": "ccel",
+      "sourceType": "father",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "chesterton-aquinas",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    },
+    {
+      "slug": "donne-devotions",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "escalated",
+      "code": "unknown",
+      "reason": "unknown: permission denied for table sources"
+    }
+  ],
+  "quarantined": []
+}

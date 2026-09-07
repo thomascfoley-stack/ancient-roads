@@ -1,0 +1,80 @@
+(node:78497) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  [escalated] adeney-expositorsonglament  unknown: permission denied for table sources
+  [escalated] bennett-expositor10  unknown: permission denied for table sources
+  [escalated] schaff-npnf201  unknown: permission denied for table sources
+  [escalated] schaff-anf06  unknown: permission denied for table sources
+  [escalated] schaff-anf07  unknown: permission denied for table sources
+  [escalated] schaff-anf08  unknown: permission denied for table sources
+  [escalated] schaff-npnf106  unknown: permission denied for table sources
+  [escalated] schaff-npnf107  unknown: permission denied for table sources
+  [escalated] schaff-npnf108  unknown: permission denied for table sources
+  [escalated] schaff-npnf109  unknown: permission denied for table sources
+  [escalated] schaff-npnf110  unknown: permission denied for table sources
+  [escalated] schaff-npnf111  unknown: permission denied for table sources
+  [escalated] schaff-npnf112  unknown: permission denied for table sources
+  [escalated] schaff-npnf113  unknown: permission denied for table sources
+  [escalated] schaff-npnf114  unknown: permission denied for table sources
+  [escalated] schaff-npnf204  unknown: permission denied for table sources
+  [escalated] chesterton-aquinas  unknown: permission denied for table sources
+  [escalated] donne-devotions  unknown: permission denied for table sources
+
+loop queue-empty: 18 attempted, 0 staged/published, 0 quarantined.
+digest: docs/evidence/ingest-runs/digest-2026-09-06T22-00-41-513Z.md
+
+===== relaunch 2026-09-06T22:03:27Z with dev-OWNER url (ep-tiny-hat, neondb_owner) =====
+(node:78774) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ↻ adeney-expositorsonglament: replaced prior ingest (505 rows, 26 static entries)
+  → adeney-expositorsonglament: 29 section(s), 26 anchor(s) on the shelf
+  [staged] adeney-expositorsonglament 29/505emb 
+  → bennett-expositor10: 30 section(s), 14 anchor(s) on the shelf
+  [staged] bennett-expositor10 30/683emb 
+  [escalated] schaff-npnf201  unknown: update or delete on table "sections" violates foreign key constraint "section_history_anchors_section_id_fkey" on table "section_history_anchors"
+  → schaff-anf06: 563 section(s), 144 anchor(s) on the shelf
+  [staged] schaff-anf06 563/1425emb 
+  → schaff-anf07: 477 section(s), 161 anchor(s) on the shelf
+  [staged] schaff-anf07 477/2613emb 
+  → schaff-anf08: 1255 section(s), 258 anchor(s) on the shelf
+  [staged] schaff-anf08 1255/2000emb 
+  → schaff-npnf106: 198 section(s), 175 anchor(s) on the shelf
+  [staged] schaff-npnf106 198/1163emb 
+  → schaff-npnf107: 143 section(s), 135 anchor(s) on the shelf
+  [staged] schaff-npnf107 143/2425emb 
+  → schaff-npnf108: 7 section(s), 6 anchor(s) on the shelf
+  [staged] schaff-npnf108 7/135emb 
+  → schaff-npnf109: 14 section(s), 4 anchor(s) on the shelf
+  [staged] schaff-npnf109 14/76emb 
+  → schaff-npnf110: 88 section(s), 87 anchor(s) on the shelf
+  [staged] schaff-npnf110 88/2183emb 
+  → schaff-npnf111: 91 section(s), 88 anchor(s) on the shelf
+  [staged] schaff-npnf111 91/2219emb 
+  → schaff-npnf112: 76 section(s), 1 anchor(s) on the shelf
+  [staged] schaff-npnf112 76/1928emb 
+  → schaff-npnf113: 6 section(s), 6 anchor(s) on the shelf
+  [staged] schaff-npnf113 6/200emb 
+  → schaff-npnf114: 125 section(s), 124 anchor(s) on the shelf
+  [staged] schaff-npnf114 125/2334emb 
+  → schaff-npnf204: 238 section(s), 133 anchor(s) on the shelf
+  [staged] schaff-npnf204 238/961emb 
+  → chesterton-aquinas: 8 section(s), 0 anchor(s) on the shelf
+  [staged] chesterton-aquinas 8/277emb 
+  → donne-devotions: 95 section(s), 32 anchor(s) on the shelf
+  [staged] donne-devotions 95/417emb 
+
+loop queue-empty: 18 attempted, 17 staged/published, 0 quarantined.
+digest: docs/evidence/ingest-runs/digest-2026-09-06T22-03-28-386Z.md

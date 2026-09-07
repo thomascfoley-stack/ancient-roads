@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-09-06T23:04:28.937Z",
+    "endedAt": "2026-09-06T23:05:02.000Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 1,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "newman-apologia",
+      "adapter": "gutenberg",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 5,
+      "anchored": 0,
+      "embedded": 500
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

@@ -1,0 +1,289 @@
+{
+  "meta": {
+    "startedAt": "2026-09-06T22:44:43.797Z",
+    "endedAt": "2026-09-06T22:50:14.560Z",
+    "outcome": "paused",
+    "outcomeReason": "staged-backlog: 30 works staged this run reached the digest-batch cap of 30 — clear the publish digest before more intake"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 30,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "spurgeon-catechism",
+      "adapter": "ccel",
+      "sourceType": "confession",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 21
+    },
+    {
+      "slug": "neander-a-expo-phil",
+      "adapter": "ccel",
+      "sourceType": "commentary",
+      "result": "staged",
+      "units": 2,
+      "anchored": 2,
+      "embedded": 137
+    },
+    {
+      "slug": "chesterton-rightworld",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 0,
+      "embedded": 20
+    },
+    {
+      "slug": "luther-prefacetoromans",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 1,
+      "embedded": 32
+    },
+    {
+      "slug": "luther-christianliberty",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 0,
+      "embedded": 94
+    },
+    {
+      "slug": "luther-theses",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 0,
+      "embedded": 25
+    },
+    {
+      "slug": "luther-translating",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 32
+    },
+    {
+      "slug": "law-clergy",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 0,
+      "embedded": 260
+    },
+    {
+      "slug": "law-errors",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 1,
+      "embedded": 339
+    },
+    {
+      "slug": "law-grounds",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 0,
+      "embedded": 118
+    },
+    {
+      "slug": "tolstoy-maupassant",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 0,
+      "embedded": 51
+    },
+    {
+      "slug": "tolstoy-kreutzer",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 30
+    },
+    {
+      "slug": "pink-law",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 2,
+      "embedded": 60
+    },
+    {
+      "slug": "edwards-trinity",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 40
+    },
+    {
+      "slug": "charnock-cleansing",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 116
+    },
+    {
+      "slug": "charnock-instr-regen",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 102
+    },
+    {
+      "slug": "charnock-efficient-regeneration",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 2,
+      "embedded": 493
+    },
+    {
+      "slug": "charnock-nat-regen",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 294
+    },
+    {
+      "slug": "charnock-nec-regen",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 255
+    },
+    {
+      "slug": "flavel-life",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 37
+    },
+    {
+      "slug": "bangs-alphabetic",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 1,
+      "embedded": 196
+    },
+    {
+      "slug": "boethius-trinity",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 0,
+      "embedded": 23
+    },
+    {
+      "slug": "bushnell-character",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 0,
+      "embedded": 109
+    },
+    {
+      "slug": "donne-deaths-duel",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 44
+    },
+    {
+      "slug": "knox-prayer",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 1,
+      "embedded": 49
+    },
+    {
+      "slug": "erasmus-against-war",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 0,
+      "embedded": 84
+    },
+    {
+      "slug": "pascal-memorial",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 0,
+      "embedded": 4
+    },
+    {
+      "slug": "whyte-behmen",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 0,
+      "embedded": 65
+    },
+    {
+      "slug": "kierkegaard-untruth",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 18
+    },
+    {
+      "slug": "lardner-n-mosaic",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 1,
+      "embedded": 53
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

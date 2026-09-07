@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "startedAt": "2026-09-06T22:52:29.668Z",
+    "endedAt": "2026-09-06T22:54:01.961Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 9,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "shepard-sabbath",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 75
+    },
+    {
+      "slug": "clarke-entire-sanct",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 57
+    },
+    {
+      "slug": "cranmer-doctrine",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 1,
+      "anchored": 0,
+      "embedded": 5
+    },
+    {
+      "slug": "kronstadt-christlife",
+      "adapter": "ccel",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 2,
+      "anchored": 2,
+      "embedded": 1312
+    },
+    {
+      "slug": "tulloch-religion",
+      "adapter": "ccel",
+      "sourceType": "sermon",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 28
+    },
+    {
+      "slug": "donne-spital",
+      "adapter": "ccel",
+      "sourceType": "sermon",
+      "result": "staged",
+      "units": 1,
+      "anchored": 0,
+      "embedded": 6
+    },
+    {
+      "slug": "donne-easter",
+      "adapter": "ccel",
+      "sourceType": "sermon",
+      "result": "staged",
+      "units": 1,
+      "anchored": 1,
+      "embedded": 38
+    },
+    {
+      "slug": "penn-sermon",
+      "adapter": "ccel",
+      "sourceType": "sermon",
+      "result": "staged",
+      "units": 2,
+      "anchored": 1,
+      "embedded": 28
+    },
+    {
+      "slug": "clarkson-owenfuneral",
+      "adapter": "ccel",
+      "sourceType": "sermon",
+      "result": "staged",
+      "units": 1,
+      "anchored": 0,
+      "embedded": 26
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

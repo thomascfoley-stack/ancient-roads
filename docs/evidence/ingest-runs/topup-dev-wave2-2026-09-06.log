@@ -1,0 +1,104 @@
+(node:84449) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  → spurgeon-catechism: 1 section(s), 1 anchor(s) on the shelf
+  [staged] spurgeon-catechism 1/21emb 
+  → neander-a-expo-phil: 2 section(s), 2 anchor(s) on the shelf
+  [staged] neander-a-expo-phil 2/137emb 
+  → chesterton-rightworld: 1 section(s), 0 anchor(s) on the shelf
+  [staged] chesterton-rightworld 1/20emb 
+  → luther-prefacetoromans: 2 section(s), 1 anchor(s) on the shelf
+  [staged] luther-prefacetoromans 2/32emb 
+  → luther-christianliberty: 2 section(s), 0 anchor(s) on the shelf
+  [staged] luther-christianliberty 2/94emb 
+  → luther-theses: 2 section(s), 0 anchor(s) on the shelf
+  [staged] luther-theses 2/25emb 
+  → luther-translating: 1 section(s), 1 anchor(s) on the shelf
+  [staged] luther-translating 1/32emb 
+  → law-clergy: 1 section(s), 0 anchor(s) on the shelf
+  [staged] law-clergy 1/260emb 
+  → law-errors: 2 section(s), 1 anchor(s) on the shelf
+  [staged] law-errors 2/339emb 
+  → law-grounds: 2 section(s), 0 anchor(s) on the shelf
+  [staged] law-grounds 2/118emb 
+  → tolstoy-maupassant: 2 section(s), 0 anchor(s) on the shelf
+  [staged] tolstoy-maupassant 2/51emb 
+  → tolstoy-kreutzer: 1 section(s), 1 anchor(s) on the shelf
+  [staged] tolstoy-kreutzer 1/30emb 
+  → pink-law: 2 section(s), 2 anchor(s) on the shelf
+  [staged] pink-law 2/60emb 
+  → edwards-trinity: 1 section(s), 1 anchor(s) on the shelf
+  [staged] edwards-trinity 1/40emb 
+  → charnock-cleansing: 1 section(s), 1 anchor(s) on the shelf
+  [staged] charnock-cleansing 1/116emb 
+  → charnock-instr-regen: 1 section(s), 1 anchor(s) on the shelf
+  [staged] charnock-instr-regen 1/102emb 
+  → charnock-efficient-regeneration: 2 section(s), 2 anchor(s) on the shelf
+  [staged] charnock-efficient-regeneration 2/493emb 
+  → charnock-nat-regen: 1 section(s), 1 anchor(s) on the shelf
+  [staged] charnock-nat-regen 1/294emb 
+  → charnock-nec-regen: 1 section(s), 1 anchor(s) on the shelf
+  [staged] charnock-nec-regen 1/255emb 
+  → flavel-life: 1 section(s), 1 anchor(s) on the shelf
+  [staged] flavel-life 1/37emb 
+  → bangs-alphabetic: 2 section(s), 1 anchor(s) on the shelf
+  [staged] bangs-alphabetic 2/196emb 
+  → boethius-trinity: 2 section(s), 0 anchor(s) on the shelf
+  [staged] boethius-trinity 2/23emb 
+  → bushnell-character: 2 section(s), 0 anchor(s) on the shelf
+  [staged] bushnell-character 2/109emb 
+  → donne-deaths-duel: 1 section(s), 1 anchor(s) on the shelf
+  [staged] donne-deaths-duel 1/44emb 
+  → knox-prayer: 2 section(s), 1 anchor(s) on the shelf
+  [staged] knox-prayer 2/49emb 
+  → erasmus-against-war: 1 section(s), 0 anchor(s) on the shelf
+  [staged] erasmus-against-war 1/84emb 
+  → pascal-memorial: 1 section(s), 0 anchor(s) on the shelf
+  [staged] pascal-memorial 1/4emb 
+  → whyte-behmen: 2 section(s), 0 anchor(s) on the shelf
+  [staged] whyte-behmen 2/65emb 
+  → kierkegaard-untruth: 1 section(s), 1 anchor(s) on the shelf
+  [staged] kierkegaard-untruth 1/18emb 
+  → lardner-n-mosaic: 2 section(s), 1 anchor(s) on the shelf
+  [staged] lardner-n-mosaic 2/53emb 
+
+⏸ BREAKER PAUSE: staged-backlog: 30 works staged this run reached the digest-batch cap of 30 — clear the publish digest before more intake
+
+loop paused (staged-backlog: 30 works staged this run reached the digest-batch cap of 30 — clear the publish digest before more intake): 30 attempted, 30 staged/published, 0 quarantined.
+digest: docs/evidence/ingest-runs/digest-2026-09-06T22-44-43-797Z.md
+(node:85353) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  → shepard-sabbath: 1 section(s), 1 anchor(s) on the shelf
+  [staged] shepard-sabbath 1/75emb 
+  → clarke-entire-sanct: 1 section(s), 1 anchor(s) on the shelf
+  [staged] clarke-entire-sanct 1/57emb 
+  → cranmer-doctrine: 1 section(s), 0 anchor(s) on the shelf
+  [staged] cranmer-doctrine 1/5emb 
+  → kronstadt-christlife: 2 section(s), 2 anchor(s) on the shelf
+  [staged] kronstadt-christlife 2/1312emb 
+  → tulloch-religion: 1 section(s), 1 anchor(s) on the shelf
+  [staged] tulloch-religion 1/28emb 
+  → donne-spital: 1 section(s), 0 anchor(s) on the shelf
+  [staged] donne-spital 1/6emb 
+  → donne-easter: 1 section(s), 1 anchor(s) on the shelf
+  [staged] donne-easter 1/38emb 
+  → penn-sermon: 2 section(s), 1 anchor(s) on the shelf
+  [staged] penn-sermon 2/28emb 
+  → clarkson-owenfuneral: 1 section(s), 0 anchor(s) on the shelf
+  [staged] clarkson-owenfuneral 1/26emb 
+
+loop queue-empty: 9 attempted, 9 staged/published, 0 quarantined.
+digest: docs/evidence/ingest-runs/digest-2026-09-06T22-52-29-668Z.md
