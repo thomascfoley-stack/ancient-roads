@@ -69,3 +69,13 @@ UNVERIFIED, not passed.
 Stale-but-present: `docs/DESIGN_BRIEF.md`, `docs/SCHEMA.md`, `docs/INFRA.md`,
 and `docs/CORPUS.md` are Supabase-era. Where they disagree with
 `STATE_OF_TRUTH.md` / `DECISIONS.md`, they are stale (see `docs/PORTABILITY.md` §5).
+
+## Contributing
+
+Bug reports, feature ideas, and PRs all welcome. See
+[CONTRIBUTING.md](./CONTRIBUTING.md) for setup and the PR checklist.
+
+## License
+
+Code is MIT, see [LICENSE](./LICENSE). Corpus texts keep their own licenses
+as recorded in [`DATA_SOURCES.md`](DATA_SOURCES.md).
