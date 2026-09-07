@@ -6,8 +6,10 @@
 // (L1's invariant — every submission reaches one of two terminal states), and the composer returns
 // to idle. No second POST is made by stopping.
 //
-// The honest limit, stated here as in the code: the route does not read the request signal, so Stop
-// stops WAITING — the server finishes on its own and the thread row already exists.
+// That limit is CLOSED as of this branch: the route now threads `req.signal` into teach(), so Stop
+// stops SPENDING as well as waiting — no further compose attempts, no answer row, no ask_outcome.
+// The thread's QUESTION row still exists by design (ASK_HISTORY_DESIGN I-2). The server half is
+// covered by test/ask-abort-stops-spend.test.ts; this file stays about the client's own behaviour.
 //
 // SEED for leg 1: remove the post-loop `aborted` check -> the L1 guard writes "stopped partway" and
 // the alert no longer says "Stopped before". SEED for leg 2: make the abort patch unconditional ->

@@ -97,6 +97,9 @@ export async function POST(req: NextRequest) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const write = (e: TeacherEvent | { stage: 'error'; message: string } | { stage: 'thread'; threadId: string } | { stage: 'saved'; ok: boolean } | { stage: 'outcome'; askOutcomeId: string }) => {
+        // Nothing to deliver once the reader has gone, and enqueueing onto a controller the
+        // platform already tore down throws. An abort is a normal outcome, not a failure.
+        if (req.signal.aborted) return;
         controller.enqueue(encoder.encode(JSON.stringify(e) + '\n'));
       };
       const startedAt = Date.now();
@@ -127,7 +130,11 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const { result, meta } = await teach(question, { onEvent: write, lanes, userId: user.id });
+        // STOP MUST STOP SPENDING. `req.signal` aborts when the reader presses Stop or the
+        // connection drops; teach() throws out on it rather than returning, so every line below
+        // — the outcome row and the assistant row both — is skipped for a run nobody is waiting
+        // for. Before this, Stop then "Ask again" composed and stored the same question twice.
+        const { result, meta } = await teach(question, { onEvent: write, lanes, userId: user.id, signal: req.signal });
         const latencyMs = Date.now() - startedAt;
         logAskOutcome(result.kind, latencyMs, meta);
         // One durable row per completed ask (migration 116, Phase-D substrate). Off the
@@ -163,11 +170,23 @@ export async function POST(req: NextRequest) {
         }
         write({ stage: 'saved', ok: saved });
       } catch (e) {
-        console.error('teacher stream error:', (e as Error).message);
-        logEvent('error', { where: 'api/ask/stream', message: (e as Error).message });
-        write({ stage: 'error', message: 'The teacher failed to answer. Please try again.' });
+        // The reader's own Stop is not a fault to report. Nothing was composed, so nothing is
+        // persisted beyond the question row written before teach() — that row is deliberate
+        // (I-2) and is exactly what "Ask again" needs. Logging it as an error would file every
+        // Stop as a teacher failure and drown the real ones.
+        if (!req.signal.aborted) {
+          console.error('teacher stream error:', (e as Error).message);
+          logEvent('error', { where: 'api/ask/stream', message: (e as Error).message });
+          write({ stage: 'error', message: 'The teacher failed to answer. Please try again.' });
+        }
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch (e) {
+          // The consumer tore the stream down first (client disconnect), so closing a cancelled
+          // controller throws. Recorded rather than swallowed — there is nothing to repair.
+          console.error('ask stream close after disconnect:', (e as Error).message);
+        }
       }
     },
   });
