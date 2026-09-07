@@ -38,6 +38,15 @@ describe('matchPericopes + resolveIntent (named passages)', () => {
   it('floors numeric references unconditionally (a chapter number is explicit intent)', () => {
     expect(hasStart(resolveIntent('Romans 8 nothing can separate us').floor, vid(45, 8))).toBe(true);
   });
+  it('routes a space-separated verse to the VERSE, not the whole chapter (M3 verse precision)', () => {
+    // scanReferences and parseRef used to disagree on "romans 8 28": the typeahead normalised it
+    // to Romans 8:28, but the prose scan dropped the verse and resolved Romans 8 (chapter), so
+    // /ask intent routing injected a chapter range. The space-verse scan pass closes the gap.
+    const intent = resolveIntent('what does romans 8 28 teach us');
+    expect(hasStart(intent.inject, vid(45, 8, 28))).toBe(true);
+    expect(hasStart(intent.floor, vid(45, 8, 28))).toBe(true);
+    expect(intent.inject.some((r) => r.start === vid(45, 8))).toBe(false); // no chapter range
+  });
   it('floors a pericope only with corroboration; idiomatic use injects but never floors', () => {
     const genuine = resolveIntent('the ten commandments given to Moses'); // "Moses" corroborates
     expect(hasStart(genuine.floor, vid(2, 20))).toBe(true);

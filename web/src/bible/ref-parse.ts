@@ -510,6 +510,27 @@ const ORDINAL_BOOK_SCAN_RE =
 const DIGIT_ATTACHED_SCAN_RE =
   /\b([1-3])([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
 
+// SPACE-SEPARATED VERSES in prose — "john 3 16", "romans 8 28", "1 cor 13 4" — are invisible
+// to every pass above: each numeric tail is `(?::\d{1,3})?`, which REQUIRES a colon before a
+// verse, so "3 16" parses as chapter-only ("John 3") and the trailing "16" is dropped.
+// parseRef (typeahead input) already normalises "3 16" → "3:16" (parseSegment's `(\d) +(?=\d)`
+// rewrite), but scanReferences never handed it such a span to normalise — the two functions
+// disagreed, and /ask intent routing ("what does john 3 16 say") resolved a whole CHAPTER
+// instead of the verse (docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md, M3). This
+// fourth pass scans book + chapter + SPACE + verse — an optional ordinal mirroring SCAN_RE's,
+// and an optional same-chapter or colon-cross-chapter range tail mirroring SCAN_RE's — and
+// feeds the span to parseRef, which already validates every candidate. The verse term is
+// REQUIRED (`\d{1,3}\s+\d{1,3}` after the chapter): that is what makes the pass ADDITIVE — it
+// never forms a candidate where there is only a chapter, so it cannot alter a SCAN_RE chapter
+// match, only out-SPAN one ("john 3" → "john 3 16") under the existing longer-span-wins
+// overlap rule. Precision holds for the same reason every other pass's does: parseRef rejects
+// a candidate whose book word is no valid alias ("pizzas 4 3" → unknown book) or is ambiguous
+// ("peter 2 3" → 1/2 Peter), and a non-numeric interloper ("Genesis 1 and 2", "Romans 8:28",
+// "Numbers 6:24-26") does not match the required `\d\s+\d` shape at all, so those chapter and
+// colon-verse forms keep their SCAN_RE behaviour untouched.
+const SPACE_VERSE_SCAN_RE =
+  /\b((?:[1-3]|i{1,3}|first|second|third)\s+)?([a-z]{2,})\s+(\d{1,3}\s+\d{1,3}(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+
 // Find scripture references embedded in prose — "1 Corinthians 13 the greatest
 // of these…", "Isaiah 53", "John 3:16" — and return the resolved refs. Unlike
 // parseRef (whole-string typeahead), this scans candidate spans anywhere in the
@@ -558,6 +579,14 @@ export function scanReferenceSpans(text: string, opts: ParseOptions = {}): Scann
     // ordinal — "1Cor 13" carries exactly the confidence of "1 Cor 13" — so it passes the matched
     // alias and `true`, never false.
     consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[2]!, true);
+  }
+  for (const m of text.matchAll(SPACE_VERSE_SCAN_RE)) {
+    // The verse term is REQUIRED, so this fires only where chapter + SPACE + verse are all
+    // present — never on a bare chapter — and hands "3 16" to parseRef, whose own
+    // space-to-colon rewrite does the normalising. m[1] is the optional ordinal (carries
+    // through like SCAN_RE's), m[2] the book word, m[3] the full numeric tail ("3 16",
+    // "3 16-18", "13 4-7").
+    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[2]!, Boolean(m[1]));
   }
   if (MULTIWORD_SCAN_RE) {
     for (const m of text.matchAll(MULTIWORD_SCAN_RE)) {
