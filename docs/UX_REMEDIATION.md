@@ -2996,7 +2996,11 @@ error on the cover costs more credibility than it should.
   one colour tier up, and a real Stop were added beside it under the owner's 2026-09-06 report that
   a running ask was "not discernible". ADR-121.
 - **`N2` Do-NOT ("no accordion") is superseded for the SIDEBAR only** once the owner picks a
-  direction from the 2026-09-06 canvas ("think collapsables"). Nothing built yet.
+  direction from the 2026-09-06 canvas ("think collapsables"). **Picked and built 2026-09-07: board C,
+  ADR-122** — five fixed places, every group of yours capped at three and collapsible, the page's own
+  group opening itself, the library shelves folded behind Library. Filed from it: counts on closed
+  groups (needs cheap totals), a research list page (until then research unfolds in place), a
+  per-prayer deep link, a `limit` on `/api/prayers`.
 - Stop stops *waiting* only — `api/ask/stream/route.ts` does not read `req.signal`; thread it into
   `teach()` so a Stop also stops the spend. Until then a Stop-then-"Ask again" writes the question
   twice server-side (the first run still lands its answer).

@@ -2364,3 +2364,51 @@ browser walk of the signed-in `/ask` composer, running state and answer — the 
 (ADR-116) and no owner session was available on the Browser pane; the DoD's real-interaction leg for
 those three states is owed and is recorded as NOT DONE in the WORKLOG. Design canvas:
 https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1.
+
+## ADR-122 — The sidebar: five places, and everything of yours as a capped, collapsible group (owner, 2026-09-07)
+
+**Owner brief:** 2026-09-06 — "we need to cap research history to 3-4 max, make it expandable and
+collapsible. Do the same thing with my studies, my sermons, prayer journal, bible studies etc. Push
+back if you think I'm wrong. The idea is the sidebar needs to be super clean." Three directions were
+put in front of the owner as renders (A top bar, B contextual rail, C the note applied with two
+amendments); 2026-09-07: **"#1 do it"** on C. This closes the direction ADR-121 left open.
+
+**Ruled (the design as shipped, `test/components/sidebar-groups.test.tsx` pins each clause):**
+
+1. **Five places never move:** Home · Bible · Ask · Desk · Library. Reading plans, a sixth place
+   until now, becomes a group — a schedule over the reading surfaces, not one of them.
+2. **Everything of yours is a group:** Research history · My studies · Prayer journal · My Works ·
+   Reading plans. Closed, one row. Open, its **three** most recent (the owner said "3-4"; three keeps
+   two open groups inside a 768px rail) and a way to all of them.
+3. **"All … →" is a page, never an inline list of everything** (accepted amendment: forty threads in a
+   rail is the mess being removed). The one exception is research, which has no list page: it alone
+   unfolds further in place ("More research · N"), because threads 4..N would otherwise be reachable
+   from nowhere. When a research list page exists this becomes a link.
+4. **The page's own group opens itself and is not remembered; a group opened by hand elsewhere is
+   remembered** (localStorage, per user). Accepted amendment: without the first half, every group is
+   open within a week and the rail is busy again.
+5. **The library shelves fold behind Library** and appear only while you are in the library.
+6. **Signed out, nothing is lost:** Reading plans and the Prayer journal stay as plain rows.
+7. **Groups fetch lazily, on open.** The list APIs carry no totals and `/api/prayers` returns whole
+   bodies, so a closed group costs no request; the mockup's closed-row counts are dropped for that
+   reason and filed. Prayer rows are plain text with a date (no per-entry page exists); works and
+   plans link to their pages.
+
+**Supersedes** `N2`'s "no accordion" for the sidebar only (`UX_REMEDIATION.md` §9, 2026-09-06 filing).
+**Amends** the icon rail: it now derives from the same five-place table plus the two group entries a
+visitor can use (journal, plans) and Settings — the `/ask` entry reads "Ask", not the wordmark.
+
+**Rejected:** counts on closed groups (five fetches on every mount, or new count endpoints, for a rail
+showing one group); a research "All →" to `/ask` (it lists nothing); keeping the eleven library rows
+visible everywhere (they are shelves you browse, not things of yours); persisting the page-opened
+state (see 4).
+
+**Evidence:** `docs/evidence/sidebar-c-2026-09-07/` — `findings.md` (the two test re-points, recorded
+before the edits, and the deviations from the mockup with reasons), `red-proof-repoints.log` (each
+re-point red then green), `unit-run-summary.log` (whole suite green bar the recorded DB flake, which
+passes alone), `live-home-signed-out-{1440,390}.png` (the dev server, signed out), and
+`composite-*.png` — the signed-in states rendered from the REAL component with fixture data and the
+app's compiled stylesheet (`render/*.html` is the component's markup). The composites are a
+faithful render, not a live session: the groups are signed-in only and sign-in is owner-only, so the
+live signed-in walk is owed to the owner, as for ADR-121. Canvas:
+https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1 (Sidebar page, board C).

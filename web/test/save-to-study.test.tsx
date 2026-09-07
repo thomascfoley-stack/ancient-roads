@@ -294,9 +294,16 @@ describe('SaveToStudy (design §7.5; E7)', () => {
 // ── the sidebar section ──────────────────────────────────────────────────────────────────────
 
 describe('sidebar MY STUDIES (design §7.1)', () => {
-  it('renders pinned studies first, then recents, then "All studies" — signed in', async () => {
+  // RE-POINTED 2026-09-07 (Sidebar C; docs/evidence/sidebar-c-2026-09-07/findings.md). My studies
+  // is now a GROUP: closed unless the page owns it (/studies) or the reader opened it, and it lists
+  // THREE, not five — the owner's cap. So the test opens the group by its header first, and the
+  // expected order is the same partition (pinned, then recents) cut at three. The property this
+  // file exists for — pinned first, then updated_at recents, "All studies" always reachable — is
+  // unchanged; only the count and the click are new. Red-proof: remove the click → red.
+  it('renders pinned studies first, then recents, then "All studies" — signed in, once opened', async () => {
     stubFetch({ 'GET /api/studies': jsonResponse(200, { studies: STUDIES }) });
     const { container } = render(<SidebarNavContent />);
+    fireEvent.click(screen.getByRole('button', { name: /My studies/ }));
     await waitFor(() => {
       expect(container.querySelector('a[href="/studies/s-pinned-1"]')).toBeTruthy();
     });
@@ -306,7 +313,6 @@ describe('sidebar MY STUDIES (design §7.1)', () => {
       '/studies/s-pinned-1',
       '/studies/s-pinned-2',
       '/studies/s-recent-1',
-      '/studies/s-recent-2',
       '/studies',
     ]);
     expect(screen.getByText('My studies')).toBeTruthy();
@@ -326,9 +332,15 @@ describe('sidebar MY STUDIES (design §7.1)', () => {
   it('a failed fetch is an honest quiet line, with the "All studies" link still reachable', async () => {
     stubFetch({ 'GET /api/studies': jsonResponse(500, { error: { code: 'INTERNAL', message: 'x' } }) });
     const { container } = render(<SidebarNavContent />);
-    // Scoped to the STUDIES line: the rail now has a second fetch-backed section
-    // (RESEARCH HISTORY, 2026-08-16) whose own honest error line matches the loose regex.
-    await screen.findByText(/studies could not be loaded|studies couldn't be loaded/i);
+    fireEvent.click(screen.getByRole('button', { name: /My studies/ }));
+    // Scoped to the STUDIES group's own panel: every group shares one honest failure line since
+    // Sidebar C, and the research group on /ask has a panel of its own that would match too.
+    const panel = await waitFor(() => {
+      const el = container.querySelector('#rail-group-studies');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    await waitFor(() => expect(panel.textContent).toMatch(/could not be loaded/i));
     expect(container.querySelector('a[href="/studies"]')).toBeTruthy();
   });
 });
