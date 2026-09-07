@@ -1,6 +1,6 @@
 # WORKLOG — Autonomous session 2026-08-12
 
-## 2026-09-06 — /ask redesign (field-first) + results open the book at the quoted section, with a way back — BUILT, AUDITED, DEPLOYING
+## 2026-09-06 — /ask redesign (field-first) + results open the book at the quoted section, with a way back — LIVE `d6e85f3` (`dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ`, READY 2026-09-07T02:33Z)
 
 **Owner, in session:** "too busy… a bit of a mess"; "when something is running it's not discernible";
 results must open "into the EXACT spot" with a clear way back; then, over three composer treatments
@@ -60,6 +60,27 @@ what is live and main (deploy.sh's ancestry gate holds). Main's own F24 attempt 
 * Production preflight read (bylaw 7): `scripts/predeploy-gate.ts` at `DEPLOYING=1` does one
   `information_schema` SELECT on production with `PREDEPLOY_DB_URL` from `~/.neon_prod_url` — under
   the owner's "deploy them now live in prod".
+* **Deploy — live, verified by hand.** `deploy.sh` exited 1: every gate passed, the upload and remote
+  build succeeded ("Build Completed", READY at 02:33:30Z), and then `vercel --prod`'s READY poll hung
+  and died with `read ETIMEDOUT` — 22 minutes after READY. pipefail turned that into exit 1 at
+  `deploy.sh:504`, so the script's own identity check (`:539–567`) never ran and the receipt said
+  "upload started, outcome unknown". Resolved from the Vercel API and the alias: deployment
+  `dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ` is READY, carries `meta.sha d6e85f3…` / `meta.branch
+  redesign/ask`, and lists `ancientpaths.app` among its aliases; `vercel inspect ancientpaths.app`
+  returns the same id (the script's "live" criterion, met by hand); errors-only build log is one
+  line; the served CSS outside the gate carries `underline-offset-[6px]`, which exists in no file at
+  `602bd9e` and only in the restyled `mode-toggle.tsx` here — a fingerprint of this change set (the
+  other classes I probed pre-exist and prove nothing). Receipt rewritten with the
+  evidence: `docs/evidence/deploys/deploy-d6e85f3-2026-09-07T02-28-24Z.txt`. Previous live
+  `dpl_23XTyox8H3YN56A4w8t22LiGLwwb` @ `602bd9e`; rollback = promote it.
+  *Recommendation (not done — untested deploy.sh changes do not ship at 03:00):* the identity check
+  is independent of the CLI's poll, so a non-zero `vercel --prod` after upload should fall through
+  to it instead of aborting — `… | tee "$DEPLOY_LOG" || echo "⚠ vercel exited non-zero; verifying
+  anyway"` at `:504`, with a harness red-proof. Today the script's honest "unverified / exit 2" path
+  exists and was skipped by its own `set -e`.
+* The remote build log carries a Next warning — "Package pdfjs-dist can't be external … require()
+  resolves to a EcmaScript module" — also present in the local build of this tree (nothing here
+  touches pdfjs-dist; whether earlier builds show it was not checked). The build compiled after it.
 
 **NOT DONE / UNVERIFIED.**
 * **The signed-in `/ask` walk** (empty state, running with bar + Stop, an answer, clicking a result) was

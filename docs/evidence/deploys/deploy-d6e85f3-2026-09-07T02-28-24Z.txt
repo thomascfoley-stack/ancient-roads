@@ -1,0 +1,46 @@
+deployed_at_utc: 2026-09-07T02:55:54Z
+sha:             d6e85f3e502b56c26241cf111a750d06d134e181
+branch:          redesign/ask
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-1ng3lgnun-home-network-hardening.vercel.app
+deployment_id:   dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ
+alias:           ancientpaths.app
+alias_serves:    dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ
+state:           live — VERIFIED BY HAND, not by the script (see below)
+
+# --- Post-hoc verification, 2026-09-07T03:00Z ---------------------------------------------------
+# deploy.sh wrote the twelve lines above as "url: (not parsed) / deployment_id: (not resolved) /
+# alias_serves: (not resolved) / state: upload started, outcome unknown". They were rewritten from the
+# checks below; the script's own identity check (deploy.sh:539-567) NEVER RAN, because
+# `vercel --prod` uploaded, built, and then its READY poll died with `read ETIMEDOUT` — a non-zero CLI
+# exit that pipefail turned into exit 1 at deploy.sh:504, before the check. Note the receipt's
+# deployed_at (02:55:54Z) is 22 minutes AFTER the deployment was READY (02:33:30Z): that is how long
+# the CLI poll hung.
+#
+# 1. Vercel API (get_deployment dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ, team_TQ3BYCSyzQ3m0yatlkKmUzM0):
+#      state READY · readyState READY · target production · source cli
+#      meta.sha d6e85f3e502b56c26241cf111a750d06d134e181 · meta.branch redesign/ask
+#      createdAt 2026-09-07T02:30:19Z · buildingAt 02:30:20Z · ready 2026-09-07T02:33:30Z
+#      alias: ancientpaths.app · www.ancientpaths.app · web-psi-eight-83.vercel.app ·
+#             web-home-network-hardening.vercel.app · aliasError null
+# 2. Build log, errors-only filter: exactly one line — "02:32:02 Build Completed in /vercel/output [1m]".
+#    The full log's "Package pdfjs-dist can't be external / The package seems invalid. require()
+#    resolves to a EcmaScript module" is a Next build WARNING about serverExternalPackages, present
+#    in the LOCAL build of this same tree too (deploy log line 90 local, line 354 remote); the build
+#    compiled successfully after it both times. Not introduced by this change set (nothing here
+#    touches pdfjs-dist); whether it appears on earlier builds was not checked.
+# 3. `vercel inspect ancientpaths.app` → dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ. Same id as (1), which is
+#    the script's own "live" criterion (both sides resolve, and are equal).
+# 4. The served bundle, from outside the password gate: GET https://ancientpaths.app/gate → 200;
+#    its stylesheet /_next/static/immutable/chunks/3i7w87rq-2om-.css (117,295 B) contains
+#    `underline-offset-[6px]` — a class present in ZERO files of web/src at the prior live sha
+#    602bd9e (`git grep`) and in exactly one file on this tree, the restyled mode-toggle.tsx — so
+#    its presence in the served CSS is a fingerprint of THIS change set. (`min-h-[40px]` and
+#    `progress-travel` were also found but pre-exist on 602bd9e; they prove nothing.)
+#    Corroboration; (1)+(3) are the proof.
+#
+# previous_live:   dpl_23XTyox8H3YN56A4w8t22LiGLwwb @ 602bd9e (fix/ux-overnight-sweep, 2026-08-31)
+# rollback:        promote dpl_23XTyox8H3YN56A4w8t22LiGLwwb to ancientpaths.app
