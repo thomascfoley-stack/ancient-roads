@@ -36,7 +36,9 @@ vi.mock('@/lib/session', async () => ({
   currentUser: async () => session.user,
 }));
 
-const listStudies = vi.fn(async () => []);
+// Typed to take the route's arguments so the forwarding spread below typechecks under
+// web/tsconfig.test.json (the audit gate's second typecheck, which `tsc -p .` does not cover).
+const listStudies = vi.fn(async (..._args: unknown[]): Promise<unknown[]> => []);
 vi.mock('@/lib/studies', () => ({
   listStudies: (...args: unknown[]) => listStudies(...args),
   STUDIES_PAGE_LIMIT: 20,

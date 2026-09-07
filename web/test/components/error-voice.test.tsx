@@ -62,7 +62,7 @@ afterEach(() => {
 
 async function searchAndRead(fetchImpl: typeof globalThis.fetch): Promise<string> {
   vi.stubGlobal('fetch', fetchImpl);
-  const { container } = render(<CatalogSearch catalog="commentary" label="Commentaries" />);
+  const { container } = render(<CatalogSearch catalog="commentaries" label="Commentaries" />);
   const box = container.querySelector('input')!;
   fireEvent.change(box, { target: { value: 'grace' } });
   fireEvent.submit(box.closest('form')!);
