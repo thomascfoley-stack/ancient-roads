@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { READING_MEASURES, READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
+import { DialogPanel } from '@/lib/use-dialog';
 
 export function ReaderSettings({
   dialogOpen = false,
@@ -46,15 +47,30 @@ export function ReaderSettings({
 
   return (
     <div className="relative" ref={ref}>
+      {/* The popover is a dialog, not a bare div: focus moves into it, Tab cycles inside it and
+          Escape hands focus back to Aa (lib/use-dialog). Its only exit used to be the outside
+          MOUSEDOWN listener above — an event a keyboard never produces. */}
       <button
         onClick={() => setOpen((v) => !v)}
         title="Reading settings"
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="min-h-[44px] border edge bg-paper px-3 text-xs font-semibold text-stone-500 transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
       >
         Aa
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 animate-[fade-in_150ms_var(--ease-gentle)] border edge bg-paper p-3 dark:bg-stone-900">
+        <DialogPanel
+          label="Reading settings"
+          onClose={() => setOpen(false)}
+          // `w-48` below `sm` is not a taste call. The panel is anchored `right-0` to the Aa
+          // button, and Aa is the LEFTMOST of the header's four buttons, so at 375px a 224px
+          // panel started at x = -22 and the reader lost the left edge of the Theme row off the
+          // side of the screen (measured in Chrome, 2026-09-06 — the browser leg of this branch;
+          // it produces no horizontal scrollbar, which is why it survived). 192px puts the left
+          // edge at x = 10. From `sm` up Aa sits far enough right that the original width fits.
+          className="absolute right-0 top-full mt-1 w-48 animate-[fade-in_150ms_var(--ease-gentle)] border edge bg-paper p-3 sm:w-56 dark:bg-stone-900"
+        >
           <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Theme</p>
           <div className="mb-3 flex bg-stone-100 p-0.5 dark:bg-stone-700">
             <button
@@ -110,7 +126,7 @@ export function ReaderSettings({
               ⇥
             </button>
           </div>
-        </div>
+        </DialogPanel>
       )}
     </div>
   );

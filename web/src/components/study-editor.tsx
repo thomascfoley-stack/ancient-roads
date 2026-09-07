@@ -227,6 +227,9 @@ export function StudyEditor({
   const [everSaved, setEverSaved] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelFocusToken, setPanelFocusToken] = useState(0);
+  // The Export disclosure — see the <details> below for why it is controlled rather than native.
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDetailsElement | null>(null);
   // Owner annotations 2026-08-13: the library rail shrinks/enlarges by dragging its divider and
   // collapses entirely (the doc takes the width). Pure layout preference — client-only
   // localStorage, the S-9 rule: no render path DEPENDS on it, defaults are always valid.
@@ -247,6 +250,30 @@ export function StudyEditor({
   // The title's last-saved value: an empty title is never written (the route 400s it), so a
   // cleared field falls back to this on blur rather than erasing the study's name.
   const savedTitle = useRef(study.title);
+
+  // THE EXPORT MENU'S TWO MISSING EXITS. A bare <details> has neither: Escape does nothing to it,
+  // and clicking elsewhere on the page leaves it hanging open over the document. Escape also hands
+  // focus back to the summary, so a keyboard reader who opened the menu lands where they started
+  // rather than at the top of the page. Capture phase + stopPropagation for the same reason
+  // use-dialog gives: one Escape closes one thing.
+  useEffect(() => {
+    if (!exportOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      setExportOpen(false);
+      exportRef.current?.querySelector('summary')?.focus();
+    }
+    function onPointerDown(e: Event) {
+      if (!exportRef.current?.contains(e.target as Node)) setExportOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [exportOpen]);
 
   useEffect(() => {
     try {
@@ -847,9 +874,27 @@ export function StudyEditor({
               {pinned ? 'Pinned' : 'Pin'}
             </button>
             {/* Export asks the format (owner 2026-08-12). Plain anchors to the route handler —
-                serialization and the licensing re-check stay server-side (Flow E). */}
-            <details className="relative">
-              <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center hover:text-accent-600 dark:hover:text-accent-400 [&::-webkit-details-marker]:hidden">
+                serialization and the licensing re-check stay server-side (Flow E).
+                It stays a <details> — a DISCLOSURE, not a modal, and deliberately held to a lower
+                bar than the reader popovers on this branch: Tab is NOT trapped here, because
+                trapping a two-link menu is the wrong behaviour rather than the missing one. What
+                WAS missing is everything else. A bare <details> cannot be closed with Escape, and
+                nothing closed it on an outside click either, so once opened it hung over the
+                document until the reader found the summary again. `open` is controlled so those
+                two exits exist and so the summary can state its own state. */}
+            <details className="relative" open={exportOpen} ref={exportRef}>
+              <summary
+                aria-haspopup="menu"
+                aria-expanded={exportOpen}
+                // The native toggle is refused so `open` has exactly one source of truth — the
+                // state the Escape and outside-click exits below also write. Enter and Space on a
+                // summary dispatch a click, so the keyboard path comes through here too.
+                onClick={(e) => {
+                  e.preventDefault();
+                  setExportOpen((v) => !v);
+                }}
+                className="inline-flex min-h-[44px] cursor-pointer list-none items-center hover:text-accent-600 dark:hover:text-accent-400 [&::-webkit-details-marker]:hidden"
+              >
                 Export
               </summary>
               <div className="absolute left-0 top-full z-10 mt-1 flex min-w-[12rem] flex-col rounded border edge bg-white py-1 shadow-sm dark:bg-stone-900">
