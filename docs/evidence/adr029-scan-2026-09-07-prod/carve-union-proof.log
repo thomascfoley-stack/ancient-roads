@@ -1,0 +1,11 @@
+carve union proof, 2026-09-07 (post-carve re-verification)
+reference 439 input sha256 f294807bbae53068112bac388d0c4fcc3300b21139a5b83439933424a6336622
+batch sizes after carve: [48, 64, 66, 66, 52] = 296
+held: 143
+OK: batches(296) + held(143) = 439; disjoint; union == scan input; held == scan FAIL set exactly
+50cb18e54af85179126b84ba753bbb8c86870372a6474c2527a3b2e4a869f602 docs/evidence/corpus-copy/prod440-2026-09-06-batch1.json
+8240f5b20fc982189d959a693e8d09e5a622648f255f2d3cfc6b26df276ae0a8 docs/evidence/corpus-copy/prod440-2026-09-06-batch2.json
+627bacdef5266664042e4bcedd9fd6b5517db3242c98adad754af9c20eb5d058 docs/evidence/corpus-copy/prod440-2026-09-06-batch3.json
+ace0ebaf336efaff5fdc355c0fdb08cd5ff39b667e0e9978e810990ae6512c24 docs/evidence/corpus-copy/prod440-2026-09-06-batch4.json
+fff250cf4d4d674cfcfe9f6e02587ab2e15f5c36121cee9ab2aa1130c8b93dec docs/evidence/corpus-copy/prod440-2026-09-06-batch5.json
+533f2d1541b00a4ea11049f29b32903c3c8732d4f20f7265319eb70835e0f1cc docs/evidence/corpus-copy/prod439-held-adr029-2026-09-07.json

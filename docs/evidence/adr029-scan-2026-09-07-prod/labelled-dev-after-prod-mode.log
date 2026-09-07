@@ -1,0 +1,36 @@
+(node:2865) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+detector version : 2.1.0
+target           : ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (read-only txn; credentials not printed)
+
+=== POSITIVES (bar: every documented positive WORK detected) ===
+  ✓ P1 chrysostom-homilies §1–95 (backup)          1/95 rows fire; first: [foreign-work-byline] ". By Philip Schaff"
+  ✓ P2 origen-commentary §1–~129 (LIVE)            2 finding(s) ≤§129 §1…§101 (2 findings); 0 beyond §129 — — beyond-span findings are listed, not hidden
+      §1 [foreign-work-banner/head] "The First\nEpistle of Clement" — names 'Clement', not the declared author 'Origen of Alexandria'
+      §101 [foreign-work-banner/middle] "The Second Epistle of\nClement" — names 'Clement', not the declared author 'Origen of Alexandria'
+  ✓ P3 schaff-creeds word index (backup)           585/585 rows fire
+  ✓ P3 hodge-systematic word index (backup)        283/283 rows fire
+  ✓ P3 owen-works word index (backup)              41/41 rows fire
+  ✓ P3 watson-works word index (backup)            17/17 rows fire
+  ✓ P3 maclaren-expositions word index (backup)    2/2 rows fire
+  ✓ P3 edwards-works word index (backup)           1/1 rows fire
+  ✓ P4 tennyson-in-memoriam catalogue (backup)     5/5 rows fire
+  ✓ P4 traherne-poems catalogue (backup)           5/5 rows fire
+  ✓ P4 spurgeon-talks-to-farmers catalogue (backup) 2/2 rows fire
+
+=== KEPT NEGATIVES (bar: zero flagged — one flag and the detector does not ship) ===
+  ✓ clean K1 schaff-creeds comparative table (7/7 rows)        0 findings
+  ✓ clean K2 calvin-institutes index of chapters (6/6 rows)    0 findings
+  ✓ clean K3 spurgeon-talks-to-farmers §298 mixed (fixture)    0 findings
+
+=== LABELLED-SET VERDICT ===
+  positives detected : 11/11 works (sensitivity, denominator 11)
+  kept negatives clean: 3/3 (specificity, denominator 3)
+  ✓ BAR MET

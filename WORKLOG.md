@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — C-3 closed: guarded prod mode for the ADR-029 scanner; 439 prod-staged works scanned (296 PASS / 143 FAIL), batches carved; hooker-just FAIL on dev [Kimi Code session]
+
+Closed deep-audit C-3 (`docs/pm/audits/2026-09-07-wave-deep-audit.md`): the runbook's
+mandatory prod-side ADR-029 scan was a dead command. Owner authorized READ ONLY prod access
+for this task ("do it all", 2026-09-07).
+
+**Scanner** (`scripts/adr029-nonauthorial-scan.mts`): prod mode added on the repo's own
+consent-flag idiom — requires BOTH `SCAN_ALLOW_PROD=1` (COVERAGE_ALLOW_PROD pattern from
+`coverage-matrix.mts`) AND `--target` naming the exact prod endpoint id
+(PUBLISH_EXPECT_HOST pattern from `publish-flip.mjs`) AND an explicit `--slugs` file (the
+frozen dev input is never a prod input). Read-only txn (BEGIN / SET TRANSACTION READ ONLY /
+verified / ROLLBACK) is enforced in every mode; the scan still REPORTS ONLY. `--slugs` now
+also accepts JSON (bare array or `{slugs:[...]}`, the batch-file shape); the newline .txt
+path is unchanged. Red-proofs (`redproof-prod-mode.log`, 6/6): prod URL without the flag
+still REFUSES pre-connection; flag + wrong `--target` stops; flag without `--slugs` stops;
+dev guards (`NEON_BRANCH=dev`, declared-target) unchanged; malformed JSON stops. Dev
+labelled bar re-run after the change: 11/11 + 3/3 BAR MET. tsc cutover clean.
+
+**Prod scan** (detector 2.1.0, all 439 slugs = union of the five batch files, input
+`input-slugs.json` sha256 `f294807b…626622`): **296 PASS / 143 FAIL / 0 EMPTY** —
+`docs/evidence/adr029-scan-2026-09-07-prod/verdict-prod.md` (every FAIL with its strong
+findings; kinds: word-index-title 127, apparatus-title 44, foreign-work-banner 29,
+publisher-blurb-body 9, publisher-catalogue-title 3). FAIL classes match the dev verdicts.
+
+**Carve**: the 143 FAILs moved out of `prod440-2026-09-06-batch{1..5}.json` into
+`docs/evidence/corpus-copy/prod439-held-adr029-2026-09-07.json` (bare array — publish-flip
+refuses it, fail-closed). Batches now **48/64/66/66/52 = 296**; union proof
+(`carve-union-proof.log`): batches + held = 439, disjoint, held == scan FAIL set exactly.
+Runbook updated: preconditions both satisfied, flip totals 42 + 296 = 338, batch sizes,
+held works added to the exclusions list.
+
+**hooker-just** (dev-staged, outside both sets — M-3): scanned on dev, **FAIL** — §1 head
+banner 'Discourse of Justification' ruled a strong foreign-work banner. Recorded as a claim
+to be read (ADR-029 rule 2; plausibly the detector's work-title false-positive class, but
+adjudication is an owner/ADR-029 reader call). HELD; in no flip file.
+
+**Verify**: root vitest + `npm run audit` results in the commit message / evidence.
+
 ## 2026-09-07 — H-1: ADR-029 detector false negatives remediated (detector 2.1.0), rescan + re-carve [Kimi Code session]
 
 Remediated deep-audit H-1 (`docs/pm/audits/2026-09-07-wave-deep-audit.md`): the 90-PASS

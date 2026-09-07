@@ -1,11 +1,29 @@
 #!/usr/bin/env -S npx tsx
 /**
- * ADR-029 Track A — non-authorial-matter instrument. Read-only, dev only, REPORTS ONLY.
+ * ADR-029 Track A — non-authorial-matter instrument. Read-only, REPORTS ONLY.
+ * Dev by default; prod only under the guarded mode below (SCAN_ALLOW_PROD=1 + exact --target).
  *
  *   export DATABASE_URL="$(cat ~/.neon_dev_owner_url)" NEON_BRANCH=dev
  *   npx tsx scripts/adr029-nonauthorial-scan.mts --target=ep-tiny-hat --mode=labelled
  *   npx tsx scripts/adr029-nonauthorial-scan.mts --target=ep-tiny-hat --mode=scan \
  *     [--slugs=docs/evidence/adr029-scan-2026-09-06/input-slugs.txt]
+ *
+ * PROD (added 2026-09-07, deep-audit C-3 remediation; owner go 2026-09-07, bylaw 7):
+ *
+ *   SCAN_ALLOW_PROD=1 DATABASE_URL="$(cat ~/.neon_prod_url)" \
+ *   npx tsx scripts/adr029-nonauthorial-scan.mts --target=ep-odd-fog-atnykudm --mode=scan \
+ *     --slugs=docs/evidence/adr029-scan-2026-09-07-prod/input-slugs.json
+ *
+ * Prod mode requires BOTH the explicit allow flag (same idiom as COVERAGE_ALLOW_PROD in
+ * scripts/coverage-matrix.mts) AND --target naming the exact prod endpoint id (same
+ * discipline as PUBLISH_EXPECT_HOST in scripts/publish-flip.mjs), plus an explicit
+ * --slugs file — the frozen dev input is never a prod input. The scan itself is
+ * unchanged: READ ONLY enforced by the database (BEGIN / SET TRANSACTION READ ONLY /
+ * ROLLBACK), and it still REPORTS ONLY. Without the flag the prod refusal fires
+ * pre-connection exactly as before; the dev guards are untouched.
+ *
+ * --slugs accepts the newline .txt format or a JSON file — either a bare array of
+ * slug strings or an object with a "slugs" array (the corpus-copy batch-file shape).
  *
  * --mode=labelled runs the pre-registered labelled set (bar at the top of
  * docs/evidence/adr029-scan-2026-09-06/redproof.log): positives from the suppression
@@ -19,6 +37,7 @@
  * reported ranges that were WRONG); nothing here deletes, trims, or writes a row.
  */
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import pg from 'pg';
 import {
   DETECTOR_VERSION,
@@ -31,16 +50,32 @@ const args = process.argv.slice(2);
 const opt = (n: string): string | undefined => args.find((a) => a.startsWith(`--${n}=`))?.split('=')[1];
 const mode = opt('mode') ?? 'labelled';
 const declared = opt('target');
-const slugsPath = opt('slugs') ?? 'docs/evidence/adr029-scan-2026-09-06/input-slugs.txt';
+const slugsArg = opt('slugs');
+const slugsPath = slugsArg ?? 'docs/evidence/adr029-scan-2026-09-06/input-slugs.txt';
 
 const url = process.env.DATABASE_URL;
-if (!url) throw new Error('DATABASE_URL is required (dev owner credential)');
+if (!url) throw new Error('DATABASE_URL is required (dev owner credential; prod only under SCAN_ALLOW_PROD=1 with the owner\'s go)');
 // Narrowed alias for use inside hoisted function declarations — TS treats them as
 // potentially called before the guard above, so `url` stays string|undefined in there.
 const DB_URL: string = url;
-if (process.env.NEON_BRANCH !== 'dev') throw new Error('STOP: NEON_BRANCH must be "dev"');
 if (!declared) throw new Error('--target=<endpoint-id> is required');
-if (isProdHost(url)) throw new Error(`REFUSING: ${hostOf(url)} is production`);
+if (isProdHost(url)) {
+  // Prod path (C-3 remediation): explicit consent flag AND an exact declared endpoint,
+  // AND an explicit slug file. The read-only transaction below is enforced and checked
+  // in every mode — prod gets the same REPORTS ONLY scan, never a write.
+  if (process.env.SCAN_ALLOW_PROD !== '1') {
+    throw new Error(
+      `REFUSING: ${hostOf(url)} is production. Re-run with SCAN_ALLOW_PROD=1 under the owner's ` +
+      `go (bylaw 7), --target naming the exact prod endpoint id, and an explicit --slugs file. ` +
+      `The scan stays READ ONLY.`,
+    );
+  }
+  if (!slugsArg) {
+    throw new Error('STOP: prod mode requires an explicit --slugs=<file> — the frozen dev input is not a prod input');
+  }
+} else if (process.env.NEON_BRANCH !== 'dev') {
+  throw new Error('STOP: NEON_BRANCH must be "dev"');
+}
 if (endpointId(hostOf(url)) !== endpointId(declared)) {
   throw new Error(`STOP: ${hostOf(url)} is not the declared target '${declared}'`);
 }
@@ -213,9 +248,24 @@ async function labelled(client: pg.Client) {
   if (!pass) process.exitCode = 1;
 }
 
+/** Newline .txt input, or JSON: a bare slug array, or { slugs: [...] } (batch-file shape). */
+function loadSlugs(path: string): string[] {
+  const raw = readFileSync(path, 'utf-8').trim();
+  if (raw.startsWith('[') || raw.startsWith('{')) {
+    const parsed: unknown = JSON.parse(raw);
+    const arr = Array.isArray(parsed) ? parsed : (parsed as { slugs?: unknown }).slugs;
+    if (!Array.isArray(arr) || arr.length === 0 || !arr.every((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s))) {
+      throw new Error(`STOP: ${path} is JSON but carries no non-empty string slug array (expected [...] or { "slugs": [...] })`);
+    }
+    return arr as string[];
+  }
+  return raw.split('\n').filter(Boolean);
+}
+
 async function scan(client: pg.Client) {
-  const slugs = readFileSync(slugsPath, 'utf-8').trim().split('\n').filter(Boolean);
-  report(`slug file        : ${slugsPath} (${slugs.length} works)`);
+  const slugs = loadSlugs(slugsPath);
+  const slugFileSha = createHash('sha256').update(readFileSync(slugsPath)).digest('hex');
+  report(`slug file        : ${slugsPath} (${slugs.length} works, sha256 ${slugFileSha})`);
   report('');
   const detail: Array<Record<string, unknown>> = [];
   let pass = 0;
@@ -248,7 +298,7 @@ async function scan(client: pg.Client) {
   report('');
   report(`=== SCAN VERDICT — ${slugs.length} works: ${pass} PASS, ${fail} FAIL, ${detail.filter((d) => d.verdict === 'EMPTY').length} EMPTY ===`);
   report('\nJSON_DETAIL_BEGIN');
-  report(JSON.stringify({ detectorVersion: DETECTOR_VERSION, slugFile: slugsPath, works: detail }, null, 1));
+  report(JSON.stringify({ detectorVersion: DETECTOR_VERSION, slugFile: slugsPath, slugFileSha256: slugFileSha, works: detail }, null, 1));
   report('JSON_DETAIL_END');
 }
 

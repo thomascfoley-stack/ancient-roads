@@ -1,0 +1,96 @@
+### R1 prod URL, no SCAN_ALLOW_PROD -> refusal
+/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:67
+    throw new Error(
+          ^
+
+
+Error: REFUSING: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech is production. Re-run with SCAN_ALLOW_PROD=1 under the owner's go (bylaw 7), --target naming the exact prod endpoint id, and an explicit --slugs file. The scan stays READ ONLY.
+    at <anonymous> (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:67:11)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+exit=1
+### R2 prod URL + SCAN_ALLOW_PROD=1, wrong --target -> stop
+/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:80
+  throw new Error(`STOP: ${hostOf(url)} is not the declared target '${declared}'`);
+        ^
+
+
+Error: STOP: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech is not the declared target 'ep-tiny-hat-atdgpisx'
+    at <anonymous> (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:80:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+exit=1
+### R3 prod URL + flag + right target, no --slugs -> stop
+/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:74
+    throw new Error('STOP: prod mode requires an explicit --slugs=<file> — the frozen dev input is not a prod input');
+          ^
+
+
+Error: STOP: prod mode requires an explicit --slugs=<file> — the frozen dev input is not a prod input
+    at <anonymous> (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:74:11)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+exit=1
+### R4 dev URL, no NEON_BRANCH -> stop
+/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:77
+  throw new Error('STOP: NEON_BRANCH must be "dev"');
+        ^
+
+
+Error: STOP: NEON_BRANCH must be "dev"
+    at <anonymous> (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:77:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+exit=1
+### R5 dev URL + NEON_BRANCH=dev, wrong --target -> stop
+/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:80
+  throw new Error(`STOP: ${hostOf(url)} is not the declared target '${declared}'`);
+        ^
+
+
+Error: STOP: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech is not the declared target 'ep-odd-fog-atnykudm'
+    at <anonymous> (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:80:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+exit=1
+### R6 JSON slug file with non-string entry -> stop
+(node:2688) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+detector version : 2.1.0
+target           : ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (read-only txn; credentials not printed)
+/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:258
+      throw new Error(`STOP: ${path} is JSON but carries no non-empty string slug array (expected [...] or { "slugs": [...] })`);
+            ^
+
+
+Error: STOP: /tmp/adr029-bad-slugs.json is JSON but carries no non-empty string slug array (expected [...] or { "slugs": [...] })
+    at loadSlugs (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:258:13)
+    at scan (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:266:17)
+    at main (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:128:37)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/Users/foley/Projects/ap-ingest/scripts/adr029-nonauthorial-scan.mts:305:1)
+
+Node.js v24.5.0
+exit=1

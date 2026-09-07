@@ -14,10 +14,10 @@
 > 438 of them are the theology wave. **Mechanical requirements that survive the ruling:**
 > (a) the prod-side ADR-029 scan runs FIRST (read-only, one command below) and its FAIL
 > works are carved out of the batches — attribution is part of the product promise, not
-> paperwork; (b) each flip is `--status-only` + `serve-batched`, own snapshot, own reverse.
+> paperwork — **discharged 2026-09-07, see Precondition 2 below**; (b) each flip is `--status-only` + `serve-batched`, own snapshot, own reverse.
 >
-> **Precondition 2 — ADR-029 rule 3: SATISFIED FOR THE DEV-STAGED SET (scan done
-> 2026-09-07, commit `ce3df1b`).** `docs/DECISIONS.md:317-318`, verbatim: **"No CCEL
+> **Precondition 2 — ADR-029 rule 3: SATISFIED — DEV SET 2026-09-07 (scan done
+> 2026-09-07, commit `ce3df1b`); PROD SET 2026-09-07 (scan + carve below).** `docs/DECISIONS.md:317-318`, verbatim: **"No CCEL
 > work publishes until it has been checked for a composite-volume boundary."** The detector
 > was extended with the two missing addendum-2 shapes + head-and-tail sweep (red-proved,
 > sensitivity 11/11, specificity 3/3 on the ADR's labelled set), the durable adapter
@@ -27,18 +27,27 @@
 > works are HELD — non-authorial matter** (15 live machine word-indexes, 5 foreign-work
 > composites incl. origen §1/§101 confirmed live + schaff-anf06/07/08 bound-in fathers,
 > the rest carried-in title/apparatus pages). **No flip may include a verdict-FAIL work.**
-> The 439 prod-staged works were NOT scanned (no prod connection under that order) — and the
+> The 439 prod-staged works were NOT scanned under that order (no prod connection) — and the
 > deep-audit of 2026-09-07 proved the scan command this runbook originally cited **cannot
-> run as written**: the scanner is dev-only by design (`NEON_BRANCH=dev` guard, `--target`
-> required, prod-host refusal, frozen dev input set). **OPEN WORK before the 439 flips:
-> build the scanner's guarded prod mode** (a `COVERAGE_ALLOW_PROD`-style flag + prod slug
-> input from the batch files), then carve its FAILs from the batches exactly as was done
-> for the 58. Flipping without it means publishing unscanned CCEL works on a ruling that
-> assumed the scan existed — do not treat the ruling as covering that gap silently.
+> run as written** (scanner dev-only by design). **Closed 2026-09-07 (deep-audit C-3):** the
+> scanner's guarded prod mode was built (`SCAN_ALLOW_PROD=1` + `--target` naming the exact prod
+> endpoint id + explicit `--slugs`; read-only txn enforced; dev guards untouched — six red-proofs
+> in `docs/evidence/adr029-scan-2026-09-07-prod/redproof-prod-mode.log`) and all 439 were scanned
+> READ ONLY on prod with detector 2.1.0:
+> `docs/evidence/adr029-scan-2026-09-07-prod/verdict-prod.md` = **296 PASS / 143 FAIL**. **The 143
+> FAIL works are HELD** — carved out of `prod440-2026-09-06-batch{1..5}.json` into
+> `docs/evidence/corpus-copy/prod439-held-adr029-2026-09-07.json`; the batches are now
+> **48/64/66/66/52 = 296** (union proof: `carve-union-proof.log` — batches 296 + held 143 = 439,
+> disjoint, held == scan FAIL set exactly). The flip sequence below names the carved files; no
+> flip may include a verdict-FAIL work. Additionally **`hooker-just`** (dev-staged, outside both
+> sets — deep-audit M-3) was scanned on dev the same day: **FAIL** (§1 head banner ruled a strong
+> foreign-work banner — a claim to be read per ADR-029 rule 2, not a deletion). It is HELD and
+> must not be added to any flip file while that verdict stands.
 > Additionally, **`origen-commentary` is held by the ADR-029 ruling itself** (its §1–~129 are 1 & 2
 > Clement) — it was wrongly included in the original 440 slug files; it has been REMOVED
-> from `prod440-2026-09-06-batch4.json` (batch 4 is now 87; the union is 439, still named
-> `prod440-*` for file stability).
+> from `prod440-2026-09-06-batch4.json` (batch 4 went to 87 and the union to 439 at that point,
+> still named `prod440-*` for file stability — the 2026-09-07 prod-scan carve above then took
+> the five batches to 48/64/66/66/52 = 296).
 >
 > What remains flippable without further ruling: the **verdict-PASS subset of the 58
 > dev-staged works** (after the dev→prod copy). **42 PASS / 16 HELD** — re-carved 2026-09-07
@@ -57,12 +66,13 @@
 ingestion session. Two jobs, in order:
 
 1. **Copy** the 58 works staged on DEV (top-up waves 1–3) to PROD, landing `staged`.
-2. **Publish** 481 works total on PROD: the 42 verdict-PASS of the 58 (after the copy; 42 since
+2. **Publish** 338 works total on PROD: the 42 verdict-PASS of the 58 (after the copy; 42 since
    the 2026-09-07 v2 re-carve, see amendment) + the
-   439 already staged there — each as a `--status-only` flip followed immediately by a
-   `serve-batched` run on the same slug file. **(Job 2 is gated by the preconditions in the
+   296 verdict-PASS of the 439 already staged there (296 since the 2026-09-07 prod scan carve,
+   see amendment) — each as a `--status-only` flip followed immediately by a
+   `serve-batched` run on the same slug file. **(Job 2 was gated by the preconditions in the
    amendment block: the owner ruling of 2026-09-07 discharged P4.n; ADR-029's prod-side scan
-   is OPEN WORK — the audit proved the scanner refuses prod as written, see below.)**
+   ran 2026-09-07 and its 143 FAILs are carved — both preconditions are now satisfied.)**
 
 Everything below was verified READ ONLY on 2026-09-06 (dev via `web/.env.local`
 `APP_DATABASE_URL` = app_runtime, SELECT-only; prod via `~/.neon_prod_url`, `BEGIN READ ONLY`).
@@ -78,8 +88,12 @@ Nothing here was executed for real by the prepping agent — the write tools are
   441 staged / 3 quarantined) **minus `hort-james1909` and `origen-commentary`** (see
   exclusions). Verified: all 439 pass the licence and forbidden-provenance predicates READ
   ONLY; all 439 have serveable embedding rows (261,933 flat rows, all `served=false`).
-- No delta: 42 + 439 = 481 works to publish (embedding-row count was measured for the full
-  58+440 set and is now a slight over-estimate; the 42 is the verdict-v2 re-carve of 2026-09-07).
+  **Carved 2026-09-07 by the prod ADR-029 scan: 143 verdict-FAIL works moved to
+  `docs/evidence/corpus-copy/prod439-held-adr029-2026-09-07.json`; 296 verdict-PASS remain
+  in the five batch files** (`verdict-prod.md`, union proof `carve-union-proof.log`).
+- No delta: 42 + 296 = 338 works to publish (embedding-row counts were measured for the full
+  58+440 set and are now over-estimates — the 42 is the verdict-v2 re-carve of 2026-09-07 and
+  the 296 is the prod-scan carve of 2026-09-07; serve-batched prints its own exact ETA).
 
 ## Exclusions — do NOT add these to any slug file
 
@@ -93,6 +107,13 @@ Nothing here was executed for real by the prepping agent — the write tools are
   Publish-blocked; leave it exactly as it is.
 - The 3 prod-quarantined works (`augustine-confessions`, `calvin-calcom`,
   `chesterton-preexistence`) are out of scope by status; untouched here.
+- **The 143 prod verdict-FAIL works** (`docs/evidence/corpus-copy/prod439-held-adr029-2026-09-07.json`)
+  — HELD by ADR-029 rule 3 after the 2026-09-07 prod scan (non-authorial matter: word indexes,
+  apparatus pages, foreign-work banners, publisher blurbs; every finding in `verdict-prod.md`).
+  They stay staged on prod, marked by this packet; no flip may include them.
+- **`hooker-just`** — dev-staged, arrived after the frozen 133; scanned on dev 2026-09-07,
+  verdict **FAIL** (§1 banner, a claim to be read per ADR-029 rule 2). HELD; it is in no flip
+  file and must not be added to one while that verdict stands.
 
 **Owner value calls flagged in the wave-2 digest** (before running the copy): three genuinely
 tiny works were staged per the triage plan but flagged for your ruling —
@@ -118,10 +139,11 @@ dev row before the copy; otherwise they ride with the batch.
 
 ## Batching (and why)
 
-- **Status flips: 6 batches** — the 42 PASS as one batch, the 439 as five batches
-  (88/88/88/87/88). Precedent:
+- **Status flips: 6 batches** — the 42 PASS as one batch, the 296 as five batches
+  (48/64/66/66/52 — carved 2026-09-07 from the original 88/88/88/87/88 by the prod ADR-029
+  scan, see amendment; file names unchanged for stability). Precedent:
   2026-08-19 flipped **87 works in a single flip** (log:
-  `docs/evidence/work-order-v2-stage2/flip-run-2026-08-19T11-57-28-503Z.log`), so 58/88 per
+  `docs/evidence/work-order-v2-stage2/flip-run-2026-08-19T11-57-28-503Z.log`), so 42/66 per
   batch is inside proven size, one owner-gate answer per batch, and each batch gets its own
   pre-flip snapshot + run log for reviewability. The loop's ~30-work "digest breaker" is an
   **intake** convention (pause ingestion so publishing catches up), not a flip-size cap — the
@@ -134,7 +156,7 @@ dev row before the copy; otherwise they ride with the batch.
   2,000 rows and is **resumable** — an interruption costs nothing, re-run the same command.
 - Interleave per batch (flip → serve → next batch) so no work sits published-but-unretrievable
   longer than its own batch's serve run. Published-but-unserved is a known-safe intermediate
-  (the 88-work precedent), but there is no reason to accumulate 481 of them.
+  (the 88-work precedent), but there is no reason to accumulate 338 of them.
 
 ## Step 1 — copy the 58 dev → prod (one run)
 
@@ -166,11 +188,11 @@ Run this pair SIX times, with `<FILE>` taking these values in order:
    found this step originally named the full 58, which would have published the held works;
    the H-1 remediation re-carve (verdict-v2, detector 2.1.0) added 8 more to the held set;
    no tool gate would have stopped it**)
-2. `docs/evidence/corpus-copy/prod440-2026-09-06-batch1.json` (88)
-3. `docs/evidence/corpus-copy/prod440-2026-09-06-batch2.json` (88)
-4. `docs/evidence/corpus-copy/prod440-2026-09-06-batch3.json` (88)
-5. `docs/evidence/corpus-copy/prod440-2026-09-06-batch4.json` (87)
-6. `docs/evidence/corpus-copy/prod440-2026-09-06-batch5.json` (88)
+2. `docs/evidence/corpus-copy/prod440-2026-09-06-batch1.json` (**48** — carved 2026-09-07, was 88)
+3. `docs/evidence/corpus-copy/prod440-2026-09-06-batch2.json` (**64** — carved, was 88)
+4. `docs/evidence/corpus-copy/prod440-2026-09-06-batch3.json` (**66** — carved, was 88)
+5. `docs/evidence/corpus-copy/prod440-2026-09-06-batch4.json` (**66** — carved, was 87)
+6. `docs/evidence/corpus-copy/prod440-2026-09-06-batch5.json` (**52** — carved, was 88)
 
 **Flip:**
 
@@ -210,8 +232,9 @@ CUTOVER_DATABASE_URL=$(cat ~/.neon_prod_url) \
   `N row(s) were already COMMITTED and are safe. Re-run the same command to resume.` — do
   exactly that.
 - Expected sizes: the dev58 batch serves 26,820 rows (~16 min at 28/s); the five prod batches
-  serve 261,933 rows between them (~2.5 h total, ~30 min each). The tool prints its own ETA
-  before the gate.
+  were measured at 261,933 rows between them BEFORE the 2026-09-07 carve — the carved 296
+  works serve strictly fewer (the 143 held works' rows are out). The tool prints its own exact
+  ETA before the gate.
 
 ## Reversing a batch
 

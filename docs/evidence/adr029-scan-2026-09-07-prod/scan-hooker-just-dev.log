@@ -1,0 +1,42 @@
+(node:2984) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+detector version : 2.1.0
+target           : ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (read-only txn; credentials not printed)
+slug file        : docs/evidence/adr029-scan-2026-09-07-prod/input-hooker-just-dev.txt (1 works, sha256 cdb2962b74947ceab01d4e6a8f4e3c575bfe89300a2c885e471e32c4fa9db001)
+
+FAIL  hooker-just                              13 sections  §1 (1 finding)         foreign-work-banner=1
+
+=== SCAN VERDICT — 1 works: 0 PASS, 1 FAIL, 0 EMPTY ===
+
+JSON_DETAIL_BEGIN
+{
+ "detectorVersion": "2.1.0",
+ "slugFile": "docs/evidence/adr029-scan-2026-09-07-prod/input-hooker-just-dev.txt",
+ "slugFileSha256": "cdb2962b74947ceab01d4e6a8f4e3c575bfe89300a2c885e471e32c4fa9db001",
+ "works": [
+  {
+   "slug": "hooker-just",
+   "verdict": "FAIL",
+   "author": "Hooker, Richard",
+   "scanned": 13,
+   "findings": [
+    {
+     "ordinal": 1,
+     "position": "head",
+     "kind": "foreign-work-banner",
+     "strength": "strong",
+     "evidence": "Discourse of Justification",
+     "reason": "names 'Justification', not the declared author 'Hooker, Richard'"
+    }
+   ]
+  }
+ ]
+}
+JSON_DETAIL_END
