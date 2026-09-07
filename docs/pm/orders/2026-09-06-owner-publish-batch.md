@@ -35,10 +35,12 @@
 > `prod440-*` for file stability).
 >
 > What remains flippable without further ruling: the **verdict-PASS subset of the 58
-> dev-staged works** (after the dev→prod copy). Several wave works are verdict-FAIL and
-> held (e.g. schaff-anf06/07/08, schaff-npnf111/112/114, bennett-expositor10,
-> tolstoy-maupassant — full list in verdict.md). The copy itself (job 1) is unaffected by
-> both preconditions and can run as written.
+> dev-staged works** (after the dev→prod copy). **50 PASS / 8 HELD**, carved into exact
+> slug files 2026-09-07: `docs/evidence/corpus-copy/dev58-pass-adr029-2026-09-07.json`
+> (flip these) and `dev58-held-adr029-2026-09-07.json` (do NOT flip: bennett-expositor10,
+> schaff-anf06/07/08, schaff-npnf111/112/114, tolstoy-maupassant — full findings in
+> verdict.md). The copy itself (job 1) is unaffected by both preconditions and can run as
+> written (copy all 58; the held ones stay staged on prod too, marked by this packet).
 
 **What this is:** the paste-ready runbook for the overdue owner batch from the 2026-09-06
 ingestion session. Two jobs, in order:
