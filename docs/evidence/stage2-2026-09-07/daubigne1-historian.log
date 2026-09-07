@@ -1,0 +1,4 @@
+daubigne-reformation1: 907 sections staged (source 1286) · 795 entity anchors · 0 explicit verse anchors
+(node:62406) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/907
+embedded 907/907 sections whole (max 1800 chars, truncation never fired)

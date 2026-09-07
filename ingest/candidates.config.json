@@ -1193,32 +1193,6 @@
       "notes": "The classic manners-and-customs companion to Edersheim."
     },
     {
-      "slug": "daubigne-reformation",
-      "title": "History of the Reformation of the Sixteenth Century",
-      "author": "J.H. Merle D'Aubigné",
-      "source_type": "historian",
-      "tradition": "reformed",
-      "target_edition": "H. White trans., 1840s-60s",
-      "target_source": "Project Gutenberg #40858, #41253, #41470, #41484",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "historians",
-      "notes": "5 vols. The best-known 19th-c. narrative Reformation history. Gutenberg — acquirable today."
-    },
-    {
-      "slug": "sayce-patriarchal-palestine",
-      "title": "Patriarchal Palestine; Fresh Light from the Ancient Monuments",
-      "author": "A.H. Sayce",
-      "source_type": "historian",
-      "tradition": "anglican",
-      "target_edition": "1895 / 1884",
-      "target_source": "Project Gutenberg #14405, #32883",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "historians",
-      "notes": "Ties Genesis patriarchal narratives to ANE monument evidence. Gutenberg — acquirable today."
-    },
-    {
       "slug": "layard-nineveh",
       "title": "Nineveh and Its Remains",
       "author": "Austen Henry Layard",
@@ -1256,19 +1230,6 @@
       "blocked_on": "archive-adapter",
       "found_by": "historians",
       "notes": "Standard one-volume American Protestant survey — a shorter complement to Schaff's 8 vols, not a duplicate."
-    },
-    {
-      "slug": "conder-tent-work",
-      "title": "Tent Work in Palestine",
-      "author": "Claude R. Conder",
-      "source_type": "historian",
-      "tradition": "anglican",
-      "target_edition": "1878",
-      "target_source": "Project Gutenberg #46641; archive.org tentworkinpalest01conduoft",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "historians",
-      "notes": "Primary first-person Palestine Exploration Fund survey account. Gutenberg — acquirable today."
     },
     {
       "slug": "kitto-daily-bible-illustrations",
@@ -1321,19 +1282,6 @@
       "blocked_on": "archive-adapter",
       "found_by": "historians",
       "notes": "Temple Mount excavation primary account — complements Edersheim's The Temple archaeologically."
-    },
-    {
-      "slug": "stalker-life-christ-paul",
-      "title": "The Life of Jesus Christ; The Life of St. Paul",
-      "author": "James Stalker",
-      "source_type": "historian",
-      "tradition": "presbyterian",
-      "target_edition": "1880 / 1884",
-      "target_source": "Project Gutenberg #21828; archive.org lifeofjesuschrisnyc00stal",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "historians",
-      "notes": "Shorter, popular-register lives. Lower novelty — overlaps existing Gospel/Paul coverage."
     },
     {
       "slug": "merrill-galilee",

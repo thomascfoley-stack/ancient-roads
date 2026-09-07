@@ -24959,5 +24959,230 @@
       }
     },
     "note": "The founding statement of Anglican identity (Apologia Ecclesiae Anglicanae, 1562). Scope = the work's six PART chapters, opened at the work's own title line AFTER Morley's introduction; Cassell's occasional 1888 footnotes ride in the part bodies (edition apparatus, PD — luther-works precedent). Staged via adapter-loop (register path)."
+  },
+  {
+    "id": "daubigne-reformation1",
+    "slug": "daubigne-reformation1",
+    "title": "History of the Reformation in the Sixteenth Century, Volume 1",
+    "author": "J. H. Merle d'Aubigné",
+    "author_died": 1872,
+    "year_written": 1845,
+    "source_type": "historian",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/40858",
+      "edition": "trans. Henry Beveridge — Glasgow: William Collins; London: R. Groombridge and Sons, 1845 — Gutenberg #40858, title page READ 2026-09-07: \"A NEW TRANSLATION: BY HENRY BEVERIDGE, ESQ. ADVOCATE. GLASGOW: PUBLISHED BY WILLIAM COLLINS. LONDON: R. GROOMBRIDGE AND SONS. 1845.\"",
+      "year": 1845,
+      "license_ref": "Public Domain — Gutenberg header (US); translation PD (Beveridge d. 1874; White d. 1850); author d. 1872",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 40858,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-daubigne.ts (reuses adapter-gutenberg fetch/strip machinery) sections the volume's 4 BOOKs into sequence-validated chapters; front matter (CONTENTS, translator's advertisement, prefaces), publisher catalogs, [Sidenote:] marginalia and numeric footnote apparatus excluded as non-authorial — then src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "One work in 5 volumes, promoted as 5 per-volume slugs (luther-works1/2 precedent — the gutenberg adapter/manifest has no multi-ebook-id shape). EDITION NOTE: the candidate card named 'H. White trans.' for the whole work; on PG, vols 1-2 are the Beveridge translation (1845/1846), vols 3-5 H. White (1848/1846/1862) — both PD, recorded per volume. The candidate's 4 ebook ids also omitted vol 4 (#40971); added after title-page verification (H. White, Carter 1846). Vol 3 Book 10 prints 'CHAPTER VI.' twice (misnumbered VII; the volume's own CONTENTS lists I–XIV) — repaired loudly at convert. Staged via the historian path."
+  },
+  {
+    "id": "daubigne-reformation2",
+    "slug": "daubigne-reformation2",
+    "title": "History of the Reformation in the Sixteenth Century, Volume 2",
+    "author": "J. H. Merle d'Aubigné",
+    "author_died": 1872,
+    "year_written": 1846,
+    "source_type": "historian",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/41470",
+      "edition": "trans. Henry Beveridge — Glasgow: William Collins, 1846 — Gutenberg #41470, title page READ 2026-09-07: \"A NEW TRANSLATION: (CONTAINING THE AUTHOR'S LATEST IMPROVEMENTS,) BY HENRY BEVERIDGE, ESQ., ADVOCATE. … PUBLISHED BY WILLIAM COLLINS … 1846.\"",
+      "year": 1846,
+      "license_ref": "Public Domain — Gutenberg header (US); translation PD (Beveridge d. 1874; White d. 1850); author d. 1872",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 41470,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-daubigne.ts (reuses adapter-gutenberg fetch/strip machinery) sections the volume's 4 BOOKs into sequence-validated chapters; front matter (CONTENTS, translator's advertisement, prefaces), publisher catalogs, [Sidenote:] marginalia and numeric footnote apparatus excluded as non-authorial — then src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "One work in 5 volumes, promoted as 5 per-volume slugs (luther-works1/2 precedent — the gutenberg adapter/manifest has no multi-ebook-id shape). EDITION NOTE: the candidate card named 'H. White trans.' for the whole work; on PG, vols 1-2 are the Beveridge translation (1845/1846), vols 3-5 H. White (1848/1846/1862) — both PD, recorded per volume. The candidate's 4 ebook ids also omitted vol 4 (#40971); added after title-page verification (H. White, Carter 1846). Vol 3 Book 10 prints 'CHAPTER VI.' twice (misnumbered VII; the volume's own CONTENTS lists I–XIV) — repaired loudly at convert. Staged via the historian path."
+  },
+  {
+    "id": "daubigne-reformation3",
+    "slug": "daubigne-reformation3",
+    "title": "History of the Reformation of the Sixteenth Century, Volume 3",
+    "author": "J. H. Merle d'Aubigné",
+    "author_died": 1872,
+    "year_written": 1848,
+    "source_type": "historian",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/41253",
+      "edition": "trans. H. White, revised by Dr. D'Aubigné — New York (150 Nassau-Street), 1848 — Gutenberg #41253, title page READ 2026-09-07: \"TRANSLATED BY H. WHITE … THE TRANSLATION CAREFULLY REVISED BY DR. D'AUBIGNÉ … 150 NASSAU-STREET, NEW YORK. 1848.\"",
+      "year": 1848,
+      "license_ref": "Public Domain — Gutenberg header (US); translation PD (Beveridge d. 1874; White d. 1850); author d. 1872",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 41253,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-daubigne.ts (reuses adapter-gutenberg fetch/strip machinery) sections the volume's 4 BOOKs into sequence-validated chapters; front matter (CONTENTS, translator's advertisement, prefaces), publisher catalogs, [Sidenote:] marginalia and numeric footnote apparatus excluded as non-authorial — then src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "One work in 5 volumes, promoted as 5 per-volume slugs (luther-works1/2 precedent — the gutenberg adapter/manifest has no multi-ebook-id shape). EDITION NOTE: the candidate card named 'H. White trans.' for the whole work; on PG, vols 1-2 are the Beveridge translation (1845/1846), vols 3-5 H. White (1848/1846/1862) — both PD, recorded per volume. The candidate's 4 ebook ids also omitted vol 4 (#40971); added after title-page verification (H. White, Carter 1846). Vol 3 Book 10 prints 'CHAPTER VI.' twice (misnumbered VII; the volume's own CONTENTS lists I–XIV) — repaired loudly at convert. Staged via the historian path."
+  },
+  {
+    "id": "daubigne-reformation4",
+    "slug": "daubigne-reformation4",
+    "title": "History of the Great Reformation of the Sixteenth Century in Germany, Switzerland, &c., Volume 4",
+    "author": "J. H. Merle d'Aubigné",
+    "author_died": 1872,
+    "year_written": 1846,
+    "source_type": "historian",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/40971",
+      "edition": "trans. H. White — New York: Robert Carter, 58 Canal Street, 1846 — Gutenberg #40971, title page READ 2026-09-07: \"ASSISTED IN THE PREPARATION OF THE ENGLISH ORIGINAL BY H. WHITE … NEW YORK: ROBERT CARTER, 58 CANAL STREET … 1846.\"",
+      "year": 1846,
+      "license_ref": "Public Domain — Gutenberg header (US); translation PD (Beveridge d. 1874; White d. 1850); author d. 1872",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 40971,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-daubigne.ts (reuses adapter-gutenberg fetch/strip machinery) sections the volume's 4 BOOKs into sequence-validated chapters; front matter (CONTENTS, translator's advertisement, prefaces), publisher catalogs, [Sidenote:] marginalia and numeric footnote apparatus excluded as non-authorial — then src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "One work in 5 volumes, promoted as 5 per-volume slugs (luther-works1/2 precedent — the gutenberg adapter/manifest has no multi-ebook-id shape). EDITION NOTE: the candidate card named 'H. White trans.' for the whole work; on PG, vols 1-2 are the Beveridge translation (1845/1846), vols 3-5 H. White (1848/1846/1862) — both PD, recorded per volume. The candidate's 4 ebook ids also omitted vol 4 (#40971); added after title-page verification (H. White, Carter 1846). Vol 3 Book 10 prints 'CHAPTER VI.' twice (misnumbered VII; the volume's own CONTENTS lists I–XIV) — repaired loudly at convert. Staged via the historian path."
+  },
+  {
+    "id": "daubigne-reformation5",
+    "slug": "daubigne-reformation5",
+    "title": "History of the Reformation in the Sixteenth Century, Volume 5",
+    "author": "J. H. Merle d'Aubigné",
+    "author_died": 1872,
+    "year_written": 1862,
+    "source_type": "historian",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/41484",
+      "edition": "trans. H. White, revised by Dr. Merle d'Aubigné — Collins's Select Library, Glasgow: William Collins, 1862 — Gutenberg #41484, title page READ 2026-09-07: \"Translated by H. White, The Translation Carefully Revised by Dr. Merle d'Aubigne … Collins's Select Library. Glasgow: William Collins … 1862.\"",
+      "year": 1862,
+      "license_ref": "Public Domain — Gutenberg header (US); translation PD (Beveridge d. 1874; White d. 1850); author d. 1872",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 41484,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-daubigne.ts (reuses adapter-gutenberg fetch/strip machinery) sections the volume's 4 BOOKs into sequence-validated chapters; front matter (CONTENTS, translator's advertisement, prefaces), publisher catalogs, [Sidenote:] marginalia and numeric footnote apparatus excluded as non-authorial — then src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "One work in 5 volumes, promoted as 5 per-volume slugs (luther-works1/2 precedent — the gutenberg adapter/manifest has no multi-ebook-id shape). EDITION NOTE: the candidate card named 'H. White trans.' for the whole work; on PG, vols 1-2 are the Beveridge translation (1845/1846), vols 3-5 H. White (1848/1846/1862) — both PD, recorded per volume. The candidate's 4 ebook ids also omitted vol 4 (#40971); added after title-page verification (H. White, Carter 1846). Vol 3 Book 10 prints 'CHAPTER VI.' twice (misnumbered VII; the volume's own CONTENTS lists I–XIV) — repaired loudly at convert. Staged via the historian path."
+  },
+  {
+    "id": "sayce-patriarchal-palestine",
+    "slug": "sayce-patriarchal-palestine",
+    "title": "Patriarchal Palestine",
+    "author": "A. H. Sayce",
+    "author_died": 1933,
+    "year_written": 1895,
+    "source_type": "historian",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/14405",
+      "edition": "London: Society for Promoting Christian Knowledge (Tract Committee), n.d. [1895] — Gutenberg #14405, title page READ 2026-09-07: \"PATRIARCHAL PALESTINE BY THE REV. A.H. SAYCE … PUBLISHED UNDER THE DIRECTION OF THE TRACT COMMITTEE. LONDON: SOCIETY FOR PROMOTING CHRISTIAN KNOWLEDGE …\" (no date printed on the title page; cataloged 1895)",
+      "year": 1895,
+      "license_ref": "Public Domain — Gutenberg header (US); SPCK 1895 first edition",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 14405,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-sayce.ts --book=patriarchal-palestine (reuses adapter-gutenberg fetch/strip machinery) → src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "The candidate card combined two separate Sayce books under one slug; promoted as two slugs (this + sayce-ancient-monuments), one per Gutenberg id. Scope: author's preface + the six chapters; INDEX cut as back matter. Staged via the historian path."
+  },
+  {
+    "id": "sayce-ancient-monuments",
+    "slug": "sayce-ancient-monuments",
+    "title": "Fresh Light from the Ancient Monuments",
+    "author": "A. H. Sayce",
+    "author_died": 1933,
+    "year_written": 1884,
+    "source_type": "historian",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/32883",
+      "edition": "Second Edition — London: The Religious Tract Society, 1884 — Gutenberg #32883, title page READ 2026-09-07: \"Fresh Light from the Ancient Monuments … by Archibald Henry Sayce … Second Edition. London: The Religious Tract Society … 1884\"",
+      "year": 1884,
+      "license_ref": "Public Domain — Gutenberg header (US); RTS 1884 second edition",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 32883,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-sayce.ts --book=ancient-monuments (reuses adapter-gutenberg fetch/strip machinery) → src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "Second slug of the combined sayce-patriarchal-palestine candidate (two books, two Gutenberg ids). Scope: author's preface, seven chapters, and the two authorial appendices (monument translations); INDEX cut. The preface node opens with the frontispiece plate caption (one line of edition furniture, PD) — recorded. Staged via the historian path."
+  },
+  {
+    "id": "conder-tent-work",
+    "slug": "conder-tent-work",
+    "title": "Tent Work in Palestine: A Record of Discovery and Adventure",
+    "author": "Claude Reignier Conder",
+    "author_died": 1910,
+    "year_written": 1887,
+    "source_type": "historian",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/46641",
+      "edition": "New Edition — London: Richard Bentley & Son, for the Palestine Exploration Fund, 1887 — Gutenberg #46641, title page READ 2026-09-07: \"TENT WORK IN PALESTINE. … BY CLAUDE REIGNIER CONDER, R.E., OFFICER IN COMMAND OF THE SURVEY EXPEDITION. Published for the Committee of the Palestine Exploration Fund. … New Edition. LONDON: RICHARD BENTLEY & SON … 1887.\" EDITION TRAP: the candidate card said 1878 (the first edition); this PG text is the 1887 New Edition — recorded as Bentley 1887.",
+      "year": 1887,
+      "license_ref": "Public Domain — Gutenberg header (US); Bentley 1887 New Edition (Conder d. 1910)",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 46641,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-conder.ts (reuses adapter-gutenberg fetch/strip machinery) → src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "Primary first-person PEF survey account. Scope: Conder's own Preface + Introduction + the 25 chapters; the APPENDIX (a 'List of Works Consulted' bibliography) and INDEX cut as apparatus. Staged via the historian path."
+  },
+  {
+    "id": "stalker-life-paul",
+    "slug": "stalker-life-paul",
+    "title": "The Life of St. Paul",
+    "author": "James Stalker",
+    "author_died": 1927,
+    "year_written": 1912,
+    "source_type": "historian",
+    "tradition": "presbyterian",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/21828",
+      "edition": "New and Revised Edition, with Foreword by Wilbert W. White — New York: Fleming H. Revell Company, copyright 1912 — Gutenberg #21828, title page READ 2026-09-07: \"THE LIFE OF ST. PAUL by PROF. JAMES STALKER, D.D. … With Foreword by Wilbert W. White, D.D. … New and Revised Edition … Fleming H. Revell Company\"; copyright line \"Copyright, 1912, by Fleming H. Revell Company\"",
+      "year": 1912,
+      "license_ref": "Public Domain — Gutenberg header (US); 1912 Revell edition (pre-1930 US publication); underlying work 1884",
+      "acquire": {
+        "adapter": "structured",
+        "ebook_id": 21828,
+        "note": "Historians are EXCLUDED from adapter-loop.ts by design (loop line 96-99), so a loop adapter here would be silently skipped. Real path: src/ingest/gutenberg-stalker.ts (reuses adapter-gutenberg fetch/strip machinery) → src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "DEVIATION: the candidate slug 'stalker-life-christ-paul' paired this with Stalker's 'The Life of Jesus Christ' — that work is NOT on Project Gutenberg (searched 2026-09-07; PG carries only this, 'The Preacher and His Models' #24311, and 'The Trial and Death of Jesus Christ' #21814). Only the Life of St. Paul is promoted; the slug is narrowed accordingly. Wilbert W. White's editor apparatus (FOREWORD, per-chapter study outlines, and the 'HINTS TO TEACHERS AND QUESTIONS FOR PUPILS' section) is excluded as non-authorial; the numbered body paragraphs are the edition's own furniture and stay. Staged via the historian path."
   }
 ]

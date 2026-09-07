@@ -1,0 +1,3 @@
+(node:63038) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/895
+embedded 895/895 sections whole (max 1800 chars, truncation never fired)

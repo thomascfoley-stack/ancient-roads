@@ -1,0 +1,10 @@
+  embedded 640/1078
+embedded 1078/1078 sections whole (max 1800 chars, truncation never fired)
+(node:64498) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+embedded 335/335 sections whole (max 1800 chars, truncation never fired)
+  embedded 640/1208
+embedded 1208/1208 sections whole (max 1800 chars, truncation never fired)
+  embedded 640/1079
+embedded 1079/1079 sections whole (max 1800 chars, truncation never fired)
+(node:65167) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+embedded 272/272 sections whole (max 1800 chars, truncation never fired)
