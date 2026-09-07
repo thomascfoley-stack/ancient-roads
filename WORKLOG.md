@@ -1,5 +1,29 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — Shelf cleanup: deep-audit C-1/H-3 wrong-serving REMEDIATED [Kimi Code session]
+
+Removed the four wrong-serving works from the static shelf and the production CDN:
+quarantined `calvin-calcom` (10 entries/10 files) + `augustine-confessions` (13/10),
+staged-never-published `adeney-expositorsonglament` (26/26) + `donne-divine-poems`
+(1/1) — 50 entries across 46 carrier files, ADR-117 pattern. Round-trip-fidelity-proven
+surgical edits (byte-identical except removed entries); corpus manifest regenerated
+(corpusHash `60de26f3…`); 21 scoped `--prefix` syncs, 46 uploads, **0 deletes**; all 46
+files re-fetched live from the CDN — 0 target entries remain, per-file count delta ==
+entries removed. Evidence + sync plans:
+`docs/evidence/register-cleanup/shelf-cleanup-c1-h3-2026-09-07*`. Note: the audit
+transposed the pair's counts (says calvin 13/augustine 10; measured calvin 10/augustine
+13 on both disk and CDN).
+
+**Negative re-verification on all 46 fetched files:** held-8 absent, chesterton /
+hooker-just absent. FOUND SERVING, left in place (owner call, reported):
+`luther-bondage` (11 entries), `manton-manton02` (5), `manton-manton01` (1) — ADR-029
+verdict-FAIL but not quarantined, not held-8, live before this cleanup.
+
+**NOT DONE / UNVERIFIED:** no full-corpus CDN re-hash (the 46 files only, per the scoped
+order); the three FAIL works above await an owner ruling; the shelf gap (LAUNCH_BLOCKERS
+§17 / audit H-4) that let staged works onto the shelf is still open — any future
+full-root sync re-opens it.
+
 ## 2026-09-07 — Translations LIVE: weymouth/twenty/jps deployed (acfad908) [Kimi Code session]
 
 **Deployed:** ancientpaths.app serving `acfad908` (receipt
