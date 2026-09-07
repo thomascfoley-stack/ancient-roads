@@ -59,8 +59,19 @@ as a working preference (translate tooling into product meaning or leave it out)
   touched** — a throttled sign-in reported as a wrong password (the line the error-voice sweep
   rewrote), five bare `rounded` on the search skeleton, a status code in a file that sweep opened, and
   a `/*` inside a line comment that made my own mock guard skip a file. Twenty-four items fixed before
-  deploy, the rest filed — `docs/evidence/ux-batch-2026-09-07/deep-audit.md`. The fix commit is
-  followed by `audit-run-4.log` on the final tree: [pending]
+  deploy, the rest filed — `docs/evidence/ux-batch-2026-09-07/deep-audit.md`. The guard's own
+  fix was red-proved by reverting its stripper (`red-proof-guard-stripper.log`: 21 files found
+  against 22 that carry the mock → red; restored → 24/24).
+* `audit-run-4.log` on the fix commit `25ec4479`: **RED on 11 desk tests** — one of the deep-audit
+  fixes over-generalised. Making every `TextSkeleton` a `role="status"` region meant a loading
+  desk pane collided with the pane-cap notice, which three desk suites assert is the desk's ONLY
+  status role (A078). The audit was right about the three sites that had `<p role="status">` on
+  live and wrong to make it the default; `announce` is now opt-in and those three pass it.
+  **`audit-run-5.log` on the final tree `14872048`: AUDIT PASSED — all gates green** (331 files /
+  2,067 tests in the Layer-1 leg, 92 / 1,069 unit, 2 / 30 root; both typechecks, both lints, knip,
+  deps, hygiene, the deploy.sh harness, Gate B). The residue generator, fixed, left nothing behind.
+  CI on `25ec4479` had gone red on the same eleven desk tests the local run caught (33 hits of the
+  same error), which is the local gate and CI agreeing.
 
 **NOT DONE / UNVERIFIED.**
 * Live signed-in walks: the sidebar's groups and the /ask redesign — owner-only sign-in; composites
