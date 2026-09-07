@@ -1,0 +1,255 @@
+(node:69835) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+detector version : 2.1.0
+target           : ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (read-only txn; credentials not printed)
+slug file        : /tmp/stage3-slugs.txt (19 works, sha256 03c807ddd9ea25ecbd7f4942944f912f35b8da432a2013cc236e8033ec34ffa1)
+
+PASS  strongs-concordance                   14197 sections  —                      no findings
+PASS  openhymnal                              285 sections  —                      foreign-work-byline=1
+PASS  middle-liddell                         4099 sections  —                      no findings
+PASS  beza-christian-faith                    154 sections  —                      no findings
+PASS  tacitus-annals                         1209 sections  —                      no findings
+PASS  suetonius-twelve-caesars               1021 sections  —                      no findings
+PASS  carey-enquiry                             5 sections  —                      no findings
+PASS  jewel-apology                             6 sections  —                      no findings
+PASS  daubigne-reformation1                   907 sections  —                      foreign-work-banner=3
+PASS  daubigne-reformation2                   895 sections  —                      foreign-work-banner=1
+PASS  daubigne-reformation3                  1173 sections  —                      foreign-work-banner=2
+PASS  daubigne-reformation4                  1078 sections  —                      no findings
+PASS  daubigne-reformation5                  1208 sections  —                      foreign-work-banner=1
+PASS  sayce-patriarchal-palestine             461 sections  —                      no findings
+PASS  sayce-ancient-monuments                 335 sections  —                      no findings
+PASS  conder-tent-work                       1079 sections  —                      apparatus-title=1
+PASS  stalker-life-paul                       272 sections  —                      no findings
+PASS  newman-grammar-assent                    11 sections  —                      no findings
+PASS  newman-idea-university                   21 sections  —                      no findings
+
+=== SCAN VERDICT — 19 works: 19 PASS, 0 FAIL, 0 EMPTY ===
+
+JSON_DETAIL_BEGIN
+{
+ "detectorVersion": "2.1.0",
+ "slugFile": "/tmp/stage3-slugs.txt",
+ "slugFileSha256": "03c807ddd9ea25ecbd7f4942944f912f35b8da432a2013cc236e8033ec34ffa1",
+ "works": [
+  {
+   "slug": "strongs-concordance",
+   "verdict": "PASS",
+   "author": "James Strong",
+   "scanned": 14197,
+   "findings": []
+  },
+  {
+   "slug": "openhymnal",
+   "verdict": "PASS",
+   "author": "Community-compiled (Open Hymnal Project, maintainer Brian J. Dumont)",
+   "scanned": 285,
+   "findings": [
+    {
+     "ordinal": 42,
+     "position": "middle",
+     "kind": "foreign-work-byline",
+     "strength": "weak",
+     "evidence": "By Grace I'm Saved",
+     "reason": "names 'Saved', not the declared author 'Community-compiled (Open Hymnal Project, maintainer Brian J. Dumont)'"
+    }
+   ]
+  },
+  {
+   "slug": "middle-liddell",
+   "verdict": "PASS",
+   "author": "Henry George Liddell & Robert Scott",
+   "scanned": 4099,
+   "findings": []
+  },
+  {
+   "slug": "beza-christian-faith",
+   "verdict": "PASS",
+   "author": "Theodore Beza",
+   "scanned": 154,
+   "findings": []
+  },
+  {
+   "slug": "tacitus-annals",
+   "verdict": "PASS",
+   "author": "Cornelius Tacitus",
+   "scanned": 1209,
+   "findings": []
+  },
+  {
+   "slug": "suetonius-twelve-caesars",
+   "verdict": "PASS",
+   "author": "Gaius Suetonius Tranquillus",
+   "scanned": 1021,
+   "findings": []
+  },
+  {
+   "slug": "carey-enquiry",
+   "verdict": "PASS",
+   "author": "William Carey",
+   "scanned": 5,
+   "findings": []
+  },
+  {
+   "slug": "jewel-apology",
+   "verdict": "PASS",
+   "author": "John Jewel",
+   "scanned": 6,
+   "findings": []
+  },
+  {
+   "slug": "daubigne-reformation1",
+   "verdict": "PASS",
+   "author": "J. H. Merle d'Aubigné",
+   "scanned": 907,
+   "findings": [
+    {
+     "ordinal": 60,
+     "position": "middle",
+     "kind": "foreign-work-banner",
+     "strength": "weak",
+     "evidence": "Lives of\n Priests",
+     "reason": "names 'Priests', not the declared author 'J. H. Merle d'Aubigné'"
+    },
+    {
+     "ordinal": 482,
+     "position": "middle",
+     "kind": "foreign-work-banner",
+     "strength": "weak",
+     "evidence": "Letter of\n Indulgence",
+     "reason": "names 'Indulgence', not the declared author 'J. H. Merle d'Aubigné'"
+    },
+    {
+     "ordinal": 496,
+     "position": "middle",
+     "kind": "foreign-work-banner",
+     "strength": "weak",
+     "evidence": "Letter of Instruction",
+     "reason": "names 'Instruction', not the declared author 'J. H. Merle d'Aubigné'"
+    }
+   ]
+  },
+  {
+   "slug": "daubigne-reformation2",
+   "verdict": "PASS",
+   "author": "J. H. Merle d'Aubigné",
+   "scanned": 895,
+   "findings": [
+    {
+     "ordinal": 154,
+     "position": "middle",
+     "kind": "foreign-work-banner",
+     "strength": "weak",
+     "evidence": "Epistle of Ignorant Canons",
+     "reason": "names 'Canons', not the declared author 'J. H. Merle d'Aubigné'"
+    }
+   ]
+  },
+  {
+   "slug": "daubigne-reformation3",
+   "verdict": "PASS",
+   "author": "J. H. Merle d'Aubigné",
+   "scanned": 1173,
+   "findings": [
+    {
+     "ordinal": 63,
+     "position": "middle",
+     "kind": "foreign-work-banner",
+     "strength": "weak",
+     "evidence": "Luther's Works",
+     "reason": "names 'Luther', not the declared author 'J. H. Merle d'Aubigné'"
+    },
+    {
+     "ordinal": 660,
+     "position": "middle",
+     "kind": "foreign-work-banner",
+     "strength": "weak",
+     "evidence": "Erasmus's Treatise",
+     "reason": "names 'Erasmus', not the declared author 'J. H. Merle d'Aubigné'"
+    }
+   ]
+  },
+  {
+   "slug": "daubigne-reformation4",
+   "verdict": "PASS",
+   "author": "J. H. Merle d'Aubigné",
+   "scanned": 1078,
+   "findings": []
+  },
+  {
+   "slug": "daubigne-reformation5",
+   "verdict": "PASS",
+   "author": "J. H. Merle d'Aubigné",
+   "scanned": 1208,
+   "findings": [
+    {
+     "ordinal": 261,
+     "position": "middle",
+     "kind": "foreign-work-banner",
+     "strength": "weak",
+     "evidence": "Colet's Sermon",
+     "reason": "names 'Colet', not the declared author 'J. H. Merle d'Aubigné'"
+    }
+   ]
+  },
+  {
+   "slug": "sayce-patriarchal-palestine",
+   "verdict": "PASS",
+   "author": "A. H. Sayce",
+   "scanned": 461,
+   "findings": []
+  },
+  {
+   "slug": "sayce-ancient-monuments",
+   "verdict": "PASS",
+   "author": "A. H. Sayce",
+   "scanned": 335,
+   "findings": []
+  },
+  {
+   "slug": "conder-tent-work",
+   "verdict": "PASS",
+   "author": "Claude Reignier Conder",
+   "scanned": 1079,
+   "findings": [
+    {
+     "ordinal": 959,
+     "position": "middle",
+     "kind": "apparatus-title",
+     "strength": "weak",
+     "evidence": "The introduction of firearms is no doubt the reason of the",
+     "reason": null
+    }
+   ]
+  },
+  {
+   "slug": "stalker-life-paul",
+   "verdict": "PASS",
+   "author": "James Stalker",
+   "scanned": 272,
+   "findings": []
+  },
+  {
+   "slug": "newman-grammar-assent",
+   "verdict": "PASS",
+   "author": "Newman, John Henry",
+   "scanned": 11,
+   "findings": []
+  },
+  {
+   "slug": "newman-idea-university",
+   "verdict": "PASS",
+   "author": "Newman, John Henry",
+   "scanned": 21,
+   "findings": []
+  }
+ ]
+}
+JSON_DETAIL_END

@@ -156,8 +156,10 @@ dev row before the copy; otherwise they ride with the batch.
 
 ## Batching (and why)
 
-- **Status flips: 6 batches** — the 42 PASS as one batch, the 296 as five batches
-  (48/64/66/66/52 — carved 2026-09-07 from the original 88/88/88/87/88 by the prod ADR-029
+- **Status flips: 6 batches** — the 38 PASS as one batch, the 276 as five batches
+  (42/62/62/63/47 — carved 2026-09-07 from the original 88/88/88/87/88 by the prod ADR-029
+  scan carve and the structural partition; sizes corrected 2026-09-07 — this line
+  previously said 42/296 and 48/64/66/66/52, both stale)
   scan, see amendment; file names unchanged for stability). Precedent:
   2026-08-19 flipped **87 works in a single flip** (log:
   `docs/evidence/work-order-v2-stage2/flip-run-2026-08-19T11-57-28-503Z.log`), so 42/66 per
