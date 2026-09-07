@@ -1,0 +1,19 @@
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: APPLY · model: BAAI/bge-large-en-v1.5 (stored slug 'bge-large-en-v1.5')
+D1(b) note: ONE vector per section. DeepInfra REJECTS over-window inputs with a 400 (it does not
+truncate — measured on dev 2026-08-13), so D1(b)'s accepted truncation is done client-side:
+embed input is the body's leading ≤1800 chars (EMBED_MAX, the bound ingest itself sends per chunk).
+Sections still over-window at 1800 chars (dense non-English text tokenizes >512 tokens) are
+shrunk adaptively per-section from the API's reported token count until they fit; each is logged.
+
+works discovered (published, have sections, ZERO section_embeddings): 1
+  sermon/hooker-just: sections=13 lacking_vectors=13 est_tokens=29,479
+
+works by type: sermon=1
+totals: works=1 sections=13 lacking_vectors=13 chars=117915 est_tokens=29,479
+published works with sections but zero section_embeddings (BEFORE): 0
+sections to fill this run (slug=hooker-just, lacking 'bge-large-en-v1.5'): 13
+  progress: embedded=13/13 failed_sections=0 elapsed=12s
+
+DONE on dev in 22s
+sections embedded: 13 · batches with failures: 0 · sections failed: 0 · over-window inputs truncated to 1800 chars (D1(b)): ~13
+published works with sections but zero section_embeddings: BEFORE=0 AFTER=0

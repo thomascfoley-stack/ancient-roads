@@ -22573,6 +22573,33 @@
     }
   },
   {
+    "id": "hooker-just",
+    "slug": "hooker-just",
+    "title": "A Learned Discourse of Justification",
+    "author": "Hooker, Richard",
+    "author_died": 1600,
+    "year_written": 1586,
+    "source_type": "sermon",
+    "tradition": "anglican",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/hooker/just",
+      "edition": "A Learned Discourse of Justification (preached 1585/86; original English, no translation). CCEL text (book id hooker/just); CCEL prepends a modern editorial introduction by James Kiefer, dropped at ingest as front matter.",
+      "year": 1586,
+      "year_basis": "authorDeathUpperBound",
+      "licence_basis": "authorPre1930",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "hooker/just"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
     "id": "keble-year",
     "slug": "keble-year",
     "title": "Christian Year",

@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "startedAt": "2026-09-07T03:12:17.740Z",
+    "endedAt": "2026-09-07T03:12:18.425Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 0,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [],
+  "escalations": [],
+  "quarantined": []
+}

@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-09-07T03:14:43.002Z",
+    "endedAt": "2026-09-07T03:14:52.528Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 1,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "hooker-just",
+      "adapter": "ccel",
+      "sourceType": "sermon",
+      "result": "staged",
+      "units": 13,
+      "anchored": 13,
+      "embedded": 122
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

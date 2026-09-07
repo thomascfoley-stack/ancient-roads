@@ -22,6 +22,15 @@
  *
  *   node scripts/backfill-section-embeddings.mjs --env=dev           # dry-run census
  *   node scripts/backfill-section-embeddings.mjs --env=dev --apply   # embed + write
+ *   node scripts/backfill-section-embeddings.mjs --env=dev --only=<slug> [--apply]
+ *
+ * --only=<slug> (added 2026-09-07, corpus-coverage Track C): scopes the whole run to ONE
+ * named work and drops the status='published' requirement — register-path ingests stage
+ * works (status='staged'), and gate R1 coverage-sections counts staged sections too, so a
+ * freshly staged slug needs this fill before the gate can hold its baseline. Without --only
+ * the behaviour is identical to the owner-directive original. --env=dev also honors a
+ * DATABASE_URL already exported in the environment (the dev/prod host asserts below still
+ * guard); the .env.local fallback chain is unchanged.
  */
 import { readFileSync, createWriteStream, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -48,14 +57,18 @@ function arg(name) {
   return a ? a.slice(name.length + 3) : null;
 }
 const ENV = arg('env');
+const ONLY = arg('only');
 const APPLY = process.argv.includes('--apply');
 if (!ENV || !['dev', 'prod'].includes(ENV)) {
-  console.error('Usage: node scripts/backfill-section-embeddings.mjs --env=dev|prod [--apply]');
+  console.error('Usage: node scripts/backfill-section-embeddings.mjs --env=dev|prod [--only=<slug>] [--apply]');
   process.exit(1);
 }
 
 function loadUrl() {
   if (ENV === 'prod') return readFileSync(join(homedir(), '.neon_prod_url'), 'utf8').trim();
+  // Track C: an exported DATABASE_URL (e.g. the dev owner credential) wins over the
+  // .env.local chain; the host asserts below still refuse a prod endpoint under --env=dev.
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL.trim();
   for (const p of ['../.env.local', '../web/.env.local']) {
     try {
       const raw = readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -101,7 +114,18 @@ const client = new Client({ connectionString: url });
 await client.connect();
 
 // ── discovery: published works that have sections but ZERO section_embeddings ──
-const works = (await client.query(`
+// --only=<slug>: scope to the one named work, any status (register-path works stage).
+const works = ONLY
+  ? (await client.query(`
+  SELECT s.id, s.slug, s.source_type,
+         count(sec.id)::int AS sections,
+         coalesce(sum(length(sec.body)), 0)::bigint AS chars
+    FROM sources s
+    JOIN sections sec ON sec.source_id = s.id
+   WHERE s.slug = $1
+   GROUP BY s.id, s.slug, s.source_type
+   ORDER BY s.source_type, s.slug`, [ONLY])).rows
+  : (await client.query(`
   SELECT s.id, s.slug, s.source_type,
          count(sec.id)::int AS sections,
          coalesce(sum(length(sec.body)), 0)::bigint AS chars
@@ -221,16 +245,18 @@ const t0 = Date.now();
 // Fill target: EVERY published work's sections lacking a vector for this model — a superset of
 // the zero-embedding works in the census, so a work left partially filled by an interrupted run
 // (it then has >0 embeddings and drops out of the discovery set) is still finished on re-run.
+// --only=<slug>: the same count scoped to the named work, any status.
 const totalToFill = (await client.query(`
   SELECT count(*)::int AS n
     FROM sections sec
     JOIN sources s ON s.id = sec.source_id
-   WHERE s.status = 'published'
+   WHERE ${ONLY ? 's.slug = $2' : "s.status = 'published'"}
      AND NOT EXISTS (SELECT 1 FROM section_embeddings se
-                      WHERE se.section_id = sec.id AND se.model_slug = $1)`, [MODEL_SLUG])).rows[0].n;
-log(`sections to fill this run (all published works, lacking '${MODEL_SLUG}'): ${totalToFill}`);
+                      WHERE se.section_id = sec.id AND se.model_slug = $1)`,
+  ONLY ? [MODEL_SLUG, ONLY] : [MODEL_SLUG])).rows[0].n;
+log(`sections to fill this run (${ONLY ? `slug=${ONLY}` : 'all published works'}, lacking '${MODEL_SLUG}'): ${totalToFill}`);
 if (totalToFill === 0) {
-  log('Nothing to embed — every published section already has a vector for this model.');
+  log('Nothing to embed — every section in scope already has a vector for this model.');
   await client.end(); logStream.end(); process.exit(0);
 }
 // Over-window handling: DeepInfra 400s name the offending token count ("You passed N input
@@ -286,17 +312,17 @@ async function embedRows(rows) {
 
 let cursor = 0;
 for (;;) {
-  // keyset page over published sections that still lack a vector
+  // keyset page over sections that still lack a vector (published works, or --only's slug)
   const { rows: page } = await client.query(`
     SELECT sec.id, sec.body
       FROM sections sec
       JOIN sources s ON s.id = sec.source_id
-     WHERE s.status = 'published'
+     WHERE ${ONLY ? 's.slug = $3' : "s.status = 'published'"}
        AND sec.id > $1
        AND NOT EXISTS (SELECT 1 FROM section_embeddings se
                         WHERE se.section_id = sec.id AND se.model_slug = $2)
      ORDER BY sec.id
-     LIMIT ${PAGE}`, [cursor, MODEL_SLUG]);
+     LIMIT ${PAGE}`, ONLY ? [cursor, MODEL_SLUG, ONLY] : [cursor, MODEL_SLUG]);
   if (page.length === 0) break;
   cursor = page[page.length - 1].id;
 

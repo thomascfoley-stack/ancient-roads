@@ -1,0 +1,15 @@
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: DRY-RUN · model: BAAI/bge-large-en-v1.5 (stored slug 'bge-large-en-v1.5')
+D1(b) note: ONE vector per section. DeepInfra REJECTS over-window inputs with a 400 (it does not
+truncate — measured on dev 2026-08-13), so D1(b)'s accepted truncation is done client-side:
+embed input is the body's leading ≤1800 chars (EMBED_MAX, the bound ingest itself sends per chunk).
+Sections still over-window at 1800 chars (dense non-English text tokenizes >512 tokens) are
+shrunk adaptively per-section from the API's reported token count until they fit; each is logged.
+
+works discovered (published, have sections, ZERO section_embeddings): 1
+  sermon/hooker-just: sections=13 lacking_vectors=13 est_tokens=29,479
+
+works by type: sermon=1
+totals: works=1 sections=13 lacking_vectors=13 chars=117915 est_tokens=29,479
+published works with sections but zero section_embeddings (BEFORE): 0
+
+DRY-RUN — estimated spend 29,479 tokens (~$0.000 at $0.01/M). Re-run with --apply to embed.

@@ -1,0 +1,314 @@
+
+> theology-study-app@0.1.0 gate:ingest /Users/foley/Projects/ap-ingest
+> tsx src/ingest/gate-ingest.ts
+
+════════════════════════════════════════════════════════════════════════
+GATE:INGEST — full corpus sweep
+DB: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech  (NEON_BRANCH=dev)  [read-only]
+════════════════════════════════════════════════════════════════════════
+(node:49561) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+======================================================================
+GATE A — CORPUS COVERAGE (commentary_entries; source of truth: Neon)
+======================================================================
+Book-slug map entries:                            66
+Eligible entries (body >= 100):              341912
+  (rows with no book-slug mapping, skipped:       0)
+Unique target source_ids:                         168233
+Embedded commentary source_ids (in DB):           223693
+MISSING source_ids:                               64344
+
+Per-source (author) missing counts:
+     7210  Thomas Aquinas
+     5502  Theophylact of Ohrid
+     4474  Bede
+     3396  Jerome
+     3385  Bonaventure
+     2390  Gregory the Dialogist
+     2044  Tertullian
+     1949  John Chrysostom
+     1561  Oecumenius
+     1259  Ambrose of Milan
+     1244  Augustine of Hippo  (as quoted by Aquinas, AD 1274)
+     1189  Alexander MacLaren
+     1189  Barnes' Notes
+     1189  C.I. Scofield
+     1189  Cambridge Bible
+     1189  Matthew Poole
+     1189  Geneva Study Bible
+     1189  J.N. Darby
+     1189  J.P. Lange
+     1189  John Calvin
+     1189  Joseph Benson
+     1189  Pulpit Commentary
+     1081  Bede  (as quoted by Aquinas, AD 1274)
+     1027  Origen of Alexandria
+     1003  John Wesley
+      899  Cyril of Alexandria
+      865  Augustine of Hippo
+      863  Theophylact of Ohrid  (as quoted by Aquinas, AD 1274)
+      748  Clement of Alexandria
+      629  Cyprian
+      628  Irenaeus
+      621  Jerome  (as quoted by Aquinas, AD 1274)
+      580  John Chrysostom  (as quoted by Aquinas, AD 1274)
+      451  Origen of Alexandria  (as quoted by Aquinas, AD 1274)
+      429  Gregory the Dialogist  (as quoted by Aquinas, AD 1274)
+      425  Philoxenus of Mabbug
+      425  Ambrose of Milan  (as quoted by Aquinas, AD 1274)
+      370  Hippolytus of Rome
+      366  Pseudo-Chrysostom  (as quoted by Aquinas, AD 1274)
+      355  Hilary of Poitiers  (as quoted by Aquinas, AD 1274)
+      322  Cyril of Alexandria  (as quoted by Aquinas, AD 1274)
+      322  Glossa Ordinaria  (as quoted by Aquinas, AD 1274)
+      291  Remigius of Rheims  (as quoted by Aquinas, AD 1274)
+      260  B.W. Johnson
+      260  Johann Bengel
+      255  Cosmas Indicopleustes
+      252  Rabanus Maurus  (as quoted by Aquinas, AD 1274)
+      208  Ignatius of Antioch
+      187  Alcuin of York
+      186  Pseudo-Jerome  (as quoted by Aquinas, AD 1274)
+      174  Bernard of Clairvaux
+      161  Apostolic Constitutions
+      158  Justin Martyr
+      154  Alcuin of York  (as quoted by Aquinas, AD 1274)
+      139  Victorinus of Pettau
+      121  Clement of Rome
+      113  Shepherd of Hermas
+      107  Robert of Tombelaine
+       98  Basil of Caesarea  (as quoted by Aquinas, AD 1274)
+       88  Titus of Bostra  (as quoted by Aquinas, AD 1274)
+       85  Pseudo-Clement
+       85  Ancient Greek Expositor  (as quoted by Aquinas, AD 1274)
+       80  Eusebius of Caesarea  (as quoted by Aquinas, AD 1274)
+       78  Lucius Caecilius Firmianus Lactantius
+       70  Clement of Alexandria  (as quoted by Cassiodorus)
+       69  Gregory of Nyssa  (as quoted by Aquinas, AD 1274)
+       56  Polycarp of Smyrna
+       56  Methodius of Olympus
+       51  Didache
+       40  Athanasius of Alexandria  (as quoted by Aquinas, AD 1274)
+       38  Dionysius of Alexandria
+       29  Pseudo-Augustine  (as quoted by Aquinas, AD 1274)
+       28  Peter Chrysologus  (as quoted by Aquinas, AD 1274)
+       26  Leo the Great  (as quoted by Aquinas, AD 1274)
+       24  Irenaeus (Reporting Valentinian Views)
+       23  Alexander of Alexandria
+       21  Peter of Alexandria
+       20  Hilary of Poitiers
+       20  Gregory of Nazianzus  (as quoted by Aquinas, AD 1274)
+       17  Eusebius of Caesarea
+       16  Epistle of Barnabas
+       14  John Damascene  (as quoted by Aquinas, AD 1274)
+       13  Arnobius of Sicca
+       12  Pseudo-Origen  (as quoted by Aquinas, AD 1274)
+       11  Cyprian  (as quoted by Aquinas, AD 1274)
+       10  Tatian the Assyrian
+       10  Cyril of Jerusalem
+       10  Haymo of Halberstadt  (as quoted by Aquinas, AD 1274)
+       10  Isidore of Pelusium  (as quoted by Aquinas, AD 1274)
+        9  Maximus the Confessor  (as quoted by Aquinas, AD 1274)
+        8  Theophilus of Antioch
+        8  Commodian
+        7  Theonas of Alexandria
+        7  Athanasius of Alexandria
+        6  John Cassian
+        6  Papias of Hierapolis  (as quoted by Eusebius of Caesarea, AD 339)
+        6  Basil of Caesarea
+        6  Didymus the Blind  (as quoted by Aquinas, AD 1274)
+        6  Pseudo-Dionysius the Areopagite  (as quoted by Aquinas, AD 1274)
+        5  Hegesippus  (as quoted by Eusebius of Caesarea, AD 339)
+        5  Gregory of Nazianzus
+        5  Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron)
+        5  Epiphanius of Salamis  (as quoted by Aquinas, AD 1274)
+        5  Clement of Alexandria  (as quoted by Cassiodorus, AD 585)
+        4  Odes of Solomon
+        4  Pseudo-Dionysius the Areopagite
+        4  Ambrosiaster
+        4  Cosmas Indicopleustes (quoting Timotheus of Alexandria)
+        4  Clement of Alexandria  (as quoted by Nicetas of Heraclea, AD 1100)
+        4  Vigilius of Thapsus  (as quoted by Aquinas, AD 1274)
+        4  John Cassian  (as quoted by Aquinas, AD 1274)
+        3  Papias of Hierapolis
+        3  The Liturgy Of The Blessed Apostles
+        3  Cosmas Indicopleustes (quoting John Chrysostom, Commentary on Ephesians)
+        3  Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron, Book 1)
+        3  Cosmas Indicopleustes (quoting Theophilus of Alexandria, First Festal Epistle)
+        3  The Passion of Saints Perpetua and Felicity
+        3  Council of Ephesus  (as quoted by Aquinas, AD 1274)
+        3  Pseudo-Basil  (as quoted by Aquinas, AD 1274)
+        3  Hegemonius
+        3  Isidore of Seville  (as quoted by Aquinas, AD 1274)
+        2  JB Lightfoot
+        2  Leo the Great
+        2  Gregory of Nyssa
+        2  Polycrates Of Ephesus
+        2  Cosmas Indicopleustes (quoting John Chrysostom, Commentary on Hebrews)
+        2  Pope Dionysius
+        2  Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron, Book 4)
+        2  Maximus of Turin  (as quoted by Aquinas, AD 1274)
+        2  Clement of Alexandria  (as quoted by Corderius, AD 1564)
+        2  Irenaeus (Reporting Marcosian Views)
+        2  Gennadius of Massilia  (as quoted by Aquinas, AD 1274)
+        2  Theodotus of Ancyra  (as quoted by Aquinas, AD 1274)
+        2  Ambrosiaster  (as quoted by Aquinas, AD 1274)
+        2  Cosmas Indicopleustes (quoting Philon of Carpathus, Commentary on Canticles)
+        1  Julius Africanus
+        1  Council of Carthage of 419
+        1  Caius Presbyter of Rome
+        1  Irenaeus (Reporting Heretical Views)
+        1  Hippolytus of Rome  is referenced above by Jerome (AD 420)
+        1  Origen of Alexandria  is referenced above by Jerome (AD 420)
+        1  Socrates Scholasticus
+        1  Clement of Alexandria  (as quoted by Eusebius, AD 339)
+        1  Irenaeus (Reporting Heretical Practices)
+        1  Cosmas Indicopleustes (quoting Epiphanius of Cyprus, On Measures and Weights)
+        1  Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron, Book 2)
+        1  Papias of Hierapolis  is referenced above by Eusebius of Caesarea
+        1  Clement of Alexandria  (as quoted by Aquinas, AD 1274)
+        1  Cyril of Jerusalem  (as quoted by Aquinas, AD 1274)
+        1  Cosmas Indicopleustes (quoting John Chrysostom, On Alms)
+        1  Dionysius of Alexandria  (as quoted by Aquinas, AD 1274)
+        1  Cosmas Indicopleustes (quoting Theodosius of Alexandria)
+        1  Anselm of Canterbury  (as quoted by Aquinas, AD 1274)
+        1  Ignatius of Antioch  (as quoted by Origen, AD 235)
+        1  Petrus Alphonsi  (as quoted by Aquinas, AD 1274)
+        1  Josephus  (as quoted by Aquinas, AD 1274)
+        1  Nemesius of Emesa  (as quoted by Aquinas, AD 1274)
+        1  Second Council of Constantinople  (as quoted by Aquinas, AD 1274)
+        1  Gospel of the Hebrews  (as quoted by Jerome, AD 420)
+        1  Lanfranc of Canterbury  (as quoted by Aquinas, AD 1274)
+        1  Paschasius Radbertus  (as quoted by Aquinas, AD 1274)
+        1  Salvian the Presbyter
+        1  Theodoret of Cyrus
+
+✗ GATE A FAILED: 64344 eligible source_ids are not embedded.
+  Do NOT publish / mark this corpus complete. Re-run the embed job to fill the gap.
+======================================================================
+GATE A — SECTION COVERAGE (sources/sections; source of truth: Neon)
+======================================================================
+Model slug:                                       bge-large-en-v1.5
+Non-quarantined sources:                          262
+Sections (non-quarantined sources):               485148
+Section embeddings (this model):                  478970
+MISSING (sections with no embedding):             6184
+
+Per-source missing counts:
+     1650  thompson-chain-reference
+     1255  schaff-anf08
+      563  schaff-anf06
+      477  schaff-anf07
+      238  schaff-npnf204
+      198  schaff-npnf106
+      172  luther-bondage
+      143  schaff-npnf107
+      125  schaff-npnf114
+       96  ignatius-exercises
+       95  donne-devotions
+       91  schaff-npnf111
+       88  schaff-npnf110
+       76  schaff-npnf112
+       70  cripplegate-puritan-sermons
+       57  manton-manton08
+       54  manton-manton06
+       53  manton-manton20
+       53  manton-manton07
+       47  manton-manton02
+       47  luther-sermons
+       46  luther-tabletalk
+       38  manton-manton01
+       37  manton-manton05
+       33  manton-manton03
+       30  bennett-expositor10
+       29  adeney-expositorsonglament
+       27  jowett-brooks
+       27  luther-first-prin
+       22  bunyan-pilgrim
+       20  pascal-provincial
+       20  bunyan-holy-war
+       16  edwards-charity-fruits
+       15  pascal-pensees
+       14  schaff-npnf109
+       10  manton-manton04
+       10  ignatius-autobiography
+        9  luther-stpeter-stjude
+        8  luther-works1
+        8  luther-works2
+        8  chesterton-aquinas
+        8  luther-good-works
+        7  schaff-npnf108
+        6  schaff-npnf113
+        6  luther-galatians
+        6  bunyan-grace
+        6  luther-smalcald
+        5  newman-apologia
+        5  bunyan-badman
+        4  bunyan-miscellaneous
+        2  whyte-behmen
+        2  knox-prayer
+        2  kronstadt-christlife
+        2  lardner-n-mosaic
+        2  law-errors
+        2  law-grounds
+        2  luther-christianliberty
+        2  luther-prefacetoromans
+        2  luther-theses
+        2  neander-a-expo-phil
+        2  penn-sermon
+        2  pink-law
+        2  charnock-efficient-regeneration
+        2  bushnell-character
+        2  boethius-trinity
+        2  bangs-alphabetic
+        2  tolstoy-maupassant
+        1  shepard-sabbath
+        1  spurgeon-catechism
+        1  charnock-nec-regen
+        1  charnock-nat-regen
+        1  charnock-instr-regen
+        1  tulloch-religion
+        1  charnock-cleansing
+        1  donne-spital
+        1  luther-translating
+        1  tolstoy-kreutzer
+        1  edwards-trinity
+        1  erasmus-against-war
+        1  flavel-life
+        1  law-clergy
+        1  clarkson-owenfuneral
+        1  clarke-entire-sanct
+        1  chesterton-rightworld
+        1  kierkegaard-untruth
+        1  cranmer-doctrine
+        1  pascal-memorial
+        1  donne-deaths-duel
+        1  donne-easter
+
+✗ GATE A (sections) FAILED: 6184 sections have no bge-large-en-v1.5 embedding.
+  Do NOT publish these sources. Re-point/re-embed to fill the gap.
+────────────────────────────────────────────────────────────────────────
+  ✓ [IRREV] L1 license-manifest          manifest clean (917 entries)
+  ✓ [IRREV] L2 translation-license       every web/public/bible/<id> has a shipping license record
+  ✓ [rev  ] L2b versification            21 translations canonical (partials: anderson:39 skeleton books, jps:27 skeleton books, noyes:17 skeleton books, twenty:39 skeleton books, tyndale:56 skeleton books, weymouth:39 skeleton books)
+  ✓ [IRREV] L2b corpus-readable          all static chapter files parsed + shape-valid
+  ✓ [IRREV] L3 served-provenance         0 served entries with forbidden provenance (of 163,768 static)
+  ✓ [IRREV] L4 staged-source-provenance  262 non-quarantined sources, provenance clean
+  ✓ [IRREV] L5 must-not-serve            none of 13 banned authors reachable from a served path
+  ✗ [rev  ] R1 coverage-commentary       64344 eligible source_ids un-embedded
+  ✗ [rev  ] R1 coverage-sections         6184 staged sections un-embedded
+  ✓ [rev  ] R2 verse-keys(corpus)        no author ≥200 entries collapses ≥20%
+  ✗ [rev  ] R3 count-parity(static↔db)   John Wesley: static 16,850 ≠ db 18,184 · C.F. Keil & Franz Delitzsch: static 6,515 ≠ db 0 · Meyer, Frederick Brotherton: static 283 ≠ db 0 · Easton, Matthew George: static 25 ≠ db 0 · Henry, Matthew: static 2,307 ≠ db 0 · Orville J. Nave: static 4,613 ≠ db 0 · Jamieson, Robert: static 1,191 ≠ db 0 · Bennett, William H.: static 38 ≠ db 0 · +674 more
+  ✗ [rev  ] R3 count-parity(staged work) wesley-crosswire [published]: 5,254 sections staged vs 16,850 static entries for "John Wesley" · jfb [staged]: 15,473 sections staged vs 16,966 static entries for "Jamieson, Fausset & Brown" · adam-clarke [published]: 12,693 sections staged vs 13,318 static entries for "Adam Clarke" · keil-delitzsch [published]: 23,073 sections staged vs 6,515 static entries for "C.F. Keil & Franz Delitzsch" · john-gill [published]: 28,843 sections staged vs 28,300 static entries for "John Gill" · matthew-henry [published]: 4,210 sections staged vs 4,124 static entries for "Matthew Henry"
+  ✗ [rev  ] R4 content-sanity(sampled)   John Calvin b49 c6: insane keys v1-999 ch6 · Church of Scotland (based on Francis Rous) b19 c88: insane keys v1-999 ch88 · Owen, John b19 c61: insane keys v1-999 ch61 · Melanchthon, Philipp b40 c5: insane keys v1-999 ch5 · Isaac Watts b66 c5: insane keys v1-999 ch5 · Thomas Aquinas, Saint b27 c3: insane keys v1-999 ch3 · +5 more
+────────────────────────────────────────────────────────────────────────
+✗ GATE:INGEST RED — 0 irreversible + 5 reversible gate(s) failing.
+  Nothing may be published. Staged content stays staged/quarantined until green.
+ ELIFECYCLE  Command failed with exit code 1.
