@@ -1,5 +1,60 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 (later still) — landing the `detail/*` backlog: 49 PRs, not 35
+
+**Owner:** "push 35 fixes". There are **49** open `detail/*` PRs, not 35 — the earlier count was of
+one sweep; two older batches (2026-08-29, 09-02) were still open too.
+
+**Why they were all red, and why it was never their code.** Every branch was cut from the same old
+base and carries its ONE product commit plus one or more CI-plumbing commits added later to get
+that old base green — the session-mock `authFailureResponse` gap, the `fast-uri` advisory, a
+typecheck error, the deploy.sh gate harness. Tonight's work on `main` fixed every one of those
+properly, so the plumbing commits are superseded AND they are exactly what conflicts.
+
+**What was done.** Each PR branch was rebuilt as `origin/main` + its own product commit, selected by
+matching the commit subject to the PR title (this repo commits one logical change per PR, so the
+title names it). 40 replayed cleanly. 1 was superseded outright and closed with its reasoning
+(#224, the icon-rail "Ask" label — ADR-122 derives that label now, so `label: 'Ancient Paths'`
+exists nowhere for it to fix). 2 needed only main's version of a file (#210, #202). **6 needed real
+ports** onto files tonight's work had rewritten, delegated in pairs and each red-proved:
+
+* **#219** — the /ask slow-response notice hardcoded "verifying" while the 90s timer is
+  stage-independent. Real; the file split moved it to `ask-progress.tsx`.
+* **#208** — the reader's Continue chip. **Code superseded by F24** (which recomputes on the same
+  beat), but the TEST was kept: deleting F24's line reddens 2 of its 6 cases while every existing
+  F24 test stays green — that half of the contract was unguarded.
+* **#149** — rate-limit fail-fast. **Superseded, nothing pushed**: `envInt` landed 2026-08-31 and is
+  strictly stricter (it refuses `0x10` and `1e3`, which the PR's `Number()` accepted — a wrong limit
+  that PASSES validation). Filed: main has no test for `envInt`.
+* **#205, #215, #151** — real ports, resolved as unions rather than by taking a side.
+
+**Two operational failures, both mine, both now in `AGENTS.md`.**
+1. **Branch names are repo-wide, not per-worktree.** My replay script and three agents all used
+   `probe`. One agent's push carried a foreign commit onto a PR branch; another built a commit whose
+   parent was a sibling's work, sweeping in a revert of it. Both caught before anything wrong reached
+   the remote — then **all 48 branches were verified**: each is exactly `main` + one commit whose
+   subject is its own PR title.
+2. **`db-invariants` provisions a Neon branch per run and the account has a concurrency cap.**
+   Pushing 40 branches at once put 40 runs in flight: some died on `exceeded the limit of
+   concurrently active endpoints`, the rest on 120s test timeouts under database contention (one run
+   took 589s). **38 of the 44 remaining PRs are `audit=SUCCESS, db-invariants=FAILURE` for that
+   reason and no other.** The remedy is re-running 3 at a time, which is producing green.
+
+**My own new guard fired on someone else's work, correctly** — `session-mock-surface.test.ts` caught
+two PRs whose test files hand-list their session mocks (#202's `search-corpus-paged-past-end`,
+#210's `d43-bare-catch-repro`, the latter naming the real helpers one by one). Both fixed to spread.
+
+**Merged so far: 8** (4 early, then #151/#205/#208/#215). The rest land as their throttled re-runs
+go green.
+
+**NOT DONE / UNVERIFIED.**
+* The remaining ~40 merges wait on throttled CI. **The combined result is unverified until a full
+  `npm run audit` runs on `main` after the last merge** — every PR was checked against the main that
+  existed when its run started, which tests each change but not the set.
+* `docs/UX_REMEDIATION.md:691` still quotes the L1b block's original slow-notice copy as the whole
+  prescribed string; #219 makes it the `verifying`-only branch. Second divergence in that block.
+* No browser leg for #219's copy change.
+
 ## 2026-09-07 (later) — PR #235 merged, My Works rename shipped (#3), My Works test audit (#4)
 
 **Owner:** "od the pr #235 merge. ok fix #3 the best way. do #4 as well."
