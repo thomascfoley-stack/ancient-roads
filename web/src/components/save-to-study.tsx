@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { TextSkeleton } from './skeleton';
 
 // THE ONE CANONICAL SAVE-TO-STUDY VERB (design §7.5, R3; build file P2/W4). Every surfaced
 // corpus item on every surface — ask answers today; reader and search surfaces import this
@@ -396,9 +397,9 @@ function StudyPicker({
         }}
         className="edge absolute left-0 z-20 mt-1 w-64 border bg-stone-50 p-2 dark:bg-stone-950"
       >
-        {studies === null && (
-          <p className="px-2 py-1.5 text-xs text-stone-500 dark:text-stone-400">Loading…</p>
-        )}
+        {/* A short list in a 64-wide popover: three bars, because the popover is already open at a
+            fixed width and the reader is looking straight at it. */}
+        {studies === null && <TextSkeleton label="Loading your studies" lines={3} className="px-2 py-1.5" />}
         {error && (
           <p role="alert" className="px-2 py-1.5 text-xs text-red-800 dark:text-red-200">
             {error}

@@ -110,6 +110,17 @@ function authFailure(e: unknown): { code?: string; status?: number } | null {
     : null;
 }
 
+/**
+ * One of OUR sentences, thrown to unwind to the single `setError` below.
+ *
+ * The comment on `authFailure` called the non-auth-failure branch "our own curated messages", and
+ * the catch rendered `e.message` on that basis. That premise is only true of the three `throw`s in
+ * this file — a `TypeError: Failed to fetch` from a dropped connection is not an `authFailure`
+ * either, and it was taking the same branch and putting the browser's words on the screen. A
+ * marker makes "ours" a fact about the error rather than a fact about the ways it can be reached.
+ */
+class CuratedError extends Error {}
+
 // PRD §6 inputs: parchment surface, 1px vellum hairline (`edge`, which also flips the color in
 // dark mode — a layered `dark:border-*` pair cannot be trusted to, per globals.css:226). Focus is
 // the global 2px antique-gold :focus-visible outline, NOT a focus border: an unlayered `.edge`
@@ -185,8 +196,12 @@ export function AuthForm({ path }: { path: AuthMode }) {
         callbackURL: FIRST_RUN_DESTINATION,
         errorCallbackURL: '/auth/sign-in',
       });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Google sign-in could not be started.');
+    } catch {
+      // The comment above said "the catch below already produces the right sentence for every
+      // cause" while the code forwarded `e.message`, which is the auth shim's server text on a
+      // 4xx and the literal words "Failed to fetch" on a dropped connection. Neither is written
+      // for a reader, and this surface has exactly one thing to say, so it says it.
+      setError('Google sign-in could not be started. Please try again.');
       setBusy(false);
     }
   }
@@ -213,7 +228,7 @@ export function AuthForm({ path }: { path: AuthMode }) {
 
       if (path === 'sign-up') {
         if (password.length < MIN_PASSWORD) {
-          throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
+          throw new CuratedError(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
         }
         // Throws on failure; the catch curates it to one generic sentence for every cause.
         const { data: created } = await authClient.signUp.email({
@@ -271,9 +286,9 @@ export function AuthForm({ path }: { path: AuthMode }) {
       // handler: the reader has already clicked, so `window` exists and the URL is final. There is
       // no first render to disagree with.
       const token = new URLSearchParams(window.location.search).get('token');
-      if (!token) throw new Error('That reset link is incomplete. Please request a new one.');
+      if (!token) throw new CuratedError('That reset link is incomplete. Please request a new one.');
       if (password.length < MIN_PASSWORD) {
-        throw new Error(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
+        throw new CuratedError(`Please choose a password of at least ${MIN_PASSWORD} characters.`);
       }
       // Throws on failure; curated per-path in the catch (same dead-`error` mechanism as above).
       await authClient.resetPassword({ newPassword: password, token });
@@ -331,9 +346,12 @@ export function AuthForm({ path }: { path: AuthMode }) {
           ? failure.code && INPUT_FAULT_CODES.has(failure.code) && e instanceof Error && e.message
             ? e.message
             : CURATED[path]
-          : e instanceof Error
+          : // NOT `e instanceof Error ? e.message`. A dropped connection is not an `authFailure`
+            // either, so it took this branch and printed "Failed to fetch". Only our own marked
+            // sentences are shown as written.
+            e instanceof CuratedError
             ? e.message
-            : 'Something went wrong. Please try again.',
+            : 'Something went wrong. Please check your connection and try again.',
       );
     } finally {
       setBusy(false);

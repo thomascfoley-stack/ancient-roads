@@ -24,6 +24,7 @@ import type { WorkSource, WorkSectionRow } from '@/lib/work';
 import { SelectionPopover } from './selection-popover';
 import { WorkHeader } from './work-header';
 import { WorkSection } from './work-section';
+import { TextSkeleton } from './skeleton';
 
 // Render window around the active section: 12 behind / 28 ahead ≈ 40 mounted sections max.
 //
@@ -404,7 +405,10 @@ export function WorkReader({
             max-w-2xl, so the library read at one width and Scripture at another. */}
  <div className="reading-measure mx-auto my-6 px-6 pb-24 pt-12 sm:my-10 sm:px-14 sm:pt-16">
         {sections.length === 0 && busy === 'initial' && (
-          <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+          // Eight lines, in the reading column's own box: this is prose arriving, so the skeleton
+          // holds the shape prose will take. Matches ChapterSkeleton in the Bible reader, which
+          // is the same act one surface over.
+          <TextSkeleton label="Loading this work" lines={8} className="py-16" />
         )}
         {sections.length === 0 && error && (
           <div className="py-16 text-center">
@@ -443,7 +447,10 @@ export function WorkReader({
             scrollbar reflects roughly the whole work while pages stream in. */}
         {bottomSpacer > 0 && <div style={{ height: bottomSpacer }} aria-hidden />}
 
-        {busy === 'next' && <p className="py-6 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>}
+        {/* The next page streaming in below the read. Three lines, not eight: this one is a
+            continuation, and a tall skeleton under a full column reads as a second page that
+            never arrives. */}
+        {busy === 'next' && <TextSkeleton label="Loading the next page" lines={3} className="py-6" />}
         {sections.length > 0 && error && (
           <div className="py-6 text-center">
             <p className="mb-2 text-sm text-stone-500 dark:text-stone-400">Couldn&rsquo;t load the next page.</p>

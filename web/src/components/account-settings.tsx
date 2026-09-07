@@ -42,17 +42,33 @@ export function AccountSettings({ email }: { email: string }) {
       // D41 (DEEP_SWEEP): every failure was reported as "that current password is not correct" —
       // including a network drop, a rate-limit refusal, and a policy rejection of the NEW
       // password. Telling someone their password is wrong when it is not sends them to a reset
-      // they do not need. Report what the service actually said and keep the specific wording
-      // only for the specific failure.
+      // they do not need. So the service's answer is still READ, and still decides which of two
+      // sentences is shown — but it is no longer SPOKEN.
+      //
+      // The error voice sweep: `throw new Error(msg)` put the auth vendor's own words on screen,
+      // which is how sentences written for an API console ("User already exists. Use another
+      // email.") reach a reader. This is a Neon/better-auth shim; its message text is not ours,
+      // is not stable across patch releases, and is the same channel that leaked an
+      // account-existence oracle on the sign-up form (auth-forms.tsx). Classify on it, never
+      // quote it.
       if (error) {
         const msg = typeof error.message === 'string' && error.message.trim() ? error.message : '';
         const wrongCurrent = /invalid|incorrect|password/i.test(msg) && /current|credential/i.test(msg);
-        throw new Error(wrongCurrent || !msg ? 'That current password is not correct.' : msg);
+        setNote({
+          ok: false,
+          text: wrongCurrent || !msg
+            ? 'That current password is not correct.'
+            : 'Your password could not be changed. Please check the form and try again.',
+        });
+        return;
       }
       form.reset();
       setNote({ ok: true, text: 'Your password has been changed. Other sessions were signed out.' });
-    } catch (err) {
-      setNote({ ok: false, text: err instanceof Error ? err.message : 'That did not work.' });
+    } catch {
+      // Only a thrown failure reaches here — the client rejects rather than resolving on some
+      // paths, and a dropped connection rejects with the literal words "Failed to fetch". Nothing
+      // here has a message written for a reader, so nothing here is asked for one.
+      setNote({ ok: false, text: 'Your password could not be changed. Please try again.' });
     } finally {
       setBusy(false);
     }

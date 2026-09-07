@@ -21,6 +21,7 @@ import { formatVerseId } from '@/bible/verse-id';
 import { CHAPTER_END_SENTINEL } from '@/bible/ref-parse';
 import { PassagePane } from '@/components/passage-pane';
 import { VerseRef } from '@/components/verse-ref';
+import { TextSkeleton } from '@/components/skeleton';
 import { DEFAULT_TRANSLATION } from '@/lib/bible';
 import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
 import { count } from '@/lib/plural';
@@ -158,7 +159,7 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
       )}
 
       {(list.status === 'loading' || (initialPlanId && !open && !openError && list.status === 'ready')) && (
-        <p className="mx-auto max-w-3xl text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+        <TextSkeleton label="Loading your reading plans" lines={4} className="mx-auto max-w-3xl" />
       )}
 
       {openError && list.status !== 'signed-out' && (
