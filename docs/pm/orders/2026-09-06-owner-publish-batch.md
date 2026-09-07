@@ -27,11 +27,15 @@
 > works are HELD — non-authorial matter** (15 live machine word-indexes, 5 foreign-work
 > composites incl. origen §1/§101 confirmed live + schaff-anf06/07/08 bound-in fathers,
 > the rest carried-in title/apparatus pages). **No flip may include a verdict-FAIL work.**
-> The 439 prod-staged works were NOT scanned (no prod connection under that order) — the
-> same scanner must run against prod before their flips:
-> `DATABASE_URL=$(cat ~/.neon_prod_url) npx tsx scripts/adr029-nonauthorial-scan.mts --mode=scan`
-> (read-only; run it at your terminal under your own go). Additionally,
-> **`origen-commentary` is held by the ADR-029 ruling itself** (its §1–~129 are 1 & 2
+> The 439 prod-staged works were NOT scanned (no prod connection under that order) — and the
+> deep-audit of 2026-09-07 proved the scan command this runbook originally cited **cannot
+> run as written**: the scanner is dev-only by design (`NEON_BRANCH=dev` guard, `--target`
+> required, prod-host refusal, frozen dev input set). **OPEN WORK before the 439 flips:
+> build the scanner's guarded prod mode** (a `COVERAGE_ALLOW_PROD`-style flag + prod slug
+> input from the batch files), then carve its FAILs from the batches exactly as was done
+> for the 58. Flipping without it means publishing unscanned CCEL works on a ruling that
+> assumed the scan existed — do not treat the ruling as covering that gap silently.
+> Additionally, **`origen-commentary` is held by the ADR-029 ruling itself** (its §1–~129 are 1 & 2
 > Clement) — it was wrongly included in the original 440 slug files; it has been REMOVED
 > from `prod440-2026-09-06-batch4.json` (batch 4 is now 87; the union is 439, still named
 > `prod440-*` for file stability).
@@ -48,10 +52,11 @@
 ingestion session. Two jobs, in order:
 
 1. **Copy** the 58 works staged on DEV (top-up waves 1–3) to PROD, landing `staged`.
-2. **Publish** 498 works total on PROD: those 58 (after the copy) + the 440 already staged
-   there — each as a `--status-only` flip followed immediately by a `serve-batched` run on the
-   same slug file. **(Job 2 is gated by the two preconditions above: P4.n accuracy ruling +
-   ADR-029 scan. See the amendment block.)**
+2. **Publish** 489 works total on PROD: the 50 verdict-PASS of the 58 (after the copy) + the
+   439 already staged there — each as a `--status-only` flip followed immediately by a
+   `serve-batched` run on the same slug file. **(Job 2 is gated by the preconditions in the
+   amendment block: the owner ruling of 2026-09-07 discharged P4.n; ADR-029's prod-side scan
+   is OPEN WORK — the audit proved the scanner refuses prod as written, see below.)**
 
 Everything below was verified READ ONLY on 2026-09-06 (dev via `web/.env.local`
 `APP_DATABASE_URL` = app_runtime, SELECT-only; prod via `~/.neon_prod_url`, `BEGIN READ ONLY`).
@@ -63,11 +68,12 @@ Nothing here was executed for real by the prepping agent — the write tools are
   are `status='staged'` on dev, all 58 absent from prod, all 58 in `ingest/sources.config.json`,
   none `serve:false`. `corpus-copy.mjs --dry-run` census passes clean (4,838 sections, 26,820
   flat embedding rows).
-- **440 prod-staged** = the 441 staged on prod (`SELECT status, count(*)`: 394 published /
-  441 staged / 3 quarantined) **minus `hort-james1909`** (see exclusions). Verified: all 440
-  pass the licence and forbidden-provenance predicates READ ONLY; all 440 have serveable
-  embedding rows (261,933 flat rows, all `served=false`; none rely on `history_embeddings`).
-- No delta: 58 + 440 = 498 works to publish; 288,753 embedding rows to serve.
+- **439 prod-staged** = the 441 staged on prod (`SELECT status, count(*)`: 394 published /
+  441 staged / 3 quarantined) **minus `hort-james1909` and `origen-commentary`** (see
+  exclusions). Verified: all 439 pass the licence and forbidden-provenance predicates READ
+  ONLY; all 439 have serveable embedding rows (261,933 flat rows, all `served=false`).
+- No delta: 50 + 439 = 489 works to publish (embedding-row count was measured for the full
+  58+440 set and is now a slight over-estimate).
 
 ## Exclusions — do NOT add these to any slug file
 
@@ -106,7 +112,8 @@ dev row before the copy; otherwise they ride with the batch.
 
 ## Batching (and why)
 
-- **Status flips: 6 batches** — the 58 as one batch, the 440 as five batches of 88. Precedent:
+- **Status flips: 6 batches** — the 50 PASS as one batch, the 439 as five batches
+  (88/88/88/87/88). Precedent:
   2026-08-19 flipped **87 works in a single flip** (log:
   `docs/evidence/work-order-v2-stage2/flip-run-2026-08-19T11-57-28-503Z.log`), so 58/88 per
   batch is inside proven size, one owner-gate answer per batch, and each batch gets its own
@@ -147,11 +154,15 @@ CORPUS_COPY_DEST_URL=$(cat ~/.neon_prod_url) \
 
 Run this pair SIX times, with `<FILE>` taking these values in order:
 
-1. `docs/evidence/corpus-copy/dev58-2026-09-06.json` (58 — only after step 1 succeeds)
+1. `docs/evidence/corpus-copy/dev58-pass-adr029-2026-09-07.json` (**50 — only after step 1
+   succeeds. NOT the full dev58 file: the 8 verdict-FAIL works in
+   `dev58-held-adr029-2026-09-07.json` must never appear in any flip — deep-audit 2026-09-07
+   found this step originally named the full 58, which would have published all 8 held works;
+   no tool gate would have stopped it**)
 2. `docs/evidence/corpus-copy/prod440-2026-09-06-batch1.json` (88)
 3. `docs/evidence/corpus-copy/prod440-2026-09-06-batch2.json` (88)
 4. `docs/evidence/corpus-copy/prod440-2026-09-06-batch3.json` (88)
-5. `docs/evidence/corpus-copy/prod440-2026-09-06-batch4.json` (88)
+5. `docs/evidence/corpus-copy/prod440-2026-09-06-batch4.json` (87)
 6. `docs/evidence/corpus-copy/prod440-2026-09-06-batch5.json` (88)
 
 **Flip:**
@@ -211,6 +222,15 @@ published set. The gate asks for the same `publish` word, labelled REVERSE.
 
 ## Follow-ups (not part of the 15-minute batch)
 
+- **REQUIRED — accuracy re-measurement after the flips** (added on deep-audit 2026-09-07;
+  its absence made the P4.n watch item decorative). The owner's "publish the 439" ruling
+  stands, but the only thing that says whether the P4.n warning applied to THIS wave is a
+  post-flip measurement. After the last batch: run the held-out v4 accuracy diagnostic (the
+  pre-open run's tooling — evidence pattern `docs/evidence/evals/pre-open-v4-*.log`) and
+  compare against the pre-flip baseline, per category with denominators. If epistle/topical
+  move toward their floors the way the commentary flip moved them (two bars landed exactly
+  on the floor, epistle HIT@1 68→48), the reverse commands above are the rollback — a
+  withdrawal only shrinks the published set and is never gate-blocked.
 - **`foxe-martyrs` serves via `history_embeddings`** (historian head, sections plane: 1,334
   `section_embeddings`, 0 flat rows) and has **0 `history_embeddings` rows on dev** — the
   backfill hasn't covered it. After this batch it will be shelf-readable but not
