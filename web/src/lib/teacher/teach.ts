@@ -12,6 +12,7 @@ import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 import { retrieveUserVoices, formatUserLibrarySources, type UserVoice } from './user-voices';
+import { attachSectionOrdinals } from './section-locate';
 import {
   MAX_RETRIES,
   ASK_MAX_DURATION_MS,
@@ -204,6 +205,15 @@ export async function teach(
   stageStart = Date.now();
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
   stageMs.retrieve = Date.now() - stageStart;
+  // Reader deep-link ordinals for the result cards. Started the moment retrieval resolves and
+  // awaited only where the rows cross the response boundary (the two `finish` calls that carry
+  // `retrieval`), so the one Neon round-trip overlaps compose + verify — 74% of the wall (D4) —
+  // rather than sitting serially after retrieval, which is where an await beside the lanes put it
+  // (the lanes start BEFORE retrieveCommentary and have usually settled by now; deep-audit
+  // 2026-09-06). Nothing between here and those awaits reads the field: selectVoices, the prompt,
+  // the corpus lookup and the verifier all project named fields (section-locate.ts). The promise
+  // never rejects, so deferring the await cannot surface as an unhandled rejection.
+  const ordinalsPromise = attachSectionOrdinals(retrieval);
   stageStart = Date.now();
   const [songVerse, sermons, theology, historians, userVoices] = await Promise.all([songVersePromise, sermonPromise, theologyPromise, historianPromise, userVoicesPromise]);
   stageMs.lanes = Date.now() - stageStart;
@@ -351,6 +361,7 @@ export async function teach(
     const result = await verifyV1(parsed, corpusLookup, retrievalContext);
     stageMs.verify.push(Date.now() - verifyStart);
     if (result.ok) {
+      await ordinalsPromise; // the rows are about to ship; their deep-link ordinals ride along
       return finish(withRegister({ kind: 'composed', response: parsed as TeacherResponse, retrieval }), metaBase);
     }
     lastViolations = result.violations;
@@ -364,5 +375,6 @@ export async function teach(
     check: v.check,
     message: v.message.slice(0, MAX_VIOLATION_FIELD_CHARS),
   }));
+  await ordinalsPromise; // as above — the fallback ships the same rows
   return finish(withRegister({ kind: 'fallback', retrieval, violations: clientViolations }), metaBase);
 }

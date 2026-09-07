@@ -1,0 +1,3058 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/.claude/worktrees/ask/web
+
+ ❯ test/invariants/naming-lock.test.ts (10 tests | 1 failed) 18ms
+   × N1 — retired names are gone from the label surfaces > "from the Gospels" appears in no label surface 7ms
+     → from the Gospels still rendered in: components/ask-client.tsx: expected [ 'components/ask-client.tsx' ] to deeply equal []
+ ❯ test/components/mode-toggle-pending.test.tsx (4 tests | 1 failed) 20ms
+   × the Voices | History toggle > paints no corners 2ms
+     → expected '\'use client\';\n// [ Voices | Histor…' not to match /\brounded\b/
+ ❯ test/invariants/ask-result-link.test.tsx (2 tests | 2 failed) 46ms
+   × result links > a fallback thread links each row to the book at its section, carrying the way back 37ms
+     → expected [ …(2) ] to include '/work/spurgeon-sermons?from=ask:a1b2c…'
+   × result links > a composed voice resolves through its retrieval row to that row's section 9ms
+     → expected [ Array(2) ] to include '/work/matthew-henry?from=ask:a1b2c3d4…'
+ ❯ test/components/ask-rate-limited.test.tsx (2 tests | 2 failed) 104ms
+   × a rate-limited ask > shows the envelope message and a plain wait, with retry disabled until it elapses 91ms
+     → expected 'You’ve reached the per-minute questio…' to match /about 60 seconds/
+   × a rate-limited ask > reads Retry-After from the header when the body carries no seconds, and re-enables when it elapses 12ms
+     → expected 'You’ve reached the per-minute questio…' to match /about 1 second/
+ ❯ test/components/ask-scope-row.test.tsx (1 test | 1 failed) 1088ms
+   × the search scope > is a named group of three pressed toggles, and a toggle changes the next ask 1088ms
+     → expected [ null, { …(2) } ] to have a length of 1 but got 2
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+      [36m>[39m
+        [36m<header[39m
+          [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mExplore the paths[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+            [36m<span[39m
+              [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+            [36m</span>[39m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+              [36m>[39m
+                [0mSearch these[0m
+              [36m</p>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+              [36m>[39m
+                [0mchanges run on your next ask · ~10s[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33maria-label[39m=[32m"Search these collections"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+              [33mrole[39m=[32m"group"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+                [36m>[39m
+                  [0m✓[0m
+                [36m</span>[39m
+                [0mCommentary [0m
+                [36m<span[39m
+                  [33mclass[39m=[32m"opacity-70"[39m
+                [36m>[39m
+                  [0malways[0m
+                [36m</span>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"false"[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px]"[39m
+                [36m>[39m
+                  [0m○[0m
+                [36m</span>[39m
+                [0mSermons[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"true"[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px]"[39m
+                [36m>[39m
+                  [0m✓[0m
+                [36m</span>[39m
+                [0mTheology & Confessions[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"true"[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px]"[39m
+                [36m>[39m
+                  [0m✓[0m
+                [36m</span>[39m
+                [0mHymns & Sacred Poetry[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</header>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex-1 space-y-8"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-busy[39m=[32m"false"[39m
+            [33maria-live[39m=[32m"polite"[39m
+            [33mclass[39m=[32m"space-y-8"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"mb-6"[39m
+              [36m>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mQuestion[0m
+                [36m</p>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+                [36m>[39m
+                  [0mWhat is grace?[0m
+                [36m</p>[39m
+              [36m</div>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mok[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<form[39m
+          [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+          [36m>[39m
+            [36m<a[39m
+              [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+              [33mhref[39m=[32m"/auth/sign-in"[39m
+            [36m>[39m
+              [0mSign in[0m
+            [36m</a>[39m
+            [0m [0m
+            [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+          [36m</p>[39m
+          [36m<textarea[39m
+            [33maria-label[39m=[32m"Ask a question"[39m
+            [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+            [33mmaxlength[39m=[32m"500"[39m
+            [33mplaceholder[39m=[32m"Ask a question…"[39m
+            [33mrows[39m=[32m"2"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"[@media(hover:none)]:hidden"[39m
+              [36m>[39m
+                [0m↵ to send · ⇧↵ newline[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+              [33mdisabled[39m=[32m""[39m
+              [33mtype[39m=[32m"submit"[39m
+            [36m>[39m
+              [0mAsk[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</form>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+ ❯ test/components/ask-stop.test.tsx (2 tests | 2 failed) 1087ms
+   × Stop > resolves the turn to an explicit failure with a retry, idles the composer, and posts nothing more 1041ms
+     → Unable to find role="button" and name `/^Stop$/`
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+   × Stop > never clobbers an answer that has already arrived 45ms
+     → Unable to find an accessible element with the role "button" and name `/^Stop$/`
+
+Here are the accessible roles:
+
+  banner:
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Explore the paths":
+  [36m<h1[39m
+    [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "Search these collections":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Search these collections"[39m
+    [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+    [33mrole[39m=[32m"group"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Sermons":
+  [36m<button[39m
+    [33maria-pressed[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Theology & Confessions":
+  [36m<button[39m
+    [33maria-pressed[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Hymns & Sacred Poetry":
+  [36m<button[39m
+    [33maria-pressed[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Ask":
+  [36m<button[39m
+    [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+    [33mdisabled[39m=[32m""[39m
+    [33mtype[39m=[32m"submit"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  link:
+
+  Name "Sign in":
+  [36m<a[39m
+    [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+    [33mhref[39m=[32m"/auth/sign-in"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  textbox:
+
+  Name "Ask a question":
+  [36m<textarea[39m
+    [33maria-label[39m=[32m"Ask a question"[39m
+    [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+    [33mmaxlength[39m=[32m"500"[39m
+    [33mplaceholder[39m=[32m"Ask a question…"[39m
+    [33mrows[39m=[32m"2"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mFIXTURE DONE[0m
+            [36m</p>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ test/components/ask-running-signal.test.tsx (2 tests | 1 failed) 1126ms
+   × the running state is unmistakable > shows one progress bar on the turn, one on the composer edge, and a Stop button while in flight 1045ms
+     → Unable to find role="progressbar" and name "Answering"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/components/ask-rate-limited.test.tsx > a rate-limited ask > shows the envelope message and a plain wait, with retry disabled until it elapses
+AssertionError: expected 'You’ve reached the per-minute questio…' to match /about 60 seconds/
+
+- Expected: 
+/about 60 seconds/
+
++ Received: 
+"You’ve reached the per-minute question limit. Please wait a moment and try again.Ask again"
+
+ ❯ test/components/ask-rate-limited.test.tsx:43:31
+     41|     const alert = await screen.findByRole('alert');
+     42|     expect(alert.textContent).toMatch(/per-minute/);
+     43|     expect(alert.textContent).toMatch(/about 60 seconds/);
+       |                               ^
+     44|     const retry = screen.getByRole('button', { name: /ask again/i }) a…
+     45|     expect(retry.disabled, 'an instant retry against a live limit is t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  test/components/ask-rate-limited.test.tsx > a rate-limited ask > reads Retry-After from the header when the body carries no seconds, and re-enables when it elapses
+AssertionError: expected 'You’ve reached the per-minute questio…' to match /about 1 second/
+
+- Expected: 
+/about 1 second/
+
++ Received: 
+"You’ve reached the per-minute question limit. Please wait a moment and try again.Ask again"
+
+ ❯ test/components/ask-rate-limited.test.tsx:59:31
+     57| 
+     58|     const alert = await screen.findByRole('alert');
+     59|     expect(alert.textContent).toMatch(/about 1 second/);
+       |                               ^
+     60|     const retry = screen.getByRole('button', { name: /ask again/i }) a…
+     61|     expect(retry.disabled).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  test/components/ask-running-signal.test.tsx > the running state is unmistakable > shows one progress bar on the turn, one on the composer edge, and a Stop button while in flight
+TestingLibraryElementError: Unable to find role="progressbar" and name "Answering"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ test/components/ask-running-signal.test.tsx:55:31
+     53|     await submit();
+     54| 
+     55|     const bars = await screen.findAllByRole('progressbar', { name: 'An…
+       |                               ^
+     56|     expect(bars, 'exactly one announced progress bar per in-flight tur…
+     57|     // The composer edge bar is aria-hidden (the turn's bar is the ann…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  test/components/ask-scope-row.test.tsx > the search scope > is a named group of three pressed toggles, and a toggle changes the next ask
+AssertionError: expected [ null, { …(2) } ] to have a length of 1 but got 2
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+      [36m>[39m
+        [36m<header[39m
+          [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+          [36m>[39m
+            [0mExplore the paths[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+            [36m<span[39m
+              [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+            [36m</span>[39m
+          [36m</p>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+              [36m>[39m
+                [0mSearch these[0m
+              [36m</p>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+              [36m>[39m
+                [0mchanges run on your next ask · ~10s[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33maria-label[39m=[32m"Search these collections"[39m
+              [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+              [33mrole[39m=[32m"group"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+                [36m>[39m
+                  [0m✓[0m
+                [36m</span>[39m
+                [0mCommentary [0m
+                [36m<span[39m
+                  [33mclass[39m=[32m"opacity-70"[39m
+                [36m>[39m
+                  [0malways[0m
+                [36m</span>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"false"[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px]"[39m
+                [36m>[39m
+                  [0m○[0m
+                [36m</span>[39m
+                [0mSermons[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"true"[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px]"[39m
+                [36m>[39m
+                  [0m✓[0m
+                [36m</span>[39m
+                [0mTheology & Confessions[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"true"[39m
+                [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"text-[10px]"[39m
+                [36m>[39m
+                  [0m✓[0m
+                [36m</span>[39m
+                [0mHymns & Sacred Poetry[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</header>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex-1 space-y-8"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-busy[39m=[32m"false"[39m
+            [33maria-live[39m=[32m"polite"[39m
+            [33mclass[39m=[32m"space-y-8"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"mb-6"[39m
+              [36m>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+                [36m>[39m
+                  [0mQuestion[0m
+                [36m</p>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+                [36m>[39m
+                  [0mWhat is grace?[0m
+                [36m</p>[39m
+              [36m</div>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mok[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<form[39m
+          [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+          [36m>[39m
+            [36m<a[39m
+              [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+              [33mhref[39m=[32m"/auth/sign-in"[39m
+            [36m>[39m
+              [0mSign in[0m
+            [36m</a>[39m
+            [0m [0m
+            [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+          [36m</p>[39m
+          [36m<textarea[39m
+            [33maria-label[39m=[32m"Ask a question"[39m
+            [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+            [33mmaxlength[39m=[32m"500"[39m
+            [33mplaceholder[39m=[32m"Ask a question…"[39m
+            [33mrows[39m=[32m"2"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"[@media(hover:none)]:hidden"[39m
+              [36m>[39m
+                [0m↵ to send · ⇧↵ newline[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+              [33mdisabled[39m=[32m""[39m
+              [33mtype[39m=[32m"submit"[39m
+            [36m>[39m
+              [0mAsk[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</form>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ test/components/ask-scope-row.test.tsx:51:40
+     49|     fireEvent.change(box, { target: { value: 'What is grace?' } });
+     50|     fireEvent.submit(box.closest('form')!);
+     51|     await waitFor(() => expect(bodies).toHaveLength(1));
+       |                                        ^
+     52|     expect((bodies[0] as { lanes: { sermons: boolean; theology: boolea…
+     53|       sermons: false,
+ ❯ runWithExpensiveErrorDiagnosticsDisabled ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  test/components/ask-stop.test.tsx > Stop > resolves the turn to an explicit failure with a retry, idles the composer, and posts nothing more
+TestingLibraryElementError: Unable to find role="button" and name `/^Stop$/`
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"py-2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm font-medium text-stone-700 dark:text-stone-200"[39m
+                  [36m>[39m
+                    [0mSearching the commentaries[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mComposing a grounded answer[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"edge ml-[6px] h-2.5 border-l"[39m
+                [36m/>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center gap-2.5 py-1.5"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400"[39m
+                  [36m/>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"text-sm text-stone-500 dark:text-stone-400"[39m
+                  [36m>[39m
+                    [0mVerifying every quote is word-for-word[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ test/components/ask-stop.test.tsx:50:34
+     48|     await submit();
+     49| 
+     50|     fireEvent.click(await screen.findByRole('button', { name: /^Stop$/…
+       |                                  ^
+     51| 
+     52|     const alert = await screen.findByRole('alert');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  test/components/ask-stop.test.tsx > Stop > never clobbers an answer that has already arrived
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/^Stop$/`
+
+Here are the accessible roles:
+
+  banner:
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Explore the paths":
+  [36m<h1[39m
+    [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "Search these collections":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Search these collections"[39m
+    [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+    [33mrole[39m=[32m"group"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Sermons":
+  [36m<button[39m
+    [33maria-pressed[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Theology & Confessions":
+  [36m<button[39m
+    [33maria-pressed[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Hymns & Sacred Poetry":
+  [36m<button[39m
+    [33maria-pressed[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Ask":
+  [36m<button[39m
+    [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+    [33mdisabled[39m=[32m""[39m
+    [33mtype[39m=[32m"submit"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  link:
+
+  Name "Sign in":
+  [36m<a[39m
+    [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+    [33mhref[39m=[32m"/auth/sign-in"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  textbox:
+
+  Name "Ask a question":
+  [36m<textarea[39m
+    [33maria-label[39m=[32m"Ask a question"[39m
+    [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+    [33mmaxlength[39m=[32m"500"[39m
+    [33mplaceholder[39m=[32m"Ask a question…"[39m
+    [33mrows[39m=[32m"2"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mb-6 sm:mb-8"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"[39m
+        [36m>[39m
+          [0mExplore the paths[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400"[39m
+        [36m>[39m
+          [0mHear what commentators across the traditions have said, quoted and attributed, never interpreted.[0m
+          [36m<span[39m
+            [33mclass[39m=[32m"mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500"[39m
+          [36m>[39m
+            [0mCurrently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.[0m
+          [36m</span>[39m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500"[39m
+            [36m>[39m
+              [0mSearch these[0m
+            [36m</p>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300"[39m
+            [36m>[39m
+              [0mchanges run on your next ask · ~10s[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Search these collections"[39m
+            [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px] text-accent-700 dark:text-accent-400"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mCommentary [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"opacity-70"[39m
+              [36m>[39m
+                [0malways[0m
+              [36m</span>[39m
+            [36m</span>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mSermons[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mTheology & Confessions[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"text-[10px]"[39m
+              [36m>[39m
+                [0m✓[0m
+              [36m</span>[39m
+              [0mHymns & Sacred Poetry[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1 space-y-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33maria-busy[39m=[32m"true"[39m
+          [33maria-live[39m=[32m"polite"[39m
+          [33mclass[39m=[32m"space-y-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-6"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"[39m
+              [36m>[39m
+                [0mQuestion[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100"[39m
+              [36m>[39m
+                [0mWhat is grace?[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400"[39m
+            [36m>[39m
+              [0mFIXTURE DONE[0m
+            [36m</p>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"scroll-mb-48 md:scroll-mb-36"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mclass[39m=[32m"edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400"[39m
+            [33mhref[39m=[32m"/auth/sign-in"[39m
+          [36m>[39m
+            [0mSign in[0m
+          [36m</a>[39m
+          [0m [0m
+          [0mto ask — answers are kept in your research history. Reading and search stay open to everyone.[0m
+        [36m</p>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"Ask a question"[39m
+          [33mclass[39m=[32m"focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"[39m
+          [33mmaxlength[39m=[32m"500"[39m
+          [33mplaceholder[39m=[32m"Ask a question…"[39m
+          [33mrows[39m=[32m"2"[39m
+        [36m/>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 flex min-h-[44px] items-center justify-between px-1.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-xs text-stone-500 dark:text-stone-400"[39m
+          [36m>[39m
+            [0mThinking…[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mAsk[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ test/components/ask-stop.test.tsx:71:28
+     69| 
+     70|     await screen.findByText(/FIXTURE DONE/);
+     71|     fireEvent.click(screen.getByRole('button', { name: /^Stop$/ }));
+       |                            ^
+     72| 
+     73|     await waitFor(() => expect(screen.getByRole('button', { name: /^As…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  test/components/mode-toggle-pending.test.tsx > the Voices | History toggle > paints no corners
+AssertionError: expected '\'use client\';\n// [ Voices | Histor…' not to match /\brounded\b/
+
+- Expected: 
+/\brounded\b/
+
++ Received: 
+"'use client';
+// [ Voices | History ] — stage 0. Links, not client state: the two modes are separate surfaces
+// with separate contracts (HISTORY_RETRIEVAL_DESIGN §5), and a navigation is the honest boundary.
+//
+// A CLIENT component since 2026-08-22, for one reported defect — \"clicking History the first time
+// in a session takes a long long time\" — which turned out to be two faults wearing one symptom.
+//
+//   1. NOTHING SAID THE CLICK LANDED. /ask reads searchParams, so both modes are one dynamic
+//      route, and a soft navigation to a dynamic route leaves the CURRENT page on screen,
+//      untouched, until the server render arrives. On a cold function that is seconds of a page
+//      that looks like it ignored you. `useLinkStatus` is pending for exactly that window, and a
+//      2px travelling bar under the tab is the only thing on screen that says the app heard you.
+//   2. THE CLICK PAID FOR THE WHOLE RENDER. The App Router's default prefetch for a dynamic route
+//      stops at the nearest `loading.js`, and /ask has none — so nothing useful was prefetched.
+//      `prefetch` fetches the route and its data while the reader is still on the page they are
+//      on. Only for the tab you are NOT on: prefetching the current page is a round trip for a
+//      render that already happened.
+//
+// The bar is visual only. The pending state lives INSIDE the Link (that is the hook's contract),
+// so it cannot be lifted into a live region without a context, and putting a labelled element in
+// there instead would fold \"Loading\" into the link's accessible name. A screen reader gets the
+// destination page announced when it arrives, which is the same signal, later.
+import Link, { useLinkStatus } from 'next/link';
+
+function TabPending(): React.ReactElement | null {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return (
+    <span
+      aria-hidden
+      className=\"pointer-events-none absolute inset-x-0 bottom-0 h-[2px] overflow-hidden bg-stone-200 dark:bg-stone-800\"
+    >
+      <span className=\"progress-travel block h-full w-1/3 bg-accent-600 dark:bg-accent-400\" />
+    </span>
+  );
+}
+
+export function ModeToggle({ mode }: { mode: 'voices' | 'history' }): React.ReactElement {
+  const seg = 'relative px-4 py-1.5 text-sm';
+  const on = 'font-semibold underline';
+  return (
+    <div role=\"group\" aria-label=\"Search mode\" className=\"mx-auto mt-4 flex w-max rounded border\">
+      <Link
+        href=\"/ask\"
+        prefetch={mode !== 'voices'}
+        aria-current={mode === 'voices' ? 'page' : undefined}
+        className={`${seg} ${mode === 'voices' ? on : ''}`}
+      >
+        Voices<TabPending />
+      </Link>
+      <Link
+        href=\"/ask?mode=history\"
+        prefetch={mode !== 'history'}
+        aria-current={mode === 'history' ? 'page' : undefined}
+        className={`${seg} border-l ${mode === 'history' ? on : ''}`}
+      >
+        History<TabPending />
+      </Link>
+    </div>
+  );
+}
+"
+
+ ❯ test/components/mode-toggle-pending.test.tsx:73:24
+     71|     // `rounded` is not on the ladder and paints real corners, on the …
+     72|     // the PRD's square-corners rule (UX_POLISH_AUDIT P2, mode-toggle.…
+     73|     expect(SOURCE).not.toMatch(/\brounded\b/);
+       |                        ^
+     74|   });
+     75| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  test/invariants/ask-result-link.test.tsx > result links > a fallback thread links each row to the book at its section, carrying the way back
+AssertionError: expected [ …(2) ] to include '/work/spurgeon-sermons?from=ask:a1b2c…'
+ ❯ test/invariants/ask-result-link.test.tsx:65:19
+     63|     const hrefs = hrefsOf(container);
+     64| 
+     65|     expect(hrefs).toContain(`/work/spurgeon-sermons?from=ask:${THREAD}…
+       |                   ^
+     66|     expect(hrefs).toContain(`/work/matthew-henry?from=ask:${THREAD}&fq…
+     67|     expect(hrefs).toContain(`/work/john-gill?from=ask:${THREAD}&fq=${F…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+ FAIL  test/invariants/ask-result-link.test.tsx > result links > a composed voice resolves through its retrieval row to that row's section
+AssertionError: expected [ Array(2) ] to include '/work/matthew-henry?from=ask:a1b2c3d4…'
+ ❯ test/invariants/ask-result-link.test.tsx:92:32
+     90|     };
+     91|     const { container } = render(<AskClient initialThread={thread} />);
+     92|     expect(hrefsOf(container)).toContain(`/work/matthew-henry?from=ask…
+       |                                ^
+     93|   });
+     94| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+
+ FAIL  test/invariants/naming-lock.test.ts > N1 — retired names are gone from the label surfaces > "from the Gospels" appears in no label surface
+AssertionError: from the Gospels still rendered in: components/ask-client.tsx: expected [ 'components/ask-client.tsx' ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "components/ask-client.tsx",
++ ]
+
+ ❯ test/invariants/naming-lock.test.ts:55:69
+     53|         return re.test(code);
+     54|       });
+     55|       expect(hits, `${name} still rendered in: ${hits.join(', ')}`).to…
+       |                                                                     ^
+     56|     });
+     57|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯
+
+ Test Files  7 failed (7)
+      Tests  10 failed | 13 passed (23)
+   Start at  18:47:15
+   Duration  2.30s (transform 335ms, setup 0ms, collect 1.69s, tests 3.49s, environment 3.59s, prepare 413ms)
+

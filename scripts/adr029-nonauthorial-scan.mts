@@ -33,8 +33,12 @@ const mode = opt('mode') ?? 'labelled';
 const declared = opt('target');
 const slugsPath = opt('slugs') ?? 'docs/evidence/adr029-scan-2026-09-06/input-slugs.txt';
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error('DATABASE_URL is required (dev owner credential)');
+// Narrowed to `string` HERE, at module scope: the throw guard does not carry into `main()` below,
+// so `hostOf(url)` there was a `string | undefined` argument and the cutover-gate typecheck was red
+// on the live branch (caught 2026-09-06 by `npm run audit`, not by the script's own runs).
+const urlMaybe = process.env.DATABASE_URL;
+if (!urlMaybe) throw new Error('DATABASE_URL is required (dev owner credential)');
+const url: string = urlMaybe;
 if (process.env.NEON_BRANCH !== 'dev') throw new Error('STOP: NEON_BRANCH must be "dev"');
 if (!declared) throw new Error('--target=<endpoint-id> is required');
 if (isProdHost(url)) throw new Error(`REFUSING: ${hostOf(url)} is production`);

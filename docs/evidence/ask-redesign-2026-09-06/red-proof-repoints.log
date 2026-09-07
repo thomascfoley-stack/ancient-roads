@@ -1,0 +1,16 @@
+== red-proof 1: seed md:after:h-1 into ask-composer.tsx (desktop mask too short) ==
+   × the /ask composer mask covers the slot below it, exactly > the desktop pair still covers its own smaller gap 2ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  1 failed | 7 passed (8)
+== red-proof 2: delete -mx-2.5 from ask-answer.tsx ==
+ ✓ test/invariants/ask-composer-mask.test.ts (8 tests) 1ms
+      Tests  8 passed (8)
+== restored; green again ==
+      Tests  8 passed (8)
+
+== red-proof 2, second attempt after tightening the scan to code only: delete -mx-2.5 from the ResultLink class ==
+   × the /ask composer mask covers the slot below it, exactly > the mask is wide enough for the result cards that overhang the composer 3ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  1 failed | 7 passed (8)
+== restored ==
+      Tests  8 passed (8)

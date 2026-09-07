@@ -1,5 +1,78 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — /ask redesign (field-first) + results open the book at the quoted section, with a way back — BUILT, AUDITED, DEPLOYING
+
+**Owner, in session:** "too busy… a bit of a mess"; "when something is running it's not discernible";
+results must open "into the EXACT spot" with a clear way back; then, over three composer treatments
+explained in plain terms, **"ok go with #3 for me"**, and **"fix and deploy them now live in prod."**
+Rulings and their amendments are in **ADR-121** (`docs/DECISIONS.md`); the design canvas is
+https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1.
+
+**Base.** `fix/q1-signed-out-state` (this repo's checkout) was 197 commits behind `origin/main` and
+what is live is `602bd9e` on `fix/ux-overnight-sweep`, 20 ahead of main. Worktree `redesign/ask` =
+union of `origin/fix/ux-overnight-sweep` and `origin/main` (`39d2b85`), so the deploy contains both
+what is live and main (deploy.sh's ancestry gate holds). Main's own F24 attempt (the reader ignoring a
+`#s<n>` that arrives after mount) failed F24's red-proof test; the fix was ported onto main's page.
+
+**What shipped (24 files changed, 857+/1046−, plus 26 new).**
+* `/ask`: `ask-client.tsx` (1,130 lines) split into `ask-types` · `ask-empty-state` · `ask-composer`
+  · `ask-scope-row` · `ask-progress` · `ask-answer`, re-exporting `InitialThread` and
+  `SLOW_ANSWER_NOTICE_MS`. Field-first composer: the box holds only the question and a hairline Ask;
+  the search scope is one quiet line under the box, travelling with the sticky form. Header two lines;
+  "Currently answering from the Gospels" retired (false; 65 books). History invitation as a hairline
+  row. The page frame (viewport `min-h`) moved to `app/ask/page.tsx` + `[id]/page.tsx` so the mode
+  toggle is inside the measure — the 50px overhang that put the composer over the first screen is
+  gone. Running: a `.progress-travel` bar under the question and along the box edge, active step in
+  ink, a real Stop (AbortController; 300ms double-click guard). 429/503: the envelope message + "Try
+  again in about …", retry disabled until then, clamped ≤ 86 400 s. Scroll once per appended turn.
+  Dead `small-caps` class on attributions → `[font-variant:all-small-caps]`. `mode-toggle.tsx`: two
+  words, no box.
+* Results → `/work/<slug>?from=ask:<threadId>&fq=<question>#s<ordinal>`. `lib/source-ordinal.ts`
+  parses register ids; `lib/work.ts` `locateSections` resolves classic commentary rows in ONE
+  `unnest … WITH ORDINALITY` statement over `section_anchors` (cap 200, `status='published'`);
+  `lib/teacher/section-locate.ts` writes one metadata field, never reorders, never rejects;
+  `teach.ts` awaits it only where the rows ship. `history-context-bar.tsx` handles `from=ask:`,
+  dismisses per thread, and is `sticky bottom-0` (in flow at the top it left the viewport on landing,
+  y = −168px measured). `thread-restore.tsx` heals Back from the reader (Next 16 copies the current
+  route tree onto a `replaceState`'d entry). Reader's Continue chip lifts over the strip on mobile.
+* Also: `fast-uri` override 3.1.5 → 3.1.7 (four HIGH advisories the audit gate flagged — pre-existing
+  on live); `scripts/adr029-nonauthorial-scan.mts` typecheck fix (pre-existing red on live).
+
+**Verification.**
+* Red first: `docs/evidence/ask-redesign-2026-09-06/red-run.log` — 10 failures across 7 files on the
+  unchanged code; the plumbing tests' red output is transcribed in `findings.md`. Three source-reading
+  tests re-pointed to the split files, documented BEFORE the edits (findings.md) and red-proofed after
+  (`red-proof-repoints.log`) — one of them was found satisfiable by a comment and TIGHTENED.
+* `npm run audit`: `audit-run.log` red on 4 legs (2 pre-existing on live, 2 DB-timeout flakes under
+  load that pass alone); `audit-run-2.log` **AUDIT PASSED — all gates green**; `audit-run-3.log`, on
+  the final tree after the deep-audit hardening, is green on every gate except the SAME two DB
+  tests timing out under full-suite load (`licensing` legal-pool 30s, `draft-check` 5s) —
+  `audit-run-3-flaky-rerun.log` runs both alone on the same tree: 10/10, 9.4s and 4.1s. Recorded as
+  an environmental flake (the dev branch under coverage + `tradition-gap`'s 97s), not a code gate;
+  the targeted run of every touched suite on the final tree is 33 files / 138 tests green, both
+  typechecks and lint clean.
+* Deep audit (6 lenses, one batch, read-only): **no CRITICAL/HIGH code defect**; 12 code findings
+  fixed before deploy, the rest filed — `deep-audit.md`.
+* Browser, this branch's dev server, 1440 and 390: reader lands on the exact section with the gold
+  marker, the strip reads `← Back to “faith & works”` and links the thread, strip clear of the tab bar
+  (strip bottom 772, tab bar top 791 at 390), no horizontal overflow; history mode's unboxed toggle;
+  the gate page. PNGs in the evidence dir. Console: only the pane's `eval`/HMR notices.
+* Production preflight read (bylaw 7): `scripts/predeploy-gate.ts` at `DEPLOYING=1` does one
+  `information_schema` SELECT on production with `PREDEPLOY_DB_URL` from `~/.neon_prod_url` — under
+  the owner's "deploy them now live in prod".
+
+**NOT DONE / UNVERIFIED.**
+* **The signed-in `/ask` walk** (empty state, running with bar + Stop, an answer, clicking a result) was
+  exercised in jsdom only. The teacher is owner-only (ADR-116) and no owner session was on the
+  Browser pane; I do not enter credentials. **This is the DoD's real-interaction leg and it is owed** —
+  the owner walking it on production (or signing in on the pane) closes it.
+* Back-from-reader → populated thread was proven against a mocked router only; walk it once live.
+* CI has not run on this branch before the deploy (pushed alongside).
+* The sidebar direction (A top bar / B contextual rail) is undecided; nothing built.
+* Filed (UX_REMEDIATION §Backlog 2026-09-06): Stop stops waiting only (`req.signal` → `teach()`);
+  desk-pane ordinal; old threads re-locate on every open; DB test outside CI globs; the flip
+  toolchain test writing residue into tracked evidence; dead `small-caps` elsewhere; `SLOW_ANSWER_NOTICE_MS`.
+
 ## 2026-09-07 — Track A: ADR-029 discharged; publish runbook amended twice [Kimi Code session]
 
 Executed Track A of `KIMI_ORDER_corpus-coverage.md` (Claude's order; my review of it is in

@@ -30,6 +30,12 @@ const LABEL_FILES = [
   'app/library/uploads/page.tsx',
   'app/library/passages/page.tsx',
   'components/ask-client.tsx',
+  // The /ask file split (2026-09-06): every rendered-label surface the client used to hold.
+  'components/ask-answer.tsx',
+  'components/ask-composer.tsx',
+  'components/ask-empty-state.tsx',
+  'components/ask-progress.tsx',
+  'components/ask-scope-row.tsx',
 ];
 
 describe('N1 — retired names are gone from the label surfaces', () => {
@@ -38,6 +44,10 @@ describe('N1 — retired names are gone from the label surfaces', () => {
     ['The corpus', /The corpus/],
     ['My library', /My library/],
     ['My Works', /My Works/],
+    // "Currently answering from the Gospels" was false the day it shipped — the legal corpus spans
+    // 65 books (docs/LONG_NIGHT.md:247) — and survived inside the sentence R3 rewrote. Retired
+    // 2026-09-06 with the /ask redesign.
+    ['from the Gospels', /from the Gospels/],
   ];
 
   for (const [name, re] of RETIRED) {
@@ -59,7 +69,8 @@ describe('N1 — retired names are gone from the label surfaces', () => {
   });
 
   it('the Ask scope picker counts collections, not lanes', () => {
-    const code = read('components/ask-client.tsx').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    // RE-POINTED 2026-09-06 (findings.md): the picker renders from ask-scope-row.tsx after the split.
+    const code = read('components/ask-scope-row.tsx').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
     // The rendered string only. `lanes` as a field name is exempt and asserted below.
     expect(code).not.toMatch(/of \$\{[^}]*\} lanes/);
     expect(code).toMatch(/collections/);

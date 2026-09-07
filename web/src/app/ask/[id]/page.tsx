@@ -1,6 +1,8 @@
 import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@/lib/session';
 import { getThread, servedOf, type StoredAnswer } from '@/lib/research';
+import { attachSectionOrdinals } from '@/lib/teacher/section-locate';
+import type { RetrievedChunk } from '@/lib/teacher/retrieve';
 import { AskClient, type InitialThread } from '@/components/ask-client';
 import { HistoryResults } from '@/components/history-results';
 import { ModeToggle } from '@/components/mode-toggle';
@@ -10,6 +12,9 @@ export const metadata = {
   title: 'Research thread',
   description: 'A saved research thread — every turn dated, every source attributed.',
 };
+
+// The same viewport frame /ask uses — see app/ask/page.tsx for why the page, not AskClient, owns it.
+const FRAME = 'flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] flex-col md:min-h-[calc(100dvh-1px)]';
 
 // /ask/[id] — a research thread, re-read from the database (ASK_HISTORY_DESIGN §4.3: back
 // works because this is a real URL, not because client state survived). The page renders the
@@ -68,6 +73,18 @@ export default async function ThreadPage(props: { params: Promise<{ id: string }
   }
   const servable = await servedOf(all); // null = resolution failed → tombstone everything
 
+  // Result links open the book at the quoted section (2026-09-06). Threads stored before that
+  // date carry no `sectionOrdinal` on their retrieval rows; resolve them here, once for the whole
+  // thread (one batched query), so a reopened thread lands exactly where a live one does. This is
+  // the Back destination, so it must be exact too.
+  const unlocated: RetrievedChunk[] = [];
+  for (const t of thread.turns) {
+    const r = t.answer?.result;
+    if (!r || r.kind === 'empty') continue;
+    for (const row of r.retrieval as RetrievedChunk[]) if (row.metadata.sectionOrdinal === undefined) unlocated.push(row);
+  }
+  if (unlocated.length > 0) await attachSectionOrdinals(unlocated);
+
   const initialThread: InitialThread = {
     id: thread.id,
     turns: thread.turns.map((t) => {
@@ -82,5 +99,10 @@ export default async function ThreadPage(props: { params: Promise<{ id: string }
     }),
   };
 
-  return <AskClient initialThread={initialThread} />;
+  return (
+    <div className={FRAME}>
+      <ModeToggle mode="voices" />
+      <AskClient initialThread={initialThread} />
+    </div>
+  );
 }

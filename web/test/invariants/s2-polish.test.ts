@@ -31,10 +31,15 @@ describe('S2 item 3 — the Ask lane scope control carries the terracotta, not b
   // the accent-color assertion lost its subject. The property now: the chips exist, no lane
   // checkbox remains for a dead class to regress on, and the inert idiom stays out.
   it('lane scope is aria-pressed chips; no checkbox or forms-plugin idiom remains', () => {
-    const c = read('components/ask-client.tsx');
-    expect(c, 'design C: the lane scope control is aria-pressed toggle chips').toMatch(/aria-pressed/);
-    expect(c, 'no lane checkbox should remain in the ask client after design C').not.toMatch(/type="checkbox"/);
-    expect(c, 'the forms-plugin idiom is inert here — that plugin is not installed').not.toMatch(/text-accent-700 focus:ring-accent-600/);
+    // RE-POINTED 2026-09-06 (docs/evidence/ask-redesign-2026-09-06/findings.md): the scope control
+    // lives in ask-scope-row.tsx after the /ask file split. The positive reads the file that
+    // renders it; both negatives run over that file AND the client, so nothing regresses in either.
+    const scope = read('components/ask-scope-row.tsx');
+    expect(scope, 'design C: the lane scope control is aria-pressed toggles').toMatch(/aria-pressed/);
+    for (const c of [scope, read('components/ask-client.tsx')]) {
+      expect(c, 'no lane checkbox should remain in the ask client after design C').not.toMatch(/type="checkbox"/);
+      expect(c, 'the forms-plugin idiom is inert here — that plugin is not installed').not.toMatch(/text-accent-700 focus:ring-accent-600/);
+    }
   });
 });
 
