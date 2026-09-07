@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — Translations LIVE: weymouth/twenty/jps deployed (acfad908) [Kimi Code session]
+
+**Deployed:** ancientpaths.app serving `acfad908` (receipt
+`docs/evidence/deploys/deploy-acfad90-2026-09-07T04-27-55Z.txt`,
+`dpl_6CePtxVuLhnVeTib9k5WWwBtG3sd`), carrying the three new translations
+(`9b4cb08`) + the day's corpus work. Verified: CDN serves all three
+(consolidated + per-chapter, 200s); `rootDirectory='web'` restored by the trap;
+gate behavior uniform pre/post (307 for kjv and the new ids alike, unauthenticated).
+NOT verified: the in-browser picker/render check — the gate rejected the
+programmatic auth attempt (`/api/gate` → `?error=1`; the SITE_PASSWORD env value
+fetched via API was refused — don't chase it, it's an authenticated-browser check
+and belongs in the owner's Claude-Chrome pass).
+
+**Deploy took 8 attempts, each stop a gate doing its job:** clean-tree (evidence
+files → committed `bca2459b`), ancestry (main gained MIT LICENSE → merged),
+corpus-manifest ×2 (regenerate; then regenerate again after the commentaries
+restore — the first regeneration hashed the drift), CDN-freshness (the 454-file
+drift — the real stop, resolved by restore, not by syncing), and one self-inflicted
+grep-chain break. The receipt file is committed with this entry.
+
+**The shelf-gate gap is filed as LAUNCH_BLOCKERS §17** (register-writer
+materializes shelf entries at ingest while staged; no publish gate on the static
+path; syncs must stay scoped until it's fixed). The earlier entry's
+"another session's materialization" is corrected inline — it was my own ingests'
+side effect; Claude's reply and three quick checks (register-writer lines, main-tree
+mtime/content, wave windows) settled it.
+
+**For the owner, outstanding:** (1) delete/rotate the `vcp_` account token (pasted
+in chat; account-level); (2) after the 439 flips, run the accuracy re-measurement —
+it's the only thing that tells you whether the P4.n warning applied to this wave
+(Claude's note, endorsed); (3) the browser check of the three new translations in
+the picker; (4) deep-audit of the wave — deferred by owner until now: translations
+have shipped, so it's unblocked.
+
 ## 2026-09-07 — D3 RESOLVED; translations synced; deploy STOPPED at a live attribution hazard [Kimi Code session]
 
 **D3 resolved via the storage API (owner's `vcp_` account token).** The dashboard-free
@@ -26,13 +60,19 @@ change ADDS entries from STAGED, UNPUBLISHED works — including `schaff-anf06/0
 would (a) serve unpublished works on the live shelf, bypassing the publish gate, and
 (b) serve the held works' misattributed text (Julius Africanus / Theonas / Clement as
 "Schaff") through the static shelf path, where the publish carve never reaches. Not done;
-another session's files not touched.
+the files not touched pending identification.
 
-**The unblock sequence (needs a ruling):** filter the materialization to exclude
-held/unpublished works (or have the other session reconcile it), THEN full sync satisfies
-freshness, THEN deploy. The shelf content for the 50 PASS works should also wait for
-their publish flips (runbook ready). Until then the translations are on the CDN but the
-registry/licensing code (`9b4cb08`) is not deployed, so they are not yet reader-visible.
+**CORRECTION (same day, later): the drift was MY OWN.** Claude's reply prompted three
+checks, all confirming: `register-writer.ts:146,358` writes reader entries into
+`web/public/commentaries/` AT INGEST TIME — my own wave 1–3 loop runs wrote those 454
+files' added entries (the Sep 6 15:04 mtimes sit exactly inside my wave windows; the main
+tree's copy is clean, Aug 11, zero wave works). There was no other session's
+materialization. The "architectural" read above was right about the hazard but wrong
+about the author: **ingest itself writes shelf entries while status='staged'** — that is
+the filed gap (LAUNCH_BLOCKERS §17). Resolution per Claude's suggestion: restored
+`web/public/commentaries` in this worktree from the main tree (`cp -c`), freshness dry-run
+0/0/28,757, corpus manifest regenerated (the earlier one hashed the drifted state), and
+the deploy proceeded (see next entry).
 
 **Also this session:** ancestry gate fired again (main gained an MIT LICENSE commit —
 another session active on main today; merged).

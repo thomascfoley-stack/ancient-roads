@@ -152,6 +152,26 @@ that table has a planned consumer before spending the run.
 
 ---
 
+## 17. The static shelf path has no publish gate (filed 2026-09-07)
+
+**Status:** [FILED] — same failure class as ADR-029, different door, and no gate sees it.
+**What:** `register-writer.ts:146,358` writes reader entries into
+`web/public/commentaries/` AT INGEST TIME, while the work is still `status='staged'`.
+The DB path gates serving on `status='published'` AND `served`; the static shelf path has
+no equivalent — anything ingested is shelf-materialized immediately, one `corpus-blob-sync`
+away from serving. Measured consequence (2026-09-07): the wave 1–3 ingests materialized
+454 chapter files including three ADR-029-HELD works (`schaff-anf06/07/08`) and
+`bennett-expositor10`; only a deploy-time freshness STOP and a manual restore stood
+between those files and misattributed text on the live shelf.
+**Recommendation:** register-writer should not write shelf entries for staged works (or
+the materialization step should filter on `status='published'` at sync/read time).
+Whichever lands, red-prove it with a staged work whose shelf file must NOT change at
+ingest. Until then: **any full `corpus-blob-sync --execute` while staged works exist will
+carry them to the CDN** — syncs must stay scoped, or the shelf materialization must be
+restored from a clean tree first (the 2026-09-07 restore pattern).
+
+---
+
 ## 15. Post-launch queue — deferred mediums (filed 2026-08-31, pre-open pass)
 
 **Status:** [TABLED] — deliberately NOT fixed before opening. Batching them into the launch-eve
