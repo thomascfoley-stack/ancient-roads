@@ -2,6 +2,11 @@
 
 The concrete grab-list: exact sources, formats, licenses, and exclusions. Everything here is **free to download and self-host** (public domain or noted otherwise). Feeds the `sources`/`sections` ingestion (ADR-010). **Content categories (`source_type`): `bible · commentary · sermon · historian`** (plus `theology`/`father` for mystics + church fathers). **Everything here is INGESTED and SELF-HOSTED inside Ancient Paths — we never link out to the source site; we surface the full text in-app** (ADR-013). Verified July 2026.
 
+> **ROLE CHANGE, 2026-09-07 — read this before using the tables below as a to-do list.**
+> The itemized list of *what is still missing* moved to **[`ingest/candidates.config.json`](../ingest/candidates.config.json)** (135 candidates, 16 decided exclusions, 2 scope questions), because a hand-maintained markdown table drifts and this one did — see the §1 warning below. **This file is now the prose companion**: the Universal rules, the per-figure USE/AVOID edition guidance, and the hard exclusions. Read it to judge *an edition*; read the JSON to find *a gap*.
+>
+> The tables here are still accurate about editions and traps, and §4/§5 were re-verified against the live manifest on 2026-09-07 — several figures they list as targets are in fact already acquired (Catena Aurea, Bernard, à Kempis, Julian of Norwich, Teresa, John of the Cross, de Sales, Ignatius, Pascal, Anselm, Poole, Maclaren, Ryle, Josephus, Edersheim, Eusebius, all 8 Schaff HCC vols, Philo). Do not treat a row here as a gap without checking `ingest/sources.config.json` first. Derivation: [`docs/pm/CORPUS_CEILING_2026-09-07.md`](pm/CORPUS_CEILING_2026-09-07.md).
+
 ## Universal rules (apply to every item)
 
 - **Store a per-work provenance + license record** (author, death date, edition/translator + year, PD basis, source URL, retrieved-at, checksum). Fail closed: no confirmed PD/CC license → quarantined.
@@ -13,6 +18,16 @@ The concrete grab-list: exact sources, formats, licenses, and exclusions. Everyt
 ---
 
 ## 1. BIBLES  (`source_type='bible'`)
+
+> **⚠ STALE — do not gate on this section (flagged 2026-09-07).** It names 8 versions and covers
+> 8 of the 18 translation ids actually shipping from `web/public/bible/`; it says nothing about
+> akjv, anderson, bbe, nheb, noyes, rotherham, rwebster, tyndale, ukjv, webster. It also lists
+> **LSV as EXCLUDE**, but LSV ships today under an owner ruling of 2026-07-14
+> (`web/src/lib/licensing.ts:25,47-53`). **The authority for translation licensing is
+> `web/src/lib/licensing.ts`** — the record the deploy gate actually reads, block-by-default —
+> plus `docs/SOURCE_CATALOGUE.md` for candidates. There is **no blanket post-1929 exclusion for
+> Bible translations**: BSB (2023), WEB, NHEB and LSV all ship; the ≤1929 rule in §4 governs
+> PD-*author* works whose only free English is an old translation.
 
 | Version | Source | Format | License |
 |---|---|---|---|

@@ -1,6 +1,11 @@
 # Data Sources — Bibles & Commentaries (licensing + strategy)
 
-Reference for acquiring complete, structured, legally-clean Bible + commentary data to host, render, and embed. The **concrete itemized grab-list** (exact works, sources, editions) lives in [`docs/ACQUISITION_MANIFEST.md`](docs/ACQUISITION_MANIFEST.md); this file is the licensing rationale behind it.
+Reference for acquiring complete, structured, legally-clean Bible + commentary data to host, render, and embed. This file is the **licensing rationale**. The itemized lists live in two places, and they are not interchangeable:
+
+- **[`ingest/candidates.config.json`](ingest/candidates.config.json)** — the machine-readable grab-list of works we do **not** yet have: 135 candidates with a target edition and source, 16 decided exclusions with reasons, 2 open scope questions. Added 2026-09-07. Nothing here is ingested; a candidate is *promoted* into `ingest/sources.config.json` to become real. Guarded by `test/invariants/candidates-disjoint-from-sources.test.ts`.
+- **[`docs/ACQUISITION_MANIFEST.md`](docs/ACQUISITION_MANIFEST.md)** — the prose companion: universal rules, per-figure USE/AVOID edition guidance, and the hard exclusions. Read it for *how to judge an edition*, not for *what is missing* — the itemized gap list moved to the JSON above, because a hand-maintained markdown table drifted (its §1 Bibles section is provably stale: it excludes LSV, which ships).
+
+Full derivation of the candidate list, including the six research lenses and the universal rules restated: [`docs/pm/CORPUS_CEILING_2026-09-07.md`](docs/pm/CORPUS_CEILING_2026-09-07.md).
 
 ## The two legal layers (never conflate them)
 

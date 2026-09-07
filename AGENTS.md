@@ -36,6 +36,21 @@ rediscovering them. Do not duplicate their content here - go read them.
   **docs/INGESTION_LOOP.md**, **docs/INGESTION_ADAPTERS.md**. The manifest
   `ingest/sources.config.json` is the source of truth; quarantined entries and declared
   forbidden-provenance policies stay as declared (see **docs/SECTION_PROVENANCE_DESIGN.md**).
+
+  **There are two manifest files and only one of them is ingested** (added 2026-09-07):
+  `ingest/sources.config.json` is the ingestion source of truth — everything in it is a work
+  we intend the product to hold. `ingest/candidates.config.json` is a **research artifact**:
+  acquisition candidates, decided exclusions, and open scope questions. **Nothing in the
+  candidates file is ingested.** A candidate becomes real by being *promoted* — a new entry
+  written into `sources.config.json` with full provenance (url + edition + year), an allowed
+  licence, and a working `provenance.acquire.adapter` — and then deleted from the candidates
+  file. `test/invariants/candidates-disjoint-from-sources.test.ts` fails if a slug is ever in
+  both, and fails harder if an *excluded* work reaches the ingestion manifest.
+
+  **Do not bulk-write candidates into `sources.config.json` to "queue" them.** 115 of the 135
+  current candidates are archive.org-only and `adapter-loop.ts` dispatches only `ccel` and
+  `gutenberg` — an entry whose adapter does not exist is silently skipped by the loop's filter,
+  which reads as success and destroys the meaning of the never-acquired backlog count.
 - Reader / web UI: **docs/LIBRARY_READER_DESIGN.md**, **docs/NAVIGATION_AND_SEARCH.md**.
 - Security / licensing: **docs/SECURITY.md** (the GHSA ignore list lives in package.json and is
   documented there), `scripts/deps-audit.mjs`.
