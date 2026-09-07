@@ -25184,5 +25184,53 @@
       }
     },
     "note": "DEVIATION: the candidate slug 'stalker-life-christ-paul' paired this with Stalker's 'The Life of Jesus Christ' — that work is NOT on Project Gutenberg (searched 2026-09-07; PG carries only this, 'The Preacher and His Models' #24311, and 'The Trial and Death of Jesus Christ' #21814). Only the Life of St. Paul is promoted; the slug is narrowed accordingly. Wilbert W. White's editor apparatus (FOREWORD, per-chapter study outlines, and the 'HINTS TO TEACHERS AND QUESTIONS FOR PUPILS' section) is excluded as non-authorial; the numbered body paragraphs are the edition's own furniture and stay. Staged via the historian path."
+  },
+  {
+    "id": "newman-grammar-assent",
+    "slug": "newman-grammar-assent",
+    "title": "An Essay in Aid of a Grammar of Assent",
+    "author": "Newman, John Henry",
+    "author_died": 1890,
+    "year_written": 1870,
+    "source_type": "theology",
+    "tradition": "catholic",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/34022",
+      "edition": "London: Burns, Oates, & Co., 1874 — Gutenberg #34022, title page READ 2026-09-07: \"An Essay In Aid Of A Grammar Of Assent. by John Henry Newman, Of the Oratory. … London: Burns, Oates, & Co. 17 & 18, Portman Street, and 63, Paternoster Row. 1874\". The candidate's target was the 1870 original (first edition, same publisher); the 1874 printing carries no edition statement.",
+      "year": 1874,
+      "license_ref": "Public Domain — Gutenberg header (US); author's own English (Newman d. 1890), no translator, no editor; 1874 Burns, Oates printing PD.",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 34022
+      }
+    },
+    "note": "Extends an existing voice (4 Newman titles present). Scope = the ten chapters in two parts, opened at the PART I part-title so Newman's 1870 Dedication is excluded front matter (newman-apologia preface pattern); ends before the collected FOOTNOTES block (edition apparatus); Newman's own third-edition NOTE. rides as the last section. Staged via adapter-loop (register path)."
+  },
+  {
+    "id": "newman-idea-university",
+    "slug": "newman-idea-university",
+    "title": "The Idea of a University Defined and Illustrated",
+    "author": "Newman, John Henry",
+    "author_died": 1890,
+    "year_written": 1852,
+    "source_type": "theology",
+    "tradition": "catholic",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/24526",
+      "edition": "Gutenberg #24526 — the combined volume (the nine 1852 Dublin discourses + the 1858 occasional lectures and essays). The etext prints no publisher imprint; edition evidence READ 2026-09-07 from the text itself: dedication dated \"NOV. 21, 1852\", Introductory Letter signed \"[_November 1858._] JOHN H. NEWMAN.\", Advertisement dated \"_November, 1858._\" — the 1852-58 original the candidate names.",
+      "year": 1858,
+      "license_ref": "Public Domain — Gutenberg header (US); author's own English (Newman d. 1890), no translator, no editor.",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 24526
+      }
+    },
+    "note": "Extends an existing voice (4 Newman titles present). Scope = the nine Discourses (UNIVERSITY TEACHING.) and the Introductory Letter + ten Lectures (UNIVERSITY SUBJECTS) + Newman's own NOTE ON PAGE 478.; the 1852 Preface and dedications are excluded front matter; Newman's 1858 'Advertisement.' is dropped by the shared GUT_MATTER front-matter heading filter (reported in the scoped filter list, inspected and accepted 2026-09-07 — authorial front matter, not a discourse); each 'Discourse N.'/'Lecture N.' number line is a marker boundary so it can never attach to the previous unit; scope ends at the INDEX. Staged via adapter-loop (register path)."
   }
 ]

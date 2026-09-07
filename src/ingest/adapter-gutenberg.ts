@@ -348,6 +348,105 @@ export const PROFILES: Record<string, Profile> = {
     },
     register: 'prose',
   },
+  'newman-grammar-assent': {
+    // PG #34022 — London: Burns, Oates, & Co., 1874 (title page READ
+    // 2026-09-07: "An Essay In Aid Of A Grammar Of Assent. by John Henry
+    // Newman, Of the Oratory. … London: Burns, Oates, & Co. 17 & 18,
+    // Portman Street, and 63, Paternoster Row. 1874"; the candidate's
+    // "1870 original" is the first edition, same publisher — the 1874
+    // printing carries no edition statement). Author's own English; no
+    // translator, no editor. The work is the ten chapters in two parts;
+    // Newman's 1870 Dedication is front matter (scope opens at the PART I
+    // part-title — same treatment as newman-apologia's 1865 Preface). The
+    // CONTENTS lines are indented ("   Chapter I. …") and cannot pre-match
+    // the flush body headings. Scope ends at the collected FOOTNOTES block
+    // (the edition's end-note apparatus); Newman's own NOTE. (third-edition
+    // note, author's matter) rides as the last section inside the scope.
+    sections: {
+      scope: { start: /^PART I\. ASSENT AND APPREHENSION\.$/, end: /^FOOTNOTES$/ },
+      contents: [
+        { match: /^Chapter I\. Modes Of Holding And Apprehending Propositions\.$/ },
+        { match: /^Chapter II\. Assent Considered As Apprehensive\.$/ },
+        { match: /^Chapter III\. The Apprehension Of Propositions\.$/ },
+        { match: /^Chapter IV\. Notional And Real Assent\.$/ },
+        { match: /^Chapter V\. Apprehension And Assent In The Matter Of Religion\.$/ },
+        { match: /^Chapter VI\. Assent Considered As Unconditional\.$/ },
+        { match: /^Chapter VII\. Certitude\.$/ },
+        { match: /^Chapter VIII\. Inference\.$/ },
+        { match: /^Chapter IX\. The Illative Sense\.$/ },
+        { match: /^Chapter X\. Inference And Assent In The Matter Of Religion\.$/ },
+        { match: /^NOTE\.$/ },
+      ],
+    },
+    register: 'prose',
+  },
+  'newman-idea-university': {
+    // PG #24526 — the combined volume: the nine 1852 Dublin discourses
+    // ("UNIVERSITY TEACHING.") plus the 1858 occasional lectures and essays
+    // ("UNIVERSITY SUBJECTS, …"). The etext prints NO publisher imprint;
+    // edition evidence READ 2026-09-07 from the text itself: the dedication
+    // "IN FEST. PRÆSENT. B. M. V. NOV. 21, 1852", the Introductory Letter
+    // signed "[_November 1858._] JOHN H. NEWMAN.", and the Advertisement
+    // dated "_November, 1858._" — the 1852-58 original the candidate names.
+    // Author's own English; no translator, no editor. The 1852 PREFACE and
+    // both dedications are front matter (scope opens at the UNIVERSITY
+    // TEACHING. part-title). Each discourse/lecture declares its number line
+    // ("Discourse I.", "Lecture IV.") as a marker boundary so it can never
+    // attach to the previous unit's tail; the title line is the section.
+    // Scope ends at the INDEX; the collected footnotes sit after it.
+    // Newman's own "NOTE ON PAGE 478." rides as the last section. His 1858
+    // "Advertisement." is dropped by the shared GUT_MATTER heading filter
+    // (front-matter heading), reported in the scoped filter list — inspected
+    // 2026-09-07 and accepted: authorial front matter, not a discourse.
+    sections: {
+      scope: { start: /^UNIVERSITY TEACHING\.$/, end: /^INDEX\.$/ },
+      contents: [
+        { match: /^ *Discourse I\.$/, marker: true },
+        { match: /^Introductory\.$/ },
+        { match: /^ *Discourse II\.$/, marker: true },
+        { match: /^Theology A Branch Of Knowledge\.$/ },
+        { match: /^ *Discourse III\.$/, marker: true },
+        { match: /^Bearing Of Theology On Other Branches Of Knowledge\.$/ },
+        { match: /^ *Discourse IV\.$/, marker: true },
+        { match: /^Bearing Of Other Branches Of Knowledge On Theology\.$/ },
+        { match: /^ *Discourse V\.$/, marker: true },
+        { match: /^Knowledge Its Own End\.$/ },
+        { match: /^ *Discourse VI\.$/, marker: true },
+        { match: /^Knowledge Viewed In Relation To Learning\.$/ },
+        { match: /^ *Discourse VII\.$/, marker: true },
+        { match: /^Knowledge Viewed In Relation To Professional Skill\.$/ },
+        { match: /^ *Discourse VIII\.$/, marker: true },
+        { match: /^Knowledge Viewed In Relation To Religion\.$/ },
+        { match: /^ *Discourse IX\.$/, marker: true },
+        { match: /^Duties Of The Church Towards Knowledge\.$/ },
+        { match: /^UNIVERSITY SUBJECTS, DISCUSSED IN OCCASIONAL LECTURES AND ESSAYS\.$/, marker: true },
+        { match: /^Introductory Letter\.$/ },
+        { match: /^Advertisement\.$/ },
+        { match: /^ *Lecture I\.$/, marker: true },
+        { match: /^Christianity And Letters\. A Lecture in the School of Philosophy and$/ },
+        { match: /^ *Lecture II\.$/, marker: true },
+        { match: /^Literature\. A Lecture in the School of Philosophy and Letters\.$/ },
+        { match: /^ *Lecture III\.$/, marker: true },
+        { match: /^English Catholic Literature\.$/ },
+        { match: /^ *Lecture IV\.$/, marker: true },
+        { match: /^Elementary Studies\.$/ },
+        { match: /^ *Lecture V\.$/, marker: true },
+        { match: /^A Form Of Infidelity Of The Day\.$/ },
+        { match: /^ *Lecture VI\.$/, marker: true },
+        { match: /^University Preaching\.$/ },
+        { match: /^ *Lecture VII\.$/, marker: true },
+        { match: /^Christianity and Physical Science\. A Lecture in the School of Medicine\.$/ },
+        { match: /^ *Lecture VIII\.$/, marker: true },
+        { match: /^Christianity And Scientific Investigation\. A Lecture Written for the$/ },
+        { match: /^ *Lecture IX\.$/, marker: true },
+        { match: /^Discipline Of Mind\. An Address To The Evening Classes\.$/ },
+        { match: /^ *Lecture X\.$/, marker: true },
+        { match: /^Christianity And Medical Science\. An Address to the Students Of Medicine\.$/ },
+        { match: /^NOTE ON PAGE 478\.$/ },
+      ],
+    },
+    register: 'prose',
+  },
   'newman-apologia': {
     // PG #22088 (1890 Longmans ed. of the 1864 Apologia). The work proper is
     // the five chapters between the part-title "MY RELIGIOUS OPINIONS." (a

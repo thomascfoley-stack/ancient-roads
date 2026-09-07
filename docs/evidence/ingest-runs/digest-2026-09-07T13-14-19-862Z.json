@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "startedAt": "2026-09-07T13:14:19.862Z",
+    "endedAt": "2026-09-07T13:15:16.897Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 2,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "newman-grammar-assent",
+      "adapter": "gutenberg",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 11,
+      "anchored": 0,
+      "embedded": 735
+    },
+    {
+      "slug": "newman-idea-university",
+      "adapter": "gutenberg",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 21,
+      "anchored": 0,
+      "embedded": 854
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

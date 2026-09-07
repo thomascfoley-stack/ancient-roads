@@ -179,32 +179,6 @@
       "notes": "Foundational medieval hagiography."
     },
     {
-      "slug": "newman-grammar-assent",
-      "title": "An Essay in Aid of a Grammar of Assent",
-      "author": "John Henry Newman",
-      "source_type": "theology",
-      "tradition": "catholic",
-      "target_edition": "1870 original",
-      "target_source": "archive.org; Project Gutenberg",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "catholic-orthodox-medieval",
-      "notes": "Extends an existing voice — Newman already has 4 titles."
-    },
-    {
-      "slug": "newman-idea-university",
-      "title": "The Idea of a University",
-      "author": "John Henry Newman",
-      "source_type": "theology",
-      "tradition": "catholic",
-      "target_edition": "1852-58 original",
-      "target_source": "archive.org; Project Gutenberg",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "catholic-orthodox-medieval",
-      "notes": null
-    },
-    {
       "slug": "solovyov-justification-good",
       "title": "The Justification of the Good",
       "author": "Vladimir Solovyov",
