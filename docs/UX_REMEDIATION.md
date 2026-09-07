@@ -3117,3 +3117,8 @@ test red and does not. None is a known product defect; each is a check that woul
   read as proving. Verified in a browser at 375px on 2026-09-07 — `document.title` is
   `My uploads · Ancient Paths` above an `h1` of `My Works`. Pre-existing, not a deploy blocker;
   the fix is one string plus widening the guard to `metadata.title` across `LABEL_FILES`.
+- **N2 follow-up, 2026-09-07 (ADR-124):** the Sidebar C groups shipped with three per-row mark
+  grammars plus the pre-N4 custom sections as a fourth. Ruled to one rule (a mark only where it
+  distinguishes the row) and the sections hidden with their storage kept. Exit test
+  `sidebar-row-marks.test.tsx`; `pr1c-prayer-surface.test.ts` leg 3 re-pointed under the ruling
+  (C1 — flagged here, not silently rewritten). Evidence `docs/evidence/rail-row-marks-2026-09-07/`.

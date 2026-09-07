@@ -1,5 +1,52 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — rail row marks: one rule, and the custom sections hidden (ADR-124)
+
+**The owner's first signed-in look at Sidebar C**, which no agent can take (sign-in is owner-only),
+found the Prayer journal rows "erratic" and asked whether the `MY SERMONS` / `JOURNALS` tabs under
+the groups had any purpose. Inspected before proposing anything; changed nothing until ruled.
+
+**What the inspection found.** THREE per-row grammars in one rail — a uniform accent dot
+(research), a per-study colour dot (studies), and a section glyph repeated on every row (prayers,
+works, plans) — plus a FOURTH below them: the pre-N4 custom sections, rendered from
+`localStorage` with coloured dots, underlines and a pencil. That feature was retired in N4 (seed
+emptied, `New section` removed — nobody can create one), so what the owner saw was his own
+pre-retirement data, on one browser, not in the database. And the storage under it is
+load-bearing for something else entirely: `prayer-carry-forward.ts` writes its once-only marker
+before its first post and never retries, so that key is its only recovery source.
+
+**Ruling** (verbatim in ADR-124): the proposed rendering; "retire the display, keep the key" —
+possibly revived later as teams / classroom organisation. **Built:**
+
+- **One rule:** a row carries a mark only when it distinguishes that row from its siblings. The
+  section glyph moves to the header, once; research/prayers/works/plans rows are text; studies'
+  per-study colour dot survives as the only row mark. Prayer rows lose their `Sat 8` stamps (the
+  journal page keeps the dates). Open panels indent by the chevron's width so rows nest under
+  the header label.
+- **Custom sections hidden, not deleted.** `StudySectionView`, `SectionEmptyState`,
+  `InlineNameForm`, `PencilIcon` removed (recoverable at `540d0667`); the sidebar no longer reads,
+  writes, or could clear `study-sections:v1:<userId>`. Deleted with them: `dayStamp`, `WEEKDAYS`,
+  `accentDot`, `storageKey`, `SEED_SECTIONS`.
+
+**Red first, and one red that had to be earned.** Seven-leg exit test, four legs seen RED on the
+pre-ruling rail. Leg 2 (no date on prayer rows) was GREEN on its first run for a bad reason —
+`textContent` joins label and date with no space, so a `\b` between two letters never matched.
+Corrected, re-run, RED, then green after the fix. The pr1c test's third leg went red for the
+right reason and was re-pointed under the ruling (C1), not edited to pass.
+
+**Browser leg**: composites from the real component + compiled CSS (fixture data, no session),
+looked at; live signed-out rail at 1280 and 375 with the Menu sheet, no overflow, no leftover
+sections, console clean of product errors. `docs/evidence/rail-row-marks-2026-09-07/`.
+
+### NOT DONE / UNVERIFIED
+
+- **Not deployed.** On `fix/rail-row-marks`, PR pending CI.
+- **The owner's real rail has not been seen by anyone but the owner.** Composites use fixture rows.
+- Per-day date grouping ("print the date only when it differs from the row above") was offered and
+  not taken; if the rail ever needs dates back, that is the shape.
+- The `JOURNALS → Test` item has no obvious home in the current product (prayers are prayers,
+  studies are studies). Left in storage, as ruled; it is the seed of the owner's classroom idea.
+
 ## 2026-09-07 — the union: main and redesign/ask had diverged and neither contained the other
 
 **The finding that reframed the session.** Every board header, and my own summary of the previous
