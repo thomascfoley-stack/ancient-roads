@@ -2472,3 +2472,22 @@ another account's id byte-identical to 404 for one that never existed) and
 blur commit, "Use this" fills the field with exactly what the chip claims and does not save, a
 failed save keeps what you typed and says so). Both red first against the unchanged tree —
 `titleVerdict is not a function`, `PATCH is not a function`.
+
+## ADR-124 — Rail row marks: a mark only where it distinguishes the row; the pre-N4 custom sections are hidden, their data kept
+
+**Date:** 2026-09-07 · **Status:** RULED (owner) · **Amends:** ADR-122 (Sidebar C) clause on per-row icons; supersedes PR1c item 1's first arm ("resolve to `/prayers`") with its second ("stop rendering").
+
+**Context.** The owner's first signed-in look at Sidebar C (the agent cannot sign in; the teacher-era login is owner-only) found two things. (1) The Prayer journal rows "look erratic" — each row wore the same praying-figure glyph and a `Sat 8` stamp, three times over, under a header that already said PRAYER JOURNAL. Inspection found THREE competing per-row grammars in one rail: a uniform accent dot (research), a per-item colour dot (studies), and a section glyph repeated on every row (prayers, works, plans) — plus a FOURTH below them. (2) That fourth was `MY SERMONS` / `JOURNALS`: the pre-N4 "custom sections", rendered from `localStorage` with coloured dots, underlines and a pencil — a retired feature (N4 emptied its seed and removed `New section`; nobody can create one) whose only remaining instances were the owner's own, on one browser, not in the database.
+
+**Ruling, verbatim** (owner, 2026-09-07, this session):
+> "proposed is cleaner do the proposed. Retire the display, keep the key. We might use this later for a new feature such as shared items with a teams channel. If we go into shared teams accounts we can easily turn these two into something useful for a university. Or if a student wants to hold docs by class and list them by class we can turn that into a class room organization feature set. But we should hide it for now"
+
+**Decision.**
+1. **One rule for row marks:** a row carries a mark ONLY when the mark distinguishes that row from its siblings. A glyph identical on every row of a labelled section restates the header and is deleted from the rows; it appears ONCE, on the section header, between the chevron and the label. The only surviving row mark is My studies' per-study colour dot. Research, prayers, works and plans rows are text.
+2. **Prayer rows carry no date.** The journal page keeps the dates; the rail is navigation. (The owner was offered "print a date only when it differs from the row above" and chose the proposed rendering, which had none.)
+3. **The custom sections are HIDDEN, not deleted.** `StudySectionView`, `SectionEmptyState`, `InlineNameForm` and `PencilIcon` are removed from `sidebar.tsx` (recoverable at `540d0667`). The `localStorage` key `study-sections:v1:<userId>` is **never read, written, or cleared by the sidebar** — it is left exactly as it is, because it is the prayer carry-forward's only recovery source (`lib/prayer-carry-forward.ts` owns the key string; its once-only marker is written before its first post and never retried) and because the owner may revive the concept as teams / classroom organisation.
+4. Open panels are indented by the chevron's width so rows nest under the header label, with their empty 16px leading slot beneath the header's glyph column; labels stay aligned across groups whether or not a mark is present.
+
+**Consequences.** Two grammars → one. The rail loses ~10 glyphs and three date stamps at the owner's row count. `GroupItem.icon` becomes optional. `dayStamp`/`WEEKDAYS`/`accentDot` are deleted. Rows lose 20px of label width inside an open panel. Two structural tests had pinned the JSX literal `href="/prayers"` on the section rows and are re-pointed under this ruling, not edited to pass (C1); both were watched go red first, the second in CI: `pr1c-prayer-surface` leg 3 → "not rendered, storage untouched", and `n4-fake-doors` "links to the shipped /prayers surface" → "the Prayer journal group still reaches `'/prayers'` AND no `StudySectionView`" — the N4 block's own two allowed states, asserted directly.
+
+**Evidence.** `web/test/components/sidebar-row-marks.test.tsx` (7 legs; 1, 2, 4, 5 seen RED on the pre-ruling rail — including one leg that was first green for a bad reason and was corrected until it went red); `docs/evidence/rail-row-marks-2026-09-07/`.

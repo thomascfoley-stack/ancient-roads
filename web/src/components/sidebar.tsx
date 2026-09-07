@@ -11,33 +11,14 @@ import { bibleTabHref, DEFAULT_BIBLE_HREF } from '@/lib/bible-position';
 import { libraryLabel } from '@/lib/library-nav';
 import { TextSkeleton } from '@/components/skeleton';
 
-// --- user-defined study sections (parent/child). Stored locally per user
-// while the real feature (saved work, conversation) is still coming soon;
-// child pages render a ComingSoon notice. ---
-interface StudyItem {
-  id: string;
-  name: string;
-}
-
-interface StudySection {
-  id: string;
-  kind: 'channels' | 'group';
-  name: string;
-  items: StudyItem[];
-}
-
-// N4. Both seeded sections were fake doors: `+` opened a name field, creating an object
-// succeeded, and the reader landed on a placeholder saying the feature was being built.
+// --- the pre-N4 "custom sections" (MY SERMONS, JOURNALS…) ---
 //
-//   - CHANNELS is REPURPOSED, not hidden. `PR1a` shipped the prayer journal, which is the real
-//     feature behind the shell this section was, so the rail now links straight to it below.
-//   - STUDY PARTNERS is RETIRED, not deferred. Any future cohort feature is greenfield.
-//   - `New section` went with them: it has no referent once user-defined sections are gone.
-//
-// NOT badged "coming soon" — that would be a second fake door, which is what this block exists to
-// remove. Nothing user-created is lost: `PR1a`'s carry-forward migrates existing items into the
-// journal on first launch, and deliberately leaves this key in place (see `storageKey` above).
-const SEED_SECTIONS: StudySection[] = [];
+// N4 (2026-08-08) removed the two SEEDED sections and the `+`; readers who had made their own kept
+// them, rendered from localStorage. ADR-124 (owner, 2026-09-07) HIDES that display too: they had
+// become a fourth visual grammar in the rail with nothing left to do, and everything they held now
+// lives in My Works or the prayer journal. HIDDEN IS NOT DELETED — see the storage note below; the
+// owner may revive the concept as teams / classroom organisation. The display code is in git
+// history at 540d0667 (`StudySectionView`, `SectionEmptyState`, `InlineNameForm`, `PencilIcon`).
 
 const DOT_COLORS = ['#8a4436', '#5c6b46', '#8a6a33', '#4e5d6b', '#7d5a4f'];
 
@@ -48,28 +29,17 @@ function dotColor(id: string): string {
 }
 
 /**
- * ⚠ DO NOT DELETE OR CLEAR THIS KEY. It is load-bearing for a feature in another file.
- *
- * `lib/prayer-carry-forward.ts` migrates these objects into the prayer journal once, on first
- * launch, and deliberately LEAVES THIS KEY IN PLACE. That is not an oversight to tidy up in a
- * later release — it is half of a single decision:
- *
- * The carry-forward writes its once-only marker BEFORE the first post and never retries a
- * half-completed run, because after a crash mid-loop it cannot tell which prayers landed, and a
- * duplicate is worse than a miss: someone's words twice, with no way for them to tell which is
- * real. **That trade is only acceptable while this key still exists**, because then "a miss" means
- * "recoverable later" rather than "gone".
- *
- * Remove this key and the carry-forward's unchanged code silently becomes DATA LOSS. Nothing goes
- * red — its own test only guards against the module deleting its own source, and cannot see a
- * `removeItem` added here or in a cleanup script.
- *
- * Before removing it, a reconciliation pass must exist: read the source, compare against prayers
- * already carried, create only what is missing. Then this can go. Not before.
+ * ⚠ THE localStorage KEY `study-sections:v1:<userId>` MUST NEVER BE CLEARED — not from here, not
+ * from any cleanup script. This file no longer reads it (ADR-124 hid the display), but the key is
+ * load-bearing for `lib/prayer-carry-forward.ts`, which owns the key string and migrates these
+ * objects into the prayer journal once, on first launch, writing its once-only marker BEFORE the
+ * first post and never retrying a half-completed run — a duplicate of someone's words is worse
+ * than a miss, and "a miss" is only recoverable while this key still exists. Remove the key and
+ * that unchanged code silently becomes DATA LOSS; nothing goes red. Before it can ever go, a
+ * reconciliation pass must exist (read the source, compare against prayers already carried,
+ * create only what is missing). `sidebar-row-marks.test.tsx` leg 5 pins that rendering the rail
+ * leaves the key intact.
  */
-function storageKey(userId: string | undefined): string {
-  return `study-sections:v1:${userId ?? 'guest'}`;
-}
 
 /**
  * True while the element has content scrolled out of view below its own bottom edge.
@@ -80,8 +50,8 @@ function storageKey(userId: string | undefined): string {
  * — the list is at scrollTop 0 on first paint, which is exactly when a reader decides the
  * list is complete:
  *   - the container resizes (window resize, sidebar collapse, phone rotation) -> ResizeObserver
- *   - the CONTENT grows or shrinks (study sections arrive from localStorage a tick after mount,
- *     a section is renamed, an inline form opens) -> MutationObserver, because a ResizeObserver
+ *   - the CONTENT grows or shrinks (a group's items arrive a tick after it opens, a group
+ *     unfolds, a delete arms) -> MutationObserver, because a ResizeObserver
  *     on a flex-sized container never fires for its own children's growth
  *   - the reader scrolls -> the listener
  * `measure` is three property reads, and React bails out when the boolean is unchanged, so
@@ -163,8 +133,11 @@ interface GroupItem {
    *  the same journal would be three small lies. */
   href: string | null;
   label: string;
-  icon: React.ReactNode;
-  /** A short trailing note — a date, a status — in the muted colour. */
+  /** ONLY when the mark distinguishes this row from its siblings (My studies' per-study colour).
+   *  A section glyph repeated on every row restates the header; it lives on the header instead
+   *  (ADR-124). Absent = the 16px slot stays, empty, so labels align across groups. */
+  icon?: React.ReactNode;
+  /** A short trailing note — a status worth knowing — in the muted colour. */
   meta?: string;
 }
 
@@ -213,24 +186,11 @@ function strOf(r: Record<string, unknown>, k: string): string | null {
   return typeof v === 'string' ? v : null;
 }
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-/** "Sun 6" — hand-formatted so it reads the same in every locale and every test. */
-function dayStamp(iso: string | null): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? undefined : `${WEEKDAYS[d.getDay()]} ${d.getDate()}`;
-}
-
 /** A prayer has no title; its opening words are its name in the rail. */
 function openingWords(body: string, max = 48): string {
   const line = body.trim().split(/\r?\n/)[0] ?? '';
   return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line;
 }
-
-const accentDot = (
-  <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
-);
 
 const GROUPS: GroupDef[] = [
   {
@@ -245,7 +205,7 @@ const GROUPS: GroupDef[] = [
       rowsOf(body, 'threads').flatMap((r) => {
         const id = strOf(r, 'id');
         const title = strOf(r, 'title');
-        return id && title ? [{ id, href: `/ask/${id}`, label: title, icon: accentDot }] : [];
+        return id && title ? [{ id, href: `/ask/${id}`, label: title }] : [];
       }),
     empty: 'Nothing yet — the questions you ask collect here.',
     remove: async (id) => {
@@ -295,7 +255,10 @@ const GROUPS: GroupDef[] = [
         const id = strOf(r, 'id');
         const text = strOf(r, 'body');
         if (!id || !text) return [];
-        return [{ id, href: null, label: openingWords(text), icon: <PrayerIcon />, meta: dayStamp(strOf(r, 'created_at')) }];
+        // No glyph, no date: the header carries the glyph once, and the journal page keeps the
+        // dates. Three rows each wearing a praying figure and "Sat 8" was the busiest thing in
+        // the rail (owner, 2026-09-07; ADR-124).
+        return [{ id, href: null, label: openingWords(text) }];
       }),
     empty: 'Nothing yet — your prayers collect here.',
   },
@@ -319,7 +282,6 @@ const GROUPS: GroupDef[] = [
           id,
           href: `/library/uploads/${id}`,
           label: title,
-          icon: <BookStackIcon />,
           // Only a state worth knowing about rides along; "ready" is the silent default.
           meta: status && status !== 'ready' ? status : undefined,
         }];
@@ -338,7 +300,7 @@ const GROUPS: GroupDef[] = [
       rowsOf(body, 'plans').flatMap((r) => {
         const id = strOf(r, 'id');
         const title = strOf(r, 'title');
-        return id && title ? [{ id, href: `/plans/${id}`, label: title, icon: <CalendarIcon /> }] : [];
+        return id && title ? [{ id, href: `/plans/${id}`, label: title }] : [];
       }),
     empty: 'Nothing yet — start a plan and it appears here.',
   },
@@ -520,10 +482,15 @@ function NavGroup({
         }`}
       >
         <Chevron open={open} />
+        {/* The section's glyph, ONCE. It used to sit on every row of prayers, works and plans,
+            restating the header N times (ADR-124). aria-hidden svg: the button's name is the label. */}
+        <span className="flex w-4 shrink-0 items-center justify-center">{def.icon}</span>
         <span className="flex-1 truncate">{def.label}</span>
       </button>
       {open && (
-        <div id={panelId}>
+        // `pl-5` = the chevron (12px) + its gap (8px): rows nest under the header's label, with
+        // their 16px leading slot sitting beneath the header's glyph column.
+        <div id={panelId} className="pl-5">
           {shown === null ? (
             <TextSkeleton label={`Loading ${def.label.toLowerCase()}`} lines={3} className="px-4 py-2" />
           ) : (
@@ -679,7 +646,6 @@ export function SidebarNavContent({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const signedIn = mounted && !!session?.user;
-  const [sections, setSections] = useState<StudySection[] | null>(null);
   // B044 — Sign out arms on the first tap and fires on the second. The authenticated QA fleet's
   // one BLOCKER was an accidental sign-out from inside the Menu sheet: the sheet slides up UNDER
   // the finger, so a habitual second tap lands on whatever row is transiting — and Sign out was a
@@ -688,27 +654,6 @@ export function SidebarNavContent({
   const [signOutArmed, setSignOutArmed] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const groups = useRailGroups(userId, pathname);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey(userId));
-      setSections(raw ? (JSON.parse(raw) as StudySection[]) : SEED_SECTIONS);
-    } catch {
-      setSections(SEED_SECTIONS);
-    }
-  }, [userId]);
-
-  const save = useCallback(
-    (next: StudySection[]) => {
-      setSections(next);
-      try {
-        localStorage.setItem(storageKey(userId), JSON.stringify(next));
-      } catch {
-        // storage unavailable (private mode); keep in-memory state
-      }
-    },
-    [userId],
-  );
 
   const row = touch ? 'min-h-[44px] py-2.5' : 'py-1.5';
   const { ref: navRef, moreBelow } = useMoreBelow<HTMLElement>();
@@ -767,19 +712,10 @@ export function SidebarNavContent({
               ))}
         </div>
 
-        {/* Study sections (user-defined parent/child) — legacy, pre-N4; see StudySectionView. */}
-        {sections?.map((section) => (
-          <StudySectionView
-            key={section.id}
-            section={section}
-            pathname={pathname}
-            row={row}
-            onNavigate={onNavigate}
-            onRename={(name) =>
-              save(sections.map((s) => (s.id === section.id ? { ...s, name } : s)))
-            }
-          />
-        ))}
+        {/* The pre-N4 custom sections (MY SERMONS, JOURNALS…) are HIDDEN here, not deleted —
+            ADR-124. Their data stays in `study-sections:v1:<userId>` untouched: the prayer
+            carry-forward's recovery source (lib/prayer-carry-forward.ts), and the seed of a
+            possible teams / classroom feature later. */}
       </nav>
 
       {/* Bottom: settings and the account. NOT .edge: on the rail's vellum surface the edge
@@ -1055,162 +991,6 @@ export function Sidebar() {
   );
 }
 
-function StudySectionView({
-  section,
-  pathname,
-  row,
-  onNavigate,
-  onRename,
-}: {
-  section: StudySection;
-  pathname: string;
-  row: string;
-  onNavigate?: () => void;
-  onRename: (name: string) => void;
-}) {
-  const [renaming, setRenaming] = useState(false);
-
-  return (
-    <div className="group mt-4">
-      <div className="mb-1 flex items-center justify-between px-4">
-        {renaming ? (
-          <InlineNameForm
-            initial={section.name}
-            placeholder="section name"
-            onSubmit={(name) => {
-              onRename(name);
-              setRenaming(false);
-            }}
-            onCancel={() => setRenaming(false)}
-          />
-        ) : (
-          <>
-            <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-              {section.name}
-            </span>
-            {/* 2026-08-11 (owner): the `+` created items that led NOWHERE — every item resolves
-                to /prayers, and only the PR1a-migrated legacy items genuinely live there.
-                Creating an inert name was a fake door (owner: "making new works under those
-                tabs do nothing"), so the affordance is removed until study spaces are built.
-                Rename stays: it edits what already exists. */}
-            <span className="flex items-center gap-0.5 opacity-100 transition-opacity ease-gentle [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
-              <button
-                onClick={() => setRenaming(true)}
-                className="p-1.5 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-                aria-label={`Rename ${section.name}`}
-              >
-                <PencilIcon />
-              </button>
-            </span>
-          </>
-        )}
-      </div>
-      {section.items.length === 0 && <SectionEmptyState id={section.id} />}
-      {section.items.map((item) => {
-        // PR1c item 1. These items belong to sections a reader created before `N4` retired the
-        // concept, and BOTH old destinations are dead: `/channel/[id]` redirects to `/prayers`,
-        // and `/study/[id]` is still a `ComingSoon` placeholder — the same fake door `N4` closed,
-        // one branch of this ternary over.
-        //
-        // They resolve to `/prayers` rather than being made inert, because that is TRUE and not
-        // merely convenient: `PR1a`'s first-launch carry-forward already migrated these items into
-        // the prayer journal, so the journal genuinely contains what the reader is clicking.
-        return (
-          <SidebarLink
-            key={item.id}
-            href="/prayers"
-            icon={
-              // The `#` glyph was the channel concept's; it is retired with it.
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: dotColor(item.id) }}
-              />
-            }
-            label={item.name}
-            active={pathname === '/prayers'}
-            row={row}
-            onNavigate={onNavigate}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * What an empty study section actually says.
- *
- * It used to say "Nothing here yet" for every section, which names the state and explains
- * nothing: a reader looking at CHANNELS / STUDY PARTNERS on the Home rail has no way to learn
- * what either one IS. Reading Plans' empty state is the standard in this app — it explains the
- * three plan types with examples before asking for anything — and this is that pattern at rail
- * scale.
- *
- * IT ALSO HAS TO BE HONEST. `/channel/[id]` and `/study/[id]` are both `ComingSoon` stubs, so
- * an empty state that says "add one to get started" would be walking the reader into a dead
- * end — worse than the bare line it replaces. The copy below is drawn from those two pages'
- * own descriptions and says plainly that the thing is not built. The seeded sections are
- * matched by ID, not by `kind`: a section the reader creates themselves is also `kind:'group'`
- * and must NOT inherit Study Partners' copy.
- */
-function SectionEmptyState({ id }: { id: string }) {
-  const copy =
-    id === 'channels'
-      ? 'Group study spaces — a class or cohort working through a passage together. Being built.'
-      : id === 'partners'
-        ? 'A space of your own for each sermon or class, with your notes kept together. Being built.'
-        : 'Empty. Study sections fill in when study spaces are built.';
-  return (
-    <p className="px-4 py-1 pb-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-      {copy}
-    </p>
-  );
-}
-
-function InlineNameForm({
-  initial = '',
-  placeholder,
-  onSubmit,
-  onCancel,
-}: {
-  initial?: string;
-  placeholder: string;
-  onSubmit: (name: string) => void;
-  onCancel: () => void;
-}) {
-  const [value, setValue] = useState(initial);
-  const commit = () => {
-    const name = value.trim();
-    if (name) onSubmit(name);
-    else onCancel();
-  };
-  return (
-    <form
-      className="w-full"
-      onSubmit={(e) => {
-        e.preventDefault();
-        commit();
-      }}
-    >
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onCancel();
-        }}
-        placeholder={placeholder}
-        // PRD §6 input: parchment, 1px hairline, square. `.edge` carries the hairline (a
-        // focus:border-* utility would lose to it — .edge is unlayered), so focus is shown
-        // by the global gold focus-visible ring instead of a border colour flip.
-        className="w-full border edge bg-paper px-2 py-1.5 text-base text-stone-900 placeholder:text-stone-500 sm:py-1 sm:text-sm dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-400"
-        autoFocus
-      />
-    </form>
-  );
-}
-
 function SidebarLink({
   href,
   icon,
@@ -1407,14 +1187,6 @@ function LanguagesIcon() {
   return (
     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6h8M7 6v10m-3 0h6M14 18l3.5-9 3.5 9m-6-3h5" />
-    </svg>
-  );
-}
-
-function PencilIcon() {
-  return (
-    <svg aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
   );
 }

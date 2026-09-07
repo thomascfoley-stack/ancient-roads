@@ -63,10 +63,24 @@ describe('PR1c item 1 — no rail entry links to a dead destination', () => {
     ).not.toMatch(/\/study\/\$\{/);
   });
 
-  it('carried-forward items resolve to the surface that actually holds them', () => {
-    // "Resolve somewhere real or stop rendering as links" — resolving is available and better,
-    // because PR1a's carry-forward means /prayers genuinely contains these entries.
-    expect(code('components/sidebar.tsx')).toMatch(/href=\{'\/prayers'\}|href="\/prayers"/);
+  // RE-POINTED 2026-09-07 under ADR-124, not edited to pass (C1). The property this leg pinned
+  // was "resolve somewhere real OR stop rendering as links"; PR1c chose the first arm. The owner's
+  // ruling chose the second — the sections are HIDDEN from the rail — so the first arm's literal
+  // (`href="/prayers"` on a section item) no longer exists and the leg went RED for the right
+  // reason. What must now hold: no section is rendered, and the storage that made `/prayers` a
+  // truthful destination is left exactly where it was.
+  it('carried-forward items are no longer rendered — and their storage is untouched', () => {
+    const src = code('components/sidebar.tsx');
+    // SEED: render `StudySectionView` again -> RED.
+    expect(src, 'ADR-124 hides the pre-N4 sections from the rail').not.toMatch(/StudySectionView/);
+    // SEED: add `localStorage.removeItem(\`study-sections…\`)` -> RED. The key is the prayer
+    // carry-forward's only recovery source; clearing it turns a half-finished migration into
+    // silent data loss.
+    expect(src, 'the sidebar must never clear the study-sections key').not.toMatch(/removeItem\(/);
+    expect(
+      code('lib/prayer-carry-forward.ts'),
+      'precondition: the carry-forward still owns the key string — if it stopped, this leg would be guarding nothing',
+    ).toMatch(/study-sections:v1:/);
   });
 });
 
