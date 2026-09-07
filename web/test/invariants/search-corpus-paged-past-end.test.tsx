@@ -37,7 +37,11 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── module mocks (no DB, no auth, no next/headers, no ref parser) ─────────────────────────────
-vi.mock('@/lib/session', () => ({
+// Spreads the REAL @/lib/auth-failure so this mock carries every export the route imports, not
+// just the ones this file thought of. Held by test/invariants/session-mock-surface.test.ts.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')),
+
   // signed-out: no personal groups, so the personal fan-out is never issued.
   currentUser: async () => null,
 }));
