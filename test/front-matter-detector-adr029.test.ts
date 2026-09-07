@@ -89,6 +89,255 @@ describe('the new shapes do NOT fire on the content ADR-029 ruled genuine', () =
   });
 });
 
+// ── deep-audit H-1 proven misses (2026-09-07) ───────────────────────────────
+// Every fixture below is a PROVEN false negative from docs/pm/audits/2026-09-07-wave-deep-audit.md
+// (H-1): live dev sections the 2.0.0 detector passed. Each was RED against detector 2.0.0 before
+// the 2.1.0 rules landed; the red run is recorded in
+// docs/evidence/adr029-scan-2026-09-06/redproof-v2.log alongside the green rerun.
+
+// schaff-hcc1 §2045 (verbatim opening): CCEL's decorated heading masks the body's own index line.
+const HCC1_INDEX_2045 = {
+  heading: 'Indexes — Greek Words and Phrases (1/36)',
+  body: 'Index of Greek Words and Phrases\nἀγάπη: 1 2\nἀγαθὸν ἄνδρα: 1\nἀγαθοεργεῖν.: 1',
+};
+// schaff-hcc1 §2046: a CONTINUATION section — the body does not announce itself; the decorated
+// heading alone must carry the finding, or 152 of the 153 sections stay invisible.
+const HCC1_INDEX_2046 = {
+  heading: 'Indexes — Greek Words and Phrases (2/36)',
+  body: 'ἁγνεία, ἀδηλότης, ἀνδραποδιστής: 1\nἀγενεαλόγητος,: 1\nἀγνοεῖν, ἀδικία: 1',
+};
+// schaff-hcc4 §1718 — the second volume's run of the same class (§1718–1755).
+const HCC4_INDEX_1718 = {
+  heading: 'Indexes — Greek Words and Phrases (1/15)',
+  body: 'Index of Greek Words and Phrases\nἄβατον: 1\nἀβράχ: 1',
+};
+// donne-devotions §1: Izaak Walton's biography of Donne bound in front. The all-caps banner names
+// DONNE (the declared author — a biography names its subject), so the foreign signal is the
+// printer's provenance parenthetical naming Walton.
+const DONNE_WALTON_BIO = {
+  heading: 'THE LIFE OF DR. JOHN DONNE',
+  body: 'THE LIFE OF DR. JOHN DONNE\n\n(Taken from the life by Izaak Walton).\n\nMASTER JOHN DONNE was born in London, the year 1573, of good and virtuous parents: and, though his own learning and other multiplied merits may justly appear sufficient to dignify both himself and his posterity, yet the reader may be pleased to know that his father was masculinely and lineally descended from a very ancient family in Wales…',
+};
+// flavel-life §1: an anonymous memorial biography OF Flavel — "the late Rev. Mr." is the
+// posthumous-memoir signature; the declared author cannot be "the late" in his own work.
+const FLAVEL_MEMORIAL = {
+  heading: 'The Life of the Late Rev. Mr. John Flavel',
+  body: 'John Flavel, Life.\n\nThe Life of the late Rev. Mr. John Flavel, minister of Dartmouth.\n\nThose of the name of Flavel derive their pedigree from one who was the third great officer that came over with William the Conqueror; but this worthy Divine was far from that weakness and vanity to boast of any thing of that nature…',
+};
+// lardner-n-mosaic §2 (verbatim): a "Just Published" publisher advertisement with a spelled-out
+// price ("Eleven Shillings") and "bound in plain calf" — 2.0.0's signals all required digits.
+const LARDNER_JUST_PUBLISHED = {
+  heading: 'Just Published',
+  body: 'Just Published ,\nPrinted for J. Bouquet , at the White-Hart , in Pater-Noster Row,\nWith the approbation and affiffance of\nthe Author’s Relations,\nBeautifully printed in two large Volumes Octavo, price bound in\nplain calf Eleven Shillings, (with the Head of the Author engraved from an original\nPainting, and Memoirs of his Life,)\nA Complete Collection of the\nSermons and Tracts , written by the late truly learned and pious\nJohn Jeffery , D. D. Archdeacon of Norwich .\n* * * Several pieces are\nnow first printed from the Author’s Manuscripts,\nwhich make near two thirds of the Second Volume.',
+};
+// foxe-martyrs §1: the editor's introduction, 24 decorated sections ("Introduction — Edited by
+// William Byron Forbush (1/24)"). LABEL_RE's anchored $ could not consume the decorated suffix.
+const FOXE_EDITOR_INTRO = {
+  heading: 'Introduction — Edited by William Byron Forbush (1/24)',
+  body: "FOX'S BOOK OF MARTYRS\nEdited by William Byron Forbush\nThis is a book that will never die-one of the great English classics. Interesting as fiction, because it is written with both passion and tenderness, it tells the dramatic story of some of the most thrilling periods in Christian history.",
+};
+// bunyan-badman §1: heading is the bare word "Title" over a full Cambridge title page.
+const BUNYAN_TITLE_PAGE = {
+  heading: 'Title',
+  body: 'JOHN BUNYAN\nLIFE AND DEATH OF MR BADMAN\nAND\nTHE HOLY WAR\n\nTHE TEXT EDITED BY\nJOHN BROWN, D.D.\n\nCambridge:\nat the University Press\n1905',
+};
+// bunyan-badman §2: the publisher's note.
+const BUNYAN_PUBLISHERS_NOTE = {
+  heading: "Publisher's Note",
+  body: 'NOTE\n\nThe Life and Death of Mr Badman was published by John Bunyan in 1680, two years after the First Edition of the First Part of The Pilgrim’s Progress. In the opening sentence of his preface he tells us it was intended by him as the counterpart or companion picture to the Allegory.',
+};
+// schaff-npnf201 §1/§2: Schaff's prolegomena — the labelled set's own P1 class. 2.0.0 saw the
+// banners WEAK (no rule line). §2's "Writings" banner stands as BOTH the section heading and the
+// body's own title lines — a bound-in work announcing itself, not a chapter's subject — and is
+// STRONG. §1's "Life of Eusebius" banner stays weak: a biography names its SUBJECT, and CCEL
+// bodies repeat the chapter heading as their first line, so the doubling means nothing there
+// (the same doctrine that keeps chesterton-aquinas §5 a non-finding).
+const NPNF201_LIFE_OF_EUSEBIUS = {
+  heading: 'The Life of Eusebius.',
+  body: 'Chapter I\n\nThe Life of\nEusebius.\n\n§ 1. Sources and Literature\n\nAcacius , the pupil and successor of Eusebius in the bishopric of\nCæsarea, wrote a life of the latter (Socr. H. E . II. 4)\nwhich is unfortunately lost.',
+};
+const NPNF201_WRITINGS_OF_EUSEBIUS = {
+  heading: 'The Writings of Eusebius.',
+  body: 'Chapter II\n\nThe Writings of\nEusebius.\n\n§1. Eusebius as a Writer\n\nEusebius was one of the most voluminous writers of antiquity, and his\nlabors covered almost every field of theological learning.',
+};
+// chesterton-aquinas §5 (REAL): Chesterton's OWN chapter about his book's subject. The
+// false-positive that forced the Life-banner doctrine: heading echoed in the body's first line
+// must NOT promote a biography banner to strong.
+const CHESTERTON_LIFE_OF_THOMAS = {
+  heading: 'V. The Real Life of St. Thomas',
+  body: 'V. THE REAL LIFE OF ST. THOMAS\nAt this point, even so crude and external a sketch of a great saint involves the necessity of writing something that cannot fit in with the rest; the one thing which it is important to write and impossible to write.',
+};
+// pascal-provincial §3 (REAL heading): "the Provincial" replies to "his friend" — the
+// correspondence's addressee, not a person. 'friend' must not extract as a name.
+const PASCAL_PROVINCIAL_REPLY = {
+  heading: 'Reply of the Provincial to the First Two Letters of His Friend',
+  body: 'REPLY OF THE "PROVINCIAL"\nTO THE FIRST TWO LETTERS OF HIS FRIEND\n\nFebruary 2, 1656\n\nSIR,\nYour two letters have not been confined to me. Everybody has\nseen them, everybody understands them, and everybody believes them.',
+};
+// schaff-npnf110 §3: the volume's own banner "Homilies of St. John Chrysostom" under declared
+// author 'Schaff, Philip' — 2.0.0 captured only "John" (a scripture author) and stopped.
+const NPNF110_CHRYSOSTOM_BANNER = {
+  heading: 'Homily 1',
+  body: 'Homilies of St. John\nChrysostom,\n\narchbishop of\nconstantinople,\n\non the\n\ngospel according to st.\nmatthew.\n\n————————————\n\nHomily I.\n\nIt were indeed meet for us not\nat all to require the aid of the written Word, but to exhibit a life so pure, that the\ngrace of the Spirit should be instead of books to our souls…',
+};
+
+describe('deep-audit H-1 proven misses: decorated CCEL word-index headings', () => {
+  it('a decorated "Indexes — Greek Words and Phrases (1/36)" heading fires on the first section', () => {
+    expect(frontMatterVerdict(HCC1_INDEX_2045).kind).toBe('word-index-title');
+  });
+
+  it('continuation sections fire on the decorated heading alone (the body does not announce)', () => {
+    expect(frontMatterVerdict(HCC1_INDEX_2046).kind).toBe('word-index-title');
+    expect(frontMatterVerdict(HCC4_INDEX_1718).kind).toBe('word-index-title');
+  });
+
+  it('word-index variants: trailing qualifier and no "and phrases" form', () => {
+    expect(
+      frontMatterVerdict({ heading: 'Index of Hebrew Words and Phrases occurring in the Notes', body: 'אָב: 1' }).kind,
+    ).toBe('word-index-title');
+    expect(frontMatterVerdict({ heading: 'Index of Latin and Greek Words', body: 'a duo: 1' }).kind).toBe('word-index-title');
+  });
+});
+
+describe('deep-audit H-1 proven misses: bound-in biographies and editor matter', () => {
+  it("donne-devotions §1 — Walton's biography fires on the provenance parenthetical, STRONG", () => {
+    const v = foreignMatterVerdict(DONNE_WALTON_BIO, { author: 'Donne, John' });
+    expect(v.foreign).toBe(true);
+    expect(v.name).toMatch(/Walton/);
+    expect(v.strength).toBe('strong');
+  });
+
+  it('flavel-life §1 — a memorial biography of the declared author ("the late Rev. Mr.") fires, STRONG', () => {
+    const v = foreignMatterVerdict(FLAVEL_MEMORIAL, { author: 'Flavel, John' });
+    expect(v.foreign).toBe(true);
+    expect(v.strength).toBe('strong');
+  });
+
+  it('schaff-npnf201 §2 — a work-type banner repeated as heading AND body title lines is STRONG, not weak', () => {
+    const v = foreignMatterVerdict(NPNF201_WRITINGS_OF_EUSEBIUS, { author: 'Schaff, Philip' });
+    expect(v.foreign).toBe(true);
+    expect(v.name).toMatch(/Eusebius/);
+    expect(v.strength).toBe('strong');
+  });
+
+  it('schaff-npnf201 §1 — a LIFE banner stays weak: a biography names its subject (CCEL echoes headings)', () => {
+    const v = foreignMatterVerdict(NPNF201_LIFE_OF_EUSEBIUS, { author: 'Schaff, Philip' });
+    expect(v.foreign).toBe(true);
+    expect(v.strength).toBe('weak');
+  });
+
+  it("chesterton-aquinas §5 — the author's own chapter about his subject is NOT a strong finding", () => {
+    const v = foreignMatterVerdict(CHESTERTON_LIFE_OF_THOMAS, { author: 'Chesterton, Gilbert Keith' });
+    expect(v.foreign ? v.strength : null).not.toBe('strong');
+  });
+
+  it('pascal-provincial §3 — "Letters of His Friend" names no one', () => {
+    expect(foreignMatterVerdict(PASCAL_PROVINCIAL_REPLY, { author: 'Pascal, Blaise' }).foreign).toBe(false);
+  });
+
+  it('schaff-npnf110 — "Homilies of St. John Chrysostom" names Chrysostom, not the scripture author John', () => {
+    const v = foreignMatterVerdict(NPNF110_CHRYSOSTOM_BANNER, { author: 'Schaff, Philip' });
+    expect(v.foreign).toBe(true);
+    expect(v.name).toMatch(/Chrysostom/);
+    expect(v.strength).toBe('strong');
+  });
+
+  it('an all-caps banner naming a DIFFERENT person fires', () => {
+    const v = foreignMatterVerdict(
+      { body: 'THE POEMS OF JAMES HOGG,\nTHE ETTRICK SHEPHERD.\n\n————————————\n\nEDITED BY HIS SON-IN-LAW.' },
+      { author: 'Alfred Tennyson' },
+    );
+    expect(v.foreign).toBe(true);
+    expect(v.name).toMatch(/Hogg/i);
+  });
+});
+
+describe('deep-audit H-1 proven misses: publisher matter and decorated labels', () => {
+  it('lardner-n-mosaic §2 — "Just Published" ad with spelled-out price and calf binding fires', () => {
+    const v = frontMatterVerdict(LARDNER_JUST_PUBLISHED);
+    expect(v.apparatus).toBe(true);
+    expect(v.kind).toBe('publisher-blurb-body');
+    expect(v.strength).toBe('strong');
+  });
+
+  it('a price list in slash notation (3/6) fires', () => {
+    const v = frontMatterVerdict({
+      heading: 'STANDARD WORKS.',
+      body: "BUNYAN'S PILGRIM'S PROGRESS                         3/6\n---- HOLY WAR                                       3/6\nFOXE'S BOOK OF MARTYRS                              5/0\nBAXTER'S SAINTS' REST                               3/6\n---- CALL TO THE UNCONVERTED                        2/6\nDODDRIDGE'S RISE AND PROGRESS                       3/6",
+    });
+    expect(v.kind).toBe('publisher-price-list-body');
+  });
+
+  it('a press puff quoting an unfamiliar paper (em-dash attribution) counts as a press signal', () => {
+    // The only two signal types here are the em-dash attributions and "agents wanted" — if the
+    // unfamiliar papers do not count as press, nothing fires.
+    const v = frontMatterVerdict({
+      heading: 'NEW PUBLICATIONS.',
+      body: '"The most striking and original work which the present season has produced."—Inverness Courier\n"A volume of rare beauty and permanent value; the author\'s ripest work."—Aberdeen Free Press\nNow ready, crown octavo. Agents wanted in every town. Subscriptions received by all booksellers.',
+    });
+    expect(v.kind).toBe('publisher-blurb-body');
+  });
+
+  it('foxe-martyrs §1 — LABEL_RE consumes a decorated "Edited by … (1/24)" suffix', () => {
+    const v = frontMatterVerdict(FOXE_EDITOR_INTRO);
+    expect(v.apparatus).toBe(true);
+    expect(v.kind).toBe('apparatus-title');
+    expect(v.strength).toBe('strong');
+  });
+
+  it('bunyan-badman §1–2 — bare "Title" heading and "Publisher\'s Note" are apparatus', () => {
+    expect(frontMatterVerdict(BUNYAN_TITLE_PAGE).kind).toBe('apparatus-title');
+    expect(frontMatterVerdict(BUNYAN_TITLE_PAGE).strength).toBe('strong');
+    expect(frontMatterVerdict(BUNYAN_PUBLISHERS_NOTE).kind).toBe('apparatus-title');
+    expect(frontMatterVerdict(BUNYAN_PUBLISHERS_NOTE).strength).toBe('strong');
+  });
+
+  it("the body's own first line is consulted even when a decorated heading exists", () => {
+    // Heading matches no rule; the body announces itself on line one.
+    const v = frontMatterVerdict({
+      heading: 'Front Matter (1/2)',
+      body: 'Preface\n\nThe present volume is offered to the reader in the hope that…',
+    });
+    expect(v.kind).toBe('apparatus-title');
+  });
+});
+
+describe('deep-audit H-1 fresh kept-class negatives stay silent', () => {
+  it.each([
+    [
+      'schaff-hcc1 §1994 subject index (REAL, KEPT)',
+      { heading: 'Indexes — Subject Index', body: 'Subject Index\n\nApostles,\ni.III_1.20-p106.2\nJohn,\ni.VII.41-p0.1\nPaul,\ni.V_1.30-p0.1\nPeter,\ni.IV_1.25-p0.1\nBaptism,\ni.IX.53-p40.1\nChurch\nChristian Ministry,\ni.X.59-p0.1' },
+    ],
+    [
+      'calvin-class index of chapters (KEPT)',
+      { heading: 'Index of Chapters', body: 'INDEX OF CHAPTERS.\n\nCHAP. I.—Of the Knowledge of God the Creator.\nCHAP. II.—Of the Knowledge of God the Redeemer.\nCHAP. III.—Of the Mode of Obtaining the Grace of Christ.' },
+    ],
+    [
+      'a synoptic table of the gospels (KEPT — the table is the scholarship)',
+      { heading: 'Synoptic Table', body: 'SYNOPTIC TABLE OF THE PRINCIPAL EVENTS IN THE LIFE OF CHRIST.\n\nThe Nativity, Matt. i. 18-25; Luke ii. 1-7.\nThe Baptism, Matt. iii. 13-17; Mark i. 9-11; Luke iii. 21-23.\nThe Temptation, Matt. iv. 1-11; Mark i. 12-13; Luke iv. 1-13.' },
+    ],
+    [
+      'an analytical contents (KEPT — a legible contents belonging to the work)',
+      { heading: 'Analytical Contents', body: 'ANALYTICAL CONTENTS.\n\nCHAPTER I.\n\n§ 1. The sources of the history. § 2. The credibility of the witnesses.\n§ 3. The plan of the present work.\n\nCHAPTER II.\n\n§ 4. The state of the empire. § 5. The state of the church.' },
+    ],
+  ])('%s is not flagged', (_label, entry) => {
+    expect(frontMatterVerdict(entry).apparatus).toBe(false);
+  });
+
+  it('a biography CHAPTER whose body does not repeat the banner stays weak — heading-only is a subject', () => {
+    // The standing doctrine (Foxe's "The Life of William Gardiner" is Foxe's own chapter): a
+    // heading that names another work declares the section's SUBJECT, so it is weak for reading
+    // and never a strong hold. The 2.1.0 strong upgrade needs the banner in the body's own
+    // title lines too — here the body opens with prose, so no upgrade.
+    const headingOnly = {
+      heading: 'The Life of the Late Rev. Mr. John Flavel',
+      body: 'Those of the name of Flavel derive their pedigree from one who was the third great officer that came over with William the Conqueror…',
+    };
+    const weakOnly = foreignMatterVerdict(headingOnly, { author: 'Robert Barclay' });
+    expect(weakOnly.foreign).toBe(true);
+    expect(weakOnly.strength).toBe('weak');
+  });
+});
+
 describe('the per-work sweep: author-aware foreign matter, head AND tail', () => {
   it('a head banner naming a different father fires under the declared author', () => {
     const v = foreignMatterVerdict(ORIGEN_HEAD_CLEMENT, { author: 'Origen of Alexandria' });

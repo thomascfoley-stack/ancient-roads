@@ -30,7 +30,7 @@ export interface FrontMatterVerdict {
 
 export interface ForeignMatterVerdict {
   foreign: boolean;
-  kind: 'foreign-work-banner' | 'foreign-work-byline' | null;
+  kind: 'foreign-work-banner' | 'foreign-work-byline' | 'foreign-work-attribution' | null;
   strength: 'strong' | 'weak' | null;
   name: string | null;
   evidence: string | null;

@@ -1,0 +1,33 @@
+# redproof-v2 — deep-audit H-1 remediation (detector 2.0.0 -> 2.1.0)
+# 2026-09-07T06:29:56Z
+# New labelled cases: test/front-matter-detector-adr029.test.ts 'deep-audit H-1' describes.
+# Positive fixtures are the live dev sections named in docs/pm/audits/2026-09-07-wave-deep-audit.md
+# (H-1). Kept-class negatives and doctrine guards (Life-banner stays weak, 'friend' names no
+# one) must pass BOTH before and after — they guard the false-positive direction.
+
+=== RED: the new H-1 cases against detector 2.0.0 (detector files stashed at HEAD) ===
+ ✓ test/front-matter-detector.test.ts (30 tests) 8ms
+   × deep-audit H-1 proven misses: decorated CCEL word-index headings > a decorated "Indexes — Greek Words and Phrases (1/36)" heading fires on the first section 3ms
+   × deep-audit H-1 proven misses: decorated CCEL word-index headings > continuation sections fire on the decorated heading alone (the body does not announce) 0ms
+   × deep-audit H-1 proven misses: decorated CCEL word-index headings > word-index variants: trailing qualifier and no "and phrases" form 0ms
+   × deep-audit H-1 proven misses: bound-in biographies and editor matter > donne-devotions §1 — Walton's biography fires on the provenance parenthetical, STRONG 2ms
+   × deep-audit H-1 proven misses: bound-in biographies and editor matter > flavel-life §1 — a memorial biography of the declared author ("the late Rev. Mr.") fires, STRONG 1ms
+   × deep-audit H-1 proven misses: bound-in biographies and editor matter > schaff-npnf201 §2 — a work-type banner repeated as heading AND body title lines is STRONG, not weak 1ms
+   × deep-audit H-1 proven misses: bound-in biographies and editor matter > schaff-npnf110 — "Homilies of St. John Chrysostom" names Chrysostom, not the scripture author John 0ms
+   × deep-audit H-1 proven misses: bound-in biographies and editor matter > an all-caps banner naming a DIFFERENT person fires 0ms
+   × deep-audit H-1 proven misses: publisher matter and decorated labels > lardner-n-mosaic §2 — "Just Published" ad with spelled-out price and calf binding fires 0ms
+   × deep-audit H-1 proven misses: publisher matter and decorated labels > a price list in slash notation (3/6) fires 0ms
+   × deep-audit H-1 proven misses: publisher matter and decorated labels > a press puff quoting an unfamiliar paper (em-dash attribution) counts as a press signal 0ms
+   × deep-audit H-1 proven misses: publisher matter and decorated labels > foxe-martyrs §1 — LABEL_RE consumes a decorated "Edited by … (1/24)" suffix 0ms
+   × deep-audit H-1 proven misses: publisher matter and decorated labels > bunyan-badman §1–2 — bare "Title" heading and "Publisher's Note" are apparatus 0ms
+   × deep-audit H-1 proven misses: publisher matter and decorated labels > the body's own first line is consulted even when a decorated heading exists 0ms
+   × deep-audit H-1 fresh kept-class negatives stay silent > a biography CHAPTER whose body does not repeat the banner stays weak — heading-only is a subject 0ms
+⎯⎯⎯⎯⎯⎯ Failed Tests 15 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed | 1 passed (2)
+      Tests  15 failed | 55 passed (70)
+
+=== GREEN: same suite against detector 2.1.0 ===
+ ✓ test/front-matter-detector.test.ts (30 tests) 11ms
+ ✓ test/front-matter-detector-adr029.test.ts (40 tests) 19ms
+ Test Files  2 passed (2)
+      Tests  70 passed (70)

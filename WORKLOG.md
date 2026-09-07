@@ -1,5 +1,54 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — H-1: ADR-029 detector false negatives remediated (detector 2.1.0), rescan + re-carve [Kimi Code session]
+
+Remediated deep-audit H-1 (`docs/pm/audits/2026-09-07-wave-deep-audit.md`): the 90-PASS
+verdict was untrustworthy in the safe direction. All 9 proven misses fixed in
+`scripts/lib/front-matter-detector.mjs` (DETECTOR_VERSION 2.0.0 → 2.1.0, change list in the
+version comment): decorated CCEL headings now match (`Indexes — Greek Words and Phrases
+(1/36)`, `Introduction — Edited by … (1/24)` — including a latent 2.0.0 bug where the
+parenthetical never matched its own closing paren, and another where the saint prefix never
+consumed its trailing space); the body's own first line is consulted when the heading matches
+no rule; word-index forms with trailing qualifiers and (prefixed only) without "and phrases";
+honorific-chain + multi-token banners (`of the late Rev. Mr. John Flavel`, `St. John
+Chrysostom` — 2.0.0 captured "John", a scripture author, and stopped); all-caps banners;
+provenance parentheticals (`(Taken from the life by Izaak Walton)`, strong); a work-type
+banner doubled as heading AND body title line is strong (Life/Lives/Memoirs banners excluded
+— a biography names its SUBJECT: Foxe doctrine, and what keeps chesterton-aquinas §5 silent);
+memorial-Life of the declared author ("the late … <author>") is strong; `title` /
+`publisher's note` labels; spelled-out ("Eleven Shillings") and slash (3/6) prices;
+calf/morocco/vellum/roan bindings; em-dash press attributions to any paper; 'friend' joined
+NON_PERSON_TOKENS (pascal-provincial §3 "Letters of His Friend" names no one).
+
+**Tests** (`test/front-matter-detector-adr029.test.ts`): every proven miss is a labelled unit
+case with REAL dev fixtures — 15 red against 2.0.0 (detector stashed), 70/70 green after,
+all pre-existing tests unmodified and green (`redproof-v2.log`). Kept negatives: 3/3 labelled
+silent (`labelled-v2.log` BAR MET, 11/11 + 3/3) + fresh kept-class seeds (subject index —
+real schaff-hcc1 §1994, index-of-chapters, synoptic table, analytical contents) silent in
+unit tests AND zero such findings in the v2 rescan. Full root vitest 1113/1113 green.
+
+**Rescan** (frozen 133, sha256 verified `2521d346…82f2b78bd0f9ada7eb6a5829cf1`, dev read-only):
+**75 PASS / 58 FAIL** — 15 flips, ALL PASS→FAIL, zero FAIL→PASS: the audit's 9 (schaff-hcc1,
+schaff-hcc4, donne-devotions, flavel-life, lardner-n-mosaic, foxe-martyrs, bunyan-badman,
+schaff-npnf201, schaff-npnf110) + 6 more of the same classes (schaff-npnf109/202/203/204,
+miller-history's 22-section decorated preface/introduction run, luther-translating's
+heading-shadowed Wenceslas Link preface). `verdict.md` untouched; v2 written to
+`docs/evidence/adr029-scan-2026-09-06/verdict-v2.md` with the per-flip diff table and the two
+draft false positives that were designed back out (chesterton-aquinas, pascal-provincial —
+both stay PASS, unit-guarded). `word-index-title` now totals 562 — the audit's 153 plus the
+same decorated indexes in 13 works that were already FAIL.
+
+**Re-carve:** `dev58-pass-adr029-2026-09-07.json` 50→**42**, `dev58-held-adr029-2026-09-07.json`
+8→**16** (exact partition of the 58 verified). PASS→HELD: donne-devotions, flavel-life,
+foxe-martyrs, lardner-n-mosaic, luther-translating, schaff-npnf109/110/204. HELD→PASS: none.
+Runbook (`docs/pm/orders/2026-09-06-owner-publish-batch.md`) counts/held-list updated to
+match (publish total 489→481) — the stale 50/8 would have contradicted the files it points at.
+
+NOT DONE / UNVERIFIED: schaff-npnf201 §1 ('The Life of Eusebius') individually stays WEAK by
+the Life-banner doctrine (the work FAILs on §2 + 20 other doubled banners); the ~60 remaining
+PASS works beyond the audit's sample were not hand-read (the scanner's weak findings are the
+reading list); owner decision #4 (weak-finding gating) untouched.
+
 ## 2026-09-07 — H-4 shelf gate + H-2 generalized attribution boundary [Kimi Code session]
 
 Remediated two deep-audit findings (`docs/pm/audits/2026-09-07-wave-deep-audit.md`).

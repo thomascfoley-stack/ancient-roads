@@ -26,8 +26,18 @@
 
 /** Detector version — recorded in every scan verdict so a report can be read against the
  *  rules that produced it. 2.0.0 adds the ADR-029 addendum-2 shapes (word/phrase indexes,
- *  publisher catalogues) and the author-aware per-work sweep. */
-export const DETECTOR_VERSION = '2.0.0';
+ *  publisher catalogues) and the author-aware per-work sweep.
+ *  2.1.0 remediates the deep-audit H-1 proven false negatives (docs/pm/audits/2026-09-07-
+ *  wave-deep-audit.md): decorated CCEL headings ("Indexes — Greek Words and Phrases (1/36)",
+ *  "Introduction — Edited by X (1/24)") now match; the body's own first line is consulted even
+ *  when a heading exists; word-index forms with trailing qualifiers or without "and phrases";
+ *  banners with honorific chains ("of the late Rev. Mr.") and multi-token names ("St. John
+ *  Chrysostom"); all-caps banners; provenance parentheticals ("(Taken from the life by Izaak
+ *  Walton)"); a banner repeated as BOTH heading and body title line is STRONG; a "Life of the
+ *  late … <declared author>" is a memorial biography, not the author's own work; spelled-out
+ *  ("Eleven Shillings") and slash (3/6) prices; calf/morocco/vellum/roan bindings; press puffs
+ *  with em-dash attributions to any paper; labels 'title' and "publisher's note". */
+export const DETECTOR_VERSION = '2.1.0';
 
 /** The labels. Each is a whole-title match, optionally followed by a scope phrase
  *  ("to the Gospel of John", "of the Epistle to the Romans", "to the Reader"). */
@@ -44,16 +54,26 @@ const LABELS = [
   'advertisement',
   'to the reader',
   'the epistle dedicatory',
+  // 2.1.0 (H-1): bunyan-badman's §1 is headed with the bare word "Title" over a full
+  // title page, and §2 with "Publisher's Note". Both are whole-title apparatus.
+  'title',
+  "publisher['’]s note",
 ];
 
 /** `Preface`, `THE ARGUMENT.`, `Introduction to the Gospel of John`, `Contents:` —
  *  a label, an optional scope phrase, and nothing else. Anchored at both ends, which is what
  *  keeps "In this preface Paul says…" out. */
 const LABEL_BODY = LABELS.map((l) => l.replace(/ /g, String.raw`\s+`)).join('|');
-/** The scope phrase is captured so its subject can be judged; see BOOKISH_SCOPE_RE. */
+/** The scope phrase is captured so its subject can be judged; see BOOKISH_SCOPE_RE.
+ *  2.1.0 (H-1): CCEL decorates headings with an editor attribution and a chunk marker —
+ *  "Introduction — Edited by William Byron Forbush (1/24)". The editor suffix is consumed
+ *  WITHOUT being captured as scope: an introduction an editor had to be named for is editor
+ *  matter, so the hit stays strong. A trailing "(N/M)" chunk marker is decoration, not title. */
 const LABEL_RE = new RegExp(
   String.raw`^\s*(?:the\s+)?(?:${LABEL_BODY})` +
     String.raw`(\s*[—–-]?\s*(?:to|of|for|on)\s+[^.;:!?]{0,80})?` +
+    String.raw`(?:\s*[—–-]\s*edited\s+by\s+[^.;:!?]{0,60})?` +
+    String.raw`(?:\s*\(\d+\s*/\s*\d+\))?` +
     String.raw`\s*[.:;—–-]*\s*$`,
   'i',
 );
@@ -124,9 +144,24 @@ const INDEX_LANGS = [
   'english', 'scotch', 'scottish', 'anglo-saxon', 'saxon', 'spanish', 'italian', 'dutch',
   'welsh', 'gaelic', 'ethiopic', 'coptic', 'persian', 'sanskrit',
 ];
+/** Machine word/phrase index. 2.1.0 (H-1) widens it three ways, each grounded in a proven miss:
+ *  - the decorated CCEL heading "Indexes — Greek Words and Phrases (1/36)" — the "(N/M)" chunk
+ *    marker was NOT in fact consumable (2.0.0's parenthetical never matched its own closing
+ *    paren); the "Indexes — " prefix was not either, so all 153 schaff-hcc1/hcc4 sections were
+ *    invisible;
+ *  - a trailing qualifier: "Index of Hebrew Words and Phrases occurring in the Notes";
+ *  - the no-"and-phrases" form: "Index of Latin and Greek Words" — allowed ONLY with an
+ *    "index of"/"indexes —" prefix, so a bare chapter heading like "Latin Words" still cannot
+ *    fire (calvin's KEPT "General Index of Chapters" and schaff's KEPT creed table match neither
+ *    branch: no language word, no "words and phrases"). */
 const WORD_INDEX_RE = new RegExp(
-  String.raw`^\s*(?:index\s+of\s+)?(?:(?:${INDEX_LANGS.join('|')})\b[\s,&]*?(?:\band\b)?\s*)+` +
-    String.raw`words?\s+and\s+phrases?(?:\s*\([^)]{0,60})?\s*[.:]?\s*$`,
+  String.raw`^\s*(?:` +
+    String.raw`(?:indexes?\s*[—–-]\s*|index\s+of\s+)(?:(?:${INDEX_LANGS.join('|')})\b[\s,&]*?(?:\band\b)?\s*)+words?(?:\s+and\s+phrases?)?` +
+    `|` +
+    String.raw`(?:(?:${INDEX_LANGS.join('|')})\b[\s,&]*?(?:\band\b)?\s*)+words?\s+and\s+phrases?` +
+    String.raw`)` +
+    String.raw`(?:\s+(?:occurring|found|used|collected|explained)\s+in\s+the\s+[^.;:!?]{0,40})?` +
+    String.raw`(?:\s*\([^)]{0,60}\))?\s*[.:]?\s*$`,
   'i',
 );
 
@@ -157,12 +192,20 @@ const FORMAT_PRICE_HEADING_RE = new RegExp(
   'i',
 );
 
+/** Spelled-out price words, from the proven lardner-n-mosaic miss ("Eleven Shillings"). */
+const SPELLED_NUMERAL =
+  'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty';
+
 /** One line of a printed price list: "MILNES'S POEMS OF MANY YEARS            5 0",
- *  "---- MEMORIALS OF MANY SCENES", "_s._ _d._", "6s. 6d.", "$1.50", "20 cents". */
+ *  "---- MEMORIALS OF MANY SCENES", "_s._ _d._", "6s. 6d.", "$1.50", "20 cents".
+ *  2.1.0 (H-1 fresh seed): slash notation ("3/6", "5/0") and spelled-out shillings. */
 const PRICE_LINE_RES = [
   /^_?s\._?\s+_?d\._?$/, // shillings/pence column header
   /\s{3,}\d{1,2}\s+\d{1,2}\s*$/, // title + wide gap + shillings pence
   /^\d{1,2}\s+\d{1,2}$/, // a wrapped price alone on its line
+  /\s{3,}\d{1,2}\s*\/\s*\d{1,2}\s*$/, // title + wide gap + "3/6"
+  /^\d{1,2}\s*\/\s*\d{1,2}$/, // a slash price alone on its line
+  new RegExp(String.raw`\b(?:${SPELLED_NUMERAL})\s+shillings?\b`, 'i'), // "Eleven Shillings"
   /\d+\s?s\.\s*(?:\d+\s?d\.)?\s*$/, // "6s." / "3s. 6d."
   /\$\s?\d+(?:\.\d{1,2})?\s*$/, // "$1.50"
   /\b\d+\s?cents?\b/i, // "20 cents"
@@ -178,11 +221,21 @@ const PRICE_LINE_RES = [
  *  (spurgeon §298: a sermon whose tail bleeds into an ad) from being called a finding:
  *  its first signal sits at 63% of the body, because most of the chunk is real Spurgeon. */
 const BLURB_SIGNALS = {
-  price: /\bprice[,.]?\s*\$?\d|\$\s?\d+(?:\.\d{1,2})?|\b\d+\s?cents?\b/i,
+  // 2.1.0 (H-1): spelled-out shillings when the word "price" governs them ("price bound in
+  // plain calf Eleven Shillings") and slash prices ("3/6 net").
+  price: new RegExp(
+    String.raw`\bprice[,.]?\s*\$?\d|\$\s?\d+(?:\.\d{1,2})?|\b\d+\s?cents?\b` +
+      String.raw`|\bprice\b[^.]{0,60}?\b(?:${SPELLED_NUMERAL})\s+shillings?\b` +
+      String.raw`|\b\d{1,2}\s?\/\s?\d{1,2}\s*(?:net\b|per\b|each\b)`,
+    'i',
+  ),
+  // 2.1.0 (H-1): calf/morocco/vellum/roan join the bindings (lardner: "Octavo … plain calf").
   formatBinding:
-    /\b(?:folio|quarto|octavo|duodecimo|\d{1,2}\s?mo|\d{1,2}\s?vo)\b[^.]{0,50}\b(?:cloth|paper|boards?|buckram|leather)\b|\b(?:cloth|paper|boards?|buckram|leather)\b[^.]{0,30}(?:\$|\d+\s?cents?\b|\d+\s?s\b|\d+\s?d\b)/i,
+    /\b(?:folio|quarto|octavo|duodecimo|\d{1,2}\s?mo|\d{1,2}\s?vo)\b[^.]{0,50}\b(?:cloth|paper|boards?|buckram|leather|calf|morocco|vellum|roan)\b|\b(?:cloth|paper|boards?|buckram|leather|calf|morocco|vellum|roan)\b[^.]{0,30}(?:\$|\d+\s?cents?\b|\d+\s?s\b|\d+\s?d\b)/i,
+  // 2.1.0 (H-1 fresh seed): an em-dash attribution to ANY paper-shaped name, so a puff quoting
+  // a paper too obscure for the list still counts ("…produced."—Inverness Courier).
   press:
-    /(?:Journal|Press|Times|Herald|Gazette|Review|Standard|Union|Evangelist|Observer|Watchman|Transcript|Chronicle|Examiner|Tribune|Telegraph|Intelligencer|Advocate|Guardian|Spectator)\s+says\b|["”]\s*--_?\s*(?:Gen|Col|Rev|Dr|Hon|Ex-Gov|Prof|Capt|Mr|Mrs|Sir)\b/i,
+    /(?:Journal|Press|Times|Herald|Gazette|Review|Standard|Union|Evangelist|Observer|Watchman|Transcript|Chronicle|Examiner|Tribune|Telegraph|Intelligencer|Advocate|Guardian|Spectator)\s+says\b|["”]\s*--_?\s*(?:Gen|Col|Rev|Dr|Hon|Ex-Gov|Prof|Capt|Mr|Mrs|Sir)\b|["”]\s*[—–-]{1,2}\s*_?(?:the\s+)?[A-Z][\w.'’&-]*(?:\s+[A-Z][\w.'’&-]*){0,3}\s+(?:Journal|Press|Times|Herald|Gazette|Review|Standard|Union|Evangelist|Observer|Watchman|Transcript|Chronicle|Examiner|Tribune|Telegraph|Intelligencer|Advocate|Guardian|Spectator|Courier|Mercury|Post|World|Independent|Advertiser|Bulletin|Record|Register|News|Mail|Echo|Star|Sun|Bee|Argus|Citizen|Heraldry)\b/i,
   trade:
     /\bagents\s+wanted\b|\bspecial\s+rates\b|\bjust\s+published\b|\b(?:second|third|fourth|fifth|sixth|new)\s+edition\b|\bimportant\s+publications\b|\bend\s+of\s+project\s+gutenberg\b|\bbooks\s+published\s+by\b|\bcatalogue\s+of\s+books\b|\bpreparing\s+for\s+publication\b/i,
 };
@@ -222,6 +275,9 @@ const NON_PERSON_TOKENS = new Set([
   'goodness', 'holiness', 'righteousness', 'truth', 'grace', 'mercy', 'faith', 'love',
   'apostle', 'apostles', 'prophet', 'prophets', 'evangelist', 'psalmist', 'law', 'cross',
   'saviour', 'savior', 'name', 'darkness',
+  // common nouns a banner-shaped phrase can carry without naming anyone: "Letters of His
+  // Friend" (pascal-provincial §3 — the "friend" is the correspondence's addressee).
+  'friend',
   // abstract nouns in ordinary chapter titles — real Origen headings fired here:
   // "One's Life" (§973), "Life of Thought" (§536).
   'one', 'thought', 'mind', 'soul', 'man', 'world', 'word', 'nature', 'reason', 'wisdom',
@@ -232,11 +288,28 @@ const NON_PERSON_TOKENS = new Set([
  *  "The Homilies of S. Chrysostom". Newlines count as space — print banners wrap.
  *  CASE-SENSITIVE on purpose: a printed banner is a title ("The Second Epistle of
  *  Clement"); prose like "the works of Thy goodness" / "life of holiness" is not, and an
- *  /i flag here flooded the first live run with exactly those non-names. */
+ *  /i flag here flooded the first live run with exactly those non-names.
+ *  2.1.0 (H-1), two proven-miss repairs:
+ *  - an honorific chain between "of" and the name — "The Life of the late Rev. Mr. John
+ *    Flavel" (flavel-life). Honorifics are loosened, the name itself is not.
+ *  - a multi-token name — "Homilies of St. John Chrysostom" (schaff-npnf110): the old
+ *    single-token capture took "John", a scripture author, and stopped. The surname check
+ *    downstream reads the LAST token, so "John Chrysostom" is judged as Chrysostom. */
 const BANNER_RE = new RegExp(
   String.raw`\b(?:The\s+)?(?:First|Second|Third|Fourth|Fifth)?\s*` +
-    String.raw`(?:Epistles?|Works?|Writings?|Homilies|Commentary|Commentaries|Treatises?|Discourses?|Sermons?|Poems?|Letters?|Life|Apology|Apologies|Histories|Oracles)\s+of\s+` +
-    String.raw`(?:S\.?|St\.?|Saint\s+)?([A-Z][a-z]{2,})\b`,
+    String.raw`(?:Epistles?|Works?|Writings?|Homilies|Commentary|Commentaries|Treatises?|Discourses?|Sermons?|Poems?|Letters?|Life|Lives|Memoirs?|Apology|Apologies|Histories|Oracles)\s+of\s+` +
+    String.raw`(?:(?:the\s+)?[Ll]ate\s+)?(?:(?:Rev|Mr|Mrs|Ms|Dr|Hon|Sir|Lord|Bishop|Canon)\.?\s+)*` +
+    String.raw`(?:S\.?\s+|St\.?\s+|Saint\s+)?(?!The\s|Of\s|And\s)([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,}){0,2})\b`,
+);
+/** All-caps form of the same banner — the bookseller/title-page shape: "THE LIFE OF DR.
+ *  JOHN DONNE", "THE POEMS OF JAMES HOGG". 2.1.0 (H-1, donne-devotions §1's banner). Same
+ *  guards as ALLCAPS_POSSESSIVE_RE: the work-type noun is required, so an all-caps poem or
+ *  chapter title cannot fire, and the non-person/scripture/author exclusions apply below. */
+const ALLCAPS_BANNER_RE = new RegExp(
+  String.raw`\b(?:THE\s+)?(?:(?:FIRST|SECOND|THIRD|FOURTH|FIFTH)\s+)?` +
+    String.raw`(?:EPISTLES?|WORKS?|WRITINGS?|HOMILIES|COMMENTARY|COMMENTARIES|TREATISES?|DISCOURSES?|SERMONS?|POEMS?|LETTERS?|LIFE|LIVES|MEMOIRS?|APOLOGY|HISTORIES|HISTORY)\s+OF\s+` +
+    String.raw`(?:(?:THE\s+)?LATE\s+)?(?:(?:REV|MR|MRS|MS|DR|HON|SIR|LORD|BISHOP|CANON)\.?\s+)*` +
+    String.raw`(?:S\.?\s+|ST\.?\s+|SAINT\s+)?(?!THE\s|OF\s|AND\s)([A-Z]{2,}(?:\s+[A-Z]{2,}){0,2})\b`,
 );
 /** Possessive banner: "Origen's Commentary on the Gospel of John" — no fire under Origen;
  *  "Schaff's Prolegomena" under Chrysostom would fire. Case-sensitive, same reason. */
@@ -260,6 +333,12 @@ const BYLINE_RE =
  *  excluded downstream. */
 const TITLE_BYLINE_RE =
   /[.!?]\s+[Bb][Yy]\s+((?:[A-Z][\w.'’-]*\s+){1,3}[A-Z][\w.'’-]+)(?=,\s|\.\s|\.?$|$)/;
+/** The printer's provenance parenthetical: "(Taken from the life by Izaak Walton)." —
+ *  donne-devotions §1 (H-1). Not prose ABOUT a work: it is the volume declaring where the
+ *  following text actually came from, so in the body's title region it is STRONG without
+ *  needing a rule line. The byline guards below (author token, scripture, non-person) apply. */
+const ATTRIBUTION_RE =
+  /(?:^|\n)\s*\((?:[Tt]aken\s+from|[Ee]xtracted\s+from|[Aa]bridged\s+from|[Cc]ompiled\s+from|[Ee]dited\s+from|[Tt]ranslated\s+from|from)[^)\n]{0,80}?\bby\s+((?:[A-Z][\w.'’-]*\s+){1,3}[A-Z][\w.'’-]+)[^)\n]{0,30}\)/;
 
 /** The entry's title line: an explicit heading, else the body's first non-empty line. */
 export function titleLine({ heading, body } = {}) {
@@ -292,13 +371,23 @@ export function frontMatterVerdict(entry = {}) {
 
   // A label taken from the BODY has to stand alone as a line. With an explicit heading there
   // is nothing to disambiguate: the field is already a title by construction.
-  const standsAlone =
-    hasHeading || /\S[^\n]*\n/.test(body.trim()) || body.trim().length <= STANDALONE_BODY_MAX;
+  const bodyLineStandsAlone = /\S[^\n]*\n/.test(body.trim()) || body.trim().length <= STANDALONE_BODY_MAX;
+  const standsAlone = hasHeading || bodyLineStandsAlone;
+
+  // 2.1.0 (H-1): the body's own first non-empty line, consulted when the heading matched no
+  // rule. titleLine prefers the heading, and CCEL's decorated headings ("Indexes — Greek Words
+  // and Phrases (1/36)") used to mean the body's announcement was never read.
+  const firstBodyLine = (body.split(/\r?\n/).find((l) => l.trim().length > 0) ?? '').trim().slice(0, TITLE_SCAN_CHARS);
+  const titleCandidates = hasHeading && firstBodyLine.length > 0 && firstBodyLine !== title ? [title, firstBodyLine] : [title];
 
   // 1. The title line IS an apparatus label — short enough to be a title, and standing alone.
-  const titleMatch = title.length > 0 && title.length <= MAX_TITLE_CHARS && standsAlone ? LABEL_RE.exec(title) : null;
-  if (titleMatch) {
-    return { apparatus: true, strength: labelStrength(titleMatch), kind: 'apparatus-title', evidence: title };
+  for (const [i, candidate] of titleCandidates.entries()) {
+    if (candidate.length === 0 || candidate.length > MAX_TITLE_CHARS) continue;
+    if (i === 0 ? !standsAlone : !bodyLineStandsAlone) continue;
+    const titleMatch = LABEL_RE.exec(candidate);
+    if (titleMatch) {
+      return { apparatus: true, strength: labelStrength(titleMatch), kind: 'apparatus-title', evidence: candidate };
+    }
   }
 
   // 2. The whole body is roman numerals — a contents/pagination fragment. Guarded by a length
@@ -317,18 +406,22 @@ export function frontMatterVerdict(entry = {}) {
   }
 
   // 4. The title line is a machine-generated word/phrase index — "(Latin|German|French)
-  //    Words and Phrases", "Index of Latin Words and Phrases". Anchored at both ends, so
-  //    calvin's KEPT "General Index of Chapters" and schaff's KEPT creed table cannot match.
-  const indexTitle = title.length > 0 && title.length <= MAX_TITLE_CHARS ? title : h;
-  if (indexTitle && indexTitle.length <= MAX_TITLE_CHARS && WORD_INDEX_RE.test(indexTitle)) {
-    return { apparatus: true, strength: 'strong', kind: 'word-index-title', evidence: indexTitle };
+  //    Words and Phrases", "Index of Latin Words and Phrases", or the decorated CCEL form
+  //    "Indexes — Greek Words and Phrases (1/36)". Anchored at both ends, so calvin's KEPT
+  //    "General Index of Chapters" and schaff's KEPT creed table cannot match.
+  for (const candidate of titleCandidates) {
+    if (candidate.length > 0 && candidate.length <= MAX_TITLE_CHARS && WORD_INDEX_RE.test(candidate)) {
+      return { apparatus: true, strength: 'strong', kind: 'word-index-title', evidence: candidate };
+    }
   }
 
   // 5. The title line is a publisher catalogue — "CHEAP EDITIONS OF POPULAR WORKS.",
   //    "WORKS PREPARING FOR PUBLICATION", or a bibliographic format+price descriptor
   //    ("_Post 8vo, cloth extra, 6s._").
-  if (indexTitle && indexTitle.length <= 120 && (CATALOGUE_TITLE_RE.test(indexTitle) || FORMAT_PRICE_HEADING_RE.test(indexTitle))) {
-    return { apparatus: true, strength: 'strong', kind: 'publisher-catalogue-title', evidence: indexTitle.slice(0, 80) };
+  for (const candidate of titleCandidates) {
+    if (candidate.length > 0 && candidate.length <= 120 && (CATALOGUE_TITLE_RE.test(candidate) || FORMAT_PRICE_HEADING_RE.test(candidate))) {
+      return { apparatus: true, strength: 'strong', kind: 'publisher-catalogue-title', evidence: candidate.slice(0, 80) };
+    }
   }
 
   // 6. The body is a printed price list — a run of lines that are title + price
@@ -393,37 +486,79 @@ export function foreignMatterVerdict(entry = {}, { author = '' } = {}) {
   const hasRuleLine = RULE_LINE_RE.test(body.slice(0, RULE_LINE_SCAN_CHARS));
 
   const checks = [
-    { kind: 'foreign-work-banner', re: BANNER_RE },
+    { kind: 'foreign-work-banner', re: BANNER_RE, memorial: true },
     { kind: 'foreign-work-banner', re: POSSESSIVE_BANNER_RE },
     { kind: 'foreign-work-banner', re: ALLCAPS_POSSESSIVE_RE },
+    { kind: 'foreign-work-banner', re: ALLCAPS_BANNER_RE, memorial: true },
     { kind: 'foreign-work-byline', re: BYLINE_RE },
     { kind: 'foreign-work-byline', re: TITLE_BYLINE_RE },
+    { kind: 'foreign-work-attribution', re: ATTRIBUTION_RE, strongAlone: true },
   ];
+  // Judge one match: returns { name, memorial, biographical }, or null when the match names
+  // the author, an apostle, or a non-person. One addition in 2.1.0 (H-1, flavel-life): a banner
+  // naming the DECLARED AUTHOR is normally genuine (Origen's Commentary under Origen) — but a
+  // "Life of the late Rev. Mr. <author>" is a memorial biography OF the author, who cannot be
+  // "the late" in his own work. The author exclusion is lifted for exactly that shape, and the
+  // match is strong on its own.
+  const responsible = (check, m) => {
+    const raw = m[1];
+    // A byline names one person; test its last capitalized token (the surname, skipping
+    // initials). A banner capture is already a single name (possibly multi-token since 2.1.0).
+    const tokens = raw.match(/[A-Za-z'’]{3,}/g) ?? [];
+    const name = tokens[tokens.length - 1] ?? raw;
+    let memorial = false;
+    if (!namedPerson(name)) {
+      memorial =
+        Boolean(check.memorial) &&
+        isAuthor(name) &&
+        /of\s+(?:the\s+)?late\s+/i.test(m[0]) &&
+        /\b(?:life|lives|memoirs?)\s+of\s/i.test(m[0]);
+      if (!memorial) return null;
+    }
+    if (check.kind !== 'foreign-work-banner' && tokens.some((t) => isAuthor(t))) return null;
+    // A Life/Lives/Memoirs banner is the classic SUBJECT banner (Foxe's "The Life of William
+    // Gardiner" is Foxe's own chapter; Chesterton's "The Real Life of St. Thomas" is
+    // Chesterton's own chapter) — it is never promoted by the heading/body agreement below.
+    const biographical = check.kind === 'foreign-work-banner' && /\b(?:life|lives|memoirs?)\s+of\s/i.test(m[0]);
+    return { name, memorial, biographical };
+  };
+
   // The HEADING and the body's title region are judged separately. A body match with the
   // print-boundary signature (a rule line) is STRONG — that is the shape a bound-in work
   // actually takes ("The First Epistle of Clement. ————"). A bare body match, or a match
   // in the heading, is WEAK: a heading that names another work usually declares the
   // section's SUBJECT (Foxe's "The Life of William Gardiner" is Foxe's own chapter), and
   // deciding otherwise is a reading, not a regex.
-  for (const [region, baseStrength] of [
-    [body.slice(0, FOREIGN_SCAN_CHARS), hasRuleLine ? 'strong' : 'weak'],
-    [heading, 'weak'],
-  ]) {
+  // 2.1.0 (H-1, schaff-npnf201): one upgrade — when the SAME name stands as BOTH the section
+  // heading and the body's own title lines, the body is not a chapter ABOUT the work; it is
+  // the work's own opening, and the finding is STRONG. The upgrade does not apply to a
+  // Life/Lives/Memoirs banner: a biography names its SUBJECT, and CCEL bodies repeat the
+  // chapter heading as their first line, so the doubling means nothing there.
+  const firstHit = (region, baseStrength) => {
     const text = String(region);
-    if (!text) continue;
-    for (const { kind, re } of checks) {
-      const m = re.exec(text);
+    if (!text) return null;
+    for (const check of checks) {
+      const m = check.re.exec(text);
       if (!m) continue;
-      const raw = m[1];
-      // A byline names one person; test its last capitalized token (the surname, skipping
-      // initials). A banner capture is already a single name.
-      const tokens = raw.match(/[A-Za-z'’]{3,}/g) ?? [];
-      const name = tokens[tokens.length - 1] ?? raw;
-      if (!namedPerson(name)) continue;
-      if (kind === 'foreign-work-byline' && tokens.some((t) => isAuthor(t))) continue;
-      return { foreign: true, kind, strength: baseStrength, name, evidence: m[0].trim().slice(0, 80) };
+      const r = responsible(check, m);
+      if (!r) continue;
+      return {
+        kind: check.kind,
+        strength: (check.strongAlone || r.memorial) && baseStrength === 'weak' ? 'strong' : baseStrength,
+        name: r.name,
+        biographical: r.biographical,
+        evidence: m[0].trim().slice(0, 80),
+      };
     }
+    return null;
+  };
+  const bodyHit = firstHit(body.slice(0, FOREIGN_SCAN_CHARS), hasRuleLine ? 'strong' : 'weak');
+  const headHit = firstHit(heading, 'weak');
+  if (bodyHit && headHit && !bodyHit.biographical && bodyHit.name.toLowerCase() === headHit.name.toLowerCase()) {
+    return { foreign: true, kind: bodyHit.kind, strength: 'strong', name: bodyHit.name, evidence: bodyHit.evidence };
   }
+  const hit = bodyHit ?? headHit;
+  if (hit) return { foreign: true, kind: hit.kind, strength: hit.strength, name: hit.name, evidence: hit.evidence };
   return { foreign: false, kind: null, strength: null, name: null, evidence: null };
 }
 

@@ -41,18 +41,24 @@
 > `prod440-*` for file stability).
 >
 > What remains flippable without further ruling: the **verdict-PASS subset of the 58
-> dev-staged works** (after the dev→prod copy). **50 PASS / 8 HELD**, carved into exact
-> slug files 2026-09-07: `docs/evidence/corpus-copy/dev58-pass-adr029-2026-09-07.json`
+> dev-staged works** (after the dev→prod copy). **42 PASS / 16 HELD** — re-carved 2026-09-07
+> from **verdict-v2** (detector 2.1.0, deep-audit H-1 remediation; was 50/8 under v1 —
+> donne-devotions, flavel-life, foxe-martyrs, lardner-n-mosaic, luther-translating,
+> schaff-npnf109/110/204 moved PASS→HELD), exact slug files:
+> `docs/evidence/corpus-copy/dev58-pass-adr029-2026-09-07.json`
 > (flip these) and `dev58-held-adr029-2026-09-07.json` (do NOT flip: bennett-expositor10,
-> schaff-anf06/07/08, schaff-npnf111/112/114, tolstoy-maupassant — full findings in
-> verdict.md). The copy itself (job 1) is unaffected by both preconditions and can run as
-> written (copy all 58; the held ones stay staged on prod too, marked by this packet).
+> donne-devotions, flavel-life, foxe-martyrs, lardner-n-mosaic, luther-translating,
+> schaff-anf06/07/08, schaff-npnf109/110/111/112/114/204, tolstoy-maupassant — full findings in
+> verdict.md and verdict-v2.md). The copy itself (job 1) is unaffected by both preconditions
+> and can run as written (copy all 58; the held ones stay staged on prod too, marked by this
+> packet).
 
 **What this is:** the paste-ready runbook for the overdue owner batch from the 2026-09-06
 ingestion session. Two jobs, in order:
 
 1. **Copy** the 58 works staged on DEV (top-up waves 1–3) to PROD, landing `staged`.
-2. **Publish** 489 works total on PROD: the 50 verdict-PASS of the 58 (after the copy) + the
+2. **Publish** 481 works total on PROD: the 42 verdict-PASS of the 58 (after the copy; 42 since
+   the 2026-09-07 v2 re-carve, see amendment) + the
    439 already staged there — each as a `--status-only` flip followed immediately by a
    `serve-batched` run on the same slug file. **(Job 2 is gated by the preconditions in the
    amendment block: the owner ruling of 2026-09-07 discharged P4.n; ADR-029's prod-side scan
@@ -72,8 +78,8 @@ Nothing here was executed for real by the prepping agent — the write tools are
   441 staged / 3 quarantined) **minus `hort-james1909` and `origen-commentary`** (see
   exclusions). Verified: all 439 pass the licence and forbidden-provenance predicates READ
   ONLY; all 439 have serveable embedding rows (261,933 flat rows, all `served=false`).
-- No delta: 50 + 439 = 489 works to publish (embedding-row count was measured for the full
-  58+440 set and is now a slight over-estimate).
+- No delta: 42 + 439 = 481 works to publish (embedding-row count was measured for the full
+  58+440 set and is now a slight over-estimate; the 42 is the verdict-v2 re-carve of 2026-09-07).
 
 ## Exclusions — do NOT add these to any slug file
 
@@ -112,7 +118,7 @@ dev row before the copy; otherwise they ride with the batch.
 
 ## Batching (and why)
 
-- **Status flips: 6 batches** — the 50 PASS as one batch, the 439 as five batches
+- **Status flips: 6 batches** — the 42 PASS as one batch, the 439 as five batches
   (88/88/88/87/88). Precedent:
   2026-08-19 flipped **87 works in a single flip** (log:
   `docs/evidence/work-order-v2-stage2/flip-run-2026-08-19T11-57-28-503Z.log`), so 58/88 per
@@ -128,7 +134,7 @@ dev row before the copy; otherwise they ride with the batch.
   2,000 rows and is **resumable** — an interruption costs nothing, re-run the same command.
 - Interleave per batch (flip → serve → next batch) so no work sits published-but-unretrievable
   longer than its own batch's serve run. Published-but-unserved is a known-safe intermediate
-  (the 88-work precedent), but there is no reason to accumulate 498 of them.
+  (the 88-work precedent), but there is no reason to accumulate 481 of them.
 
 ## Step 1 — copy the 58 dev → prod (one run)
 
@@ -154,10 +160,11 @@ CORPUS_COPY_DEST_URL=$(cat ~/.neon_prod_url) \
 
 Run this pair SIX times, with `<FILE>` taking these values in order:
 
-1. `docs/evidence/corpus-copy/dev58-pass-adr029-2026-09-07.json` (**50 — only after step 1
-   succeeds. NOT the full dev58 file: the 8 verdict-FAIL works in
+1. `docs/evidence/corpus-copy/dev58-pass-adr029-2026-09-07.json` (**42 — only after step 1
+   succeeds. NOT the full dev58 file: the 16 verdict-FAIL works in
    `dev58-held-adr029-2026-09-07.json` must never appear in any flip — deep-audit 2026-09-07
-   found this step originally named the full 58, which would have published all 8 held works;
+   found this step originally named the full 58, which would have published the held works;
+   the H-1 remediation re-carve (verdict-v2, detector 2.1.0) added 8 more to the held set;
    no tool gate would have stopped it**)
 2. `docs/evidence/corpus-copy/prod440-2026-09-06-batch1.json` (88)
 3. `docs/evidence/corpus-copy/prod440-2026-09-06-batch2.json` (88)
