@@ -1,5 +1,59 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — Static bible translations: Weymouth NT + Twentieth Century NT + JPS 1917 added; DRC + Brenton LXX BLOCKED on versification [Kimi Code session]
+
+Workorder: add five PD translations through the STATIC bible pipeline (web/public/bible).
+**3 shipped, 2 stopped with evidence** (integrity over count — the versification gate demands
+KJV v11n structure, and no authoritative mapping matches the DRC Challoner (Vulg) or Brenton
+(LXX) digitizations; hand-mapping risks silently mis-keyed content, the exact failure class
+the gates exist for).
+
+**Shipped (all canon-exact, license-verified BEFORE decode):**
+- `weymouth` — CrossWire SWORD `Weymouth` 1.1 (.conf DistributionLicense: Public Domain,
+  printed at decode; NT-only). New zText decoder `scripts/resourcing/fetch-crosswire-bible.mts`
+  (license gate + KJV-v11n slot-count gate before writing): 260 chapters, 7,957/7,957 NT slots,
+  15 empty = standard critical-text omissions. 39 OT skeleton books (anderson precedent).
+- `twenty` — CrossWire SWORD `Twenty` 2.0 (.conf PD; Versification=KJV). 1,189 chapters,
+  31,102 slots; OT slots empty in the module itself → ships as skeletons. NOT module `TNT`
+  (Tregelles GREEK NT, CC BY-NC-SA — fails commercial-permissive, untouched).
+- `jps` — eBible.org `engjps` (copyright page: Public Domain; faithful 1917 text, "The LORD" —
+  scrollmapper's JPS.json is the altered "HaShem" digitization, REJECTED). eBible pre-mapped
+  MT→English versification; `src/ingest/ingest-ebible-jps.ts` strips the parenthetical
+  original-refs and PROVES canon-exactness (all 39 OT books == repo KJV canon, 23,145 slots)
+  before writing; red-proofed (Brenton USFM through the same proof → 108 diffs, refused).
+  27 NT skeleton books.
+- New: `src/ingest/gen-bible-skeletons.ts` (skeleton writer, never touches real content).
+- License records (`web/src/lib/licensing.ts`) + picker (`web/src/lib/bible.ts` TRANSLATIONS,
+  18 → 21). Versification gate: 21 translations all structurally canonical. Predeploy-gate
+  bible-licensing leg GREEN. Targeted root+web suites green (83 tests).
+
+**BLOCKED (not shipped, no files written):**
+- `drc` (Challoner) — every digitization is Vulgate-versified (CrossWire `DRC`
+  Versification=Vulg; eBible engDRA and scrollmapper DRC.json both Vulg-numbered: 210 chapter
+  diffs vs KJV canon incl. psalter renumbering, Vulgate omissions Matt 17:21/Mrk 9:44,46,
+  Dan 13–14). Copenhagen-Alliance vul.json does NOT match the Challoner psalter (Ps 115/147
+  off by 9–11 verses), so its mapping cannot be applied without mis-keying.
+- `brenton` (LXX 1851) — eBible eng-Brenton (PD verified) is LXX-versified; Copenhagen
+  lxx.json has NO Proverbs mappings (LXX Pro 24=62v reorder), no EST/DAN (ESG/DAG fusion),
+  Ezra=Esdras β (Ezra+Neh fused), Jeremiah reorder; ~30 protocanon chapter mismatches vs its
+  own model. No KJV-versified Brenton exists anywhere.
+- Path forward for both: a dedicated slice building a verified Vulg→KJV / LXX→KJV verse
+  mapping as a reviewable artifact with per-chapter content verification + red-proofs.
+
+**NOT DONE / UNVERIFIED:**
+- Deploy-side: `node scripts/corpus-blob-sync.mjs --execute` MUST run before deploy.sh — the
+  CDN-freshness leg hard-fails otherwise (3,765 new files under bible/{weymouth,twenty,jps};
+  451 more are pre-existing commentary drift from another session, will sync together).
+- DRC + Brenton: awaiting the mapping slice above (or an owner descope).
+- `npm run audit`: typechecks/knip/lints/vitest/deploy-harness/Gate-B all green. THREE red legs,
+  none from this change: (1) eslint flagged MY unused import — fixed, re-run 0 errors; (2) deps-audit:
+  4 NEW high advisories vs locked fast-uri 3.1.5 (GHSA-5jgf-p345-68v8, -f65p-4m7j-42xc,
+  -fph4-wmhf-6fwf, -jqff-g426-hqxp; fix >=3.1.6) — pre-existing lockfile, advisories published after
+  the last green audit; needs owner adjudication (pnpm override or ignoreGhsas + docs/SECURITY.md);
+  (3) qa leg: 2 DB-backed tests timed out under audit-time DB contention ("remaining connection
+  slots are reserved" in the log) — BOTH pass standalone (draft-check 10/10, licensing behavioral
+  6/6, re-run after the eslint fix).
+
 ## 2026-09-06 — Finish-ingestion follow-ups: Calvin English Institutes, Menno explained, Luther Holman vols I–II [Kimi Code session]
 
 Three items from the finish-ingestion order (`docs/pm/orders/2026-09-06-finish-ingestion.md`
