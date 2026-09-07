@@ -1,5 +1,49 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — D3 RESOLVED; translations synced; deploy STOPPED at a live attribution hazard [Kimi Code session]
+
+**D3 resolved via the storage API (owner's `vcp_` account token).** The dashboard-free
+path: the account token listed stores (`GET /v1/storage/stores`), and
+`POST /v1/storage/stores/{id}/connections {projectId, envVarPrefix:"CORPUS_BLOB"}`
+connected `ancient-paths-corpus` to the web project, minting
+`CORPUS_BLOB_READ_WRITE_TOKEN` (production+preview). The env LISTING returns ciphertext,
+but the SINGLE-VAR GET (`/v9/projects/{id}/env/{envId}`) returns the decrypted value —
+store-binding verified `mBP8qokd9O4O9qNZ` before use, never printed, never written to disk.
+Token-minting endpoints do NOT exist in the public API (probed; OpenAPI spec confirms);
+the connections endpoint is the dashboard's own connect operation. **The `vcp_` token was
+pasted in chat — owner should delete/rotate it in Vercel account settings.**
+`~/.corpus_blob_token` found to contain command TEXT (`pbpaste > …`), never a token —
+that mystery is why every prior attempt failed.
+
+**Scoped sync done:** bible/{weymouth,twenty,jps} = 3,765 uploads / 0 deletes, manifest
+committed (`99e52d5`). Corpus manifest regenerated (`d569e899`). Evidence batch (`bca2459b`).
+
+**Deploy STOPPED at the CDN-freshness leg — correctly.** The leg demands disk == CDN, and
+the 454-file gap is another session's shelf materialization of the wave works (written
+2026-09-06 15:04, static since). Sampled 10 files + diffed against the CDN: every sampled
+change ADDS entries from STAGED, UNPUBLISHED works — including `schaff-anf06/07/08` and
+`bennett-expositor10`, three-plus-one of the 8 ADR-029-HELD works. A full `--execute`
+would (a) serve unpublished works on the live shelf, bypassing the publish gate, and
+(b) serve the held works' misattributed text (Julius Africanus / Theonas / Clement as
+"Schaff") through the static shelf path, where the publish carve never reaches. Not done;
+another session's files not touched.
+
+**The unblock sequence (needs a ruling):** filter the materialization to exclude
+held/unpublished works (or have the other session reconcile it), THEN full sync satisfies
+freshness, THEN deploy. The shelf content for the 50 PASS works should also wait for
+their publish flips (runbook ready). Until then the translations are on the CDN but the
+registry/licensing code (`9b4cb08`) is not deployed, so they are not yet reader-visible.
+
+**Also this session:** ancestry gate fired again (main gained an MIT LICENSE commit —
+another session active on main today; merged).
+
+**NOT DONE / UNVERIFIED:**
+- Translations NOT deployed (blocked above). Translations ARE on the CDN.
+- The mystery thayers-flip scheduler struck twice more (2026-09-07T02:30Z, 03:27Z — logs
+  committed in `bca2459b`). Still unidentified; it runs in THIS worktree.
+- Deep-audit of the wave (owner deferred until translations ship).
+- The 454-file materialization vs publish state reconciliation — owner ruling needed.
+
 ## 2026-09-07 — Track A: ADR-029 discharged; publish runbook amended twice [Kimi Code session]
 
 Executed Track A of `KIMI_ORDER_corpus-coverage.md` (Claude's order; my review of it is in
