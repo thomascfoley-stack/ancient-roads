@@ -2825,7 +2825,8 @@
         "ccel_ids": [
           "spurgeon/catechism"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -4504,33 +4505,6 @@
     }
   },
   {
-    "id": "calvin-institutio2",
-    "slug": "calvin-institutio2",
-    "title": "Institutio Christianae Religionis vol. 2",
-    "author": "Calvin, John",
-    "author_died": 1564,
-    "year_written": 1834,
-    "source_type": "theology",
-    "tradition": "unassigned",
-    "era": "unassigned",
-    "license": "Public Domain",
-    "tier": 3,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/calvin/institutio2",
-      "edition": "Institutio Christianae Religionis vol. 2 (CCEL)",
-      "year": 1834,
-      "year_basis": "printSourceInfo",
-      "licence_basis": "rightsDeclared",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "calvin/institutio2"
-        ],
-        "strip_markup": true
-      }
-    }
-  },
-  {
     "id": "calvin-calcom03",
     "slug": "calvin-calcom03",
     "title": "Harmony of the Law - Volume 1",
@@ -5281,33 +5255,6 @@
         "adapter": "ccel",
         "ccel_ids": [
           "calvin/calcom37"
-        ],
-        "strip_markup": true
-      }
-    }
-  },
-  {
-    "id": "calvin-institutio1",
-    "slug": "calvin-institutio1",
-    "title": "Institutio Christianae Religionis vol. 1",
-    "author": "Calvin, John",
-    "author_died": 1564,
-    "year_written": 1564,
-    "source_type": "theology",
-    "tradition": "unassigned",
-    "era": "unassigned",
-    "license": "Public Domain",
-    "tier": 3,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/calvin/institutio1",
-      "edition": "Institutio Christianae Religionis vol. 1 (CCEL)",
-      "year": 1564,
-      "year_basis": "authorDeathUpperBound",
-      "licence_basis": "rightsDeclared",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "calvin/institutio1"
         ],
         "strip_markup": true
       }
@@ -8333,7 +8280,8 @@
         "ccel_ids": [
           "chesterton/rightworld"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -8685,7 +8633,9 @@
         "ccel_ids": [
           "luther/prefacetoromans"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1,
+        "matter_allow": "^preface"
       }
     }
   },
@@ -8793,7 +8743,8 @@
         "ccel_ids": [
           "luther/christianliberty"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -8821,6 +8772,54 @@
           "luther/smalcald"
         ],
         "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "luther-works1",
+    "slug": "luther-works1",
+    "title": "Works of Martin Luther, with Introductions and Notes (Volume I)",
+    "author": "Luther, Martin",
+    "author_died": 1546,
+    "year_written": 1915,
+    "source_type": "theology",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/31604",
+      "edition": "Works of Martin Luther vol. I (Philadelphia: A. J. Holman Company, 1915) (Gutenberg #31604)",
+      "year": 1915,
+      "year_basis": "printSourceInfo",
+      "licence_basis": "authorPre1930",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 31604
+      }
+    }
+  },
+  {
+    "id": "luther-works2",
+    "slug": "luther-works2",
+    "title": "Works of Martin Luther, with Introductions and Notes (Volume II)",
+    "author": "Luther, Martin",
+    "author_died": 1546,
+    "year_written": 1916,
+    "source_type": "theology",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/34904",
+      "edition": "Works of Martin Luther vol. II (Philadelphia: A. J. Holman Company, 1916) (Gutenberg #34904)",
+      "year": 1916,
+      "year_basis": "printSourceInfo",
+      "licence_basis": "authorPre1930",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 34904
       }
     }
   },
@@ -8874,7 +8873,8 @@
         "ccel_ids": [
           "luther/theses"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -8901,7 +8901,8 @@
         "ccel_ids": [
           "luther/translating"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9009,7 +9010,8 @@
         "ccel_ids": [
           "law/clergy"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9144,7 +9146,8 @@
         "ccel_ids": [
           "law/errors"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9171,7 +9174,8 @@
         "ccel_ids": [
           "law/grounds"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9738,7 +9742,8 @@
         "ccel_ids": [
           "tolstoy/maupassant"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -9765,7 +9770,8 @@
         "ccel_ids": [
           "tolstoy/kreutzer"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -10251,7 +10257,8 @@
         "ccel_ids": [
           "pink/law"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -11898,7 +11905,8 @@
         "ccel_ids": [
           "edwards/trinity"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12789,7 +12797,8 @@
         "ccel_ids": [
           "charnock/cleansing"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12816,7 +12825,8 @@
         "ccel_ids": [
           "charnock/instr_regen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12843,7 +12853,8 @@
         "ccel_ids": [
           "charnock/efficient_regeneration"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -12870,7 +12881,9 @@
         "ccel_ids": [
           "charnock/nat_regen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1,
+        "matter_allow": "^title pages?$"
       }
     }
   },
@@ -12924,7 +12937,8 @@
         "ccel_ids": [
           "charnock/nec_regen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -13113,7 +13127,8 @@
         "ccel_ids": [
           "flavel/life"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -13923,7 +13938,8 @@
         "ccel_ids": [
           "bangs/alphabetic"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -14301,7 +14317,8 @@
         "ccel_ids": [
           "boethius/trinity"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -14517,7 +14534,8 @@
         "ccel_ids": [
           "bushnell/character"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15057,7 +15075,8 @@
         "ccel_ids": [
           "neander_a/expo_phil"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15165,7 +15184,8 @@
         "ccel_ids": [
           "tulloch/religion"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15867,7 +15887,8 @@
         "ccel_ids": [
           "donne/spital"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15921,7 +15942,8 @@
         "ccel_ids": [
           "donne/deaths_duel"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -15975,7 +15997,8 @@
         "ccel_ids": [
           "donne/easter"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -16299,7 +16322,8 @@
         "ccel_ids": [
           "knox/prayer"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -16478,17 +16502,14 @@
     "license": "Public Domain",
     "tier": 3,
     "provenance": {
-      "url": "https://www.ccel.org/ccel/newman/apologia",
-      "edition": "Newman's Apologia Pro Vita Sua (CCEL)",
+      "url": "https://www.gutenberg.org/ebooks/22088",
+      "edition": "Newman, Apologia pro Vita Sua (Gutenberg #22088, 1864 'history of his religious opinions' text)",
       "year": 1913,
       "year_basis": "printSourceInfo",
       "licence_basis": "rightsDeclared",
       "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "newman/apologia"
-        ],
-        "strip_markup": true
+        "adapter": "gutenberg",
+        "ebook_id": 22088
       }
     }
   },
@@ -17568,7 +17589,8 @@
         "ccel_ids": [
           "erasmus/against_war"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -18055,7 +18077,8 @@
         "ccel_ids": [
           "pascal/memorial"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -18163,7 +18186,8 @@
         "ccel_ids": [
           "penn/sermon"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -18487,7 +18511,8 @@
         "ccel_ids": [
           "whyte/behmen"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -19836,7 +19861,8 @@
         "ccel_ids": [
           "kierkegaard/untruth"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -19890,7 +19916,8 @@
         "ccel_ids": [
           "lardner_n/mosaic"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -20511,7 +20538,8 @@
         "ccel_ids": [
           "shepard/sabbath"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -21618,7 +21646,9 @@
         "ccel_ids": [
           "clarke/entire_sanct"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1,
+        "heading_filter": "^Entire Sanctification"
       }
     }
   },
@@ -21645,7 +21675,8 @@
         "ccel_ids": [
           "clarkson/owenfuneral"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -21726,7 +21757,8 @@
         "ccel_ids": [
           "cranmer/doctrine"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -23535,7 +23567,8 @@
         "ccel_ids": [
           "kronstadt/christlife"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "min_units": 1
       }
     }
   },
@@ -24321,17 +24354,15 @@
     "tier": 3,
     "provenance": {
       "url": "https://www.ccel.org/ccel/foxe/martyrs",
-      "edition": "Foxe’s Book of Martyrs (CCEL)",
+      "edition": "Foxe’s Book of Martyrs, ed. William Byron Forbush (CCEL) — the Forbush ABRIDGMENT, NOT Foxe’s complete Acts and Monuments",
       "year": 1563,
       "year_basis": "authorDeathUpperBound",
       "licence_basis": "authorPre1930",
-      "note": "Author died 1587, so the WORK is unambiguously PD. The Book of Martyrs was re-edited for centuries and the CCEL edition year is NOT yet confirmed — capture it at ingest before serving. Availability and full text confirmed against the CCEL page 2026-08-20.",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "foxe/martyrs"
-        ],
-        "strip_markup": true
+      "note": "Author died 1587, so the WORK is unambiguously PD. 2026-09-06: the CCEL files edition (https://www.ccel.org/ccel/f/foxe/martyrs/files/, begin.htm + fox101..fox122.htm, plain HTML not ThML) is the Forbush abridgment — labeled ABRIDGED per the finish-ingestion order; the abridgment is a pre-1930 US edition. Historian-head ingest (staged, never served), so the earlier edition-year capture concern does not gate.",
+      "rebuild": {
+        "source": "ccel-html",
+        "files": "https://www.ccel.org/ccel/f/foxe/martyrs/files/ (begin.htm + fox101..fox122.htm)",
+        "decoder": "H1/H2/H3 tree crawl -> data/raw/historians/foxe-martyrs.jsonl -> src/ingest/ingest-historian.ts --slug=foxe-martyrs"
       }
     }
   },

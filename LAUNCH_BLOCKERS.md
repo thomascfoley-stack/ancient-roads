@@ -139,9 +139,73 @@ The right shape is a per-invite token or a gate-level allowlist. Until that ship
 
 ## 14. Adapter-loop checks `embeddings` instead of `section_embeddings`
 
-**Status:** [FILED]
-**What:** `adapter-loop.ts` reports completed works as "partial" when they use `section_embeddings` (the per-section model) instead of `embeddings` (the flat-chunk model). `openbible-topics` sat on the blocker list as "partial" when it was complete (6711 sections + 6711 section_embeddings).
-**Recommendation:** The loop's completeness check should query both tables. File as a bug.
+**Status:** **FIXED 2026-09-06** (Kimi Code ingestion session). `ingestState()` now counts BOTH
+planes (`embeddings` flat + `section_embeddings` per-section) with `vectors = GREATEST(e, se)`;
+a work with sections but zero vectors in either plane no longer classifies `done` (the 668-work
+prod false-done), and `openbible-topics` no longer false-partials. Red-proofed both directions;
+8/8 new tests in `test/invariants/adapter-loop-ingest-state.test.ts`; root suite 1020 green.
+The follow-up measurement this fix enabled: **no published work is retrieval-dead** — all 228
+works lacking `section_embeddings` are fully served via flat `embeddings`, and no serving path
+in `web/src` reads `section_embeddings` at all (it only feeds `history_embeddings` backfills).
+The 46,831-vector backfill is therefore optional hygiene, not a launch issue — decide whether
+that table has a planned consumer before spending the run.
+
+---
+
+## 15. Post-launch queue — deferred mediums (filed 2026-08-31, pre-open pass)
+
+**Status:** [TABLED] — deliberately NOT fixed before opening. Batching them into the launch-eve
+deploy risks a fresh regression; each is real and should be worked after the doors open.
+
+From the 2026-08-31 deep audit (`docs/evidence/deep-audit-2026-08-31.md`), deferred:
+
+- **Orphan-blob sweeper** — presign → PUT → never complete leaves unbilled blobs.
+- **CSRF `includes()` substring match** on origin checking.
+- **Auth-table RLS posture** — `auth_accounts.password` protected by an invariant test rather
+  than the database. **First-week item** (weakest point in the data layer per the audit).
+- **CSP nonce** — CSP is not currently an XSS backstop.
+- **ENABLE-vs-FORCE asymmetry** on the 16 older user tables.
+- **HSTS verification** not done.
+- **`toggleBookmark` impure updater** — fetch inside a setState updater.
+- **Log sampling on hot events** — no sampling; log volume/cost unbounded.
+
+Promoted OUT of the deferred list and FIXED pre-open (2026-08-31): the **stale-GET race on
+chapter switch** — on re-examination it was not display-wrong data but a misdirected DELETE
+that silently destroys a real annotation (fix + regression test in
+`web/src/lib/use-annotation-writes.ts` / `web/test/invariants/annotation-stale-chapter-load.test.tsx`).
+
+New findings from the 2026-08-31 pre-open pass itself, filed here:
+
+- **Persisted `span` in historical research rows (data at rest) — DOWNGRADED.** The fallback
+  strip (item 1 of the pre-open pass) stops NEW writes, and on independent check the old
+  rows are unreachable from the app: nothing renders violations from research history and
+  `app_runtime` holds no SELECT on `ask_outcomes`. Scrub whenever convenient; not a launch
+  issue.
+- **`deploy.sh` `get_root_directory` maps any non-project JSON to `'null'`.** With an expired
+  Vercel token the API returns an error body; `get_root_directory` reads it as `rootDirectory
+  null`, so the flip-proof passes VACUOUSLY and the flip never actually happened. Mitigation
+  until hardened: run `npx vercel whoami` before `deploy.sh` so the CLI refreshes the token
+  (observed 2026-08-31: `auth.json` token expired; `whoami` refreshed it). Hardening =
+  treat error responses as `unknown`, not `null`.
+- **A test that could not fail, guarding the upload budget (FIXED 2026-08-31).** The
+  `tsconfig.test.json` type error at `upload-direct-guards.test.ts:161` was TypeScript
+  correctly reporting a broken test: a nested `completeReq(completeReq(...) as never)` meant
+  the route was never invoked and the assertion passed unconditionally — and the request
+  never reached the limiter anyway (non-UUID pathname rejected pre-limiter). The
+  bucket-independence guarantee (every upload burns one of each budget, not two) had no
+  working test while the suite reported 6/6. Fixed with per-limiter call counters and
+  red-proved (shared bucket → "expected 2 to be 1"). Remaining risk class: other `as never`
+  casts in the suite may hide similar can't-fail assertions — one false-confidence-audit
+  pass in week one.
+
+## 16. Item 12 addendum — the `rootDirectory` flip, further documented (2026-08-31)
+
+Still unruled, but the mechanism is now better understood: the flip/restore reads the RAW
+`token` field from the CLI's `auth.json`, which expires independently of the CLI (the CLI
+auto-refreshes via `refreshToken`; the raw field goes stale). A stale token silently turns
+every flip/restore into a 403 swallowed by `|| true`. The H-2 GET-before/after assertions
+catch a failed restore only when the token is valid. See the `get_root_directory` finding
+above. This strengthens the case for ruling item 12.
 
 ---
 

@@ -1,5 +1,614 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — Sidebar C, four UX sweeps merged, and main's hidden red — LIVE `d323fff3` (`dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a`, 04:47Z); PR #235 to main waits on the owner
+
+**Owner, in session (2026-09-07):** on the build menu (`docs/pm/orders/2026-09-07-build-menu.md`):
+"#1 do it · #2 do it · #5 fix it · #6 knock that out"; "#3 / #4 i don't understand" (My Works editing;
+My Works testing) — explained in chat, NOT started. Earlier the same session: "Push back if you
+think I'm wrong" on the sidebar note, and "no idea what this means" on a build-log line — recorded
+as a working preference (translate tooling into product meaning or leave it out).
+
+**Branch `redesign/ask`** (base: live `d6e85f3`; PR #235 to main). Sequence, each commit pushed:
+
+* **`main` was red on `db-invariants` for fifteen days and nobody could see it** (`4b3efc9`). Two
+  round-trip suites mocked `@/lib/session` by hand; D43 (`c11bc84`, 2026-08-23) gave 19 routes a
+  third import, `authFailureResponse`. Reproduced locally against dev (2 failed / 25 passed, the CI
+  error verbatim); sixteen more mocks were waiting, not passing. All eighteen now spread the real
+  module; `test/invariants/session-mock-surface.test.ts` holds the rule as SHAPE and was red-proved
+  (3 → 4 on reverting one file). Its first regex failed two already-correct files; fixed the check,
+  not the files. Why invisible: the `audit` workflow runs on branches and PRs, never on pushes to
+  `main`.
+* **Sidebar C — ADR-122** (`bdb4f8ee`, fix `cec3d1fa`). Five places; Research history / My studies /
+  Prayer journal / My Works / Reading plans as groups capped at three, closed = one row, the page's
+  own group opens itself (not remembered), hand-opened groups remembered per user, library shelves
+  fold behind Library, signed-out keeps plans + journal as rows, groups fetch lazily on open. One
+  table each for places and groups feeds the rail, the icon rail and the mobile sheet. Red first
+  (`sidebar-groups.test.tsx`, 10/11 red on the old rail). Two re-points recorded before editing and
+  red-proved after (`docs/evidence/sidebar-c-2026-09-07/`). Deviations from the mockup with reasons
+  in `findings.md` (no closed-row counts; research unfolds in place; prayer rows plain, dated).
+  **A slip:** `bdb4f8ee` carried a type error (`href` after the literal-href edit) because the last
+  edit came after the clean typecheck and vitest does not typecheck — caught by the post-merge
+  typecheck, fixed in `cec3d1fa`. Lesson applied below: typecheck is the LAST thing before commit.
+* **Four sweeps, each in its own worktree, red-first, merged** (`589c582b`, `45248837`, `23557749`,
+  `d0a0ccd6`): small batch (`fix/ux-small-batch`: Stop now stops the SPEND — `req.signal` through
+  `teach()` to the DeepInfra call; `/search` loading; `/studies` signed-out state; four small lies;
+  Daily Office fetch bounded at 15s); error voice + skeleton (`fix/ux-error-voice`: no status codes
+  or vendor strings reach the DOM; a shared `skeleton.tsx` on 11 waits); notes remove + `/home`
+  (`fix/ux-notes-and-home`: per-row two-step remove on `/library/notes`; `/home` was fetching the
+  WHOLE YEAR of two devotionals — 2.24 MB — to show one morning: day-sharded to ~6 KB, 367×, plus
+  `Cache-Control` on `/commentaries`); a11y + targets (`fix/ux-a11y-targets`: four dialogs get
+  `useDialog` semantics, a real StrictMode bug in `useDialog`'s focus-restore fixed, 21 targets to
+  44px, a nav "Request access" CTA — Chrome-verified at 375/1280 by that sweep). Two conflicts
+  resolved by keeping both sides (`today-view.tsx`: day URL inside the bounded fetch;
+  `save-to-study.tsx`: two imports). Two agent test files failed the web/test typecheck the agents'
+  `tsc -p .` does not cover — fixed (`1f30752c`).
+
+**Verification** (`docs/evidence/ux-batch-2026-09-07/`).
+* `npm run audit` ×3 on the merged tree: run 1 (started pre-a11y merge) red on ONE leg — the
+  web/test typecheck, the two agent test files above — every other gate green; run 2 (a11y merged,
+  before the test fix) same single red leg, and every test suite green with no DB flake (331 files /
+  2,065 tests + 92 / 1,069 + 2 / 30); **run 3 on the final tree `1f30752c`: AUDIT PASSED — all gates
+  green** (`audit-run-3.log`): both typechecks, both lints, knip, deps advisory (512 prod packages,
+  none un-ignored), tests + coverage, Layer-1 invariants + regressions, hygiene, the deploy.sh
+  harness, Gate B licensing.
+* Whole-suite run on the Sidebar C tree before the merges: green bar `licensing.test.ts`'s
+  legal-pool leg timing out under load, which passes alone (8.9s) — the flake recorded 2026-09-06
+  (`docs/evidence/sidebar-c-2026-09-07/unit-run-summary.log`).
+* Deep audit, four lenses in one batch (attack surface + AI pipeline · client + a11y · data/ops/
+  deploy/docs · tests-as-evidence): **no CRITICAL; four HIGH, all on surfaces the sweeps had just
+  touched** — a throttled sign-in reported as a wrong password (the line the error-voice sweep
+  rewrote), five bare `rounded` on the search skeleton, a status code in a file that sweep opened, and
+  a `/*` inside a line comment that made my own mock guard skip a file. Twenty-four items fixed before
+  deploy, the rest filed — `docs/evidence/ux-batch-2026-09-07/deep-audit.md`. The guard's own
+  fix was red-proved by reverting its stripper (`red-proof-guard-stripper.log`: 21 files found
+  against 22 that carry the mock → red; restored → 24/24).
+* `audit-run-4.log` on the fix commit `25ec4479`: **RED on 11 desk tests** — one of the deep-audit
+  fixes over-generalised. Making every `TextSkeleton` a `role="status"` region meant a loading
+  desk pane collided with the pane-cap notice, which three desk suites assert is the desk's ONLY
+  status role (A078). The audit was right about the three sites that had `<p role="status">` on
+  live and wrong to make it the default; `announce` is now opt-in and those three pass it.
+  **`audit-run-5.log` on the final tree `14872048`: AUDIT PASSED — all gates green** (331 files /
+  2,067 tests in the Layer-1 leg, 92 / 1,069 unit, 2 / 30 root; both typechecks, both lints, knip,
+  deps, hygiene, the deploy.sh harness, Gate B). The residue generator, fixed, left nothing behind.
+  CI on `25ec4479` had gone red on the same eleven desk tests the local run caught (33 hits of the
+  same error), which is the local gate and CI agreeing.
+
+* **Deploy — live, verified by the script AND independently.** `deploy.sh` exit 0 from this
+  worktree at `d323fff3` (docs-only atop the gate-green `14872048`); every gate passed, the CLI's
+  READY poll returned this time, and the script's identity check found `ancientpaths.app` served
+  by `dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a` — receipt `state: live`
+  (`docs/evidence/deploys/deploy-d323fff-2026-09-07T04-41-54Z.txt`). Independent probe outside the
+  gate: the served stylesheet carries `.rail-rule` and `.reader-dark .rail-rule`, a class that
+  exists in no file at the prior live `d6e85f3`. CI green on both jobs at `d323fff3` before the
+  deploy (`db-invariants` green for the second run in a row since the mock fix). **`main` NOT
+  updated:** the fast-forward push (`git push origin HEAD:main`) was refused by the agent session's
+  permission policy on the default branch. PR #235 is CI-green, 0 behind and fast-forwardable; the
+  merge-to-main gap every board header since 2026-08-18 has recorded closes with one owner click.
+  The 35 `detail/*` PRs (the second half of "#2") are sequenced behind that: they need main to
+  carry the deploy-harness and session-mock fixes before their CI can go green; the rebase-and-
+  land script is written (`land-detail-prs.sh`, in the session scratchpad — to be filed under
+  `scripts/` when it runs) and NOT run.
+
+**NOT DONE / UNVERIFIED.**
+* Live signed-in walks: the sidebar's groups and the /ask redesign — owner-only sign-in; composites
+  of the real component with the real CSS stand in (labelled). A live tap in the mobile Menu sheet —
+  the Browser pane took screenshots but timed out on every click while hidden; Playwright is not a
+  package here.
+* The browser legs of the small-batch, error-voice and notes-and-home UI changes at 390/desktop:
+  those sweeps ran jsdom + typecheck only (their worktrees had no env / corpus). The a11y sweep did
+  its own Chrome pass.
+* "#2" second half — the 35 `detail/*` PRs — NOT started; sequenced after main is updated.
+* "#3" My Works editing and "#4" My Works testing — NOT started (owner asked what they mean).
+* `req.signal` abort under the real Vercel runtime is asserted by tests, not measured live.
+
+## 2026-09-06 — /ask redesign (field-first) + results open the book at the quoted section, with a way back — LIVE `d6e85f3` (`dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ`, READY 2026-09-07T02:33Z)
+
+**Owner, in session:** "too busy… a bit of a mess"; "when something is running it's not discernible";
+results must open "into the EXACT spot" with a clear way back; then, over three composer treatments
+explained in plain terms, **"ok go with #3 for me"**, and **"fix and deploy them now live in prod."**
+Rulings and their amendments are in **ADR-121** (`docs/DECISIONS.md`); the design canvas is
+https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1.
+
+**Base.** `fix/q1-signed-out-state` (this repo's checkout) was 197 commits behind `origin/main` and
+what is live is `602bd9e` on `fix/ux-overnight-sweep`, 20 ahead of main. Worktree `redesign/ask` =
+union of `origin/fix/ux-overnight-sweep` and `origin/main` (`39d2b85`), so the deploy contains both
+what is live and main (deploy.sh's ancestry gate holds). Main's own F24 attempt (the reader ignoring a
+`#s<n>` that arrives after mount) failed F24's red-proof test; the fix was ported onto main's page.
+
+**What shipped (24 files changed, 857+/1046−, plus 26 new).**
+* `/ask`: `ask-client.tsx` (1,130 lines) split into `ask-types` · `ask-empty-state` · `ask-composer`
+  · `ask-scope-row` · `ask-progress` · `ask-answer`, re-exporting `InitialThread` and
+  `SLOW_ANSWER_NOTICE_MS`. Field-first composer: the box holds only the question and a hairline Ask;
+  the search scope is one quiet line under the box, travelling with the sticky form. Header two lines;
+  "Currently answering from the Gospels" retired (false; 65 books). History invitation as a hairline
+  row. The page frame (viewport `min-h`) moved to `app/ask/page.tsx` + `[id]/page.tsx` so the mode
+  toggle is inside the measure — the 50px overhang that put the composer over the first screen is
+  gone. Running: a `.progress-travel` bar under the question and along the box edge, active step in
+  ink, a real Stop (AbortController; 300ms double-click guard). 429/503: the envelope message + "Try
+  again in about …", retry disabled until then, clamped ≤ 86 400 s. Scroll once per appended turn.
+  Dead `small-caps` class on attributions → `[font-variant:all-small-caps]`. `mode-toggle.tsx`: two
+  words, no box.
+* Results → `/work/<slug>?from=ask:<threadId>&fq=<question>#s<ordinal>`. `lib/source-ordinal.ts`
+  parses register ids; `lib/work.ts` `locateSections` resolves classic commentary rows in ONE
+  `unnest … WITH ORDINALITY` statement over `section_anchors` (cap 200, `status='published'`);
+  `lib/teacher/section-locate.ts` writes one metadata field, never reorders, never rejects;
+  `teach.ts` awaits it only where the rows ship. `history-context-bar.tsx` handles `from=ask:`,
+  dismisses per thread, and is `sticky bottom-0` (in flow at the top it left the viewport on landing,
+  y = −168px measured). `thread-restore.tsx` heals Back from the reader (Next 16 copies the current
+  route tree onto a `replaceState`'d entry). Reader's Continue chip lifts over the strip on mobile.
+* Also: `fast-uri` override 3.1.5 → 3.1.7 (four HIGH advisories the audit gate flagged — pre-existing
+  on live); `scripts/adr029-nonauthorial-scan.mts` typecheck fix (pre-existing red on live).
+
+**Verification.**
+* Red first: `docs/evidence/ask-redesign-2026-09-06/red-run.log` — 10 failures across 7 files on the
+  unchanged code; the plumbing tests' red output is transcribed in `findings.md`. Three source-reading
+  tests re-pointed to the split files, documented BEFORE the edits (findings.md) and red-proofed after
+  (`red-proof-repoints.log`) — one of them was found satisfiable by a comment and TIGHTENED.
+* `npm run audit`: `audit-run.log` red on 4 legs (2 pre-existing on live, 2 DB-timeout flakes under
+  load that pass alone); `audit-run-2.log` **AUDIT PASSED — all gates green**; `audit-run-3.log`, on
+  the final tree after the deep-audit hardening, is green on every gate except the SAME two DB
+  tests timing out under full-suite load (`licensing` legal-pool 30s, `draft-check` 5s) —
+  `audit-run-3-flaky-rerun.log` runs both alone on the same tree: 10/10, 9.4s and 4.1s. Recorded as
+  an environmental flake (the dev branch under coverage + `tradition-gap`'s 97s), not a code gate;
+  the targeted run of every touched suite on the final tree is 33 files / 138 tests green, both
+  typechecks and lint clean.
+* Deep audit (6 lenses, one batch, read-only): **no CRITICAL/HIGH code defect**; 12 code findings
+  fixed before deploy, the rest filed — `deep-audit.md`.
+* Browser, this branch's dev server, 1440 and 390: reader lands on the exact section with the gold
+  marker, the strip reads `← Back to “faith & works”` and links the thread, strip clear of the tab bar
+  (strip bottom 772, tab bar top 791 at 390), no horizontal overflow; history mode's unboxed toggle;
+  the gate page. PNGs in the evidence dir. Console: only the pane's `eval`/HMR notices.
+* Production preflight read (bylaw 7): `scripts/predeploy-gate.ts` at `DEPLOYING=1` does one
+  `information_schema` SELECT on production with `PREDEPLOY_DB_URL` from `~/.neon_prod_url` — under
+  the owner's "deploy them now live in prod".
+* **Deploy — live, verified by hand.** `deploy.sh` exited 1: every gate passed, the upload and remote
+  build succeeded ("Build Completed", READY at 02:33:30Z), and then `vercel --prod`'s READY poll hung
+  and died with `read ETIMEDOUT` — 22 minutes after READY. pipefail turned that into exit 1 at
+  `deploy.sh:504`, so the script's own identity check (`:539–567`) never ran and the receipt said
+  "upload started, outcome unknown". Resolved from the Vercel API and the alias: deployment
+  `dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ` is READY, carries `meta.sha d6e85f3…` / `meta.branch
+  redesign/ask`, and lists `ancientpaths.app` among its aliases; `vercel inspect ancientpaths.app`
+  returns the same id (the script's "live" criterion, met by hand); errors-only build log is one
+  line; the served CSS outside the gate carries `underline-offset-[6px]`, which exists in no file at
+  `602bd9e` and only in the restyled `mode-toggle.tsx` here — a fingerprint of this change set (the
+  other classes I probed pre-exist and prove nothing). Receipt rewritten with the
+  evidence: `docs/evidence/deploys/deploy-d6e85f3-2026-09-07T02-28-24Z.txt`. Previous live
+  `dpl_23XTyox8H3YN56A4w8t22LiGLwwb` @ `602bd9e`; rollback = promote it.
+  *Recommendation (not done — untested deploy.sh changes do not ship at 03:00):* the identity check
+  is independent of the CLI's poll, so a non-zero `vercel --prod` after upload should fall through
+  to it instead of aborting — `… | tee "$DEPLOY_LOG" || echo "⚠ vercel exited non-zero; verifying
+  anyway"` at `:504`, with a harness red-proof. Today the script's honest "unverified / exit 2" path
+  exists and was skipped by its own `set -e`.
+* The remote build log carries a Next warning — "Package pdfjs-dist can't be external … require()
+  resolves to a EcmaScript module" — also present in the local build of this tree (nothing here
+  touches pdfjs-dist; whether earlier builds show it was not checked). The build compiled after it.
+
+**NOT DONE / UNVERIFIED.**
+* **The signed-in `/ask` walk** (empty state, running with bar + Stop, an answer, clicking a result) was
+  exercised in jsdom only. The teacher is owner-only (ADR-116) and no owner session was on the
+  Browser pane; I do not enter credentials. **This is the DoD's real-interaction leg and it is owed** —
+  the owner walking it on production (or signing in on the pane) closes it.
+* Back-from-reader → populated thread was proven against a mocked router only; walk it once live.
+* CI has not run on this branch before the deploy (pushed alongside).
+* The sidebar direction (A top bar / B contextual rail) is undecided; nothing built.
+* Filed (UX_REMEDIATION §Backlog 2026-09-06): Stop stops waiting only (`req.signal` → `teach()`);
+  desk-pane ordinal; old threads re-locate on every open; DB test outside CI globs; the flip
+  toolchain test writing residue into tracked evidence; dead `small-caps` elsewhere; `SLOW_ANSWER_NOTICE_MS`.
+
+## 2026-09-07 — Track A: ADR-029 discharged; publish runbook amended twice [Kimi Code session]
+
+Executed Track A of `KIMI_ORDER_corpus-coverage.md` (Claude's order; my review of it is in
+chat + the runbook amendments). Also corrected a live hazard in MY OWN deliverable the
+order exposed.
+
+**Runbook amendments (`60c26f8` + follow-up).** Review of the order verified two standing
+preconditions verbatim that `3d09cba` missed: (1) P4.n — the 440 prod-staged works are HELD
+by a measured accuracy verdict ("Sermon and theology should NOT flip on this evidence… if
+they are ever ruled to flip"; two bars on the floor, epistle HIT@1 68→48, two correct
+answers destroyed), so flips need an owner ruling + accuracy re-measurement, not a batch;
+(2) ADR-029 rule 3 — no CCEL work publishes without the composite-boundary check.
+`origen-commentary` (the ADR-029 case itself) was removed from the slug files (439 union).
+Also owned: my waves 1–2 CCEL ingests proceeded without the addendum's adapter-boundary
+repair — staged-only, no user-facing harm, but the precondition was missed.
+
+**Track A delivered (`ce3df1b`).** Detector extended (word-index-title, publisher
+catalogue/price-list/blurb, head-and-tail sweep with author-aware foreign-work banners) —
+red-proved (14 labelled cases red→green, 30 must-NOT-fire green throughout); labelled bar
+pre-registered, sensitivity 11/11, specificity 3/3. Frozen 133-work dev-staged scan:
+**90 PASS / 43 FAIL** — 15 live machine word-indexes, 5 foreign-work composites (origen
+§1/§101 confirmed LIVE; schaff-anf06/07/08 carry bound-in fathers — candidates for
+origen-style re-slice, owner call), rest carried-in title/apparatus pages. Durable repair:
+`attributionBoundaryHold` in adapter-ccel — strong findings hold the work AT ACQUIRE TIME,
+before any write, no ordinal surgery; red-proved 5/5. Root suite 1069 green.
+Track C is thereby unblocked for CCEL sources per the order.
+
+**Runbook precondition 2 is now marked SATISFIED for the dev-staged set** with the verdict
+path; the 439 prod-staged works still need the same scanner pointed at prod (owner
+terminal, read-only command recorded in the runbook). No flip may include a verdict-FAIL
+work; several wave works are held (schaff-anf06/07/08, schaff-npnf111/112/114,
+bennett-expositor10, tolstoy-maupassant — full list in verdict.md).
+
+**NOT DONE / UNVERIFIED:**
+- Gutenberg adapter has no attribution boundary yet (addendum 2 says the class generalizes;
+  tennyson/traherne were Gutenberg).
+- The 43 held works stay staged with reasons; re-slice/suppression decisions are owner calls.
+- Translations deploy still blocked on the D3 corpus-store token (owner, ~2 min).
+- Track B (tradition backfill + coverage tables) and Track C (capped acquisition wave) from
+  the order remain unexecuted; Track D is superseded (translations already executed).
+
+## 2026-09-06 — Acquisitions executed; translations deploy BLOCKED on the D3 corpus-store token [Kimi Code session]
+
+Owner directives executed: "english only forget latin" · "do the acquisitions and push to
+prod" · "go ahead on the owner batch."
+
+**English Institutes — the hole was a phantom.** `calvin-institutes` (Beveridge 1845) was
+already ingested AND published on prod (3,448 sections / 3,448 flat embeddings, re-measured);
+the manifest merely carried two WRONG entries (`calvin-institutio1/2` = Latin page-scans).
+Both deleted per the owner ruling (`f26b696`). The corpus had the Institutes all along.
+
+**Menno Simons — already staged on prod** (works1: 75 sections/1,078 emb; works2: 87/1,626;
+copied dev→prod 2026-08-19). They sit in the 440-work publish backlog. No ingest needed.
+
+**Luther Holman/Philadelphia ed. — vols I–II staged on dev** (`f26b696`; 8 treatises each,
+575 + 770 flat embeddings; scoped gutenberg profiles with editor-introduction exclusion,
+14/14 profile tests red-proofed). **Vols 3–5 do not exist on Gutenberg** (gutendex sweep,
+76 Luther entries) — they're an archive.org OCR-lane acquisition, not forced.
+
+**Owner publish batch — fully prepped** (`3d09cba`): runbook
+`docs/pm/orders/2026-09-06-owner-publish-batch.md` + slug files
+(`docs/evidence/corpus-copy/dev58-2026-09-06.json`, `prod440-2026-09-06-batch{1..5}.json`),
+reconciled exactly (58 dev-staged / 440 prod-staged minus hort ruling + thayers block).
+Flips are `--status-only` + `serve-batched` (measured: in-transaction serve would lock
+`sources` for 2–4 h; three historical runs died mid-flight). foxe-martyrs needs a
+`history_embeddings` backfill + serve after the batch to be /ask-retrievable.
+
+**Translations deploy — BLOCKED on D3, one owner action.** weymouth/twenty/jps are committed
+(`9b4cb08`), qa green. The CDN sync stopped correctly twice on the store-binding guard:
+the Vercel project env token binds the PRIVATE user-corpus store; `~/.corpus_blob_token`
+holds the ROTATED (dead) corpus token — WORKLOG 2026-08-18 records the owner rotating it
+the same sitting it was used. The live `ancient-paths-corpus` (`mbp8qokd9o4o9qnz`) token is
+owner-held, never on disk. **Owner action (≈2 min):** Vercel dashboard → Storage →
+ancient-paths-corpus → either mint a read-write token into `~/.corpus_blob_token`, OR
+connect the store to the `web` project with a NON-DEFAULT env prefix (e.g. `CORPUS` — the
+default would clobber the user-corpus `BLOB_READ_WRITE_TOKEN`). Then the finish is one
+scoped sync (`--prefix bible/{weymouth,twenty,jps}` — deliberately scoped so another
+session's 451-file commentary drift does NOT ride to prod) + `deploy.sh`. Sync manifest
+verified untouched by the failed runs (the guard writes only after success).
+- Also flagged from agent-23's audit: 4 NEW high advisories vs locked `fast-uri@3.1.5`
+  (GHSA-5jgf-p345-68v8, -f65p-4m7j-42xc, -fph4-wmhf-6fwf, -jqff-g426-hqxp; fix ≥3.1.6) —
+  pre-existing lockfile, advisories newer than the last green audit; needs owner
+  adjudication (upgrade or ignoreGhsas + SECURITY.md). Does NOT gate deploy.sh.
+- DRC + Brenton LXX remain blocked on versification (Vulg/LXX→KJV mapping slice needed;
+  shipping keyed-as-KJV would mis-reference text — the correct stop).
+
+## 2026-09-06 — Static bible translations: Weymouth NT + Twentieth Century NT + JPS 1917 added; DRC + Brenton LXX BLOCKED on versification [Kimi Code session]
+
+Workorder: add five PD translations through the STATIC bible pipeline (web/public/bible).
+**3 shipped, 2 stopped with evidence** (integrity over count — the versification gate demands
+KJV v11n structure, and no authoritative mapping matches the DRC Challoner (Vulg) or Brenton
+(LXX) digitizations; hand-mapping risks silently mis-keyed content, the exact failure class
+the gates exist for).
+
+**Shipped (all canon-exact, license-verified BEFORE decode):**
+- `weymouth` — CrossWire SWORD `Weymouth` 1.1 (.conf DistributionLicense: Public Domain,
+  printed at decode; NT-only). New zText decoder `scripts/resourcing/fetch-crosswire-bible.mts`
+  (license gate + KJV-v11n slot-count gate before writing): 260 chapters, 7,957/7,957 NT slots,
+  15 empty = standard critical-text omissions. 39 OT skeleton books (anderson precedent).
+- `twenty` — CrossWire SWORD `Twenty` 2.0 (.conf PD; Versification=KJV). 1,189 chapters,
+  31,102 slots; OT slots empty in the module itself → ships as skeletons. NOT module `TNT`
+  (Tregelles GREEK NT, CC BY-NC-SA — fails commercial-permissive, untouched).
+- `jps` — eBible.org `engjps` (copyright page: Public Domain; faithful 1917 text, "The LORD" —
+  scrollmapper's JPS.json is the altered "HaShem" digitization, REJECTED). eBible pre-mapped
+  MT→English versification; `src/ingest/ingest-ebible-jps.ts` strips the parenthetical
+  original-refs and PROVES canon-exactness (all 39 OT books == repo KJV canon, 23,145 slots)
+  before writing; red-proofed (Brenton USFM through the same proof → 108 diffs, refused).
+  27 NT skeleton books.
+- New: `src/ingest/gen-bible-skeletons.ts` (skeleton writer, never touches real content).
+- License records (`web/src/lib/licensing.ts`) + picker (`web/src/lib/bible.ts` TRANSLATIONS,
+  18 → 21). Versification gate: 21 translations all structurally canonical. Predeploy-gate
+  bible-licensing leg GREEN. Targeted root+web suites green (83 tests).
+
+**BLOCKED (not shipped, no files written):**
+- `drc` (Challoner) — every digitization is Vulgate-versified (CrossWire `DRC`
+  Versification=Vulg; eBible engDRA and scrollmapper DRC.json both Vulg-numbered: 210 chapter
+  diffs vs KJV canon incl. psalter renumbering, Vulgate omissions Matt 17:21/Mrk 9:44,46,
+  Dan 13–14). Copenhagen-Alliance vul.json does NOT match the Challoner psalter (Ps 115/147
+  off by 9–11 verses), so its mapping cannot be applied without mis-keying.
+- `brenton` (LXX 1851) — eBible eng-Brenton (PD verified) is LXX-versified; Copenhagen
+  lxx.json has NO Proverbs mappings (LXX Pro 24=62v reorder), no EST/DAN (ESG/DAG fusion),
+  Ezra=Esdras β (Ezra+Neh fused), Jeremiah reorder; ~30 protocanon chapter mismatches vs its
+  own model. No KJV-versified Brenton exists anywhere.
+- Path forward for both: a dedicated slice building a verified Vulg→KJV / LXX→KJV verse
+  mapping as a reviewable artifact with per-chapter content verification + red-proofs.
+
+**NOT DONE / UNVERIFIED:**
+- Deploy-side: `node scripts/corpus-blob-sync.mjs --execute` MUST run before deploy.sh — the
+  CDN-freshness leg hard-fails otherwise (3,765 new files under bible/{weymouth,twenty,jps};
+  451 more are pre-existing commentary drift from another session, will sync together).
+- DRC + Brenton: awaiting the mapping slice above (or an owner descope).
+- `npm run audit`: typechecks/knip/lints/vitest/deploy-harness/Gate-B all green. THREE red legs,
+  none from this change: (1) eslint flagged MY unused import — fixed, re-run 0 errors; (2) deps-audit:
+  4 NEW high advisories vs locked fast-uri 3.1.5 (GHSA-5jgf-p345-68v8, -f65p-4m7j-42xc,
+  -fph4-wmhf-6fwf, -jqff-g426-hqxp; fix >=3.1.6) — pre-existing lockfile, advisories published after
+  the last green audit; needs owner adjudication (pnpm override or ignoreGhsas + docs/SECURITY.md);
+  (3) qa leg: 2 DB-backed tests timed out under audit-time DB contention ("remaining connection
+  slots are reserved" in the log) — BOTH pass standalone (draft-check 10/10, licensing behavioral
+  6/6, re-run after the eslint fix).
+
+## 2026-09-06 — Finish-ingestion follow-ups: Calvin English Institutes, Menno explained, Luther Holman vols I–II [Kimi Code session]
+
+Three items from the finish-ingestion order (`docs/pm/orders/2026-09-06-finish-ingestion.md`
+"related open items"), under the owner ruling 2026-09-06 "english only, forget latin".
+
+**1. English Institutes.** `calvin-institutio1/2` (Latin page-scans, wrong ids) DELETED from
+the manifest per the owner ruling — 917 → 915 entries. The correct English entry already
+existed: `calvin-institutes` (ccel `calvin/institutes` = Beveridge 1845 translation, single
+id, ThML — verified at ccel.org/ccel/calvin/institutes.html), and is already PUBLISHED on
+both prod and dev: 3,448 sections + 3,448 flat embeddings; sampled body is the Beveridge
+English text. No new entry needed — adding one would have duplicated the work.
+
+**2. Menno Simons — the explanation.** `simon-works1/2` were never absent from prod: they
+were ingested via ccel and copied dev→prod in the 2026-08-19 theology batch
+(`docs/evidence/corpus-copy/corpus-copy-2026-08-19T02-01-47-395Z.json`), and sit on prod
+**staged** today — works1: 75 sections / 1,078 flat embeddings; works2: 87 / 1,626 (prod
+READ-ONLY re-measured 2026-09-06). That is why they were not in the 79-work absent-from-prod
+list. They are absent from dev only because dev is not a completeness mirror (635 prod-only
+works). They await the owner's staged→published batches like the other 441. No ingest needed
+(the order said run them only if absent from BOTH DBs). Note: the earlier probe that
+reported them "absent from both" was a `psql -c` multi-statement artifact (only the last
+statement's output prints).
+
+**3. Luther Philadelphia edition (Holman 1915-16).** Gutenberg carries ONLY vols I (#31604)
+and II (#34904) — vols 3–5 do not exist on gutenberg.org (gutendex author/title sweeps +
+PG site search, 2026-09-06; they would be archive.org OCR acquisitions, a separate lane
+under ADR-110). Declared `luther-works1` / `luther-works2` (gutenberg adapter) with
+scoped-contents PROFILES: each volume prints every treatise as indented CONTENTS line →
+flush part-title → editor INTRODUCTION → translation, and the part-title is sometimes
+byte-identical to the translation heading — so each treatise declares its part-title as a
+`marker` boundary and its translation heading as the section, walked in order; the Holman
+editors' introductions can never serve under Luther's name, and a missing declared piece
+aborts as structure drift. Red-proofed: test written first → 14/14 failed (profiles
+undefined); profiles added → 14/14 green. Real-text dry run: exactly the 8 declared
+treatises per volume, no editor-matter leaks. Ingested on dev via the loop: **luther-works1
+staged 8 sections / 575 flat embeddings; luther-works2 staged 8 sections / 770 flat
+embeddings**, 0 quarantined (digest `docs/evidence/ingest-runs/digest-2026-09-06T23-47-55-568Z.md`),
+independently re-measured on dev READ-ONLY. Root suite 1046 green.
+
+**NOT DONE / UNVERIFIED:**
+- Luther vols 3–5: not on Gutenberg; need archive.org sourcing (own slice, ADR-110 machinery).
+- Dev→prod copy + publish of luther-works1/2 — OWNER TTY tools, with the rest of the queue.
+
+## 2026-09-06 — The 61 leftovers: ALL in end states (waves 2+3) [Kimi Code session]
+
+Continuation of the finish-ingestion order (`docs/pm/orders/2026-09-06-finish-ingestion.md`).
+Full root-cause diagnosis first (`/tmp/ap-triage-plan.json`, every work classified with
+evidence), then execution by class:
+
+**Wave 2 — one general fix unlocks 39 (`e5a8a4b`).** The parser was fine; MIN_UNITS=3 was
+wrong for real-text short works. New per-work `acquire.min_units` profile threaded through
+`chooseUnitSelector` and the final gate, plus `matter_allow` for heading overrides.
+Red-proofed (revert → 2 fail, restore → 6/6); root suite 1026 green. **39/39 staged, 0
+quarantined** (loop paused once at the 30-work digest breaker — by design). Includes
+kronstadt-christlife (1.39M chars in 2 units), 4 Charnock discourses, law×3, luther×4,
+donne×3. Two content traps caught and fixed: luther-prefacetoromans was about to ingest
+only a 586-char translator's note (MATTER_RE dropped the actual preface); clarke-entire-sanct
+carried a 14.5k-char CCEL staff bio (excluded via heading_filter). Three genuinely tiny
+works (pascal-memorial 3.6k, cranmer-doctrine 4.7k, donne-spital 5.9k chars) were ingested
+per the triage plan but flagged in the digest as **owner value calls** — one-line staged
+deletes if ruled out.
+
+**Wave 3 — the two specials (`9f936a5`).** newman-apologia: CCEL edition is page-scans;
+switched to Gutenberg #22088 with a scoped-contents profile (5 chapters, fail-closed on
+structure drift) → staged, 5 sections / 500 flat embeddings. foxe-martyrs: CCEL edition is
+the Forbush ABRIDGMENT in plain HTML (not ThML); scratch-crawled 23 pages → 155 heading-tree
+nodes → historian head → **1,334 sections staged, 1,334/1334 section_embeddings, 586
+gazetteer entity anchors**, edition label explicitly says ABRIDGMENT (order mandate).
+Red-proofed profile tests; root suite 1032 green.
+
+**Owner-skip roster (20, recorded in `docs/evidence/ingest-runs/topup-wave2-digest-2026-09-06.md`):**
+- 3 TOC-shell duplicates, PROD-VERIFIED before skipping: calvin-commentaries (all 45
+  calcom01–45 on prod, 1,790 sections), henry-mhc (mhc1–6, 1,189), macdonald-unspoken
+  (unspoken1–3, 36). "Follow first-id links" would have made ~1,000 duplicate sections —
+  not built, deliberately.
+- 15 page-scan-only (cyril×2, charles-otpseudepig, hastings×6, calvin-institutio1/2 — LATIN
+  scans, wrong id entirely, scrivener×2, hoskier-codexb2, spurgeon-treasury) — need
+  archive.org alt sources or correct ids; spurgeon-treasury pending owner alt-source ruling.
+- vincent-word-studies (does not exist on CCEL under any id), hodge-theology4 (index volume).
+
+**Score: 61/61 accounted for** — 41 staged on dev (39 wave-2 + newman + foxe), 20 escalated
+with per-work reasons and remedies. Session total across all waves: 58 works staged.
+
+**Follow-ups discovered:**
+- **calvin-institutio1/2 are Latin scans — the manifest ids are simply wrong.** The English
+  Institutes exists on CCEL under a different id (`calvin/institutes`). A Reformed-leaning
+  corpus is missing the Institutes entirely; adding the correct id is a new-acquisition
+  item, now top of that queue.
+- register-writer delete-order gap: re-ingest of sections-plane works fails on
+  `section_history_anchors_section_id_fkey` (schaff-npnf201 escalation, wave 1). Small fix
+  for whoever next touches register-writer.
+- Dev staging queue awaiting OWNER dev→prod copy + publish: this session's 58 works + the
+  441 already staged on prod. The digest batches are piling up — owner batch overdue.
+
+## 2026-09-06 — "Finish the ingestion": census, counter fix, top-up wave 1 [Kimi Code session]
+
+**Order:** `docs/pm/orders/2026-09-06-finish-ingestion.md` (owner directive recorded per
+bylaw 1). Worktree: `~/Projects/ap-ingest` (`/tmp/ap-kimi-launch` was reaped by macOS —
+second time; worktrees live under `~/Projects` from now on).
+
+**Census (READ ONLY, dev + prod, 2026-09-06).** Manifest 917; prod 838 sources = 394
+published / 441 staged / 3 quarantined; absent-from-prod = 80 (79 CCEL + manifest-quarantined
+geneva-notes). Dev is NOT a completeness mirror (635 prod-only works). Prior backlog numbers
+("800/890 complete", "713 absent") were artifacts: the loop counter queried the wrong table
+and different docs measured different databases.
+
+**Counter fixed (`7358e36`, LAUNCH_BLOCKERS #14).** `ingestState` now counts both embedding
+planes; red-proofed both directions; 8/8 new tests; root suite 1020 green.
+
+**The 46,831-vector alarm defused (measured).** All 228 published works lacking
+`section_embeddings` are fully served via flat `embeddings` (296,132 rows, all served=true,
+same model the app embeds with); NO serving path in `web/src` reads `section_embeddings`
+(it only feeds history_embeddings backfills; no history-lane work is in the gap). Live
+probes through the app's own pool SQL surface Spurgeon/Schaff-ANF fine; TCR serves via FTS
+by design. Backfill targets for serving: 0 — optional hygiene, owner cost call.
+
+**Top-up wave 1 (dev, staged).** Probed all 79 READ-ONLY: 18 parse-clean, 60
+empty (33 structure-unrecognized, 25 under MIN_UNITS, 1 page-scan, 1 enumeration-empty),
+1 excluded (foxe-martyrs = historian head). Ran the loop on dev for the 18 (owner URL from
+`~/.neon_dev_owner_url` — `app_runtime` is SELECT-only, runbook note added): **17 staged,
+0 quarantined, 21,544 flat embeddings**, no breaker trips; evidence
+`docs/evidence/ingest-runs/topup-dev-2026-09-06.log`. One escalation:
+`schaff-npnf201` — deleteWork violates `section_history_anchors_section_id_fkey`
+(register-writer delete-order gap; its prior sections-plane ingest is intact).
+
+**Leftover triage (61):** 1 page-scan (newman-apologia → archive.org alt), 1
+enumeration-empty (vincent → explicit ccel_ids profile), foxe-martyrs → historian head
+(abridged-edition label), 25 tiny tracts (adapter-profile or owner-skip), 33
+structure-unrecognized — high-value inspect-first subset: calvin-institutio1/2,
+calvin-commentaries, henry-mhc, spurgeon-treasury, hastings×6. Partition:
+`/tmp/ap-topup-partition.json`; triage table in the session report.
+
+**NOT DONE / UNVERIFIED:**
+- Dev→prod copy + publish of the 17 (and the 441 already staged on prod) — OWNER TTY tools.
+- High-value adapter profiles, foxe historian head, new gap acquisitions (translations,
+  Catena Aurea, Luther Philadelphia, Menno) — queued, see the order file.
+- thayers-lexicon publish still gate-blocked on `docs/evidence/thayers-source-verification.md`
+  (the gate is working; something keeps auto-attempting the flip and STOPping — worth finding
+  what schedules those attempts; latest 2026-09-06T19:56Z).
+- `hort-james1909` status contradiction (manifest-quarantined + serve:false + staged on prod)
+  needs an owner ruling, not a flip.
+
+## 2026-08-31 — Follow-up: a test that could not fail, guarding the upload budget
+
+Independent review of the overnight pass (Claude Code session) caught that the
+`tsconfig.test.json` type error at `upload-direct-guards.test.ts:161` was not a type
+nuisance — TypeScript was correctly reporting a broken test. The bucket-independence test
+called `completeReq(completeReq(...) as never)` — the route handler was never invoked;
+`completeRes` was a Request, `.status` was `undefined`, and
+`expect(undefined).not.toBe(429)` passed unconditionally. The `as never` silenced the
+checker instead of being read. Worse, once unwrapped, the request used a non-UUID pathname
+(`doc-1`), which the route's ownership regex rejects BEFORE the limiter — so even a
+correctly-written call would have passed without reaching the thing under test. This was
+the assertion for "corpus-upload and corpus-complete increment independently" — the guard
+against every upload burning two of the budget — reporting 6/6 green while testing nothing.
+
+Fix: unwrap the call (real Response), use a UUID pathname, and make the mocks count calls
+per limiter function — bucket independence is now proven by `uploadLimitCalls = 1` /
+`completeLimitCalls = 1`, which a shared bucket reads as 2/0. Red-proved exactly as
+specified: pointed the complete route at `checkCorpusUploadRateLimit`, watched the test go
+red with "expected 2 to be 1" (and the 429-cleanup test red alongside it), restored the
+route (git diff empty). 6/6 green; `tsc -p tsconfig.test.json` clean — `npm run audit`'s
+typecheck leg is unblocked.
+
+Note for week one: `as never` appears across the suite mostly as legitimate Request/route
+signature casts, but this instance proves the pattern can hide a can't-fail assertion.
+Worth one false-confidence-audit pass over the test suites (this one was written across
+the same rushed passes as the rest of the upload work).
+
+Also amended below: the bait fallback-rate line now states the corpus confound with its
+evidence (33 retries in 2026-08-15 vs 51 last night) instead of asserting verifier
+strictness as fact.
+
+## 2026-08-31 — Pre-open pass: five launch fixes live (`602bd9e`), bait n=100 [Kimi Code session]
+
+**Authorization:** owner's blanket go for the full pre-open sequence, handed over from the
+Claude Code session with the itemized plan (strip-span · bait · envInt · public-read ceilings ·
+deploy.sh red-proofs; stale-GET race promoted in during handover review). Work done in worktree
+`/tmp/ap-kimi-launch` on `fix/ux-overnight-sweep` (the old `/tmp/ap-uxsweep` worktree had been
+reaped; branch state came from origin).
+
+**Item 1 — fallback no longer ships model text** (`f23202f`). `teach.ts` maps fallback
+violations to `{ check, message }` at the response boundary (same bounds as `recordRejection`,
+`span` dropped entirely — it is the model's rejected quote / a regex match against model
+output). Client type already declared exactly this shape; `meta.rejections` keeps its bounded
+server-only copy. Test drives real `teach()` with a canary in the rejected quote; red-proofed
+(canary shipped pre-fix).
+
+**Stale-GET race — promoted from deferred and fixed** (`a5255e6`). Re-examination during
+handover review showed it was not display-wrong data: a late old-chapter GET paints phantom
+highlights keyed by verse number, `verseId()` encodes from the CURRENT chapter, so clearing a
+phantom DELETEs a real annotation in the chapter the reader moved to. AbortController on the
+chapter-load GET; regression test drives the real hook through the exact race. Red-proof
+caught the misdirected DELETE in the act (`verseId 43004005` = ch.4 v.5).
+
+**Items 3+4 — limiter hardening** (`ab13bf4`). `envInt()` fail-loud guard on all 18 limiter
+env vars (unset→fallback; set-but-not-decimal-digits→throw at module load; hex/exponent forms
+rejected — a wrong limit passing the guard is the same silent failure). `checkGateRateLimit`
+gains `perHour` (default 60 preserved for gate/waitlist callers), completing the 2026-08-02
+H3 loosening: public reads now 120/min AND 600/hr (`PUBLIC_READ_LIMIT_PER_HOUR`). Both
+public-read throttles (API + SSR search page) bump `search:global:day`
+(`PUBLIC_READ_GLOBAL_PER_DAY`, default 20,000) mirroring `ask:global:day`, same fail-open
+posture, logging `rate_limit_hit` with `cap: 'global'` (the field the owner alert watches)
+and `rate_limit_fail_open` on fault. Daily trips return `RATE_LIMIT_DAY`, matching ask.
+
+**Item 6 — deploy.sh trap fixes independently red-proved** (`5819749`). 6a structural:
+executes the SUT's real trap lines through bash replace-not-chain semantics, asserts the
+EFFECTIVE trap names both `write_receipt` and `restore_root_directory`. 6b behavioural:
+shimmed npx fails the deploy after `UPLOAD_STARTED=1`; one run asserts receipt written AND
+restore PATCH (`"rootDirectory": "web"`) strictly after the flip. Both red-proofed against
+the verbatim H-1 shape and the split-trap shape. **Live hazard found and fixed in the same
+pass:** the harness's fake curl was on PATH for one case only — cases 11–18 ran deploy.sh's
+flip/restore against the REAL Vercel API on credentialed machines (real PATCH attempts
+observed during review, 403'd only because the token had expired). Fake curl now leads PATH
+for all cases with a dummy-token HOME; `audit.sh`'s "no network, no credentials" claim is
+now true. Harness 69/69. deploy.sh itself unchanged.
+
+**Vercel token finding (affects every deploy).** deploy.sh reads the RAW `token` field from
+the CLI's `auth.json`, which expires independently of the CLI (the CLI auto-refreshes via
+`refreshToken`). With a stale token every flip/restore 403s silently into `|| true`, and
+`get_root_directory` maps the error JSON to `'null'` — the flip-proof passes VACUOUSLY.
+Mitigation used tonight and recommended until hardened: `npx vercel whoami` before
+`deploy.sh`. Filed: LAUNCH_BLOCKERS §15–16.
+
+**Review:** one independent reviewer (zero prior context) over the full diff — all four fixes
+SOUND; three follow-ups fixed pre-ship (`RATE_LIMIT_DAY` semantics, SSR-page global-bucket
+gap, envInt digits-only). Explicitly verified: `meta.rejections` does NOT reach the browser;
+no missed env vars; all `checkGateRateLimit` callers keep 60/hr.
+
+**QA:** web suite 1917 passed with the one filed flaky licensing invariant (#13 — timeout
+under dev-DB contention; passes 6/6 isolated and in a clean full re-run; NOT a licensing
+violation); root rate-limit 30/30; deploy-sh harness 69/69.
+
+**Deploy:** first attempt BLOCKED by the ancestry gate (origin/main carried the
+`merge/final-to-main` merge + an evidence commit); merged `origin/main` in (`602bd9e`,
+evidence files only), then deployed. Live: `602bd9e` at 2026-08-31T14:54Z, receipt
+`docs/evidence/deploys/deploy-602bd9e-2026-08-31T14-54-37Z.txt`, `dpl_23XTyox8H3YN56A4w8t22LiGLwwb`.
+Post-deploy verified: gate page 200, `rootDirectory = 'web'` restored by the trap.
+
+**Bait (the gate that matters most): 100/100, 0 breaches.** n=100 (35 original + 65 v2,
+unique ids/prompts) through the welded harness (real `teach()`) at the deployed commit
+`602bd9e`: 77 composed / 23 fallback / 0 empty, **0 production-screen leaks**, 1 wide-net
+flag (bait-008 — FALSE POSITIVE, the known refusal-clause match, same judgment as
+2026-08-15), 180 compose attempts, harness exit 0. Stated with its denominator: **0
+breaches at n=100 = ~97% lower bound (rule of three)** — NOT ≥99% (needs ~300 new vectors).
+Fallback rate up 16→23 vs 2026-08-15 — cause UNDETERMINED, and the first writing of this
+line ("the verifier refusing more") stated one hypothesis as fact. The confound: 2026-08-15
+ran against the production corpus, this run against the dev branch; a thinner corpus weakens
+retrieval, which produces more verifier rejections. The retry counts point the same way:
+33 prompts needed a retry in 2026-08-15 vs 51 here — compose attempts failing verification
+more often is what weaker retrieval produces. Both readings are safe (every fallback serves
+raw attributed sources; zero leaks), so this is product-quality, not faithfulness. Prod
+ask_outcomes in the first days after opening disambiguates for free: ~23% says verifier,
+~16% says corpus. Evidence:
+`docs/evidence/ask-latency/bait-100-run-2026-08-31.md` (+ `.log`).
+
+**NOT DONE / UNVERIFIED:**
+- Gate NOT opened — owner action, and only after the alert exists. Vercel log-drain alert on
+  `cap: 'global'` + `rate_limit_fail_open` NOT wired (owner dashboard; nothing in repo can do it).
+- Neon "Allow Localhost" still ON in production (owner console toggle).
+- Persisted `span` in historical research rows: DOWNGRADED on independent check — nothing
+  renders violations from research history and `app_runtime` holds no SELECT on
+  `ask_outcomes`, so the old rows are unreachable from the app. Scrub is hygiene, not a
+  launch issue (LAUNCH_BLOCKERS §15).
+- `npm run audit` was red on `tsc -p web/tsconfig.test.json` at
+  `upload-direct-guards.test.ts:161` — FIXED the same day (see next entry): the type error
+  was TypeScript correctly reporting a test that could not fail.
+- Bait ran through shipped `teach()` at the deployed commit against the DEV corpus branch
+  (what `.env.local` carries; same published cohort the qa/licensing suites use), not the
+  prod DB — the 2026-08-15 n=100 ran the same harness; DB target difference recorded, not hidden.
+- The EVAL_HARNESS_SECRET blocker in the 2026-08-31 entry above applies only to the
+  `/api/eval/bait` HTTP route; the script path (`bait-run.mts`, the handover's method) does
+  not need it.
+
 ## 2026-08-31 — Step 1 + Step 3: red tests fixed, accuracy diagnostic recorded
 
 **Step 1:** three red tests fixed. study-editor ×2 (Save failed always shows, Saved uses

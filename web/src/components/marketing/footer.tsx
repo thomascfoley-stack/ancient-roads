@@ -23,13 +23,13 @@ export function MarketingFooter() {
               <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Product</h4>
               <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-500">
                 <li>
-                  <Link href="/" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Home</Link>
+                  <Link href="/" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">Home</Link>
                 </li>
                 <li>
-                  <Link href="/features" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Features</Link>
+                  <Link href="/features" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">Features</Link>
                 </li>
                 <li>
-                  <Link href="/why" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Why</Link>
+                  <Link href="/why" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">Why</Link>
                 </li>
               </ul>
             </div>
@@ -37,10 +37,10 @@ export function MarketingFooter() {
               <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">More</h4>
               <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-500">
                 <li>
-                  <Link href="/about" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">About</Link>
+                  <Link href="/about" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">About</Link>
                 </li>
                 <li>
-                  <Link href="/auth/sign-in" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Log in</Link>
+                  <Link href="/auth/sign-in" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">Log in</Link>
                 </li>
               </ul>
             </div>

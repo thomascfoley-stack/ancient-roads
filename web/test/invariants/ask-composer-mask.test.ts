@@ -34,7 +34,12 @@ import { join } from 'node:path';
 
 const SRC = join(__dirname, '..', '..', 'src', 'components');
 const appShell = readFileSync(join(SRC, 'app-shell.tsx'), 'utf8');
-const askClient = readFileSync(join(SRC, 'ask-client.tsx'), 'utf8');
+// RE-POINTED 2026-09-06 (docs/evidence/ask-redesign-2026-09-06/findings.md): the composer form
+// moved from ask-client.tsx to ask-composer.tsx, and the result cards to ask-answer.tsx, in the
+// /ask file split. Named files, not a glob — a glob would let any sticky form anywhere satisfy the
+// check. Every assertion below is unchanged.
+const askComposer = readFileSync(join(SRC, 'ask-composer.tsx'), 'utf8');
+const askAnswer = readFileSync(join(SRC, 'ask-answer.tsx'), 'utf8');
 
 /** `3.75rem` / `0.25rem` / `4px` -> px. rem is 16px at the app's root font size. */
 function toPx(term: string): number {
@@ -62,9 +67,9 @@ describe('the /ask composer mask covers the slot below it, exactly', () => {
   });
   const mainPbPx = sumCalc(mainPb![1]);
 
-  // --- derive the composer's three values, from ask-client.tsx ---
-  const formClass = /className="edge sticky ([^"]+)"/.exec(askClient);
-  it('finds the sticky composer form in ask-client.tsx', () => {
+  // --- derive the composer's three values, from ask-composer.tsx ---
+  const formClass = /className="edge sticky ([^"]+)"/.exec(askComposer);
+  it('finds the sticky composer form in ask-composer.tsx', () => {
     expect(formClass, 'the composer <form> class string moved or was renamed').not.toBeNull();
   });
   const cls = formClass![1];
@@ -107,7 +112,11 @@ describe('the /ask composer mask covers the slot below it, exactly', () => {
   it('the mask is wide enough for the result cards that overhang the composer', () => {
     // ResultLink is `-mx-2.5` (10px per side); the mask must cover that plus the border, or a
     // hovered/focused row paints beside it. A y-scan down the centre line cannot see this.
-    const overhang = /-mx-2\.5/.test(askClient);
+    // CODE ONLY. The first post-move red-proof (2026-09-06) deleted the class and this stayed green:
+    // a comment in the same file named `-mx-2.5`, and the scan matched it — a check that could not
+    // fail. The original file had the same hole (its own comment named the class). Comments out.
+    const askAnswerCode = askAnswer.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+    const overhang = /-mx-2\.5/.test(askAnswerCode);
     expect(overhang, 'ResultLink no longer uses -mx-2.5; re-derive the mask inset').toBe(true);
     expect(maskInsetX, 'the mask inset must carry both the overhang and the border').not.toBeNull();
     const body = maskInsetX![1].replace(/\s+/g, '');

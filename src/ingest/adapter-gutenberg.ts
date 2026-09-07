@@ -30,7 +30,7 @@ interface Profile {
   // takes precedence over sacred/splitUnits when present
   sections?: ScopedSpec;
   // pull a title/heading from a unit (first non-empty line by default)
-  register: 'hymn' | 'poetry';
+  register: 'hymn' | 'poetry' | 'prose';
   paraphrase?: boolean;
 }
 
@@ -238,6 +238,92 @@ export const PROFILES: Record<string, Profile> = {
   'wheatley-poems': { register: 'poetry' },
   'watts-hymns': { register: 'hymn' },
   'watts-psalms': { register: 'hymn', paraphrase: true }, // metrical psalms — PARAPHRASE voice
+  // Holman's Philadelphia edition (PG #31604 vol I 1915 / #34904 vol II 1916).
+  // Each volume prints every treatise three times: an indented CONTENTS line
+  // (inert — the contents matches are anchored to flush lines), a flush
+  // part-title block, and — after the Holman editor's INTRODUCTION, which is
+  // NOT Luther and must never serve under his name — the translation itself.
+  // Each treatise therefore declares its part-title as a marker boundary and
+  // its translation heading as the section; where the two lines are identical
+  // (vol II's first treatises, vol I's Confession) the in-order walk consumes
+  // the part-title first, so only the translation can match the section entry.
+  // The translation's own collected end-notes stay in the body (the edition's
+  // apparatus, PD); the editors' introductions never do.
+  'luther-works1': {
+    // Vol I scope: the first whole-line "WORKS OF MARTIN LUTHER" (title page;
+    // the volume INTRODUCTION and CONTENTS sit inside the scope but before the
+    // first bound, so the editor's matter is never attached to a section) to
+    // the INDEX.
+    sections: {
+      scope: { start: /^WORKS OF MARTIN LUTHER$/, end: /^INDEX$/ },
+      contents: [
+        { match: /^SELECTIONS FROM LUTHER'S PREFACES TO HIS WORKS 1539 and 1545$/ },
+        { match: /^THE DISPUTATION OF DOCTOR MARTIN LUTHER$/, marker: true },
+        { match: /^DISPUTATION OF DOCTOR MARTIN LUTHER ON THE POWER AND EFFICACY OF$/ },
+        { match: /^A TREATISE ON THE HOLY SACRAMENT OF BAPTISM$/, marker: true },
+        { match: /^A TREATISE ON BAPTISM$/ },
+        { match: /^A DISCUSSION OF CONFESSION$/, marker: true },
+        { match: /^A DISCUSSION OF CONFESSION$/ },
+        { match: /^THE FOURTEEN OF CONSOLATION$/, marker: true },
+        { match: /^THE FOURTEEN OF CONSOLATION$/ },
+        { match: /^A TREATISE ON GOOD WORKS,$/, marker: true },
+        { match: /^A TREATISE ON GOOD WORKS$/ },
+        { match: /^A TREATISE ON THE NEW TESTAMENT$/, marker: true },
+        { match: /^A TREATISE ON THE NEW TESTAMENT,$/ },
+        { match: /^THE PAPACY AT ROME$/, marker: true },
+        { match: /^TO THE PAPACY AT ROME$/ },
+      ],
+    },
+    register: 'prose',
+  },
+  'luther-works2': {
+    // Vol II scope: the first whole-line "WORKS OF MARTIN LUTHER" (title page;
+    // the CONTENTS lines after it are indented and cannot pre-match) to INDEX.
+    sections: {
+      scope: { start: /^WORKS OF MARTIN LUTHER$/, end: /^INDEX$/ },
+      contents: [
+        { match: /^A TREATISE CONCERNING THE BLESSED SACRAMENT OF THE HOLY AND TRUE BODY$/, marker: true },
+        { match: /^A TREATISE CONCERNING THE BLESSED SACRAMENT OF THE HOLY AND TRUE BODY$/ },
+        { match: /^A TREATISE CONCERNING THE BAN$/, marker: true },
+        { match: /^A TREATISE CONCERNING THE BAN$/ },
+        { match: /^AN OPEN LETTER TO THE CHRISTIAN NOBILITY OF THE GERMAN NATION$/, marker: true },
+        { match: /^AN OPEN LETTER TO THE CHRISTIAN NOBILITY OF THE GERMAN NATION$/ },
+        { match: /^A PRELUDE ON THE BABYLONIAN CAPTIVITY OF THE CHURCH$/, marker: true },
+        { match: /^THE BABYLONIAN CAPTIVITY OF THE CHURCH$/ },
+        { match: /^A TREATISE ON CHRISTIAN LIBERTY WITH A LETTER TO POPE LEO X$/, marker: true },
+        { match: /^A TREATISE ON CHRISTIAN LIBERTY$/ },
+        { match: /^A BRIEF EXPLANATION \(EINE KURZE FORM\) OF THE TEN COMMANDMENTS, THE$/, marker: true },
+        { match: /^A BRIEF EXPLANATION OF THE TEN COMMANDMENTS, THE CREED, AND THE LORD'S$/ },
+        { match: /^THE EIGHT WITTENBERG SERMONS$/, marker: true },
+        { match: /^EIGHT SERMONS BY DR\. MARTIN LUTHER$/ },
+        { match: /^THAT DOCTRINES OF MEN ARE TO BE REJECTED$/, marker: true },
+        { match: /^THAT WE ARE TO REJECT THE DOCTRINES OF MEN:$/ },
+      ],
+    },
+    register: 'prose',
+  },
+  'newman-apologia': {
+    // PG #22088 (1890 Longmans ed. of the 1864 Apologia). The work proper is
+    // the five chapters between the part-title "MY RELIGIOUS OPINIONS." (a
+    // unique whole line) and "NOTES." — Notes A–G, the saints' calendar, the
+    // approbation letters and the publisher catalog are back matter; the 1865
+    // Preface is front matter (the shared GUT_MATTER filter drops it anyway).
+    // The CONTENTS list carries bare "CHAPTER I.".. lines too, but they sit
+    // BEFORE the scope start and cannot pre-match. Each chapter heading is the
+    // edition's own two-line pair ("CHAPTER I." / "HISTORY OF MY RELIGIOUS
+    // OPINIONS TO THE YEAR 1833."); the title line opens the body as printed.
+    sections: {
+      scope: { start: /^MY RELIGIOUS OPINIONS\.$/, end: /^NOTES\.$/ },
+      contents: [
+        { match: /^CHAPTER I\.$/ },
+        { match: /^CHAPTER II\.$/ },
+        { match: /^CHAPTER III\.$/ },
+        { match: /^CHAPTER IV\.$/ },
+        { match: /^CHAPTER V\.$/ },
+      ],
+    },
+    register: 'prose',
+  },
 };
 
 export function stripBoilerplate(raw: string): string {

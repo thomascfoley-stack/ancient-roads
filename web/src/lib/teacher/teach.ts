@@ -12,6 +12,7 @@ import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 import { retrieveUserVoices, formatUserLibrarySources, type UserVoice } from './user-voices';
+import { attachSectionOrdinals } from './section-locate';
 import {
   MAX_RETRIES,
   ASK_MAX_DURATION_MS,
@@ -32,7 +33,10 @@ export {
 type LanePayloads = { song_verse?: SongVerseChunk[]; sermons?: RegisterLaneChunk[]; theology?: RegisterLaneChunk[]; historians?: RegisterLaneChunk[] };
 export type TeacherResult =
   | ({ kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] } & LanePayloads)
-  | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] } & LanePayloads)
+  // The fallback payload is serialized into the /api/ask response body, so its violations are
+  // stripped to check+message: `span` is model-authored text (see RejectedAttempt below) and the
+  // "never emit unverified model text to a user" rule applies to the fallback path most of all.
+  | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: { check: string; message: string }[] } & LanePayloads)
   | { kind: 'empty'; reason: string };
 
 /** Per-stage wall-clock, ms (plan 2026-08-13 B1). compose/verify are PER-ATTEMPT arrays so
@@ -142,11 +146,18 @@ export type LaneFlags = { songVerse?: boolean; sermons?: boolean; theology?: boo
 // init + connection warmup; the flag lets the measurement run separate that tail honestly.
 const instance = { served: 0 };
 
+// `signal` is the READER'S OWN Stop, threaded from the request. Without it, pressing Stop only
+// tore down the client's reader: the server kept embedding, kept composing through the whole
+// MAX_RETRIES budget, and the route then stored the finished answer — so Stop followed by "Ask
+// again" billed and stored the same question twice. Aborting throws out of teach() rather than
+// returning a result, so the caller cannot mistake a stopped run for a completed one and persist
+// it. The guards sit at every point where the NEXT step would spend money.
 export async function teach(
   query: string,
-  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags; userId?: string } = {},
+  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags; userId?: string; signal?: AbortSignal } = {},
 ): Promise<TeachRun> {
   const emit = opts.onEvent ?? (() => {});
+  const signal = opts.signal;
   const maxDurationMs = opts.maxDurationMs ?? ASK_MAX_DURATION_MS;
   const composeMs = composeTimeoutMs(maxDurationMs);
   const startedAt = Date.now();
@@ -175,9 +186,12 @@ export async function teach(
     return { result, meta: { attempts, firstCheck, ...meta, stageMs, coldStart, rejections } };
   };
 
+  // Before the first paid call: a request the reader already stopped costs nothing at all.
+  signal?.throwIfAborted();
+
   emit({ stage: 'retrieving' });
   let stageStart = Date.now();
-  const queryVec = await embedQuery(query);
+  const queryVec = await embedQuery(query, { signal });
   stageMs.embed = Date.now() - stageStart;
   const intent = resolveIntent(query);
   const ranges = intent.inject;
@@ -201,6 +215,15 @@ export async function teach(
   stageStart = Date.now();
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
   stageMs.retrieve = Date.now() - stageStart;
+  // Reader deep-link ordinals for the result cards. Started the moment retrieval resolves and
+  // awaited only where the rows cross the response boundary (the two `finish` calls that carry
+  // `retrieval`), so the one Neon round-trip overlaps compose + verify — 74% of the wall (D4) —
+  // rather than sitting serially after retrieval, which is where an await beside the lanes put it
+  // (the lanes start BEFORE retrieveCommentary and have usually settled by now; deep-audit
+  // 2026-09-06). Nothing between here and those awaits reads the field: selectVoices, the prompt,
+  // the corpus lookup and the verifier all project named fields (section-locate.ts). The promise
+  // never rejects, so deferring the await cannot surface as an unhandled rejection.
+  const ordinalsPromise = attachSectionOrdinals(retrieval);
   stageStart = Date.now();
   const [songVerse, sermons, theology, historians, userVoices] = await Promise.all([songVersePromise, sermonPromise, theologyPromise, historianPromise, userVoicesPromise]);
   stageMs.lanes = Date.now() - stageStart;
@@ -301,6 +324,10 @@ export async function teach(
   let lastViolations: Violation[] = [];
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // The retries are the expensive part — up to MAX_RETRIES+1 composes for one question. A
+    // reader who stopped mid-attempt must not fund the next one.
+    signal?.throwIfAborted();
+
     if (deadlineExceeded(startedAt, maxDurationMs)) {
       lastViolations = lastViolations.length > 0
         ? lastViolations
@@ -323,10 +350,14 @@ export async function teach(
     let raw: string;
     const composeStart = Date.now();
     try {
-      raw = await compose(systemPrompt, prompt, { timeoutMs: composeMs });
+      raw = await compose(systemPrompt, prompt, { timeoutMs: composeMs, signal });
       stageMs.compose.push(Date.now() - composeStart);
     } catch (e) {
       stageMs.compose.push(Date.now() - composeStart);
+      // A compose the READER cancelled is not a model failure: recording it as `llm_error`
+      // would file the reader's own Stop as a rejection in the failure-code diagnostic and
+      // pollute the retry prompt. Rethrow so the caller sees an abort, not a bad generation.
+      signal?.throwIfAborted();
       lastViolations = [{ check: 'llm_error', message: (e as Error).message }];
       if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
       recordRejection(attempt, lastViolations);
@@ -348,6 +379,7 @@ export async function teach(
     const result = await verifyV1(parsed, corpusLookup, retrievalContext);
     stageMs.verify.push(Date.now() - verifyStart);
     if (result.ok) {
+      await ordinalsPromise; // the rows are about to ship; their deep-link ordinals ride along
       return finish(withRegister({ kind: 'composed', response: parsed as TeacherResponse, retrieval }), metaBase);
     }
     lastViolations = result.violations;
@@ -355,5 +387,12 @@ export async function teach(
     recordRejection(attempt, lastViolations);
   }
 
-  return finish(withRegister({ kind: 'fallback', retrieval, violations: lastViolations }), metaBase);
+  // Strip before this crosses the response boundary: same bounds as recordRejection, minus
+  // `span` entirely. meta.rejections keeps its own bounded copy for the server-only log.
+  const clientViolations = lastViolations.slice(0, MAX_VIOLATIONS_PER_ATTEMPT).map((v) => ({
+    check: v.check,
+    message: v.message.slice(0, MAX_VIOLATION_FIELD_CHARS),
+  }));
+  await ordinalsPromise; // as above — the fallback ships the same rows
+  return finish(withRegister({ kind: 'fallback', retrieval, violations: clientViolations }), metaBase);
 }

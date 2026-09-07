@@ -91,14 +91,33 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
           ))}
         </div>
 
-        {/* Auth CTA: pill, ink fill on hover, gentle transition. Right-hand cell at both
-            breakpoints — column 2 of 2 on a phone, column 3 of 3 from `sm` up. */}
-        <Link
-          href="/auth/sign-in"
-          className="col-start-2 row-start-1 inline-flex min-h-[44px] items-center justify-self-end rounded-full border border-stone-400/70 px-7 font-sans text-micro font-semibold uppercase tracking-[0.2em] text-stone-900 transition-colors duration-200 ease-gentle hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:col-start-3"
-        >
-          Log in
-        </Link>
+        {/* THE TWO DOORS, right-hand cell at both breakpoints — column 2 of 2 on a phone, column 3
+            of 3 from `sm` up. Authored left-to-right as they paint (see A098 above): the outlined
+            secondary first, the ink-filled primary last, which is where the eye ends.
+
+            "Request access" is here because until 2026-09-06 it was NOWHERE ELSE a visitor could
+            reach without work: the landing page's only call to action was the waitlist form, the
+            LAST element of a ~4,500px scroll, and the one piece of chrome that follows a reader
+            down that scroll offered only "Log in" — a door for people who already have an account.
+            `/#doors` is the same anchor features/page.tsx and why/page.tsx already point at, so
+            one href serves all three marketing surfaces.
+
+            The compact `px-4` below `sm` is load-bearing, not tidying: at 390px the bar carries the
+            wordmark and both pills on one row, and the desktop `px-7` on both overflowed it. */}
+        <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end sm:col-start-3 sm:gap-3">
+          <Link
+            href="/auth/sign-in"
+            className="inline-flex min-h-[44px] items-center rounded-full border border-stone-400/70 px-4 font-sans text-micro font-semibold uppercase tracking-[0.14em] text-stone-900 transition-colors duration-200 ease-gentle hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:px-7 sm:tracking-[0.2em]"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/#doors"
+            className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full bg-stone-900 px-4 font-sans text-micro font-semibold uppercase tracking-[0.14em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-stone-700 sm:px-7 sm:tracking-[0.2em]"
+          >
+            Request access
+          </Link>
+        </div>
       </div>
     </nav>
     </>

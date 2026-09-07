@@ -107,6 +107,10 @@ export default async function CatalogPage({
   const hrefToggling = (t: string): string => catalogHref(catalog, toggleTradition(urlState, t));
   const hrefPage = (p: number): string => catalogHref(catalog, { ...urlState, page: p });
 
+  // Both facets the chips above can set. An empty result means something different depending on
+  // this, so the empty state below reads it rather than guessing.
+  const filtersActive = subFilter !== undefined || selected.length > 0;
+
   const firstShown = total === 0 ? 0 : page * PAGE_SIZE + 1;
   const lastShown = page * PAGE_SIZE + works.length;
   const hasPrev = page > 0;
@@ -186,9 +190,23 @@ export default async function CatalogPage({
       )}
 
       {works.length === 0 ? (
-        <p className="text-sm text-stone-500 dark:text-stone-400">
-          {page > 0 ? 'No works on this page.' : 'No works here yet.'}
-        </p>
+        // "No works here yet" is a claim about the SHELF, and with a chip lit it is false: the
+        // shelf has works and the filters excluded them. Told the wrong thing, the reader
+        // concludes the library is empty and leaves, when one click would have shown it.
+        // `filtersActive` covers both facets the chips above can set — the sub-filter and the
+        // tradition toggles — so a new facet cannot quietly reintroduce the lie.
+        page > 0 ? (
+          <p className="text-sm text-stone-500 dark:text-stone-400">No works on this page.</p>
+        ) : filtersActive ? (
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            No items match these filters.{' '}
+            <Link href={hrefWith({ sub: undefined, traditions: [] })} className="underline hover:no-underline">
+              Clear filters
+            </Link>
+          </p>
+        ) : (
+          <p className="text-sm text-stone-500 dark:text-stone-400">No works here yet.</p>
+        )
       ) : (
         <>
         {/* The count makes the page cap VISIBLE. Without it a capped list reads as a complete one,

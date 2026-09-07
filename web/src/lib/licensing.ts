@@ -42,6 +42,15 @@ export const TRANSLATION_LICENSES: Record<string, LicenseRecord> = {
   ukjv: { license: 'Public Domain', commercial_use: 'allow', source: 'Updated KJV — PD update', verified_on: '2026-07-14' },
   noyes: { license: 'Public Domain', commercial_use: 'allow', source: 'Noyes 1869 — PD', verified_on: '2026-07-14' },
   anderson: { license: 'Public Domain', commercial_use: 'allow', source: 'Anderson NT 1864 — PD', verified_on: '2026-07-14' },
+  // NT-only: the 39 OT books ship as empty-text skeletons (anderson/tyndale/noyes precedent).
+  weymouth: { license: 'Public Domain', commercial_use: 'allow', source: 'Weymouth NT 1912 (3rd ed.) — PD; CrossWire SWORD module `Weymouth` 1.1 .conf DistributionLicense: Public Domain (printed and gated before decode, scripts/resourcing/fetch-crosswire-bible.mts)', verified_on: '2026-09-06' },
+  // NT-only (OT ships as empty-text skeletons). NOT the CrossWire module `TNT` — that one is
+  // Tregelles' GREEK NT under CC BY-NC-SA, which fails commercial-permissive; `Twenty` is the English one.
+  twenty: { license: 'Public Domain', commercial_use: 'allow', source: 'Twentieth Century New Testament 1904 — PD; CrossWire SWORD module `Twenty` 2.0 .conf DistributionLicense: Public Domain (printed and gated before decode)', verified_on: '2026-09-06' },
+  // OT-only: the 27 NT books ship as empty-text skeletons. The 1917 text ("The LORD"), not the
+  // altered "HaShem" digitizations; eBible pre-mapped MT versification to English numbering
+  // (canon-exactness proved at ingest, src/ingest/ingest-ebible-jps.ts). NOT the 1985 NJPS.
+  jps: { license: 'Public Domain', commercial_use: 'allow', source: 'JPS Old Testament 1917 — PD; eBible.org engjps copyright page states Public Domain', verified_on: '2026-09-06' },
 
   // Permissively licensed — ships WITH attribution (owner ruling 2026-07-14).
   lsv: {

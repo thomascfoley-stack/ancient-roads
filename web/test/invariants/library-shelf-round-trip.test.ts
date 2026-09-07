@@ -31,7 +31,19 @@ import { sweepQaResidue } from '../helpers/qa-residue';
 ensureDbEnv();
 
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
+// `authFailureResponse` is the REAL one, not a stub. The route calls it on every requireUser()
+// failure (D43), so a stub returning any Response would let this file's 401 leg pass while
+// proving nothing about WHICH failure was reported — and telling an auth outage (503) apart from
+// "nobody is signed in" (401) is the entire point of that function. Importing it is free: it
+// lives in its own module whose only import is `api-error`, deliberately so that a test wanting
+// this behaviour need not load the Neon Auth SDK.
+//
+// This mock previously listed only the two functions the file THOUGHT the route used, and went
+// red the moment D43 added a third — a hand-maintained expected set narrower than the real
+// module surface, which is this repo's standing failure shape. Spread the real module instead of
+// re-listing it, so the next export the route adopts arrives here for free.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')),
   requireUser: async () => {
     if (!signedIn) throw new Error('Unauthorized');
     return signedIn;

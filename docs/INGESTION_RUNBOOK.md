@@ -68,7 +68,12 @@ Mandatory rules (enforced by `src/ingest/license-manifest.ts`, run as gate L1):
 One adapter per format. All are idempotent (`ON CONFLICT DO NOTHING`;
 a killed job resumes, never double-ingests) and all write `sources`/`sections`
 with **`status='staged'`**. All need `DATABASE_URL` + `DEEPINFRA_API_KEY`
-(env or `web/.env.local`):
+(env or `web/.env.local`). **Credential note (2026-09-06):** `web/.env.local`'s
+`APP_DATABASE_URL` connects as `app_runtime`, which is SELECT-only — adapters
+fail closed with `permission denied for table sources`. The loop needs the dev
+**owner** URL from `~/.neon_dev_owner_url` (endpoint `ep-tiny-hat`, user
+`neondb_owner`; the `register-writer` guard independently requires dev +
+`NEON_BRANCH=dev`, so the owner URL cannot be misused against prod):
 
 - **CrossWire SWORD commentary:**
   `npx tsx src/ingest/ingest-sword-commentaries.mts <jsonl>`

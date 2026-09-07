@@ -40,6 +40,9 @@ export const TRANSLATIONS: Translation[] = [
   { id: 'ukjv', name: 'Updated King James Version', abbr: 'UKJV' },
   { id: 'noyes', name: 'Noyes Translation', abbr: 'NOY' },
   { id: 'anderson', name: 'Anderson New Testament', abbr: 'ANT' },
+  { id: 'weymouth', name: 'Weymouth New Testament', abbr: 'WEY' },
+  { id: 'twenty', name: 'Twentieth Century New Testament', abbr: 'TCNT' },
+  { id: 'jps', name: 'JPS Tanakh (1917)', abbr: 'JPS' },
 ];
 
 // Required display credit for a translation (CC BY / CC BY-SA / conditional), or undefined

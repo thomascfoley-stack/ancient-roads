@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { READING_CATEGORIES, type ReadingCategoryId } from '@/lib/user-corpus/suggested-readings';
 import { readingsIsRunning } from '@/lib/user-corpus/readings-state';
 import { DISPLAY_LOCALE } from '@/lib/locale';
+import { TextSkeleton } from './skeleton';
 
 // Suggested readings: pick what to search, watch it search, read what it found.
 //
@@ -191,7 +192,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
         </div>
       ) : state?.status === 'failed' ? (
         <p role="alert" className="font-serif text-[14px] text-amber-800 dark:text-amber-300">
-          The search failed: {state.error ?? 'no reason recorded'}
+          The search could not be completed. It can be run again from the document.
         </p>
       ) : !state ? (
         loadFailed ? (
@@ -202,7 +203,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
             </button>
           </p>
         ) : (
-          <p role="status" className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Loading…</p>
+          <TextSkeleton label="Loading suggested readings" lines={3} announce />
         )
       ) : byCategory.length === 0 ? (
         <div>

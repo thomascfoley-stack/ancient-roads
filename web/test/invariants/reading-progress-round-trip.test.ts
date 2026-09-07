@@ -36,7 +36,13 @@ ensureDbEnv();
 // The session, faked at the module boundary the route actually imports. `signedIn` is flipped
 // per-case so the 401 leg is the SAME route under a different session, not a different code path.
 let signedIn: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
+// `authFailureResponse` is the REAL one, not a stub — see the twin note in
+// library-shelf-round-trip.test.ts. A stub would let the 401 leg below pass while proving nothing
+// about whether an auth OUTAGE is reported as 503 rather than as "signed out", which is the whole
+// point of D43. Spreading the real module also means the next export this route adopts does not
+// break the mock: the previous hand-listed pair went red the moment D43 added a third.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')),
   requireUser: async () => {
     if (!signedIn) throw new Error('Unauthorized');
     return signedIn;

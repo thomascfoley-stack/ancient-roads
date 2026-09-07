@@ -1,11 +1,11 @@
 {
   "comment": "Per-directory FILE COUNTS for the served static asset directories under web/public. The predeploy gate refuses ANY decrease against these counts; increases pass and are reported. Recorded by scripts/update-served-assets-baseline.mjs from a live count; the original 2026-08-01 figures are per docs/evidence/post-a1-2026-08-01/concordance-census.md. Update deliberately, never automatically: node scripts/update-served-assets-baseline.mjs --yes",
-  "recordedAt": "2026-08-21",
+  "recordedAt": "2026-09-07",
   "counts": {
     "bible": 22590,
     "commentaries": 1213,
     "concordance": 295,
-    "devotional": 2,
+    "devotional": 734,
     "lexicon": 2,
     "original": 1189
   }

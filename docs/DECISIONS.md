@@ -2289,3 +2289,128 @@ legitimately name an aggregator in SQL predicates over our own rows (`regen-cros
 `resource-classify-*`, `verse-key-gate`, `measure-embedding-gap`, `ingest-sword-commentaries`) —
 an extraction wider than the property it claimed, the watchlist's standing failure mode. Narrowed
 to the fetch, which had exactly one instance.
+
+## ADR-121 — The /ask redesign: field-first composer, results open the book at the quoted section, with a way back (owner, 2026-09-06)
+
+**Owner brief, in session:** the /ask page is "too busy… a bit of a mess"; "when something is running
+it's not discernible that it's running"; a result must go "into the EXACT spot that is listed in the
+search" with a clear way back — "when you go back, you start your search over, the original search is
+gone." Then, over a design canvas of three composer treatments explained in plain terms: **"ok go with
+#3 for me"** (Field first), and "fix and deploy them now live in prod."
+
+**Decisions taken by the owner (AskUserQuestion, 2026-09-06), verbatim option labels:**
+
+1. Result click → **"Full reader, exact section, with a return strip"**. Cards link to
+   `/work/<slug>?from=ask:<threadId>&fq=<question>#s<ordinal>` — History mode's existing contract —
+   instead of the desk, which opened every work at section 1 and knew nothing about the ask. The
+   ordinal is resolved server-side at ask time (`lib/teacher/section-locate.ts`, one batched query per
+   ask over `section_anchors`, never reordering retrieval, awaited only where the rows ship so it
+   overlaps compose) or parsed from a register sourceId; a row that cannot be located links to the
+   work with no fragment. The return strip is `history-context-bar.tsx` generalised to `from=ask:`,
+   its dismissal per thread, and it now sits **sticky at the bottom of the reader's scroll area** —
+   in normal flow at the top it scrolled out of view the instant the reader landed on the section
+   (measured on dev: y = −168px on arrival), and the top belongs to the reader's own sticky header.
+   This changes the placement of the already-shipped `from=hist:` strip too.
+2. Lane chips → **"Inside the composer, compact row, quiet permanent caption"**, then refined by the
+   Field-first pick: the composer's box holds only the question and Ask; the scope is one quiet line
+   under the box that travels with the sticky composer. **Amends Design C (2026-08-17, "ok deploy c")
+   in placement only**: still always visible (more so — the band above the header scrolled away), still
+   an `aria-pressed` group named "Search these collections", still a SEARCH control (§4.7). The caption
+   loses its number — "~10s" sat three lines under a "20–40 seconds" claim about a different thing (R3)
+   — and reads "applies to your next ask".
+3. History invitation → **"Quiet hairline row under the examples"**. **Amends ruling 4 (2026-08-20)**
+   from a raised-paper block to a row, in the PRD's favour (§5: the empty state is "no cards, just quiet
+   text"); the block also sat half under the sticky composer. The ruling's copy and the real link are
+   unchanged; empty state only.
+4. Sidebar mockups → "Top bar, no left rail (your PRD)" and "Contextual rail" — drafted on the canvas,
+   **not yet chosen, not yet built**; when built, the owner's "think collapsables" supersedes
+   UX_REMEDIATION N2's "Do NOT add an accordion" for that surface.
+
+**Two further amendments this work makes, recorded because standing text forbade them:**
+
+- **L1 "do not touch the staged progress sequence"** — the sequence is untouched (four steps, same
+  icons, same order). Added beside it: an indeterminate 2px `.progress-travel` bar under the question
+  and along the composer's edge for the whole in-flight window (the one motion the PRD exempts from its
+  fade-only budget), the active step's label one colour tier up, and a real **Stop** (AbortController).
+  Stop stops *waiting* — the route does not read the request signal; the server finishes and the
+  thread row already exists. Filed, not done: threading `req.signal` into `teach()`.
+- **"Currently answering from the Gospels"** is retired (naming-lock RETIRED): false since the corpus
+  reached 65 books (`docs/LONG_NIGHT.md:247`); it survived inside the sentence R3 rewrote.
+
+**Also closed in passing, each filed before:** 429 collapsing into the generic error with an instant
+retry (now the envelope's message + a plain wait, retry disabled until it elapses); the composer
+covering the bottom of the first screen (the mode toggle sat outside the viewport-sized column — the
+page owns the frame now); the dead `small-caps` class on voice attributions (never defined, so the
+PRD's small caps had never rendered); `mode-toggle.tsx`'s bare `rounded border`; the every-patch
+smooth-scroll (once per appended turn now; a reopened thread opens at its first turn); F24 — the
+reader ignoring a `#s<n>` that arrives after mount on client-side navigation (ported onto main's
+version of the page, which failed F24's own red-proof); Back from the reader rendering an empty /ask
+under the thread URL (Next 16 copies the current route tree onto a `replaceState`'d entry —
+`thread-restore.tsx` does a real navigation on that remount).
+
+**Rejected:** a `router.replace` to the thread mid-stream (remounts the streaming component, losing
+`askOutcomeId` and the Show filter); a desk-pane ordinal (~120 lines across 5 files, still a pane
+excerpt, no place to mount a strip — backlog); shortening lane labels on mobile (naming lock — the row
+scrolls instead).
+
+**Evidence:** `docs/evidence/ask-redesign-2026-09-06/` — `findings.md` (the three test re-points,
+documented before they were made, plus the red→green record for every new test), `red-run.log`
+(the seven client tests and two seeds failing on the unchanged code), `audit-run-2.log` (the green
+`npm run audit`; `first-run-after-fix.log` is the earlier partial run, kept because it shows the two
+test-side corrections), `deep-audit.md` (the six-lens pre-deploy sweep and what was fixed from it),
+and PNG screenshots at 1440 and 390 of the surfaces reachable without an owner session (the reader
+landing with the return strip, history mode's toggle, the gate page). **NOT in evidence:** a
+browser walk of the signed-in `/ask` composer, running state and answer — the teacher is owner-only
+(ADR-116) and no owner session was available on the Browser pane; the DoD's real-interaction leg for
+those three states is owed and is recorded as NOT DONE in the WORKLOG. Design canvas:
+https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1.
+
+## ADR-122 — The sidebar: five places, and everything of yours as a capped, collapsible group (owner, 2026-09-07)
+
+**Owner brief:** 2026-09-06 — "we need to cap research history to 3-4 max, make it expandable and
+collapsible. Do the same thing with my studies, my sermons, prayer journal, bible studies etc. Push
+back if you think I'm wrong. The idea is the sidebar needs to be super clean." Three directions were
+put in front of the owner as renders (A top bar, B contextual rail, C the note applied with two
+amendments); 2026-09-07: **"#1 do it"** on C. This closes the direction ADR-121 left open.
+
+**Ruled (the design as shipped, `test/components/sidebar-groups.test.tsx` pins each clause):**
+
+1. **Five places never move:** Home · Bible · Ask · Desk · Library. Reading plans, a sixth place
+   until now, becomes a group — a schedule over the reading surfaces, not one of them.
+2. **Everything of yours is a group:** Research history · My studies · Prayer journal · My Works ·
+   Reading plans. Closed, one row. Open, its **three** most recent (the owner said "3-4"; three keeps
+   two open groups inside a 768px rail) and a way to all of them.
+3. **"All … →" is a page, never an inline list of everything** (accepted amendment: forty threads in a
+   rail is the mess being removed). The one exception is research, which has no list page: it alone
+   unfolds further in place ("More research · N"), because threads 4..N would otherwise be reachable
+   from nowhere. When a research list page exists this becomes a link.
+4. **The page's own group opens itself and is not remembered; a group opened by hand elsewhere is
+   remembered** (localStorage, per user). Accepted amendment: without the first half, every group is
+   open within a week and the rail is busy again.
+5. **The library shelves fold behind Library** and appear only while you are in the library.
+6. **Signed out, nothing is lost:** Reading plans and the Prayer journal stay as plain rows.
+7. **Groups fetch lazily, on open.** The list APIs carry no totals and `/api/prayers` returns whole
+   bodies, so a closed group costs no request; the mockup's closed-row counts are dropped for that
+   reason and filed. Prayer rows are plain text with a date (no per-entry page exists); works and
+   plans link to their pages.
+
+**Supersedes** `N2`'s "no accordion" for the sidebar only (`UX_REMEDIATION.md` §9, 2026-09-06 filing).
+**Amends** the icon rail: it now derives from the same five-place table plus the two group entries a
+visitor can use (journal, plans) and Settings — the `/ask` entry reads "Ask", not the wordmark.
+
+**Rejected:** counts on closed groups (five fetches on every mount, or new count endpoints, for a rail
+showing one group); a research "All →" to `/ask` (it lists nothing); keeping the eleven library rows
+visible everywhere (they are shelves you browse, not things of yours); persisting the page-opened
+state (see 4).
+
+**Evidence:** `docs/evidence/sidebar-c-2026-09-07/` — `findings.md` (the two test re-points, recorded
+before the edits, and the deviations from the mockup with reasons), `red-proof-repoints.log` (each
+re-point red then green), `unit-run-summary.log` (whole suite at the Sidebar C tree `4b3efc9`+, green
+bar the recorded DB flake, which passes alone — the merged tree's gate run is
+`docs/evidence/ux-batch-2026-09-07/audit-run-3.log`, AUDIT PASSED at `1f30752c`, and the deep-audit
+fixes after it are in the WORKLOG), `live-home-signed-out-{1440,390}.png` (the dev server, signed out), and
+`composite-*.png` — the signed-in states rendered from the REAL component with fixture data and the
+app's compiled stylesheet (`render/*.html` is the component's markup). The composites are a
+faithful render, not a live session: the groups are signed-in only and sign-in is owner-only, so the
+live signed-in walk is owed to the owner, as for ADR-121. Canvas:
+https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1 (Sidebar page, board C).

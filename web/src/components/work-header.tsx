@@ -28,6 +28,9 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
   // distinction is what keeps the control from flashing "Save" at a reader whose work is saved.
   const [shelf, setShelf] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  // A revert nobody is told about reads as a UI glitch: the reader pressed Save, saw "Saved",
+  // and watched it flip back on its own. Reverting was right; reverting SILENTLY was the lie.
+  const [failed, setFailed] = useState(false);
   const url = `/api/work/${encodeURIComponent(slug)}/shelf`;
 
   useEffect(() => {
@@ -51,6 +54,7 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
     const previous = shelf;
     const next = shelf ? null : 'saved';
     setBusy(true);
+    setFailed(false); // this attempt's verdict, not the last one's
     setShelf(next);
     try {
       const res = await (next
@@ -59,6 +63,7 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
       if (!res.ok) throw new Error(String(res.status));
     } catch {
       setShelf(previous);
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -67,14 +72,24 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
   if (!signedIn || shelf === undefined) return null;
   const saved = shelf !== null;
   return (
-    <button
-      onClick={toggle}
-      aria-pressed={saved}
-      title={saved ? 'Remove from My books' : 'Save to My books'}
-      className="min-h-[44px] shrink-0 border edge bg-transparent px-3 font-sans text-sm font-semibold text-stone-800 transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:text-stone-100 dark:hover:bg-stone-800"
-    >
-      {saved ? 'Saved' : 'Save'}
-    </button>
+    <span className="flex shrink-0 items-center gap-2">
+      {failed && (
+        // `role="status"` (polite), not an alert: the reader is mid-page in a book and the shelf
+        // is a one-bit convenience — worth saying, not worth interrupting for. It disappears the
+        // moment the next attempt starts, so it always describes the attempt just made.
+        <span role="status" className="font-sans text-xs text-red-700 dark:text-red-400">
+          Not saved
+        </span>
+      )}
+      <button
+        onClick={toggle}
+        aria-pressed={saved}
+        title={saved ? 'Remove from My books' : 'Save to My books'}
+        className="min-h-[44px] shrink-0 border edge bg-transparent px-3 font-sans text-sm font-semibold text-stone-800 transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:text-stone-100 dark:hover:bg-stone-800"
+      >
+        {saved ? 'Saved' : 'Save'}
+      </button>
+    </span>
   );
 }
 

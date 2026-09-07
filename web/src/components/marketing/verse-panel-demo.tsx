@@ -118,7 +118,7 @@ export function VersePanelDemo() {
                 role="tab"
                 aria-selected={i === active}
                 onClick={() => setActive(i)}
-                className={`min-h-[40px] rounded-full border px-4 text-micro uppercase tracking-widest transition-colors duration-200 ease-gentle ${
+                className={`min-h-[44px] rounded-full border px-4 text-micro uppercase tracking-widest transition-colors duration-200 ease-gentle ${
                   i === active
                     ? 'border-accent-600 bg-accent-600 text-stone-50'
                     : 'border-stone-300/80 text-stone-500 hover:border-stone-500 hover:text-stone-900'

@@ -1,5 +1,30 @@
 'use client';
 
+/**
+ * One sentence for a failed password change, from EITHER shape the shim produces — a resolved
+ * `{ error }` or a thrown error — classified on the failure, never quoting it.
+ *
+ * Order matters and is the D41 rule: a THROTTLE (429 / `over_request_rate_limit`) is reported as
+ * a throttle, never as a wrong password, because "your password is wrong" sends a reader to a
+ * reset they do not need. A wrong current password is recognised from the vendor's own wording
+ * (the words are read, not spoken). An EMPTY message is the generic line, not "wrong password":
+ * the first draft said "not correct" for any failure with no text, which is a policy refusal or
+ * a throttle with the message stripped as often as it is a credential.
+ */
+function classifyChangePasswordFailure(failure: unknown): string {
+  const f = typeof failure === 'object' && failure !== null ? (failure as Record<string, unknown>) : {};
+  const code = typeof f.code === 'string' ? f.code : '';
+  const status = typeof f.status === 'number' ? f.status : undefined;
+  const msg = typeof f.message === 'string' ? f.message.trim() : '';
+  if (status === 429 || code === 'over_request_rate_limit') {
+    return 'Too many attempts just now. Wait a minute and try again.';
+  }
+  const wrongCurrent = /invalid|incorrect|password/i.test(msg) && /current|credential/i.test(msg);
+  return wrongCurrent
+    ? 'That current password is not correct.'
+    : 'Your password could not be changed. Please check the form and try again.';
+}
+
 // Replaces Neon's prefab `<AccountView>`, scoped per AUTH_CUTOVER_DESIGN §5 to change-password.
 //
 // DEFERRED, AND NAMED SO THE DEFERRAL IS A DECISION RATHER THAN AN OMISSION: the prefab also
@@ -42,17 +67,29 @@ export function AccountSettings({ email }: { email: string }) {
       // D41 (DEEP_SWEEP): every failure was reported as "that current password is not correct" —
       // including a network drop, a rate-limit refusal, and a policy rejection of the NEW
       // password. Telling someone their password is wrong when it is not sends them to a reset
-      // they do not need. Report what the service actually said and keep the specific wording
-      // only for the specific failure.
+      // they do not need. So the service's answer is still READ, and still decides which of two
+      // sentences is shown — but it is no longer SPOKEN.
+      //
+      // The error voice sweep: `throw new Error(msg)` put the auth vendor's own words on screen,
+      // which is how sentences written for an API console ("User already exists. Use another
+      // email.") reach a reader. This is a Neon/better-auth shim; its message text is not ours,
+      // is not stable across patch releases, and is the same channel that leaked an
+      // account-existence oracle on the sign-up form (auth-forms.tsx). Classify on it, never
+      // quote it.
       if (error) {
-        const msg = typeof error.message === 'string' && error.message.trim() ? error.message : '';
-        const wrongCurrent = /invalid|incorrect|password/i.test(msg) && /current|credential/i.test(msg);
-        throw new Error(wrongCurrent || !msg ? 'That current password is not correct.' : msg);
+        setNote({ ok: false, text: classifyChangePasswordFailure(error) });
+        return;
       }
       form.reset();
       setNote({ ok: true, text: 'Your password has been changed. Other sessions were signed out.' });
-    } catch (err) {
-      setNote({ ok: false, text: err instanceof Error ? err.message : 'That did not work.' });
+    } catch (e) {
+      // The SAME classification on the thrown path. auth-forms.tsx records, verified by
+      // execution against the installed shim, that `authClient.*` THROWS on 4xx rather than
+      // populating `error` — so a genuinely wrong current password most likely arrives HERE, and
+      // the first draft of this catch answered every throw with the generic sentence (deep
+      // audit, 2026-09-07). A dropped connection ("Failed to fetch") carries no code or status
+      // and still lands on the generic line; the vendor's words are never shown.
+      setNote({ ok: false, text: classifyChangePasswordFailure(e) });
     } finally {
       setBusy(false);
     }

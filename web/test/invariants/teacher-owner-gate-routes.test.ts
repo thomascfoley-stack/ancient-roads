@@ -15,7 +15,11 @@ const ALLOWED = { id: 'user_owner', email: 'owner@example.test' };
 const REFUSED = { id: 'user_beta', email: 'beta@example.test' };
 let current = ALLOWED;
 
-vi.mock('@/lib/session', () => ({
+// Spreads the REAL @/lib/auth-failure so this mock carries every export the route imports, not
+// just the ones this file thought of — see the note in library-shelf-round-trip.test.ts. Held by
+// test/invariants/session-mock-surface.test.ts.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')),
   requireUser: async () => current,
   currentUser: async () => current,
 }));

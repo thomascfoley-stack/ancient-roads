@@ -141,6 +141,23 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
+      {
+        // THE SAME ARGUMENT, ON THE BIGGER FILE — with a SHORTER window. The commentary chapter
+        // /home fetches beside the devotionals is larger (p50 0.99 MB, p90 3.08 MB, 9.15 MB on the
+        // five Psalm-119 days) and carried no Cache-Control of its own in local dev. Two things
+        // the first draft got wrong (deep audit, 2026-09-07): in production these paths are
+        // REWRITTEN to the Blob store (`beforeFiles` below, when CORPUS_CDN_BASE is set), so
+        // "no Cache-Control at all" was a local measurement stated as a production fact — and the
+        // URLs are not content-hashed while the corpus is re-synced by script WITHOUT a deploy,
+        // so a day of freshness plus a week of stale-while-revalidate would hide a repaired
+        // chapter for eight days (the 2026-08-18 CDN-freshness deploy was this exact class). Five
+        // minutes fresh, an hour stale: enough to stop the per-visit revalidation, short enough
+        // that a re-sync is visible before anyone files it as a defect.
+        source: '/commentaries/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=300, stale-while-revalidate=3600' },
+        ],
+      },
     ];
   },
 

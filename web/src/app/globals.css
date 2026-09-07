@@ -250,6 +250,17 @@ html {
 .reader-dark.edge {
   border-color: var(--color-stone-800);
 }
+/* THE RAIL'S INTERNAL RULE. `.edge` (stone-200) is invisible on the stone-200 rail in light, so
+ * the rail's dividers are parchment on vellum (stone-50). They were written as the layered pair
+ * `border-stone-50 dark:border-stone-800` — the exact shape the note above measures as broken —
+ * and the dark rail painted bright hairlines (seen in the 2026-09-07 dark composites). Same
+ * remedy as `.edge`: unlayered, so the dark value genuinely wins. */
+.rail-rule {
+  border-color: var(--color-stone-50);
+}
+.reader-dark .rail-rule {
+  border-color: var(--color-stone-800);
+}
 /* Focus companion to `.edge`. A LAYERED `focus:border-*` / `focus-within:border-*` utility can
  * never paint on an element that also carries `.edge`: the rule above is unlayered, and
  * unlayered normal declarations beat everything in @layer utilities regardless of specificity.
