@@ -1,5 +1,46 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — Track A: ADR-029 discharged; publish runbook amended twice [Kimi Code session]
+
+Executed Track A of `KIMI_ORDER_corpus-coverage.md` (Claude's order; my review of it is in
+chat + the runbook amendments). Also corrected a live hazard in MY OWN deliverable the
+order exposed.
+
+**Runbook amendments (`60c26f8` + follow-up).** Review of the order verified two standing
+preconditions verbatim that `3d09cba` missed: (1) P4.n — the 440 prod-staged works are HELD
+by a measured accuracy verdict ("Sermon and theology should NOT flip on this evidence… if
+they are ever ruled to flip"; two bars on the floor, epistle HIT@1 68→48, two correct
+answers destroyed), so flips need an owner ruling + accuracy re-measurement, not a batch;
+(2) ADR-029 rule 3 — no CCEL work publishes without the composite-boundary check.
+`origen-commentary` (the ADR-029 case itself) was removed from the slug files (439 union).
+Also owned: my waves 1–2 CCEL ingests proceeded without the addendum's adapter-boundary
+repair — staged-only, no user-facing harm, but the precondition was missed.
+
+**Track A delivered (`ce3df1b`).** Detector extended (word-index-title, publisher
+catalogue/price-list/blurb, head-and-tail sweep with author-aware foreign-work banners) —
+red-proved (14 labelled cases red→green, 30 must-NOT-fire green throughout); labelled bar
+pre-registered, sensitivity 11/11, specificity 3/3. Frozen 133-work dev-staged scan:
+**90 PASS / 43 FAIL** — 15 live machine word-indexes, 5 foreign-work composites (origen
+§1/§101 confirmed LIVE; schaff-anf06/07/08 carry bound-in fathers — candidates for
+origen-style re-slice, owner call), rest carried-in title/apparatus pages. Durable repair:
+`attributionBoundaryHold` in adapter-ccel — strong findings hold the work AT ACQUIRE TIME,
+before any write, no ordinal surgery; red-proved 5/5. Root suite 1069 green.
+Track C is thereby unblocked for CCEL sources per the order.
+
+**Runbook precondition 2 is now marked SATISFIED for the dev-staged set** with the verdict
+path; the 439 prod-staged works still need the same scanner pointed at prod (owner
+terminal, read-only command recorded in the runbook). No flip may include a verdict-FAIL
+work; several wave works are held (schaff-anf06/07/08, schaff-npnf111/112/114,
+bennett-expositor10, tolstoy-maupassant — full list in verdict.md).
+
+**NOT DONE / UNVERIFIED:**
+- Gutenberg adapter has no attribution boundary yet (addendum 2 says the class generalizes;
+  tennyson/traherne were Gutenberg).
+- The 43 held works stay staged with reasons; re-slice/suppression decisions are owner calls.
+- Translations deploy still blocked on the D3 corpus-store token (owner, ~2 min).
+- Track B (tradition backfill + coverage tables) and Track C (capped acquisition wave) from
+  the order remain unexecuted; Track D is superseded (translations already executed).
+
 ## 2026-09-06 — Acquisitions executed; translations deploy BLOCKED on the D3 corpus-store token [Kimi Code session]
 
 Owner directives executed: "english only forget latin" · "do the acquisitions and push to
