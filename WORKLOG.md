@@ -1,5 +1,68 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — "Do it all": the audit remediation program, complete [Kimi Code session]
+
+Owner directive "do it all" on the deep-audit's findings. All seven workstreams done:
+
+1. **Live wrong-serving STOPPED (`63438502`).** 46 shelf files / 50 entries removed —
+   calvin-calcom (10), augustine-confessions (13; the audit transposed the counts),
+   adeney-expositorsonglament (26), donne-divine-poems (1) — CDN verified 0 before/after
+   on every file. ADR-117 pattern, evidence in `docs/evidence/register-cleanup/`.
+   Found serving-but-left (owner ruling needed): luther-bondage (11), manton-01/02 (6) —
+   verdict-FAIL works, not quarantined, live before the cleanup.
+2. **Detector 2.1.0 (`f8de79a2`).** All 9 audit-proven misses fixed (heading-masking,
+   all-caps banners, honorific chains, spelled-out + slash prices, decorated suffixes,
+   word-index variants) with false-positive guards (chesterton-aquinas, pascal-provincial
+   stay PASS). Rescan: 90P/43F → **75/58** (15 flips, all PASS→FAIL). Dev re-carve:
+   **42 PASS / 16 HELD**.
+3. **Shelf gap closed (`549f42ee`).** register-writer gates materialization on
+   `shouldMaterializeShelf(work.publish)`; staged escape behind explicit
+   REGISTER_MATERIALIZE_STAGED_SHELF=1. Boundary moved to writeRegisterWork's top
+   (6 register paths covered by construction) + 4 bespoke writers pinned by a
+   wiring-derivation invariant. Red-proofs in `docs/evidence/register-writer-gates-2026-09-07/`.
+   OPEN (owner/runbook decision): publish-time materialization from the gated sections
+   store — works staged after this fix have no shelf files at flip time.
+4. **(in 3).**
+5. **Floor inputs fixed (`3d183cda`).** `reference` excluded from NOT_A_TRADITION in both
+   verifier copies (byte-identical, 4 red-proof scenarios); eval traditions_min normalizes
+   via the verifier's own normalizeForMatch. Blast radius checked: display paths never
+   applied the exclusion set (pre-existing display/gate gap, surfaced).
+6. **C-3 closed (`04d0b742`).** Guarded prod scan mode (SCAN_ALLOW_PROD + exact --target +
+   explicit --slugs; 6/6 red-proofs; read-only txn verified in every mode). Prod scan of
+   the 439: **296 PASS / 143 FAIL**; batches carved (union proof); hooker-just FAIL on dev
+   (held — plausibly the detector's work-title false-positive class; owner adjudication).
+   **Runbook flippable set: 42 + 296 = 338.**
+7. **Lens 7 attempted.** The earlier gate-auth failure was content-type, not the password
+   (the route wants form data). But SITE_PASSWORD in Vercel is type **sensitive** — the
+   env API cannot decrypt it (length 0). Everything password-free is verified (deploy
+   serving, CDN 200s, uniform gate 307s); the actual browser leg stays **NOT RUN** —
+   owner's Claude-Chrome pass.
+
+**Merge + fallout (`52e60bef`, `96d60ba3`).** Merged origin/main (its /ask redesign,
+N1/N3 mock fix, MIT license). Two conflicts resolved deliberately: the scanner (both sides
+fixed the same typecheck error — kept main's narrowing shape + our prod mode) and WORKLOG
+(both prepend, both kept). The merge surfaced a REAL bug: main's claimReadingsStart CAS
+refuses NULL readings_status rows (three-valued logic: NULL IN (...) is NULL, not TRUE) —
+documents.ts never sets readings_status, so every prod document was unclaimable and every
+first suggested-readings run 409'd since 957c8601. Fixed with the IS NULL arm; main's own
+new test is the red-proof (red before, green after); readings-reentrancy 8/8 unchanged.
+Also landed the H-6 env-gate fix (refuse DATABASE_URL without APP_DATABASE_URL with the
+remedy inline — red-proofed both directions).
+
+**Verification:** npm run qa green end-to-end (web suite + 30 root) after the merge and
+both fixes; root vitest 1116 green at Wave B close; cutover typecheck clean.
+
+**NOT DONE / UNVERIFIED:**
+- Browser leg of the translations (needs the owner in a browser — password is sensitive-type).
+- Owner rulings: luther-bondage + manton-01/02 serving; hooker-just detector adjudication;
+  the 16 dev-held + 143 prod-held works' re-slice/suppress/skip decisions.
+- The 338-work publish batch itself — owner terminal, runbook current.
+- Post-flip accuracy re-measurement (now a REQUIRED step in the runbook).
+- Publish-time materialization decision (item 3's open tension).
+- Detector doctrine on `foreign-work-banner` aggressiveness (prod scan's 29 banners are
+  spelt out in verdict-prod.md for the ADR-029 reader; owner decision #4 on weak findings
+  untouched throughout).
+
 ## 2026-09-07 — C-3 closed: guarded prod mode for the ADR-029 scanner; 439 prod-staged works scanned (296 PASS / 143 FAIL), batches carved; hooker-just FAIL on dev [Kimi Code session]
 
 Closed deep-audit C-3 (`docs/pm/audits/2026-09-07-wave-deep-audit.md`): the runbook's
