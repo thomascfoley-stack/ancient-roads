@@ -141,6 +141,19 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
+      {
+        // THE SAME ARGUMENT, ON THE BIGGER FILE. The rule above was written for the devotional
+        // pair at "~2.3MB together"; the commentary chapter that /home fetches alongside them is
+        // LARGER — measured over all 732 day-halves of the Spurgeon calendar: p50 0.99 MB,
+        // p90 3.08 MB, and 9.15 MB on the five days the reading lands in Psalm 119 — and it had
+        // no Cache-Control at all, so the biggest payload on the page was also the only one
+        // revalidating on every visit. Same policy as the devotional files: these change at
+        // deploy/ingest time, never per request.
+        source: '/commentaries/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+        ],
+      },
     ];
   },
 

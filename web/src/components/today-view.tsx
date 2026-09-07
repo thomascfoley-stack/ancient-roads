@@ -63,13 +63,22 @@ export function TodayView() {
     let deadline: ReturnType<typeof setTimeout> | undefined;
     (async () => {
       const load = async (): Promise<TodayCard | null> => {
-        const res = await fetch('/devotional/morning-evening.json', {
+        // ONE DAY, NOT THE YEAR. This was `/devotional/morning-evening.json` — the whole 1.42 MB
+        // calendar, of which this screen renders 4,056 bytes (0.27%). With Daily Light's 0.82 MB
+        // below, /home paid 2.24 MB of fixed transfer before the commentary chapter (p50 0.99 MB,
+        // p90 3.08 MB, 9.15 MB on the five Psalm-119 days) was added on top. The day files are a
+        // build-time shard of the same export — scripts/split-devotional-by-day.mjs — in the
+        // shape the corpus already uses for `/commentaries/<slug>/<chapter>.json`.
+        // (Merged 2026-09-07 with the bounded fetch below — two sweeps, one line.)
+        const res = await fetch(`/devotional/morning-evening/${mmddOf(now)}.json`, {
           // Releases the socket rather than leaving it half-open; the race below is what
           // guarantees the STATE moves on, since a stalled read may never reject.
           signal: AbortSignal.timeout(OFFICE_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`devotional ${res.status}`);
-        const data = (await res.json()) as DevotionalData;
+        // resolveToday still takes the year-shaped map and looks up mmddOf(date) inside it, so
+        // the day file is handed over under its own key. today.ts is untouched by this change.
+        const data = { [mmddOf(now)]: await res.json() } as DevotionalData;
         // Voices come from the reader's own loader (already license-filtered); today.ts
         // re-filters + grounds them to the passage. Local date/time decides which entry.
         return resolveToday(now, data, (slug, ch) =>
@@ -99,10 +108,11 @@ export function TodayView() {
     // the render below composes from whatever loaded).
     (async () => {
       try {
-        const res = await fetch('/devotional/daily-light.json');
+        // Day-scoped for the same reason as Spurgeon above, and STILL ITS OWN FILE: this loader
+        // degrades independently of the one above, and a shared file would couple the failures.
+        const res = await fetch(`/devotional/daily-light/${mmddOf(now)}.json`);
         if (!res.ok) return;
-        const data = (await res.json()) as OfficeData;
-        const day = data[mmddOf(now)];
+        const day = (await res.json()) as OfficeData[string];
         const entry = day?.[halfOf(now)] ?? day?.am ?? day?.pm ?? null;
         if (live && entry) setOffice(entry);
       } catch {
