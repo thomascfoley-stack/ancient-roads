@@ -49,30 +49,40 @@
 > still named `prod440-*` for file stability — the 2026-09-07 prod-scan carve above then took
 > the five batches to 48/64/66/66/52 = 296).
 >
-> What remains flippable without further ruling: the **verdict-PASS subset of the 58
-> dev-staged works** (after the dev→prod copy). **42 PASS / 16 HELD** — re-carved 2026-09-07
-> from **verdict-v2** (detector 2.1.0, deep-audit H-1 remediation; was 50/8 under v1 —
-> donne-devotions, flavel-life, foxe-martyrs, lardner-n-mosaic, luther-translating,
-> schaff-npnf109/110/204 moved PASS→HELD), exact slug files:
-> `docs/evidence/corpus-copy/dev58-pass-adr029-2026-09-07.json`
-> (flip these) and `dev58-held-adr029-2026-09-07.json` (do NOT flip: bennett-expositor10,
-> donne-devotions, flavel-life, foxe-martyrs, lardner-n-mosaic, luther-translating,
-> schaff-anf06/07/08, schaff-npnf109/110/111/112/114/204, tolstoy-maupassant — full findings in
-> verdict.md and verdict-v2.md). The copy itself (job 1) is unaffected by both preconditions
-> and can run as written (copy all 58; the held ones stay staged on prod too, marked by this
-> packet).
+> What remains flippable without further ruling: **314 works** — the flippable set is now
+> cut on the two-axis analysis of 2026-09-07 (fresh-agent partition, evidence below):
+> **detector-PASS AND structurally clean** (1:1 source item — one work, one author — by
+> construction). After the deep-audit's re-sample showed the detector alone cannot carry
+> the decision (6/15 false-PASS on never-seen works; each fix round finds a new
+> unenumerated class — an open-ended class must not be chased by example), the batch was
+> re-partitioned by source STRUCTURE, not detector confidence: SWORD modules and
+> single-work etexts/CCEL items carry no composite-volume risk by construction, and the
+> entire catastrophe class (bound-in foreign works) concentrates in composite-structure
+> sources. **24 detector-PASS-but-composite-risk works were carved OUT**
+> (`docs/evidence/corpus-copy/structural-hold-composite-risk-2026-09-07.json`: 4 Schaff
+> NPNF anthology vols + 9 collected-Works vols + 6 hymn/poetry anthologies + 2
+> multi-author reference + 3 soft calls) — held for hand-read or ADR-029 re-slice.
+> **Flippable = 38 dev-PASS + 276 prod-PASS = 314** (union-verified 2026-09-07).
+> The dev 58's full findings: verdict.md + verdict-v2.md; the 16 dev-held and 143
+> prod-held works additionally triage as: 111 structurally-clean hygiene-only (fast-track
+> after mechanical cleanup — strip tail word-indexes/title pages/publisher catalogues),
+> 14 clean-but-catastrophe (owner read; only 3 are true foreign text — donne-devotions,
+> catherine-dialog, cross-g-theology), 34 composite (re-slice candidates, ADR-029 rule 2).
+> The copy itself (job 1) is unaffected by all preconditions and can run as written (copy
+> all 58; held works stay staged on prod too, marked by this packet).
 
 **What this is:** the paste-ready runbook for the overdue owner batch from the 2026-09-06
 ingestion session. Two jobs, in order:
 
 1. **Copy** the 58 works staged on DEV (top-up waves 1–3) to PROD, landing `staged`.
-2. **Publish** 338 works total on PROD: the 42 verdict-PASS of the 58 (after the copy; 42 since
-   the 2026-09-07 v2 re-carve, see amendment) + the
-   296 verdict-PASS of the 439 already staged there (296 since the 2026-09-07 prod scan carve,
-   see amendment) — each as a `--status-only` flip followed immediately by a
+2. **Publish** 314 works total on PROD: the 38 verdict-PASS-and-structurally-clean of the 58
+   (after the copy) + the 276 verdict-PASS-and-structurally-clean of the 439 already staged
+   there (both numbers since the 2026-09-07 two-axis partition — see the amendment block) —
+   each as a `--status-only` flip followed immediately by a
    `serve-batched` run on the same slug file. **(Job 2 was gated by the preconditions in the
    amendment block: the owner ruling of 2026-09-07 discharged P4.n; ADR-029's prod-side scan
-   ran 2026-09-07 and its 143 FAILs are carved — both preconditions are now satisfied.)**
+   ran 2026-09-07 and its 143 FAILs are carved; the two-axis structural partition carved 24
+   more — all preconditions are now satisfied.)**
 
 Everything below was verified READ ONLY on 2026-09-06 (dev via `web/.env.local`
 `APP_DATABASE_URL` = app_runtime, SELECT-only; prod via `~/.neon_prod_url`, `BEGIN READ ONLY`).
@@ -91,7 +101,7 @@ Nothing here was executed for real by the prepping agent — the write tools are
   **Carved 2026-09-07 by the prod ADR-029 scan: 143 verdict-FAIL works moved to
   `docs/evidence/corpus-copy/prod439-held-adr029-2026-09-07.json`; 296 verdict-PASS remain
   in the five batch files** (`verdict-prod.md`, union proof `carve-union-proof.log`).
-- No delta: 42 + 296 = 338 works to publish (embedding-row counts were measured for the full
+- No delta: 38 + 276 = 314 works to publish (embedding-row counts were measured for the full
   58+440 set and are now over-estimates — the 42 is the verdict-v2 re-carve of 2026-09-07 and
   the 296 is the prod-scan carve of 2026-09-07; serve-batched prints its own exact ETA).
 
@@ -156,7 +166,7 @@ dev row before the copy; otherwise they ride with the batch.
   2,000 rows and is **resumable** — an interruption costs nothing, re-run the same command.
 - Interleave per batch (flip → serve → next batch) so no work sits published-but-unretrievable
   longer than its own batch's serve run. Published-but-unserved is a known-safe intermediate
-  (the 88-work precedent), but there is no reason to accumulate 338 of them.
+  (the 88-work precedent), but there is no reason to accumulate 314 of them.
 
 ## Step 1 — copy the 58 dev → prod (one run)
 
