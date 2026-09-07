@@ -42,4 +42,26 @@ describe('eval expectation checks', () => {
     const v = await verifyV1(r, corpus, retrieval);
     expect(runExpectation('definitely_not_a_check', r, v)).toContain('unknown expectation');
   });
+
+  it('traditions_min folds case the way the verifier floor does — one tradition, two casings, counts ONCE (M-5)', async () => {
+    // SEED: revert checks.ts traditions_min to a raw Set of attribution strings -> 'Methodist'
+    // and 'methodist' count as 2, this leg passes the axis, and the eval over-reports breadth
+    // the faithfulness gate (normalizeForMatch) would count as ONE. The live corpus carries
+    // exactly this pair: ingest-sword-commentaries.mts hardcodes Title-Case values against
+    // lowercase manifest values (46,971 rows).
+    const r = validResponse();
+    (r.blocks[1] as any).attribution.tradition = 'Methodist';
+    (r.blocks[2] as any).attribution.tradition = 'methodist';
+    const v = await verifyV1(r, corpus, retrieval);
+    expect(runExpectation({ traditions_min: 2 }, r, v)).toContain('traditions_min');
+    expect(runExpectation({ traditions_min: 1 }, r, v)).toBeNull();
+  });
+
+  it('traditions_min still counts genuinely different traditions — the fix is not a flattener', async () => {
+    const r = validResponse();
+    (r.blocks[1] as any).attribution.tradition = 'Methodist';
+    (r.blocks[2] as any).attribution.tradition = 'Baptist';
+    const v = await verifyV1(r, corpus, retrieval);
+    expect(runExpectation({ traditions_min: 2 }, r, v)).toBeNull();
+  });
 });

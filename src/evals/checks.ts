@@ -3,6 +3,7 @@
 
 import type { TeacherResponse, VoiceBlock } from '../contract/types';
 import type { VerifierResult, Violation } from '../verifier/types';
+import { normalizeForMatch } from '../verifier/normalize';
 import type { Expectation } from './types';
 
 function violations(v: VerifierResult): Violation[] {
@@ -57,7 +58,11 @@ const CHECKS: Record<string, CheckFn> = {
   },
 
   traditions_min: (r, _v, n = 1) => {
-    const count = new Set(voices(r).map((b) => b.attribution.tradition)).size;
+    // Fold case (and punctuation/spacing) through the SAME normalizeForMatch the verifier's
+    // diversity floor counts with (deep-audit 2026-09-07, M-5): a raw Set counted 'Methodist'
+    // + 'methodist' as TWO — the Title-Case SWORD-ingest values vs the lowercase manifest
+    // values — so the axis over-reported breadth the faithfulness gate counts as one.
+    const count = new Set(voices(r).map((b) => normalizeForMatch(b.attribution.tradition))).size;
     return count >= n ? null : `${count} tradition(s), expected >= ${n}`;
   },
 };

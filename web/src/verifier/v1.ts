@@ -329,7 +329,15 @@ export async function verifyV1(
   // safely join (`J.C. Ryle` / `Ryle, John Charles`, `B.W. Johnson` / `Johnson, Barton Warren`).
   // The backfill remains worth doing for display and genuine breadth; it is not what makes the
   // gate honest. This is.
-  const NOT_A_TRADITION = new Set(['unassigned', 'unknown', '']);
+  // `reference` IS NOT A TRADITION either (deep-audit 2026-09-07, H-5): reference works —
+  // dictionaries, lexicons, edited sets — are not a tradition a voice can belong to; they are
+  // apparatus. The d703a15 backfill keyed 60 works `reference`, 36 of them `source_type: father`
+  // (the Schaff ANF/NPNF patristic sets, inside the /ask pool), and measured against the shipped
+  // gate ONE church tradition + a dictionary cleared this floor, and the same father served as
+  // `patristic` + `reference` (Schaff-edited) satisfied it against himself. Dropped from BOTH
+  // sides for the same two reasons as `unassigned` above: it must not pad the USED count, and it
+  // must not ENGAGE the gate on breadth that does not exist.
+  const NOT_A_TRADITION = new Set(['unassigned', 'unknown', '', 'reference']);
   const realTraditions = (xs: readonly (string | null | undefined)[]) =>
     new Set(xs.map((t) => normalizeForMatch(t ?? '')).filter((t) => !NOT_A_TRADITION.has(t)));
   const availableTraditions = realTraditions(retrieval.traditions);
