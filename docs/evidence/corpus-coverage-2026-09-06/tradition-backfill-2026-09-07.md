@@ -1,0 +1,848 @@
+# tradition backfill — 2026-09-07 (Track B1)
+
+Input: `ingest/sources.config.json`, 917 entries, 845 `tradition: unassigned` at start.
+Result: **775 moved off `unassigned` (775/845), 70 remain `unassigned`.**
+No existing assignment re-keyed: every edit targeted entries whose tradition was `unassigned`.
+Closed vocabulary only; sub-school values (cistercian, devotio-moderna, english-mystic) untouched.
+
+## Method
+
+1. `node scripts/derive-tradition-backfill.mjs` (report-only) — emitted /tmp/tradition-backfill-plan.json,
+   263 works across 26 unanimous people, 0 conflicted people. Applied verbatim.
+2. Hand classification of the tool residue only, one line of reason per work (sections B, C).
+
+## A. Tool plan applied verbatim (263 works)
+
+- `barnes-ntnotes` (Barnes, Albert) → presbyterian — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `baxter-causes` (Baxter, Richard) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `baxter-pastor` (Baxter, Richard) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `baxter-unconverted` (Baxter, Richard) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom01` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom02` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom03` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom04` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom05` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom06` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom07` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom08` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom09` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom10` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom11` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom12` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom13` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom14` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom15` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom16` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom17` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom18` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom19` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom20` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom21` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom22` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom23` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom24` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom25` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom26` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom27` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom28` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom29` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom30` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom31` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom32` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom33` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom34` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom35` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom36` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom37` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom38` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom39` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom40` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom41` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom42` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom43` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom44` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-calcom45` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-chr-life` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-commentaries` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-prayer` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-sermons` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `calvin-treatise-relics` (Calvin, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `donne-deaths-duel` (Donne, John) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `donne-devotions` (Donne, John) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `donne-easter` (Donne, John) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `donne-spital` (Donne, John) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `easton-ebd2` (Easton, Matthew George) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edersheim-sketches` (Edersheim, Alfred) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edersheim-temple` (Edersheim, Alfred) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edwards-affections` (Edwards, Jonathan) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edwards-sermons` (Edwards, Jonathan) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edwards-treatiseongrace` (Edwards, Jonathan) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edwards-trinity` (Edwards, Jonathan) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edwards-will` (Edwards, Jonathan) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edwards-works1` (Edwards, Jonathan) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `edwards-works2` (Edwards, Jonathan) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `flavel-fountain` (Flavel, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `flavel-grace` (Flavel, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `flavel-life` (Flavel, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `flavel-lovely` (Flavel, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `flavel-pneum` (Flavel, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `flavel-saintindeed` (Flavel, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `gill-doctrinal` (Gill, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `gill-practical` (Gill, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `gill-song` (Gill, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhc` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhc1` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhc2` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhc3` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhc4` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhc5` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhc6` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `henry-mhcc` (Henry, Matthew) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `herbert-temple2` (Herbert, George) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `hodge-darwinism` (Hodge, Charles) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `hodge-ephesians` (Hodge, Charles) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `hodge-theology4` (Hodge, Charles) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `keble-year` (Keble, John) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `maclaren-david` (MacLaren, Alexander) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `maclaren-expositorcolphm` (MacLaren, Alexander) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `maclaren-expositorpsalms1` (MacLaren, Alexander) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `maclaren-expositorpsalms2` (MacLaren, Alexander) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `maclaren-expositorpsalms3` (MacLaren, Alexander) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `milton-paradiselost` (Milton, John) → puritan — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-apostasy` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-catechisms` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-churchlove` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-communion` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-conscience` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-deathofdeath` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-discourses` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-display` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-eshcol` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-evangelicalchurches` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-faith` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-glory` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-grotius` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-indwellingsin` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-just` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-justice` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-liturgies` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-mort` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-pastorspeople` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-perseverance` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-pneum` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-poema` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-psalm130` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-schism` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-sermons` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-sin-grace` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-spirituallyminded` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-temptation` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-trinity` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-truthinnocence` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-vindicevang` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `owen-worship` (Owen, John) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `rutherford-triumph` (Rutherford, Samuel) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf01` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf02` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf03` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf04` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf05` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf06` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf07` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-anf08` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-dictionarybible` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-encyc01` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-encyc02` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-encyc09` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-encyc13` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-encyc13a` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc1` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc2` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc3` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc4` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc5` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc6` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc7` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-hcc8` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf101` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf102` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf103` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf104` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf105` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf106` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf107` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf108` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf109` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf110` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf111` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf112` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf113` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf114` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf201` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf202` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf203` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf204` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf205` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf206` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf207` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf208` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf209` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf210` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf211` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf212` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf213` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-npnf214` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-person` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `schaff-romance` (Schaff, Philip) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `smith-w-bibledict` (Smith, William) → reference — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-catechism` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-comment` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-grace` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-proverbs` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons01` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons02` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons03` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons04` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons05` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons06` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons07` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons08` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons09` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons10` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons11` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons12` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons13` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons14` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons15` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons16` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons17` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons18` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons19` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons20` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons21` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons22` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons23` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons24` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons25` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons26` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons27` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons28` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons29` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons30` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons31` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons32` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons33` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons34` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons35` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons36` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons37` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons38` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons39` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons40` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons41` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons42` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons43` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons44` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons45` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons46` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons47` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons48` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons49` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons50` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons51` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons52` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons53` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons54` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons55` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons56` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons57` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons58` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons59` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons60` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons61` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons62` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-sermons63` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `spurgeon-till-he-come` (Spurgeon, Charles Haddon) → baptist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `taylor-holy-dying` (Taylor, Jeremy) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `traherne-centuries` (Traherne, Thomas,) → anglican — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `watson-beatitudes` (Watson, Thomas) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `watson-commandments` (Watson, Thomas) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `watson-cordial` (Watson, Thomas) → reformed — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `watts-divsongs` (Watts, Isaac) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `watts-psalmshymns` (Watts, Isaac) → nonconformist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `wesley-journal` (Wesley, John) → methodist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `wesley-notes` (Wesley, John) → methodist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `wesley-perfection` (Wesley, John) → methodist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `wesley-works` (Wesley, John) → methodist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+- `whitefield-sermons` (Whitefield, George) → methodist — tool plan: order-insensitive full-name-token match to this author's already-assigned works; unanimous tradition
+
+## B. Hand-classified residue (512 works)
+
+- `macdonald-lady` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-unspoken` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-elginbrod` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-heatherandsnow` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-lilith` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-backofnorth` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-donal-grant` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-dayboy` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-princess` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-rfalconer` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-salted` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-unspoken1` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-sirgibbie` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-princessgoblin` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-hope` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-unspoken2` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-unspoken3` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-strife` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-princesscurdie` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-doublestory` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-portent` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-adela1` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-miracles` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-adela3` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-adela2` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-thomaswingfold` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-seaboardparish` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-purposes-shadows` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-neighbourhood` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-vicardaughter` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-saltedfire` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-there-back` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `macdonald-phantastes-faerie` (MacDonald, George) → congregational — Scottish Congregationalist minister (Arundel), later lay
+- `chesterton-aquinas` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-everlasting` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-heretics` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-orthodoxy` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-thursday` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-whatwrong` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-wisdom` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-toomuch` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-napoleon` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-whitehorse` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-ball-cross` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-trifles` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-historyengland` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-thingsconsidered` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-defendant` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-divorce` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-longbow` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-manalive` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-magic` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-america` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-victorianage` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-eugenics` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-rightworld` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-preexistence` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `chesterton-innocencebrown` (Chesterton, Gilbert Keith) → catholic — received into the Roman Catholic Church 1922; apologist identified with it
+- `luther-bondage` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-galatians` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-good-works` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-first-prin` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-prefacetoromans` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-largecatechism` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-sermons` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-smallcat` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-christianliberty` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-smalcald` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-works1` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-works2` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-tabletalk` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-theses` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-translating` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `luther-stpeter-stjude` (Luther, Martin) → lutheran — founder of the Lutheran tradition
+- `robertson-at-word` (Robertson, Archibald Thomas) → baptist — Southern Baptist NT scholar, SBTS
+- `harnack-origin-nt` (Harnack, Adolf) → lutheran — German Lutheran church historian, Berlin
+- `law-clergy` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-collection` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-love2` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-doubt` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-serious-call` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-errors` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-grounds` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-waytodivine` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-humbleearnest` (Law, William) → anglican — Church of England priest and nonjuror
+- `law-prayer` (Law, William) → anglican — Church of England priest and nonjuror
+- `murray-lords-table` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `law-apracticaltreat` (Law, William) → anglican — Church of England priest and nonjuror
+- `murray-obedience` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-indwelling` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-new-life` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-true-vine` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-surrender` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-waiting` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-covenants` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-working` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-deeper` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `murray-prayer` (Murray, Andrew) → reformed — Dutch Reformed Church minister in South Africa
+- `brownlie-hymnseast` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-earlyhymns` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-easternhymns` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-officehymns` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-greekhymns` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-hyndbrow` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-aposthymns` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-russianhymns` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `brownlie-hymnsmorning` (Brownlie, John) → presbyterian — Scottish Presbyterian minister (Portpatrick), hymn translator
+- `pink-antichrist` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `pink-inspiration` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `pink-godhood` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `pink-just` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `pink-law` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `pink-sovereignty` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `pink-gospels` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `dods-expositor1` (Dods, Marcus) → presbyterian — Free Church of Scotland minister and professor
+- `pink-return` (Pink, Arthur Walkington) → reformed — Calvinist writer, standardly classed Reformed
+- `dods-likechrist` (Dods, Marcus) → presbyterian — Free Church of Scotland minister and professor
+- `dods-expositorjohn1` (Dods, Marcus) → presbyterian — Free Church of Scotland minister and professor
+- `dods-expositor1cor` (Dods, Marcus) → presbyterian — Free Church of Scotland minister and professor
+- `drummond-ascent` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `drummond-greatest` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `drummond-bsi` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `dods-expositorjohn2` (Dods, Marcus) → presbyterian — Free Church of Scotland minister and professor
+- `drummond-monkey` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `drummond-life` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `drummond-ideal` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `drummond-natural-law` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `drummond-stone-roll` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `drummond-new-ev` (Drummond, Henry) → evangelical — Free Church of Scotland lecturer and Moody-circle evangelist
+- `manton-manton01` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton02` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton03` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton04` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton05` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton06` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton07` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton08` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `manton-manton20` (Manton, Thomas) → puritan — English Puritan divine, ejected 1662
+- `augustine-confess` (Augustine, Saint) → patristic — Latin Church Father, d. 430
+- `augustine-enchiridion` (Augustine, Saint) → patristic — Latin Church Father, d. 430
+- `augustine-confessions` (Augustine, Saint) → patristic — Latin Church Father, d. 430
+- `augustine-doctrine` (Augustine, Saint) → patristic — Latin Church Father, d. 430
+- `finney-backslide` (Finney, Charles Grandison) → evangelical — Second Great Awakening revivalist (Presbyterian, later Congregational)
+- `finney-power` (Finney, Charles Grandison) → evangelical — Second Great Awakening revivalist (Presbyterian, later Congregational)
+- `finney-revivals` (Finney, Charles Grandison) → evangelical — Second Great Awakening revivalist (Presbyterian, later Congregational)
+- `finney-theology` (Finney, Charles Grandison) → evangelical — Second Great Awakening revivalist (Presbyterian, later Congregational)
+- `finney-sermons` (Finney, Charles Grandison) → evangelical — Second Great Awakening revivalist (Presbyterian, later Congregational)
+- `finney-toprofessingchristians` (Finney, Charles Grandison) → evangelical — Second Great Awakening revivalist (Presbyterian, later Congregational)
+- `bounds-necessity` (Bounds, Edward M.) → methodist — Methodist Episcopal Church South pastor and chaplain
+- `bounds-purpose` (Bounds, Edward M.) → methodist — Methodist Episcopal Church South pastor and chaplain
+- `bounds-prayingmen` (Bounds, Edward M.) → methodist — Methodist Episcopal Church South pastor and chaplain
+- `bounds-reality` (Bounds, Edward M.) → methodist — Methodist Episcopal Church South pastor and chaplain
+- `bounds-weapon` (Bounds, Edward M.) → methodist — Methodist Episcopal Church South pastor and chaplain
+- `bounds-essentials` (Bounds, Edward M.) → methodist — Methodist Episcopal Church South pastor and chaplain
+- `bounds-power` (Bounds, Edward M.) → methodist — Methodist Episcopal Church South pastor and chaplain
+- `jowett-brooks` (Jowett, John Henry) → congregational — English Congregationalist minister
+- `jowett-calvary` (Jowett, John Henry) → congregational — English Congregationalist minister
+- `jowett-epistpeter` (Jowett, John Henry) → congregational — English Congregationalist minister
+- `jowett-friendonroad` (Jowett, John Henry) → congregational — English Congregationalist minister
+- `jowett-mattermost` (Jowett, John Henry) → congregational — English Congregationalist minister
+- `jowett-passion` (Jowett, John Henry) → congregational — English Congregationalist minister
+- `jowett-silverlining` (Jowett, John Henry) → congregational — English Congregationalist minister
+- `kuyper-holy-spirit` (Kuyper, Abraham) → reformed — Dutch Reformed (Gereformeerde Kerken) theologian and statesman
+- `kuyper-near` (Kuyper, Abraham) → reformed — Dutch Reformed (Gereformeerde Kerken) theologian and statesman
+- `south-robert-sermons01` (South, Robert) → anglican — Church of England court preacher
+- `south-robert-sermons02` (South, Robert) → anglican — Church of England court preacher
+- `south-robert-sermons03` (South, Robert) → anglican — Church of England court preacher
+- `south-robert-sermons04` (South, Robert) → anglican — Church of England court preacher
+- `south-robert-sermons06` (South, Robert) → anglican — Church of England court preacher
+- `south-robert-sermons07` (South, Robert) → anglican — Church of England court preacher
+- `south-robert-sermons5` (South, Robert) → anglican — Church of England court preacher
+- `tillotson-works04` (Tillotson, John) → anglican — Archbishop of Canterbury
+- `tillotson-works05` (Tillotson, John) → anglican — Archbishop of Canterbury
+- `tillotson-works06` (Tillotson, John) → anglican — Archbishop of Canterbury
+- `tillotson-works07` (Tillotson, John) → anglican — Archbishop of Canterbury
+- `tillotson-works09` (Tillotson, John) → anglican — Archbishop of Canterbury
+- `tillotson-works08` (Tillotson, John) → anglican — Archbishop of Canterbury
+- `tillotson-works10` (Tillotson, John) → anglican — Archbishop of Canterbury
+- `charnock-cleansing` (Charnock, Stephen) → puritan — English Puritan divine
+- `charnock-instr-regen` (Charnock, Stephen) → puritan — English Puritan divine
+- `charnock-efficient-regeneration` (Charnock, Stephen) → puritan — English Puritan divine
+- `charnock-nat-regen` (Charnock, Stephen) → puritan — English Puritan divine
+- `charnock-nec-regen` (Charnock, Stephen) → puritan — English Puritan divine
+- `charnock-reconcil` (Charnock, Stephen) → puritan — English Puritan divine
+- `farrar-clouds` (Farrar, Frederic William) → anglican — Church of England, Dean of Canterbury
+- `farrar-expositor1kings` (Farrar, Frederic William) → anglican — Church of England, Dean of Canterbury
+- `farrar-expositor2kings` (Farrar, Frederic William) → anglican — Church of England, Dean of Canterbury
+- `hastings-dict1` (Hastings, James) → reference — editor of Bible dictionaries/encyclopaedias; works are reference tools
+- `hastings-dict2` (Hastings, James) → reference — editor of Bible dictionaries/encyclopaedias; works are reference tools
+- `hastings-dictv1` (Hastings, James) → reference — editor of Bible dictionaries/encyclopaedias; works are reference tools
+- `hastings-dictv2` (Hastings, James) → reference — editor of Bible dictionaries/encyclopaedias; works are reference tools
+- `hastings-dictv3` (Hastings, James) → reference — editor of Bible dictionaries/encyclopaedias; works are reference tools
+- `hastings-dictv4` (Hastings, James) → reference — editor of Bible dictionaries/encyclopaedias; works are reference tools
+- `farrar-expositordan` (Farrar, Frederic William) → anglican — Church of England, Dean of Canterbury
+- `inge-outspoken` (Inge, William Ralph) → anglican — Dean of St Paul's, Church of England
+- `inge-mysticism` (Inge, William Ralph) → anglican — Dean of St Paul's, Church of England
+- `smith-ga-expositorisa2` (Smith, George Adam) → presbyterian — Free Church / United Free Church of Scotland professor
+- `smith-ga-expositorisa1` (Smith, George Adam) → presbyterian — Free Church / United Free Church of Scotland professor
+- `smith-ga-jeremiah` (Smith, George Adam) → presbyterian — Free Church / United Free Church of Scotland professor
+- `watson-ra-expositornum` (Watson, Robert Alexander) → presbyterian — Scottish Presbyterian minister, Expositor's Bible editor
+- `adeney-expositorsonglament` (Adeney, Walter Frederic) → congregational — English Congregationalist minister and professor
+- `adeney-expositoreznehes` (Adeney, Walter Frederic) → congregational — English Congregationalist minister and professor
+- `aquinas-nature-grace` (Thomas Aquinas, Saint) → catholic — Dominican, Doctor of the Church
+- `bangs-alphabetic` (Bangs, Nathan) → methodist — Methodist Episcopal minister and historian
+- `bangs-history1` (Bangs, Nathan) → methodist — Methodist Episcopal minister and historian
+- `bangs-history3` (Bangs, Nathan) → methodist — Methodist Episcopal minister and historian
+- `bangs-history4` (Bangs, Nathan) → methodist — Methodist Episcopal minister and historian
+- `blaikie-expositor8` (Blaikie, W. G.) → presbyterian — Free Church of Scotland minister and professor
+- `watson-ra-expositor7` (Watson, Robert Alexander) → presbyterian — Scottish Presbyterian minister, Expositor's Bible editor
+- `blaikie-expositor2sam` (Blaikie, W. G.) → presbyterian — Free Church of Scotland minister and professor
+- `blaikie-expositorjosh` (Blaikie, W. G.) → presbyterian — Free Church of Scotland minister and professor
+- `watson-ra-expositorjob` (Watson, Robert Alexander) → presbyterian — Scottish Presbyterian minister, Expositor's Bible editor
+- `boethius-consolation` (Boethius, Anicius Manlius Torquatus Severinus) → patristic — late-antique Christian philosopher, d. 524
+- `boethius-tracts` (Boethius, Anicius Manlius Torquatus Severinus) → patristic — late-antique Christian philosopher, d. 524
+- `boethius-trinity` (Boethius, Anicius Manlius Torquatus Severinus) → patristic — late-antique Christian philosopher, d. 524
+- `bonar-peace` (Bonar, Horatius) → presbyterian — Free Church of Scotland minister and hymnwriter
+- `bonar-rentveil` (Bonar, Horatius) → presbyterian — Free Church of Scotland minister and hymnwriter
+- `bunyan-grace` (Bunyan, John) → baptist — Bedford Baptist congregation pastor (open-communion Particular Baptist milieu)
+- `bunyan-holy-war` (Bunyan, John) → baptist — Bedford Baptist congregation pastor (open-communion Particular Baptist milieu)
+- `bunyan-pilgrim` (Bunyan, John) → baptist — Bedford Baptist congregation pastor (open-communion Particular Baptist milieu)
+- `bunyan-badman` (Bunyan, John) → baptist — Bedford Baptist congregation pastor (open-communion Particular Baptist milieu)
+- `bunyan-miscellaneous` (Bunyan, John) → baptist — Bedford Baptist congregation pastor (open-communion Particular Baptist milieu)
+- `bushnell-character` (Bushnell, Horace) → congregational — Congregationalist minister, Hartford
+- `bushnell-christ` (Bushnell, Horace) → congregational — Congregationalist minister, Hartford
+- `bushnell-nurture` (Bushnell, Horace) → congregational — Congregationalist minister, Hartford
+- `bushnell-sermons` (Bushnell, Horace) → congregational — Congregationalist minister, Hartford
+- `bushnell-vicarious` (Bushnell, Horace) → congregational — Congregationalist minister, Hartford
+- `bangs-history2` (Bangs, Nathan) → methodist — Methodist Episcopal minister and historian
+- `dionysius-works` (Dionysius, the Pseudo-Areopagite) → patristic — c. 500 Syrian Christian writer, counted with the Fathers
+- `fenelon-maxims` (Fénelon, François de Salignac de la Mothe) → catholic — Roman Catholic Archbishop of Cambrai
+- `fenelon-existence-god` (Fénelon, François de Salignac de la Mothe) → catholic — Roman Catholic Archbishop of Cambrai
+- `fenelon-progress` (Fénelon, François de Salignac de la Mothe) → catholic — Roman Catholic Archbishop of Cambrai
+- `guyon-auto` (Guyon, Madame Jeanne Marie Bouvier de la Mothe) → catholic — French Catholic Quietist
+- `guyon-song` (Guyon, Madame Jeanne Marie Bouvier de la Mothe) → catholic — French Catholic Quietist
+- `guyon-spiritual-torrents` (Guyon, Madame Jeanne Marie Bouvier de la Mothe) → catholic — French Catholic Quietist
+- `manning-henry-grounds` (Manning, Henry Edward) → catholic — Roman Catholic convert 1851, Cardinal Archbishop of Westminster
+- `manning-henry-sermons01` (Manning, Henry Edward) → catholic — Roman Catholic convert 1851, Cardinal Archbishop of Westminster
+- `manning-henry-sermons02` (Manning, Henry Edward) → catholic — Roman Catholic convert 1851, Cardinal Archbishop of Westminster
+- `manning-henry-sermons03` (Manning, Henry Edward) → catholic — Roman Catholic convert 1851, Cardinal Archbishop of Westminster
+- `manning-henry-sermons04` (Manning, Henry Edward) → catholic — Roman Catholic convert 1851, Cardinal Archbishop of Westminster
+- `neander-a-expo-1john` (Neander, Augustus Johann) → lutheran — German Protestant church historian, baptized and ordained in Lutheran Hamburg, Berlin professor
+- `neander-a-expo-james` (Neander, Augustus Johann) → lutheran — German Protestant church historian, baptized and ordained in Lutheran Hamburg, Berlin professor
+- `neander-a-expo-phil` (Neander, Augustus Johann) → lutheran — German Protestant church historian, baptized and ordained in Lutheran Hamburg, Berlin professor
+- `neander-a-light` (Neander, Augustus Johann) → lutheran — German Protestant church historian, baptized and ordained in Lutheran Hamburg, Berlin professor
+- `neander-a-life` (Neander, Augustus Johann) → lutheran — German Protestant church historian, baptized and ordained in Lutheran Hamburg, Berlin professor
+- `tulloch-luther` (Tulloch, John) → presbyterian — Church of Scotland minister, Principal of St Andrews
+- `tulloch-religion` (Tulloch, John) → presbyterian — Church of Scotland minister, Principal of St Andrews
+- `tulloch-somefacts` (Tulloch, John) → presbyterian — Church of Scotland minister, Principal of St Andrews
+- `tulloch-theism` (Tulloch, John) → presbyterian — Church of Scotland minister, Principal of St Andrews
+- `tulloch-sin` (Tulloch, John) → presbyterian — Church of Scotland minister, Principal of St Andrews
+- `underhill-essentials` (Underhill, Evelyn) → anglican — Anglican writer on mysticism, Church of England
+- `underhill-life` (Underhill, Evelyn) → anglican — Anglican writer on mysticism, Church of England
+- `underhill-mysticism` (Underhill, Evelyn) → anglican — Anglican writer on mysticism, Church of England
+- `underhill-practical` (Underhill, Evelyn) → anglican — Anglican writer on mysticism, Church of England
+- `anselm-devotions` (Anselm, Saint, Archbishop of Canterbury) → catholic — medieval Archbishop of Canterbury, d. 1109
+- `anselm-meditations` (Anselm, Saint, Archbishop of Canterbury) → catholic — medieval Archbishop of Canterbury, d. 1109
+- `anselm-basic-works` (Anselm, Saint, Archbishop of Canterbury) → catholic — medieval Archbishop of Canterbury, d. 1109
+- `chadwick-mark` (Chadwick, George Alexander) → anglican — Church of Ireland, Dean of Armagh
+- `chadwick-expositor2` (Chadwick, George Alexander) → anglican — Church of Ireland, Dean of Armagh
+- `conybeare-lxxgrammar` (Conybeare, Frederick Cornwallis) → anglican — Oxford Church of England scholar
+- `cowper-guyonpoems` (Cowper, William) → anglican — evangelical Church of England poet (Olney circle)
+- `denney-christ-death` (Denney, James) → presbyterian — Free Church of Scotland professor
+- `denney-expositorthess` (Denney, James) → presbyterian — Free Church of Scotland professor
+- `denney-expositor2cor` (Denney, James) → presbyterian — Free Church of Scotland professor
+- `findlay-expositorgal` (Findlay, George Gillanders) → methodist — English Wesleyan Methodist tutor, Headingley
+- `findlay-expositoreph` (Findlay, George Gillanders) → methodist — English Wesleyan Methodist tutor, Headingley
+- `howe-john-howe05` (Howe, John) → puritan — English Puritan, ejected nonconformist
+- `howe-john-howe06` (Howe, John) → puritan — English Puritan, ejected nonconformist
+- `howe-john-howe07` (Howe, John) → puritan — English Puritan, ejected nonconformist
+- `howe-john-howe08` (Howe, John) → puritan — English Puritan, ejected nonconformist
+- `jowett-b-essays` (Jowett, Benjamin) → anglican — Regius Professor, Master of Balliol, Church of England
+- `jowett-b-faith` (Jowett, Benjamin) → anglican — Regius Professor, Master of Balliol, Church of England
+- `jowett-b-scripture` (Jowett, Benjamin) → anglican — Regius Professor, Master of Balliol, Church of England
+- `jowett-b-theological` (Jowett, Benjamin) → anglican — Regius Professor, Master of Balliol, Church of England
+- `knox-blast` (Knox, John) → presbyterian — founder of Scottish Presbyterianism
+- `knox-prayer` (Knox, John) → presbyterian — founder of Scottish Presbyterianism
+- `knox-works1` (Knox, John) → presbyterian — founder of Scottish Presbyterianism
+- `meyer-guidance` (Meyer, Frederick Brotherton) → baptist — English Baptist minister, Keswick speaker
+- `meyer-homily2` (Meyer, Frederick Brotherton) → baptist — English Baptist minister, Keswick speaker
+- `meyer-into-holiest` (Meyer, Frederick Brotherton) → baptist — English Baptist minister, Keswick speaker
+- `newman-callista` (Newman, John Henry) → catholic — Roman Catholic convert 1845, cardinal; Oxford Movement leader
+- `newman-tractstimes` (Newman, John Henry) → catholic — Roman Catholic convert 1845, cardinal; Oxford Movement leader
+- `newman-apologia` (Newman, John Henry) → catholic — Roman Catholic convert 1845, cardinal; Oxford Movement leader
+- `newman-gerontius` (Newman, John Henry) → catholic — Roman Catholic convert 1845, cardinal; Oxford Movement leader
+- `ryle-matthew` (Ryle, John Charles) → anglican — evangelical Anglican, Bishop of Liverpool
+- `ryle-upper-room` (Ryle, John Charles) → anglican — evangelical Anglican, Bishop of Liverpool
+- `stokes-expositoracts2` (Stokes, George Thomas) → anglican — Church of Ireland clergyman and professor
+- `stokes-expositoracts1` (Stokes, George Thomas) → anglican — Church of Ireland clergyman and professor
+- `swete-greekot` (Swete, Henry Barclay) → anglican — Regius Professor of Divinity, Cambridge
+- `torrey-pray` (Torrey, Reuben Archer) → evangelical — Moody-circle evangelist, Moody Bible Institute superintendent
+- `torrey-revival` (Torrey, Reuben Archer) → evangelical — Moody-circle evangelist, Moody Bible Institute superintendent
+- `torrey-ttt` (Torrey, Reuben Archer) → evangelical — Moody-circle evangelist, Moody Bible Institute superintendent
+- `torrey-work-holy-spirit` (Torrey, Reuben Archer) → evangelical — Moody-circle evangelist, Moody Bible Institute superintendent
+- `ursinus-catechism` (Ursinus, Zacharias) → reformed — co-author of the Heidelberg Catechism
+- `ursinus-gospel` (Ursinus, Zacharias) → reformed — co-author of the Heidelberg Catechism
+- `alexander-a-canon` (Alexander, Archibald) → presbyterian — first professor of Princeton Seminary
+- `alexander-a-evidences` (Alexander, Archibald) → presbyterian — first professor of Princeton Seminary
+- `alexander-a-outlines` (Alexander, Archibald) → presbyterian — first professor of Princeton Seminary
+- `bennett-expositor10` (Bennett, William H.) → congregational — English Congregationalist OT scholar, Hackney/New College
+- `bennett-expositorjer2` (Bennett, William H.) → congregational — English Congregationalist OT scholar, Hackney/New College
+- `berkhof-newtestament` (Berkhof, Louis) → reformed — Christian Reformed / Calvin Seminary systematician
+- `berkhof-summary` (Berkhof, Louis) → reformed — Christian Reformed / Calvin Seminary systematician
+- `berkhof-systematictheology` (Berkhof, Louis) → reformed — Christian Reformed / Calvin Seminary systematician
+- `bernard-letters` (Bernard, of Clairvaux, Saint) → catholic — medieval Cistercian abbot (sub-school value not in closed list; catholic covers)
+- `bernard-loving-god` (Bernard, of Clairvaux, Saint) → catholic — medieval Cistercian abbot (sub-school value not in closed list; catholic covers)
+- `bernard-st-malachy` (Bernard, of Clairvaux, Saint) → catholic — medieval Cistercian abbot (sub-school value not in closed list; catholic covers)
+- `blois-mirror` (Blois, Louis of,) → catholic — Flemish Benedictine abbot
+- `blois-oratory` (Blois, Louis of,) → catholic — Flemish Benedictine abbot
+- `blois-spiritual` (Blois, Louis of,) → catholic — Flemish Benedictine abbot
+- `bradford-meditations` (Bradford, John) → puritan — English Reformation preacher and Marian martyr, d. 1555
+- `bradford-sertract` (Bradford, John) → puritan — English Reformation preacher and Marian martyr, d. 1555
+- `burgon-corruption` (Burgon, John William) → anglican — Church of England, Dean of Chichester
+- `burgon-mark` (Burgon, John William) → anglican — Church of England, Dean of Chichester
+- `burgon-revision-revised` (Burgon, John William) → anglican — Church of England, Dean of Chichester
+- `dostoevsky-brothers` (Dostoevsky, Fyodor) → orthodox — Russian Orthodox Christian writer
+- `dostoevsky-crimepunish` (Dostoevsky, Fyodor) → orthodox — Russian Orthodox Christian writer
+- `dostoevsky-undernotes` (Dostoevsky, Fyodor) → orthodox — Russian Orthodox Christian writer
+- `erasmus-against-war` (Erasmus, Desiderius) → catholic — remained in the Roman Catholic Church
+- `erasmus-colloquies1` (Erasmus, Desiderius) → catholic — remained in the Roman Catholic Church
+- `jamieson-jfb` (Jamieson, Robert) → presbyterian — Church of Scotland minister (JFB commentary)
+- `jenyns-evil` (Jenyns, Soame) → anglican — Church of England lay writer
+- `jenyns-internal1776` (Jenyns, Soame) → anglican — Church of England lay writer
+- `jenyns-internal1799` (Jenyns, Soame) → anglican — Church of England lay writer
+- `john-cross-ascent` (John of the Cross, St.) → catholic — Spanish Carmelite mystic, Doctor of the Church
+- `john-cross-dark-night` (John of the Cross, St.) → catholic — Spanish Carmelite mystic, Doctor of the Church
+- `john-cross-canticle` (John of the Cross, St.) → catholic — Spanish Carmelite mystic, Doctor of the Church
+- `moule-brethren` (Moule, Handley Carr Glyn) → anglican — evangelical Anglican, Bishop of Durham
+- `moule-hebrews` (Moule, Handley Carr Glyn) → anglican — evangelical Anglican, Bishop of Durham
+- `moule-expositorromans` (Moule, Handley Carr Glyn) → anglican — evangelical Anglican, Bishop of Durham
+- `newton-messiah1` (Newton, John) → anglican — evangelical Church of England clergyman
+- `newton-messiah2` (Newton, John) → anglican — evangelical Church of England clergyman
+- `pascal-memorial` (Pascal, Blaise) → catholic — French Catholic (Port-Royal / Jansenist circle)
+- `pascal-pensees` (Pascal, Blaise) → catholic — French Catholic (Port-Royal / Jansenist circle)
+- `pascal-provincial` (Pascal, Blaise) → catholic — French Catholic (Port-Royal / Jansenist circle)
+- `pusey-eirenicon` (Pusey, Edward Bouverie) → anglican — Oxford Movement leader, Regius Professor of Hebrew
+- `ramsay-bethlehem` (Ramsay, William Mitchell) → presbyterian — Scottish scholar, Church of Scotland, Aberdeen professor
+- `teresa-castle2` (Teresa of Avila, St.) → catholic — Spanish Carmelite reformer, Doctor of the Church
+- `teresa-life` (Teresa of Avila, St.) → catholic — Spanish Carmelite reformer, Doctor of the Church
+- `whyte-pray` (Whyte, Alexander) → presbyterian — Free Church of Scotland minister, St George's West Edinburgh
+- `whyte-behmen` (Whyte, Alexander) → presbyterian — Free Church of Scotland minister, St George's West Edinburgh
+- `whyte-teresa` (Whyte, Alexander) → presbyterian — Free Church of Scotland minister, St George's West Edinburgh
+- `allestree-government` (Allestree, Richard) → anglican — Church of England, Provost of Eton
+- `allestree-oracles` (Allestree, Richard) → anglican — Church of England, Provost of Eton
+- `alphonsus-volonta` (Alphonsus de Liguori, Saint) → catholic — founder of the Redemptorists, Doctor of the Church
+- `alphonsus-uniformity` (Alphonsus de Liguori, Saint) → catholic — founder of the Redemptorists, Doctor of the Church
+- `baker-holy-wisdom` (Baker, Augustine) → catholic — English Benedictine monk and mystical writer
+- `ball-expositorjer1` (Ball, Charles James) → anglican — Church of England OT scholar, Queen's College Oxford
+- `bede-history` (Bede, St.) → patristic — Northumbrian monk, d. 735, counted among the Fathers
+- `beveridge-w-thoughts2` (Beveridge, William) → anglican — Bishop of St Asaph
+- `beveridge-w-thoughts` (Beveridge, William) → anglican — Bishop of St Asaph
+- `boehme-supersensual` (Boehme, Jakob) → lutheran — German Lutheran mystic (Görlitz shoemaker, within Lutheranism)
+- `boehme-waytochrist` (Boehme, Jakob) → lutheran — German Lutheran mystic (Görlitz shoemaker, within Lutheranism)
+- `boettner-predest` (Boettner, Loraine) → presbyterian — American Presbyterian theologian
+- `browne-morals` (Browne, Sir Thomas) → anglican — Church of England layman, Religio Medici
+- `browne-religio` (Browne, Sir Thomas) → anglican — Church of England layman, Religio Medici
+- `butler-analogy` (Butler, Joseph) → anglican — Bishop of Durham
+- `butler-sermons` (Butler, Joseph) → anglican — Bishop of Durham
+- `campbell-atonement` (Campbell, John McLeod) → presbyterian — Church of Scotland minister (deposed 1831 over atonement teaching)
+- `cox-s-expositoreccl` (Cox, Samuel) → baptist — English Baptist minister, editor of The Expositor
+- `cyril-stluke` (Cyril of Alexandria, St.) → patristic — Greek Church Father, d. 444
+- `edwards-tc-expositorheb` (Edwards, Thomas Charles) → presbyterian — Welsh Calvinistic Methodist (= Presbyterian Church of Wales) minister
+- `emmerich-lifemary` (Emmerich, Anne Catherine) → catholic — German Augustinian nun and mystic
+- `emmerich-passion` (Emmerich, Anne Catherine) → catholic — German Augustinian nun and mystic
+- `forsyth-work` (Forsyth, Peter Taylor) → congregational — Scottish Congregationalist theologian, Hackney College
+- `forsyth-prayer` (Forsyth, Peter Taylor) → congregational — Scottish Congregationalist theologian, Hackney College
+- `desales-love` (Francis of Sales, St.) → catholic — Bishop of Geneva, Doctor of the Church
+- `fuller-david` (Fuller, Thomas) → anglican — Church of England clergyman and historian
+- `doddridge-evidences` (Doddridge, Philip) → nonconformist — English Independent (dissenting) minister and hymnwriter
+- `cyril-stlukev2` (Cyril of Alexandria, St.) → patristic — Greek Church Father, d. 444
+- `doddridge-regen` (Doddridge, Philip) → nonconformist — English Independent (dissenting) minister and hymnwriter
+- `eckhart-sermons` (Eckhart, Johannes) → catholic — German Dominican friar and mystic
+- `desales-devout-life` (Francis of Sales, St.) → catholic — Bishop of Geneva, Doctor of the Church
+- `fuller-goodthoughts` (Fuller, Thomas) → anglican — Church of England clergyman and historian
+- `gibson-expositormatt` (Gibson, John Monro) → presbyterian — Scottish-born Presbyterian minister (Montreal/Chicago)
+- `gray-jm-cwc` (Gray, James) → dispensationalist — Reformed Episcopal minister, Moody Bible Institute dean/president, Scofield-circle premillennialist
+- `gray-jm-synthetic` (Gray, James) → dispensationalist — Reformed Episcopal minister, Moody Bible Institute dean/president, Scofield-circle premillennialist
+- `hort-ecclesia` (Hort, Fenton John Anthony) → anglican — Church of England scholar, Cambridge
+- `hort-james1909` (Hort, Fenton John Anthony) → anglican — Church of England scholar, Cambridge
+- `ignatius-exercises` (Ignatius of Loyola, St) → catholic — founder of the Society of Jesus
+- `johnson-bw-john` (Johnson, Barton Warren) → restoration — Disciples of Christ (Restoration Movement) minister, People's New Testament
+- `johnson-bw-pnt` (Johnson, Barton Warren) → restoration — Disciples of Christ (Restoration Movement) minister, People's New Testament
+- `ignatius-autobiography` (Ignatius of Loyola, St) → catholic — founder of the Society of Jesus
+- `kellogg-expositor3` (Kellogg, S. H.) → presbyterian — American Presbyterian missionary and professor
+- `kierkegaard-selections` (Kierkegaard, Soren) → lutheran — Danish writer working inside/out against the Lutheran state church
+- `kierkegaard-untruth` (Kierkegaard, Soren) → lutheran — Danish writer working inside/out against the Lutheran state church
+- `lardner-n-miracles` (Lardner, Nathaniel) → nonconformist — English dissenting (Presbyterian-Independent) minister
+- `lardner-n-mosaic` (Lardner, Nathaniel) → nonconformist — English dissenting (Presbyterian-Independent) minister
+- `lightfoot-fathers` (Lightfoot, John) → puritan — Westminster Assembly divine
+- `lumby-expositorpeter` (Lumby, Joseph Rawson) → anglican — Church of England, Norrisian Professor Cambridge
+- `lightfoot-talmud` (Lightfoot, John) → puritan — Westminster Assembly divine
+- `mcgarvey-acts` (McGarvey, John William) → restoration — Churches of Christ / Restoration Movement minister
+- `mcgarvey-gospels` (McGarvey, John William) → restoration — Churches of Christ / Restoration Movement minister
+- `mead-matthew-name` (Mead, Matthew) → puritan — English Puritan, ejected nonconformist
+- `mead-matthew-almost` (Mead, Matthew) → puritan — English Puritan, ejected nonconformist
+- `milligan-expositorrev` (Milligan, William) → presbyterian — Church of Scotland, Aberdeen professor
+- `moody-anecdotes` (Moody, Dwight Lyman) → evangelical — American revivalist, founder of Moody institutions
+- `paley-paleysnatural` (Paley, William) → anglican — Church of England archdeacon and apologist
+- `paley-evidence` (Paley, William) → anglican — Church of England archdeacon and apologist
+- `rainy-expositorphil` (Rainy, Robert) → presbyterian — Free Church of Scotland Principal
+- `rolt-dionysius` (Rolt, Clarence Edwin) → anglican — Church of England priest, translator of Pseudo-Dionysius
+- `schleiermach-religion` (Schleiermacher, Friedrich) → reformed — ordained in the German Reformed Church; preached in Reformed and Prussian-Union congregations
+- `schleiermach-sermons` (Schleiermacher, Friedrich) → reformed — ordained in the German Reformed Church; preached in Reformed and Prussian-Union congregations
+- `scrivener-ntcrit1` (Scrivener, Frederick Henry Ambrose) → anglican — Church of England clergyman and NT textual critic
+- `scrivener-ntcrit2` (Scrivener, Frederick Henry Ambrose) → anglican — Church of England clergyman and NT textual critic
+- `shepard-worksthomas` (Shepard, Thomas) → puritan — New England Puritan (Congregational Way), Cambridge MA
+- `shepard-sabbath` (Shepard, Thomas) → puritan — New England Puritan (Congregational Way), Cambridge MA
+- `simon-works1` (Simons, Menno) → anabaptist — namesake leader of the Mennonites
+- `simon-works2` (Simons, Menno) → anabaptist — namesake leader of the Mennonites
+- `therese-poems` (Therese, of Lisieux, St.) → catholic — French Carmelite nun, Doctor of the Church
+- `therese-autobio` (Therese, of Lisieux, St.) → catholic — French Carmelite nun, Doctor of the Church
+- `tischendorf-gospels` (Tischendorf, Constantine von) → lutheran — German Lutheran NT scholar, Leipzig
+- `tischendorf-origins` (Tischendorf, Constantine von) → lutheran — German Lutheran NT scholar, Leipzig
+- `vandyke-otherwiseman` (Van Dyke, Henry) → presbyterian — American Presbyterian minister
+- `wuttke-ethics2` (Wuttke, Adolf) → lutheran — German Lutheran theologian, Halle/Berlin
+- `wuttke-ethics1` (Wuttke, Adolf) → lutheran — German Lutheran theologian, Halle/Berlin
+- `aaberg-hymnsdenmark` (Aaberg, Jens Christian) → lutheran — Danish-American Lutheran pastor and hymn translator
+- `abelard-misfortunes` (Abelard, Peter) → catholic — medieval scholastic theologian, d. 1142
+- `addison-evidences` (Addison, Joseph) → anglican — Church of England lay essayist
+- `alexander-w-expositorjohnepistles` (Alexander, William) → anglican — Church of Ireland Bishop of Derry
+- `dante-divinecomedy` (Alighieri, Dante) → catholic — medieval Italian Catholic poet
+- `andrewes-devotions1` (Andrewes, Lancelot) → anglican — Bishop of Winchester, Jacobean divine
+- `arndt-true` (Arndt, Johann) → lutheran — German Lutheran devotional writer (True Christianity)
+- `bacon-lw-history` (Bacon, Leonard Woolsey) → congregational — American Congregationalist minister and historian
+- `baird-huguenots` (Baird, Henry M.) → presbyterian — American Presbyterian historian of the Huguenots
+- `bavinck-revelation` (Bavinck, Herman) → reformed — Dutch Reformed (GKN) dogmatician
+- `bayly-piety` (Bayly, Lewis) → puritan — Bishop of Bangor whose Practice of Piety is a Puritan devotional classic
+- `benedict-rule` (Benedict, Saint, of Nursia) → catholic — founder of Western monasticism (Benedictine sub-school not in closed list)
+- `benson-psalmody` (Benson, Louis Fitzgerald) → presbyterian — American Presbyterian minister and hymnologist
+- `bentley-sermons` (Bentley, Richard) → anglican — Church of England scholar, Master of Trinity Cambridge
+- `bett-methhymns` (Bett, Henry) → methodist — English Wesleyan Methodist minister and hymn scholar
+- `borthwick-hll` (Borthwick, Jane) → presbyterian — Scottish Free Church hymn translator (Hymns from the Land of Luther)
+- `boston-crook` (Boston, Thomas) → presbyterian — Church of Scotland minister, Ettrick; Marrow controversy
+- `boyce-theology` (Boyce, James Petigru) → baptist — Southern Baptist, founding faculty of SBTS
+- `bruce-twelve` (Bruce, Alexander Balmain) → presbyterian — Free Church of Scotland professor, Glasgow
+- `catherine-g-life` (Catherine of Genoa, St.) → catholic — Italian Catholic mystic
+- `cassian-conferences` (Cassian, John) → patristic — monk and writer, d. c. 435
+- `catherine-dialog` (Catherine of Siena, St.) → catholic — Italian Dominican tertiary, Doctor of the Church
+- `charles-otpseudepig` (Charles, Robert. Henry) → anglican — Church of Ireland/England archdeacon, pseudepigrapha scholar
+- `clarke-entire-sanct` (Clarke, Adam C.) → methodist — Wesleyan Methodist theologian and commentator
+- `clarkson-owenfuneral` (Clarkson, David) → puritan — English Puritan, ejected 1662; Owen's colleague and successor
+- `cotton-john-keyes` (Cotton, John) → puritan — New England Puritan divine, Boston MA
+- `cranmer-doctrine` (Cranmer, Thomas) → anglican — Archbishop of Canterbury, author of the Book of Common Prayer
+- `coleridge-reflection` (Coleridge, Samuel Taylor) → anglican — Church of England lay theologian-poet
+- `daubney-additions` (Daubney, William Heaford) → anglican — Church of England clergyman and scholar
+- `decaussade-abandonment` (de Caussade, Jean-Pierre, S.J.) → catholic — French Jesuit spiritual writer
+- `deane-pseudepig` (Deane, William John) → anglican — Irish Anglican clergyman, OT scholar
+- `defoe-crusoe` (Defoe, Daniel) → nonconformist — English Presbyterian dissenter
+- `feltoe-dionysius` (Feltoe, Charles Lett, D.D.) → anglican — Church of England clergyman and patristic editor
+- `fisher-e-marrow` (Fisher, Edward) → puritan — English Puritan layman, Marrow of Modern Divinity
+- `fosdick-meaningprayer` (Fosdick, Harry Emerson) → baptist — American Baptist modernist preacher, Riverside Church
+- `gardner-cell` (Gardner, Edmund Garratt) → catholic — English Catholic scholar of Italian mysticism
+- `kelly-gerhardtsong` (Gerhardt, Paul) → lutheran — German Lutheran hymnwriter
+- `gerson-snares` (Gerson, Jean le Charlier de) → catholic — Chancellor of Notre-Dame, Paris, d. 1429
+- `guthrie-interest2` (Guthrie, William) → presbyterian — Scottish Covenanter minister, Fenwick
+- `habermann-dailyprayers` (Habermann, Johann) → lutheran — German Lutheran devotional compiler (Christliche Gebete)
+- `harper-expositordeut` (Harper, Andrew) → presbyterian — Scottish-Australian Presbyterian OT scholar
+- `havergal-keptuse` (Havergal, Frances Ridley) → anglican — Church of England hymnwriter
+- `hoadly-acceptance` (Hoadly, Benjamin) → anglican — Bishop of Salisbury/Bangor
+- `hopkins-samuel-21sermons` (Hopkins, Samuel) → congregational — New England Congregationalist (New Divinity), pupil of Jonathan Edwards
+- `hitchcock-bible-names` (Hitchcock, Roswell D.) → congregational — American Congregationalist, Union Seminary professor
+- `latimer-sermons` (Latimer, Hugh) → anglican — Bishop of Worcester, English Reformation martyr
+- `leupold-genesis` (Leupold, Herbert Carl) → lutheran — American United Lutheran OT professor, Columbus
+- `lewis-he-sswales` (Lewis, Howell Elvet) → congregational — Welsh Congregationalist minister and hymnwriter
+- `lindsay-early-church` (Lindsay, Thomas Martin) → presbyterian — Free Church of Scotland professor, Glasgow
+- `luckock-h-studies` (Luckock, Herbert Mortimer, 1833-1909) → anglican — Dean of Lichfield
+- `manning-wesleyhymns` (Manning, Bernard Lord) → congregational — English Congregationalist lay scholar, Cambridge
+- `mede-key` (Mede, Joseph) → anglican — Church of England scholar, Christ's College Cambridge
+- `melanchthon-apology` (Melanchthon, Philipp) → lutheran — author of the Augsburg Confession's Apology
+- `moffat-jampetjud` (Moffat, James, D.D.) → presbyterian — Scottish United Free Church NT scholar
+- `molinos-guide` (Molinos, Miguel de) → catholic — Spanish Catholic Quietist
+- `more-comfort` (More, St. Thomas) → catholic — English Catholic martyr, d. 1535
+- `nave-bible` (Nave, Orville James) → methodist — Methodist Episcopal army chaplain, compiler of Nave's Topical Bible
+- `nutter-hymnwriters` (Nutter, Charles Sumner) → methodist — Methodist Episcopal minister and hymn writer
+- `oman-grace` (Oman, John) → presbyterian — English Presbyterian theologian, Westminster College Cambridge
+- `orr-view` (Orr, James) → presbyterian — United Free Church of Scotland professor, Glasgow
+- `otto-ideaholy` (Otto, Rudolph) → lutheran — German Lutheran theologian of religion, Marburg
+- `palgrave-sacredsong` (Palgrave, Francis Turner) → anglican — English anthologist, Church of England
+- `pressense-early` (Pressensé, Edmund Dehault de) → reformed — French Reformed (Eglise libre) pastor and historian
+- `prideaux-directions` (Prideaux, Humphrey) → anglican — Dean of Norwich, OT chronology scholar
+- `prudentius-cathimerinon` (Prudentius, Aurelius Clemens) → patristic — Latin Christian poet, d. c. 413
+- `leightonpullan-earlychristian` (Pullan, Leighton) → anglican — Oxford Church of England theologian
+- `ray-persuasive` (Ray, John) → anglican — Church of England clergyman and naturalist
+- `quadrupani-light` (Quadrupani, Carlo Giuseppe) → catholic — Italian Barnabite spiritual writer
+- `robertson-history` (Robertson, James Craigie, Canon of Canterbury) → anglican — Canon of Canterbury, church historian
+- `ruysbroeck-adornment` (Ruysbroeck, John of, St.) → catholic — Flemish Augustinian mystic
+- `schmid-theology` (Schmid, Heinrich) → lutheran — compiler of Lutheran dogmatics (Doctrinal Theology of the Evangelical Lutheran Church)
+- `kronstadt-christlife` (Sergieff, Archpriest John Iliytch) → orthodox — Russian Orthodox priest, St John of Kronstadt
+- `sheldon-ihsteps` (Sheldon, Charles Monroe) → congregational — American Congregationalist minister (In His Steps)
+- `smith-geo-carey` (Smith, George) → presbyterian — Scottish Free Church writer, biographer of Carey
+- `steele-love` (Steele, Daniel) → methodist — Methodist Episcopal theologian of holiness
+- `stowe-religiouspoems` (Stowe, Harriet Beecher) → congregational — American Congregationalist (Beecher family) writer
+- `taylor-jh-union` (Taylor, James Hudson) → evangelical — founder of China Inland Mission, interdenominational faith mission
+- `thomson-owenlife` (Thomson, Andrew) → presbyterian — Scottish United Presbyterian minister, biographer of Owen
+- `trench-7churches` (Trench, Richard Chenevix) → anglican — Archbishop of Dublin (Church of Ireland)
+- `wace-biodict` (Wace, Henry) → anglican — Dean of Canterbury; his work here is a dictionary (reference-shaped)
+- `upham-maxims` (Upham, Thomas Cogswell) → congregational — American Congregationalist professor, Bowdoin
+- `westcott-epistlehebrews` (Westcott, Brooke Foss) → anglican — Bishop of Durham, Cambridge scholar
+- `willison-testimony` (Willison, John) → presbyterian — Church of Scotland minister, Dundee
+- `foxe-martyrs` (Foxe, John) → anglican — Church of England martyrologist
+- `winkworth-tauler` (Winkworth, Catherine) → anglican — Church of England hymn translator (Lyra Germanica)
+- `winkworth-chorales` (Winkworth, Catherine) → anglican — Church of England hymn translator (Lyra Germanica)
+- `winkworth-life` (Winkworth, Catherine) → anglican — Church of England hymn translator (Lyra Germanica)
+- `winkworth-hyndwink` (Winkworth, Catherine) → anglican — Church of England hymn translator (Lyra Germanica)
+- `winkworth-singers` (Winkworth, Catherine) → anglican — Church of England hymn translator (Lyra Germanica)
+- `winkworth-lyra` (Winkworth, Catherine) → anglican — Church of England hymn translator (Lyra Germanica)
+- `vanbraght-mirror` (Braght, Thieleman J. van) → anabaptist — Dutch Mennonite, compiler of the Martyrs Mirror
+- `chatfield-greeksongs` (Chatfield, Allen W.) → anglican — Church of England vicar, translator of Greek hymns
+- `dick-j-acts` (Dick, John) → presbyterian — Scottish Secession (United Secession) theologian
+- `maimonides-guide` (Maimonides, Moses) → jewish — medieval Jewish philosopher, Guide for the Perplexed
+- `philo-works` (Philo) → jewish — Hellenistic Jewish philosopher of Alexandria
+- `pilcher-passionhymns` (Pilcher, Charles Venn) → anglican — Anglican clergyman and bishop coadjutor of Sydney; hymn translator
+- `young-e-night` (Young, Edward) → anglican — Church of England clergyman-poet (Night Thoughts)
+
+## C. Residue deliberately left `unassigned` (70 works)
+
+- Allen, James — vocabulary gap: New Thought writer (As a Man Thinketh circle), no church tradition
+- Anderson, Tony Marshall — uncertain identity/affiliation; left unassigned
+- Arminius, Jacobus — vocabulary gap + conflicted: Arminian not in list; claimed by Reformed and Arminian traditions — owner judgement
+- Barclay, Robert — vocabulary gap: Quaker
+- Bartleman, Frank — vocabulary gap: Pentecostal (Azusa Street)
+- Beth, Karl — uncertain: German theologian/orientalist; affiliation not confidently established
+- Bevan, Frances — uncertain: translator of German mystics; affiliation not confidently established
+- Bullinger, Ethelbert William — conflicted: Church of England vicar whose name labels hyper-dispensationalism — owner judgement
+- Collins, An — uncertain: 17th-c. devotional poet; affiliation not confidently established
+- Crosby, Thomas — uncertain identity/affiliation; left unassigned
+- Cross, George, — uncertain identity/affiliation; left unassigned
+- Dickinson, Edward — uncertain: American music historian; affiliation not confidently established
+- Fox, George — vocabulary gap: Quaker
+- Gordon, Samuel Dickey — uncertain: evangelical lay minister (YMCA); denominational affiliation not confidently established
+- Griffin, George — uncertain identity/affiliation; left unassigned
+- Groom, William M. — uncertain identity/affiliation; left unassigned
+- Handel, George Frideric — work is an oratorio libretto; author's Lutheran tradition does not describe the work — owner judgement
+- Hewitt, Theodore Brown — translator of Paul Gerhardt hymns; author-field is the translator — owner judgement
+- Hoskier, Herman Charles — uncertain: American-born textual critic; affiliation not confidently established
+- International Evangelical and Colportage Mission of Algoma and the Northwest — corporate mission body, not a person; no defensible tradition
+- James, William — no church tradition: pragmatist philosopher, unaffiliated
+- Longfellow, Samuel — vocabulary gap: Unitarian
+- Miller, Andrew — vocabulary gap: Plymouth Brethren
+- Morris, Joseph — uncertain: Welsh hymn anthologist; affiliation not confidently established
+- Orr, Charles Ebert — vocabulary gap: Church of God (Anderson) / holiness
+- Penn, William — vocabulary gap: Quaker
+- Reeves, Jeremiah Bascom — uncertain identity/affiliation; left unassigned
+- Richardson, Cyril C. — uncertain: patristics scholar; affiliation not confidently established
+- Robinson, John — uncertain identity (several John Robinsons); left unassigned
+- Singh, Sadhu Sundar — uncertain: baptized Anglican but an independent sadhu outside institutional churches
+- Smith, Hannah Whitall — uncertain: Quaker upbringing, Keswick/higher-life career, late return to Friends — no single defensible value
+- Tolstoy, Leo Nikolayevich — vocabulary gap: Tolstoyan/excommunicated Russian Orthodox; no closed-list value fits
+- Ullmann, Carl — uncertain: Baden mediating theologian; lutheran/reformed split is an owner judgement
+- Walker, William — uncertain identity/affiliation; left unassigned
+- Waring, Anna Laetitia — vocabulary gap: Quaker (Society of Friends hymnwriter)
+- West, Charles Edward — uncertain identity/affiliation; left unassigned
+- White, Ellen Gould — vocabulary gap: Seventh-day Adventist
+- Woolman, John — vocabulary gap: Quaker
+- Wyss, Johann David — work is fiction (Swiss Family Robinson); author's Swiss Reformed affiliation marginal to the work
+- Young, John — uncertain identity (several John Youngs); left unassigned
+
+### Vocabulary gaps (would need a value not on the closed list)
+
+- quaker — Penn, Barclay, Fox, Woolman, Waring (8 works)
+- seventh-day-adventist — Ellen G. White (5 works)
+- arminian — Arminius (3 works; also conflicted with reformed — owner judgement)
+- unitarian — Samuel Longfellow (1 work)
+- brethren (Plymouth) — Andrew Miller (1 work)
+- pentecostal — Frank Bartleman (1 work)
+- church-of-god/holiness — Charles Ebert Orr (2 works)
+- tolstoyan — Tolstoy (11 works)
+- new-thought — James Allen (1 work)

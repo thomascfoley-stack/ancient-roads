@@ -1,0 +1,107 @@
+# coverage-declared — tradition × source_type × declared (manifest alone)
+
+Date: 2026-09-07 (Track B3). Source: `ingest/sources.config.json` after the B1 tradition backfill (775 entries moved off `unassigned`; see tradition-backfill-2026-09-07.md).
+Reproduce: `node -e "<group by tradition,source_type>"` or `npx tsx scripts/coverage-matrix.mts` with no DATABASE_URL (declared column).
+
+The **served-on-prod column is unmeasured** (no prod connection under this order). The one command that measures it is in coverage-dev.md / scripts/coverage-matrix.mts.
+
+| tradition | source_type | declared |
+|---|---|---|
+| anabaptist | historian | 1 |
+| anabaptist | theology | 2 |
+| anglican | commentary | 13 |
+| anglican | devotional | 2 |
+| anglican | historian | 5 |
+| anglican | hymn | 5 |
+| anglican | lexicon | 1 |
+| anglican | poetry | 8 |
+| anglican | sermon | 13 |
+| anglican | theology | 88 |
+| baptist | commentary | 7 |
+| baptist | confession | 1 |
+| baptist | devotional | 3 |
+| baptist | sermon | 66 |
+| baptist | theology | 13 |
+| catholic | confession | 1 |
+| catholic | devotional | 3 |
+| catholic | father | 1 |
+| catholic | historian | 1 |
+| catholic | poetry | 3 |
+| catholic | sermon | 5 |
+| catholic | theology | 76 |
+| cistercian | sermon | 1 |
+| congregational | commentary | 4 |
+| congregational | devotional | 1 |
+| congregational | historian | 1 |
+| congregational | hymn | 1 |
+| congregational | lexicon | 1 |
+| congregational | poetry | 1 |
+| congregational | sermon | 7 |
+| congregational | theology | 43 |
+| devotio-moderna | theology | 1 |
+| dispensationalist | commentary | 2 |
+| dispensationalist | theology | 1 |
+| english-mystic | theology | 1 |
+| evangelical | poetry | 1 |
+| evangelical | sermon | 1 |
+| evangelical | theology | 20 |
+| evangelical | topical_index | 1 |
+| jewish | historian | 1 |
+| jewish | theology | 2 |
+| lutheran | commentary | 6 |
+| lutheran | confession | 3 |
+| lutheran | devotional | 1 |
+| lutheran | historian | 1 |
+| lutheran | hymn | 1 |
+| lutheran | sermon | 1 |
+| lutheran | theology | 26 |
+| methodist | commentary | 5 |
+| methodist | historian | 4 |
+| methodist | hymn | 2 |
+| methodist | sermon | 3 |
+| methodist | theology | 14 |
+| methodist | topical_index | 1 |
+| moravian | poetry | 1 |
+| nonconformist | commentary | 9 |
+| nonconformist | devotional | 2 |
+| nonconformist | hymn | 3 |
+| nonconformist | sermon | 1 |
+| nonconformist | theology | 8 |
+| orthodox | theology | 4 |
+| patristic | commentary | 2 |
+| patristic | confession | 2 |
+| patristic | father | 3 |
+| patristic | historian | 1 |
+| patristic | hymn | 1 |
+| patristic | theology | 7 |
+| presbyterian | commentary | 23 |
+| presbyterian | historian | 1 |
+| presbyterian | hymn | 10 |
+| presbyterian | sermon | 2 |
+| presbyterian | theology | 34 |
+| puritan | commentary | 1 |
+| puritan | poetry | 1 |
+| puritan | sermon | 2 |
+| puritan | theology | 30 |
+| reference | confession | 1 |
+| reference | father | 36 |
+| reference | historian | 9 |
+| reference | lexicon | 21 |
+| reference | theology | 1 |
+| reference | topical_index | 2 |
+| reformed | commentary | 53 |
+| reformed | confession | 2 |
+| reformed | devotional | 3 |
+| reformed | historian | 1 |
+| reformed | hymn | 1 |
+| reformed | sermon | 7 |
+| reformed | theology | 80 |
+| restoration | commentary | 3 |
+| restoration | theology | 2 |
+| unassigned | commentary | 1 |
+| unassigned | confession | 1 |
+| unassigned | historian | 3 |
+| unassigned | hymn | 8 |
+| unassigned | sermon | 1 |
+| unassigned | theology | 56 |
+| **TOTAL** | | **917** |
