@@ -1,12 +1,45 @@
 # Owner publish batch — 2026-09-06 (dev→prod copy + publish flips)
 
+> **⚠ AMENDED 2026-09-06 — two standing preconditions were missed in the first version of
+> this runbook. Do NOT run the 440-work flips as originally written.**
+>
+> **Precondition 1 — the P4.n accuracy hold.** The 440 prod-staged works are NOT a queue
+> awaiting inattention — they are deliberately HELD. The P4.n flips (2026-08-19) were stopped
+> after father (18) and commentary (87) on a measured result
+> (`docs/evidence/p4n-flip-2026-08-19/RESULT-commentary.md`): every pre-registered bar held
+> but two landed exactly on the floor, epistle HIT@1 fell 68%→48% unfloored, and two correct
+> answers were destroyed outright (net 5 worse / 4 better). The verdict, verbatim:
+> **"Sermon and theology should NOT flip on this evidence… if they are ever ruled to flip."**
+> 438 of the 440 are the theology wave. Flipping them is an **owner ruling per category,
+> preceded by an accuracy re-measurement** — not a batch operation. The original 5×88 batch
+> plan below is RETAINED ONLY for the works that clear this ruling.
+>
+> **Precondition 2 — ADR-029 rule 3.** `docs/DECISIONS.md:317-318`, verbatim: **"No CCEL
+> work publishes until it has been checked for a composite-volume boundary. This is a
+> standing precondition on the lexicon/reference publish batch and on any future CCEL
+> ingest."** 876/917 manifest entries are CCEL-provenanced, so this gates essentially the
+> whole batch. The detector (`scripts/lib/front-matter-detector.mjs`) needs its two missing
+> addendum-2 shapes (publisher catalogue, machine-generated word index) plus a head-and-tail
+> sweep, and the scan must cover every work proposed for publish with a red-proved labelled
+> set BEFORE any flip. Additionally, **`origen-commentary` is held by a cited ruling** (the
+> ADR-029 case itself: its §1–~129 are 1 & 2 Clement, not Origen) — it was wrongly included
+> in the original 440 slug files; it has been REMOVED from
+> `prod440-2026-09-06-batch4.json` (batch 4 is now 87; the union is 439, still named
+> `prod440-*` for file stability).
+>
+> What remains flippable without further ruling: the **58 dev-staged works from the 2026-09-06
+> waves** (after the dev→prod copy), each of which still needs the ADR-029 scan as a
+> precondition — they are mostly CCEL works. The copy itself (job 1) is unaffected by both
+> preconditions and can run as written.
+
 **What this is:** the paste-ready runbook for the overdue owner batch from the 2026-09-06
 ingestion session. Two jobs, in order:
 
 1. **Copy** the 58 works staged on DEV (top-up waves 1–3) to PROD, landing `staged`.
 2. **Publish** 498 works total on PROD: those 58 (after the copy) + the 440 already staged
    there — each as a `--status-only` flip followed immediately by a `serve-batched` run on the
-   same slug file.
+   same slug file. **(Job 2 is gated by the two preconditions above: P4.n accuracy ruling +
+   ADR-029 scan. See the amendment block.)**
 
 Everything below was verified READ ONLY on 2026-09-06 (dev via `web/.env.local`
 `APP_DATABASE_URL` = app_runtime, SELECT-only; prod via `~/.neon_prod_url`, `BEGIN READ ONLY`).

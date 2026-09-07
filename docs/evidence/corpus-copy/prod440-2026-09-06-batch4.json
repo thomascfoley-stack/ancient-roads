@@ -1,6 +1,6 @@
 {
   "_": "Publish list batch 4 of 5: prod works already status=staged (the 441 minus hort-james1909, which is serve:false and awaits an owner ruling). Verified READ ONLY on prod 2026-09-06. thayers-lexicon is NOT staged (published dead-OCR copy; gate-blocked pending docs/evidence/thayers-source-verification.md) and must not be added to any flip list.",
-  "builtFor": "2026-09-06 owner publish batch — publish-flip --status-only + serve-batched",
+  "builtFor": "2026-09-06 owner publish batch \u2014 publish-flip --status-only + serve-batched",
   "batch": "4 of 5",
   "slugs": [
     "manning-henry-grounds",
@@ -37,7 +37,6 @@
     "newton-messiah1",
     "newton-messiah2",
     "oman-grace",
-    "origen-commentary",
     "orr-view",
     "orrce-holylife",
     "orrce-lambs",
