@@ -283,19 +283,6 @@
       "notes": null
     },
     {
-      "slug": "jewel-apology",
-      "title": "An Apology of the Church of England",
-      "author": "John Jewel",
-      "source_type": "theology",
-      "tradition": "anglican",
-      "target_edition": "Parker Society/Ayre 1845-50; or 1888 Cassell ed.",
-      "target_source": "Gutenberg #17678; archive.org worksofjohnjewel04jeweuoft",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "reformation-anglican",
-      "notes": "The founding statement of Anglican identity. Gutenberg edition available — acquirable today."
-    },
-    {
       "slug": "hooker-laws",
       "title": "Of the Laws of Ecclesiastical Polity",
       "author": "Richard Hooker",

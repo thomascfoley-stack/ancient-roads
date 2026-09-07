@@ -323,6 +323,31 @@ export const PROFILES: Record<string, Profile> = {
     },
     register: 'prose',
   },
+  'jewel-apology': {
+    // PG #17678 — the 1888 Cassell & Company edition (ed. Henry Morley) of
+    // Lady Anne Cooke Bacon's 1564 translation (title page READ 2026-09-07:
+    // "THE APOLOGY OF THE CHURCH OF ENGLAND. BY JOHN JEWEL, Bishop of
+    // Salisbury. CASSELL & COMPANY … 1888"; PG header: Translator: Lady Anne
+    // Cooke Bacon, Editor: Henry Morley). Scope opens at the work's own title
+    // line, AFTER Morley's INTRODUCTION — the editor's matter can never
+    // attach to PART I (luther-works/newman-apologia pattern). The work is
+    // the six PART chapters; PART VI runs to "So be it." at the end of the
+    // etext. Cassell's occasional footnotes ride in the part bodies (the
+    // edition's own 1888 apparatus, PD — same treatment as luther-works'
+    // collected end-notes).
+    sections: {
+      scope: { start: /^AN APOLOGY, OR ANSWER, IN DEFENCE OF THE CHURCH OF ENGLAND,$/ },
+      contents: [
+        { match: /^PART I\.$/ },
+        { match: /^PART II\.$/ },
+        { match: /^PART III\.$/ },
+        { match: /^PART IV\.$/ },
+        { match: /^PART V\.$/ },
+        { match: /^PART VI\.$/ },
+      ],
+    },
+    register: 'prose',
+  },
   'newman-apologia': {
     // PG #22088 (1890 Longmans ed. of the 1864 Apologia). The work proper is
     // the five chapters between the part-title "MY RELIGIOUS OPINIONS." (a

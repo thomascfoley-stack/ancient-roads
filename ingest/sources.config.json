@@ -24935,5 +24935,29 @@
       }
     },
     "note": "Founding document of the modern missions movement. Scope is the work's own five SECT. chapters; Carey's INTRODUCTION is excluded front matter (opens before the 'AN ENQUIRY, &c.' half-title — same treatment as newman-apologia's preface), recorded here. Staged via adapter-loop (register path)."
+  },
+  {
+    "id": "jewel-apology",
+    "slug": "jewel-apology",
+    "title": "An Apology of the Church of England",
+    "author": "John Jewel",
+    "author_died": 1571,
+    "year_written": 1562,
+    "source_type": "theology",
+    "tradition": "anglican",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/17678",
+      "edition": "trans. Lady Anne Cooke Bacon (1564); London: Cassell & Company, 1888, ed. Henry Morley — Gutenberg #17678, title page READ 2026-09-07: \"THE APOLOGY OF THE CHURCH OF ENGLAND. BY JOHN JEWEL, Bishop of Salisbury. CASSELL & COMPANY, LIMITED: LONDON, PARIS, NEW YORK & MELBOURNE. 1888.\"; PG header names Translator: Lady Anne Cooke Bacon, Editor: Henry Morley",
+      "year": 1888,
+      "license_ref": "Public Domain — Gutenberg header (US); Bacon's translation 1564 (Jewel d. 1571, Bacon d. 1610); 1888 Cassell edition PD (Morley d. 1894). Morley's INTRODUCTION is excluded from the ingest scope (editor matter, never served under Jewel).",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 17678
+      }
+    },
+    "note": "The founding statement of Anglican identity (Apologia Ecclesiae Anglicanae, 1562). Scope = the work's six PART chapters, opened at the work's own title line AFTER Morley's introduction; Cassell's occasional 1888 footnotes ride in the part bodies (edition apparatus, PD — luther-works precedent). Staged via adapter-loop (register path)."
   }
 ]

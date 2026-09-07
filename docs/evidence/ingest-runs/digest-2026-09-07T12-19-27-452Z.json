@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-09-07T12:19:27.452Z",
+    "endedAt": "2026-09-07T12:19:41.090Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 1,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "jewel-apology",
+      "adapter": "gutenberg",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 6,
+      "anchored": 0,
+      "embedded": 238
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}
