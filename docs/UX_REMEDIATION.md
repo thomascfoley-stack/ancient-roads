@@ -3120,5 +3120,6 @@ test red and does not. None is a known product defect; each is a check that woul
 - **N2 follow-up, 2026-09-07 (ADR-124):** the Sidebar C groups shipped with three per-row mark
   grammars plus the pre-N4 custom sections as a fourth. Ruled to one rule (a mark only where it
   distinguishes the row) and the sections hidden with their storage kept. Exit test
-  `sidebar-row-marks.test.tsx`; `pr1c-prayer-surface.test.ts` leg 3 re-pointed under the ruling
-  (C1 — flagged here, not silently rewritten). Evidence `docs/evidence/rail-row-marks-2026-09-07/`.
+  `sidebar-row-marks.test.tsx`; `pr1c-prayer-surface.test.ts` leg 3 and `n4-fake-doors.test.ts` "links to the shipped
+  /prayers surface" re-pointed under the ruling (C1 — flagged here, not silently rewritten; the
+  second was caught by CI, not locally). Evidence `docs/evidence/rail-row-marks-2026-09-07/`.

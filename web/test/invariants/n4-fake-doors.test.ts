@@ -60,12 +60,21 @@ describe('N4 — the retired concepts are gone from the sidebar', () => {
 });
 
 describe('N4 — CHANNELS is repurposed to the shipped prayer journal', () => {
-  // SEED: point the link at `/channel` or drop it -> RED.
-  it('the sidebar links to the shipped /prayers surface', () => {
-    expect(
-      code('components/sidebar.tsx'),
-      'the section must show the SHIPPED journal or be hidden — the block allows no third state',
-    ).toMatch(/href="\/prayers"/);
+  // RE-POINTED 2026-09-07 under ADR-124, not edited to pass (C1). This leg matched the JSX
+  // literal `href="/prayers"` that the pre-N4 section rows carried; the ruling HIDES those rows,
+  // so the literal is gone and the leg went RED in CI for the right reason. The block's own
+  // property is unchanged — "the shipped journal, or hidden; no third state" — and both halves
+  // are now asserted directly: the rail still reaches the shipped journal (the Prayer journal
+  // group's `'/prayers'` destination, signed in and out), and the CHANNELS-era section is not
+  // rendered at all.
+  // SEED: change the group's destination to `/channel` -> RED. SEED: render `StudySectionView`
+  // again -> RED.
+  it('the sidebar reaches the shipped /prayers surface, and the retired section is hidden', () => {
+    const src = code('components/sidebar.tsx');
+    expect(src, 'the Prayer journal group must still lead to the shipped journal').toMatch(/'\/prayers'/);
+    expect(src, 'the CHANNELS-era section is hidden — the second of the block\'s two allowed states').not.toMatch(
+      /StudySectionView/,
+    );
   });
 
   it('it is labelled Prayer journal, per the §2 naming lock', () => {

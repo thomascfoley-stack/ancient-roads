@@ -22,6 +22,13 @@ not edited to pass — to "no `StudySectionView`, no `removeItem(`, and the carr
 the key string". Sibling sidebar suites (groups, collapse-label, tablet-default, writing-rail):
 green, 24 tests.
 
+**Caught by CI, missed locally (PR #240, run 34108920817, both jobs):** `n4-fake-doors.test.ts`
+pinned the same `href="/prayers"` literal. I had run a hand-picked set of sidebar-named suites
+rather than the whole gate — a selection is not the gate. Re-pointed to the N4 block's own two
+allowed states ("the shipped journal, or hidden"): the Prayer journal group still reaches
+`'/prayers'` AND no `StudySectionView`. The FULL web suite was then run locally before re-pushing;
+its result is in the WORKLOG entry.
+
 ## Gate
 
 `tsc --noEmit` exit 0 · `eslint` on the three touched files exit 0 · nothing of the retired

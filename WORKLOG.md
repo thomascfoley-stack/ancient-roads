@@ -32,7 +32,13 @@ possibly revived later as teams / classroom organisation. **Built:**
 pre-ruling rail. Leg 2 (no date on prayer rows) was GREEN on its first run for a bad reason —
 `textContent` joins label and date with no space, so a `\b` between two letters never matched.
 Corrected, re-run, RED, then green after the fix. The pr1c test's third leg went red for the
-right reason and was re-pointed under the ruling (C1), not edited to pass.
+right reason and was re-pointed under the ruling (C1), not edited to pass. **A second one I
+MISSED locally**: `n4-fake-doors` pinned the same `href="/prayers"` literal and went red in CI on
+both jobs — because I ran a hand-picked set of sidebar-named suites instead of the whole gate. Its
+own header allows exactly "the shipped journal, or hidden"; re-pointed to assert both halves
+(the Prayer journal group still reaches `'/prayers'`, and no `StudySectionView`). Then the FULL
+web suite, not a selection: **365 files / 2,305 tests passed, 21 files skipped (DB-only), exit 0** —
+including `licensing` and `draft-check`, the two that timed out under contention this morning.
 
 **Browser leg**: composites from the real component + compiled CSS (fixture data, no session),
 looked at; live signed-out rail at 1280 and 375 with the Menu sheet, no overflow, no leftover
