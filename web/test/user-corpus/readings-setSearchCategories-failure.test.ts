@@ -59,7 +59,10 @@ describe('setSearchCategories is inside the after()-try (structural)', () => {
 // ── the real route, against the dev DB ───────────────────────────────────────────────────────────
 
 let currentUser: { id: string; email: string } | null = null;
-vi.mock('@/lib/session', () => ({
+// Spreads the REAL @/lib/auth-failure so this mock carries every export the route imports, not
+// just the ones this file thought of. Held by test/invariants/session-mock-surface.test.ts.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')),
   requireUser: async () => {
     if (!currentUser) throw new Error('Unauthorized');
     return currentUser;
