@@ -32,6 +32,7 @@ export function TextSkeleton({
   label,
   lines = 4,
   className = '',
+  announce = false,
 }: {
   /**
    * What is loading, as a sentence fragment a screen reader can use: "Loading your reading plans".
@@ -42,12 +43,18 @@ export function TextSkeleton({
   lines?: number;
   /** Spacing for the box this sits in. The bars themselves are not configurable. */
   className?: string;
+  /**
+   * Make the label AUDIBLE by rendering the wrapper as a `role="status"` live region. `aria-busy`
+   * alone only tells assistive tech to defer updates inside a live region — on a plain div it
+   * announces nothing, so the three sites that had `<p role="status">Loading…</p>` on live pass
+   * `announce` to keep what they had. OPT-IN, not the default: a surface owns ONE status role —
+   * the desk reserves its for the pane-cap notice (A078) and three of its own suites assert that
+   * exactly one exists — so a skeleton must not claim it uninvited (audit-run-4, 2026-09-07).
+   */
+  announce?: boolean;
 }) {
-  // `role="status"` is what makes the label AUDIBLE. `aria-busy` alone only tells assistive tech
-  // to defer updates inside a live region — on a plain div it announces nothing, and three sites
-  // that had `<p role="status">Loading…</p>` would have gone silent (deep audit, 2026-09-07).
   return (
-    <div role="status" aria-busy="true" className={className}>
+    <div role={announce ? 'status' : undefined} aria-busy="true" className={className}>
       <span className="sr-only">{label}</span>
       <div aria-hidden className="animate-pulse space-y-3">
         {Array.from({ length: lines }, (_, i) => (

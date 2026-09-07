@@ -203,7 +203,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
             </button>
           </p>
         ) : (
-          <TextSkeleton label="Loading suggested readings" lines={3} />
+          <TextSkeleton label="Loading suggested readings" lines={3} announce />
         )
       ) : byCategory.length === 0 ? (
         <div>

@@ -281,7 +281,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
                       {st && (
                         <div className="border-t edge px-4 py-3">
                           {st.loading ? (
-                            <TextSkeleton label="Loading this voice" lines={3} />
+                            <TextSkeleton label="Loading this voice" lines={3} announce />
                           ) : st.error ? (
                             <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">{st.error}</p>
                           ) : (
@@ -320,7 +320,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
             {doc === null ? (
               // The h1 above already draws its own title bar for this same wait (D18); this is the
               // body half of it, so the whole column holds its shape rather than half of it.
-              <TextSkeleton label="Loading your document" lines={7} />
+              <TextSkeleton label="Loading your document" lines={7} announce />
             ) : sections.length === 0 ? (
               <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">
                 {doc.status === 'ready'
