@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import Link from 'next/link';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
@@ -21,11 +21,97 @@ function verseRef(verseId: number) {
   return { label: formatVerseId(verseId), href: verseHref(verseId) };
 }
 
+// The DELETE body /api/annotations accepts. A highlight goes by its SPAN id
+// (removeHighlightById); a note and a bookmark go by verse, because both are one-per-verse by
+// construction (idx_notes_user_verse; a bookmark is a place and toggles). Deleting a highlight by
+// verseId would call removeHighlight, which clears EVERY span on that verse — this page lists
+// spans one row each, so it would take the neighbouring rows with it.
+type DeleteBody =
+  | { kind: 'highlight'; id: string }
+  | { kind: 'note'; verseId: number }
+  | { kind: 'bookmark'; verseId: number };
+
+// The two-step remove, copied from the research-history rows in components/sidebar.tsx: the first
+// tap arms, the second removes. Not window.confirm — a native dialog is heavier than the action
+// deserves — and ALWAYS VISIBLE rather than revealed on hover, because a control that exists on a
+// pointer and not on a touchscreen is the UX-2 defect this repo has already shipped once.
+function RemoveButton({
+  noun,
+  reference,
+  armed,
+  onArm,
+  onConfirm,
+  onDisarm,
+}: {
+  noun: string;
+  reference: string;
+  armed: boolean;
+  onArm: () => void;
+  onConfirm: () => void;
+  onDisarm: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={armed ? onConfirm : onArm}
+      // Disarms when focus leaves, so an armed row cannot lie in wait for an unrelated tap.
+      onBlur={onDisarm}
+      // The accessible name names the ITEM, not the action alone: a screen-reader user moving
+      // through a page of forty rows has to know which one this button empties.
+      aria-label={armed ? `Confirm remove: ${noun} on ${reference}` : `Remove ${noun} on ${reference}`}
+      className={`inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center px-2 text-micro transition-colors ease-gentle ${
+        armed
+          ? 'font-semibold text-red-700 dark:text-red-400'
+          : 'text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200'
+      }`}
+    >
+      {armed ? 'Remove?' : '×'}
+    </button>
+  );
+}
+
 export default function MyLibraryPage() {
   const [state, setState] = useState<'loading' | 'signedout' | 'error' | 'ready'>('loading');
   const [notes, setNotes] = useState<Note[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  // Which row is armed, as `${kind}:${id}` — ids come from three different tables, so the kind
+  // has to be part of the key.
+  const [arming, setArming] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  // OPTIMISTIC WITH ROLLBACK, and the rollback is ANNOUNCED. The row leaves immediately; if the
+  // request fails it goes back at the index it left from and the reader is told why. A row that
+  // silently reappears reads as a bug in the page rather than a request that did not land.
+  const removeRow = useCallback(
+    async <T extends { id: string }>(
+      id: string,
+      rows: T[],
+      setRows: Dispatch<SetStateAction<T[]>>,
+      body: DeleteBody,
+      subject: string,
+    ) => {
+      const index = rows.findIndex((r) => r.id === id);
+      if (index < 0) return;
+      const row = rows[index]!;
+      setArming(null);
+      setRemoveError(null);
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      try {
+        const res = await fetch('/api/annotations', {
+          method: 'DELETE',
+          // requireJsonContentType() in api/annotations/route.ts refuses a DELETE without it.
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+      } catch {
+        setRows((prev) => [...prev.slice(0, index), row, ...prev.slice(index)]);
+        setRemoveError(`Your ${subject} could not be removed. Nothing was changed.`);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     fetch('/api/annotations/all')
@@ -54,8 +140,38 @@ export default function MyLibraryPage() {
         </p>
       </header>
 
+      {/* A removal that failed, above the sections so it survives the list emptying out. */}
+      {removeError && (
+        <p role="alert" className="mb-4 border edge px-4 py-3 text-sm text-red-800 dark:text-red-200">
+          {removeError}
+        </p>
+      )}
+
       {state === 'loading' ? (
-        <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+        // The skeleton vocabulary from app/library/loading.tsx, not the 26th hand-written
+        // "Loading…" string: the shape of this page is known ahead of time, so showing it is more
+        // honest than a word and it removes the layout shift when the data lands. `animate-pulse`
+        // is inert under prefers-reduced-motion (globals.css).
+        <div aria-busy>
+          <span className="sr-only">Loading your saved verses</span>
+          <div aria-hidden className="animate-pulse">
+            <div className="mb-3 h-3 w-20 bg-stone-200/50 dark:bg-stone-800/70" />
+            <div className="mb-9 flex flex-wrap gap-2">
+              {['w-28', 'w-24', 'w-32'].map((w) => (
+                <div key={w} className={`h-11 ${w} bg-stone-200/60 dark:bg-stone-800/80`} />
+              ))}
+            </div>
+            <div className="mb-3 h-3 w-16 bg-stone-200/50 dark:bg-stone-800/70" />
+            <div className="border-y edge">
+              {['w-44', 'w-52', 'w-36'].map((w) => (
+                <div key={w} className="border-b edge py-4 last:border-b-0">
+                  <div className="mb-2 h-4 w-24 bg-stone-200/70 dark:bg-stone-800" />
+                  <div className={`h-4 ${w} bg-stone-200/50 dark:bg-stone-800/70`} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       ) : state === 'signedout' ? (
         <div className="py-16 text-center">
           <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
@@ -101,15 +217,32 @@ export default function MyLibraryPage() {
                 {bookmarks.map((b) => {
                   const ref = verseRef(b.verse_id);
                   return (
-                    <Link
-                      key={b.id}
-                      href={ref.href}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 border edge px-4 text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
-                    >
-                      <span aria-hidden>⚑</span>
-                      {ref.label}
-                      {b.label && <span className="text-stone-500 dark:text-stone-400">· {b.label}</span>}
-                    </Link>
+                    <div key={b.id} className="inline-flex items-stretch border edge">
+                      <Link
+                        href={ref.href}
+                        className="inline-flex min-h-[44px] items-center gap-1.5 px-4 text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+                      >
+                        <span aria-hidden>⚑</span>
+                        {ref.label}
+                        {b.label && <span className="text-stone-500 dark:text-stone-400">· {b.label}</span>}
+                      </Link>
+                      <RemoveButton
+                        noun="bookmark"
+                        reference={ref.label}
+                        armed={arming === `bookmark:${b.id}`}
+                        onArm={() => setArming(`bookmark:${b.id}`)}
+                        onDisarm={() => setArming((cur) => (cur === `bookmark:${b.id}` ? null : cur))}
+                        onConfirm={() =>
+                          void removeRow(
+                            b.id,
+                            bookmarks,
+                            setBookmarks,
+                            { kind: 'bookmark', verseId: b.verse_id },
+                            `bookmark on ${ref.label}`,
+                          )
+                        }
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -129,9 +262,27 @@ export default function MyLibraryPage() {
                       key={n.id}
                       className="border-b edge px-1 py-3 last:border-b-0"
                     >
-                      <Link href={ref.href} className="inline-flex min-h-[32px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
-                        {ref.label}
-                      </Link>
+                      <div className="flex items-center justify-between gap-2">
+                        <Link href={ref.href} className="inline-flex min-h-[44px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
+                          {ref.label}
+                        </Link>
+                        <RemoveButton
+                          noun="note"
+                          reference={ref.label}
+                          armed={arming === `note:${n.id}`}
+                          onArm={() => setArming(`note:${n.id}`)}
+                          onDisarm={() => setArming((cur) => (cur === `note:${n.id}` ? null : cur))}
+                          onConfirm={() =>
+                            void removeRow(
+                              n.id,
+                              notes,
+                              setNotes,
+                              { kind: 'note', verseId: n.verse_id },
+                              `note on ${ref.label}`,
+                            )
+                          }
+                        />
+                      </div>
                       <p
                         className="mt-1 line-clamp-3 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300 break-words"
                         title={n.body}
@@ -157,14 +308,31 @@ export default function MyLibraryPage() {
                 {highlights.map((h) => {
                   const ref = verseRef(h.verse_id);
                   return (
-                    <Link
-                      key={h.id}
-                      href={ref.href}
-                      className="flex min-h-[44px] items-center gap-2 border edge px-4 text-sm text-stone-700 hover:bg-stone-100 active:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-800"
-                    >
-                      <span className={`h-3 w-3 rounded-full ${DOT[h.color] ?? 'bg-yellow-400'}`} />
-                      {ref.label}
-                    </Link>
+                    <div key={h.id} className="inline-flex items-stretch border edge">
+                      <Link
+                        href={ref.href}
+                        className="flex min-h-[44px] items-center gap-2 px-4 text-sm text-stone-700 hover:bg-stone-100 active:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-800"
+                      >
+                        <span className={`h-3 w-3 rounded-full ${DOT[h.color] ?? 'bg-yellow-400'}`} />
+                        {ref.label}
+                      </Link>
+                      <RemoveButton
+                        noun="highlight"
+                        reference={ref.label}
+                        armed={arming === `highlight:${h.id}`}
+                        onArm={() => setArming(`highlight:${h.id}`)}
+                        onDisarm={() => setArming((cur) => (cur === `highlight:${h.id}` ? null : cur))}
+                        onConfirm={() =>
+                          void removeRow(
+                            h.id,
+                            highlights,
+                            setHighlights,
+                            { kind: 'highlight', id: h.id },
+                            `highlight on ${ref.label}`,
+                          )
+                        }
+                      />
+                    </div>
                   );
                 })}
               </div>
