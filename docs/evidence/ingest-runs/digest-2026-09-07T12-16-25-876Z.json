@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-09-07T12:16:25.876Z",
+    "endedAt": "2026-09-07T12:16:34.880Z",
+    "outcome": "queue-empty"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 1,
+    "skipped": 0,
+    "quarantined": 0,
+    "escalated": 0
+  },
+  "staged": [
+    {
+      "slug": "carey-enquiry",
+      "adapter": "gutenberg",
+      "sourceType": "theology",
+      "result": "staged",
+      "units": 5,
+      "anchored": 0,
+      "embedded": 83
+    }
+  ],
+  "escalations": [],
+  "quarantined": []
+}

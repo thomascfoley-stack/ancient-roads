@@ -24911,5 +24911,29 @@
       }
     },
     "note": "Claudius/Nero material for Acts chronology. Scope is the TWELVE CAESARS only: the #6400 Complete volume also carries the editor's per-reign literary essays and the Lives of the Grammarians, Rhetoricians and Poets — excluded at ingest as non-authorial/separate works, declared here. Staged via the historian path."
+  },
+  {
+    "id": "carey-enquiry",
+    "slug": "carey-enquiry",
+    "title": "An Enquiry into the Obligations of Christians to Use Means for the Conversion of the Heathens",
+    "author": "William Carey",
+    "author_died": 1834,
+    "year_written": 1792,
+    "source_type": "theology",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/11449",
+      "edition": "Leicester: Ann Ireland, 1792 — the original edition. Gutenberg #11449, title page READ 2026-09-07: \"AN ENQUIRY INTO THE OBLIGATIONS OF CHRISTIANS, TO USE MEANS FOR THE CONVERSION OF THE HEATHENS. … BY WILLIAM CAREY. … MDCCXCII.\"",
+      "year": 1792,
+      "license_ref": "Public Domain — Gutenberg header (US); 1792 original, Carey d. 1834; no translator (author's own English)",
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 11449
+      }
+    },
+    "note": "Founding document of the modern missions movement. Scope is the work's own five SECT. chapters; Carey's INTRODUCTION is excluded front matter (opens before the 'AN ENQUIRY, &c.' half-title — same treatment as newman-apologia's preface), recorded here. Staged via adapter-loop (register path)."
   }
 ]

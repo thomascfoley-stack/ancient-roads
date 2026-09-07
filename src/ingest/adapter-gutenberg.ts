@@ -302,6 +302,27 @@ export const PROFILES: Record<string, Profile> = {
     },
     register: 'prose',
   },
+  'carey-enquiry': {
+    // PG #11449 — the 1792 original (title page read 2026-09-07: "AN ENQUIRY
+    // INTO THE OBLIGATIONS OF CHRISTIANS … BY WILLIAM CAREY. … MDCCXCII.").
+    // The work is the five SECT. chapters; Carey's own INTRODUCTION sits
+    // before the "AN ENQUIRY, &c." half-title that opens the scope, so it is
+    // excluded front matter (same treatment as newman-apologia's 1865
+    // Preface) — it can never attach to SECT. I. SECT. lines are indented
+    // whole lines ("SECT.  V." double-spaced in the etext); nothing else in
+    // the body matches them.
+    sections: {
+      scope: { start: /^ *AN ENQUIRY, &c\.$/ },
+      contents: [
+        { match: /^ *SECT\.\s+I\.$/ },
+        { match: /^ *SECT\.\s+II\.$/ },
+        { match: /^ *SECT\.\s+III\.$/ },
+        { match: /^ *SECT\.\s+IV\.$/ },
+        { match: /^ *SECT\.\s+V\.$/ },
+      ],
+    },
+    register: 'prose',
+  },
   'newman-apologia': {
     // PG #22088 (1890 Longmans ed. of the 1864 Apologia). The work proper is
     // the five chapters between the part-title "MY RELIGIOUS OPINIONS." (a
