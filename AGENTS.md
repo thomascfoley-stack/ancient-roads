@@ -83,6 +83,27 @@ rediscovering them. Do not duplicate their content here - go read them.
 
 - **Committing to the main tree while another session is live: use explicit pathspecs.**
   `git commit -- <your files>`, never a bare `git commit` after `git add`. See the index note above.
+- **BRANCH NAMES ARE REPO-WIDE, NOT PER-WORKTREE — never use a fixed scratch name.** A worktree gets
+  its own index and its own clean-tree state; it does NOT get its own `refs/heads`. Two sessions
+  that both `git checkout -B probe` are writing the same ref, and the second one's commit lands on
+  top of the first one's work.
+
+  **Measured 2026-09-07**, replaying 49 PRs onto a moved `main` with three agents running the same
+  playbook: one agent's push carried a FOREIGN commit onto a PR's branch (caught on the push
+  output, re-pushed clean); a second built a commit whose parent was another session's commit,
+  silently sweeping in a revert of that session's work — caught only because the file count was 8
+  where the port touched 3. Nothing reached the remote wrong, and the whole cost was rework.
+
+  Name the branch after the task and the session: `port-151-ae12eded`, not `probe`. And note what
+  did NOT save them — `git add <paths>` followed by a bare `git commit` still takes the whole
+  index; the pathspec rule above (`git commit -- <paths>`) is the part that actually contains it.
+- **`db-invariants` provisions a Neon branch per run, and the account has a concurrency cap.**
+  Pushing many PR branches at once puts that many runs in flight and the provider refuses:
+  `You have exceeded the limit of concurrently active endpoints`. The runs go red for a reason
+  that has nothing to do with the code, which is the worst kind of red — it looks exactly like a
+  test failure. Re-run in small batches (3 at a time held the cap on 2026-09-07). MASTER's Lane F
+  row F3 carries this as an open unknown, "Neon branch cap NOT READ"; this is what reading it
+  looks like.
 - One agent per working tree for anything that deploys or writes a database. Concurrent
   sessions have shipped each other's half-finished work here before (2026-07-12) and clobbered
   cutover checkpoints (2026-07-27). The guards exist, but do not lean on them.
