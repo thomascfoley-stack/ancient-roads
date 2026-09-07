@@ -34,6 +34,7 @@ import { paneRegisterLabel, type Pane } from '@/lib/desk';
 import { resolveBookSlug } from '@bible/ref-parse';
 import { BookPicker } from '@/components/book-picker';
 import { WorkToc } from '@/components/work-toc';
+import { TextSkeleton } from '@/components/skeleton';
 import { useWorkSectionPages } from '@/lib/use-work-sections';
 import { WORK_READER_PAGE_LIMIT } from '@/lib/work-reader';
 import type { WorkSectionRow, WorkSource, WorkTocUnit } from '@/lib/work';
@@ -245,7 +246,9 @@ function ScripturePaneView({
       {error ? (
         <Message tone="error">{error}</Message>
       ) : !data ? (
-        <Message>Loading…</Message>
+        // The pane header already knows this is Scripture and which chapter, so the body's job is
+        // only to hold the verses' shape until they arrive.
+        <TextSkeleton label="Loading this chapter" lines={6} />
       ) : (
         <div className="space-y-1.5 font-scripture text-base leading-relaxed text-stone-800 dark:text-stone-100">
           {data.verses.map((v) => (
@@ -541,7 +544,9 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
       {metaError ? (
         <Message tone="error">{metaError}</Message>
       ) : loading ? (
-        <Message>Loading…</Message>
+        // Pairs with the header skeleton above (B011): while the pane does not yet know what work
+        // it holds, neither half asserts anything — the frame keeps its shape and says so once.
+        <TextSkeleton label="Loading this work" lines={6} />
       ) : sections.length === 0 && error ? (
         // The FIRST page failed. A load-MORE failure is a different thing (below): it keeps the
         // sections already read. Friendly words either way — the hook's error string names the
@@ -590,7 +595,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
           {/* Collapsed later sections + an estimate for the unfetched remainder, so the pane's
               scrollbar reflects roughly the whole work while pages stream in. */}
           {bottomSpacer > 0 && <div style={{ height: bottomSpacer }} aria-hidden />}
-          {sections.length === 0 && busy === 'initial' && <Message>Loading…</Message>}
+          {sections.length === 0 && busy === 'initial' && <TextSkeleton label="Loading this work" lines={6} />}
           {sections.length === 0 && !busy && !error && <Message>Nothing to read here yet.</Message>}
           {/* A load-more failure: the read stays, an inline retry appears, and the prefetch
               branch does NOT fire while the error stands (see updateActive — that guard is the

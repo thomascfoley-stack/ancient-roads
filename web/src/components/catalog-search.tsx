@@ -20,7 +20,7 @@
 // server refused. Errors now render as an error.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { errorMessage } from '@/lib/api-error-message';
+import { responseErrorMessage } from '@/lib/api-error-message';
 import Link from 'next/link';
 import type { CatalogId } from '@/lib/catalog';
 import { sanitizeSnippet } from '@/lib/snippet';
@@ -86,9 +86,18 @@ export function CatalogSearch({
           // publicReadThrottle at the top of the same route answers 429 with the apiError
           // envelope { error: { code, message } }. Reading `body.error` blindly coerced the
           // object and showed the reader "[object Object]" in place of the throttle copy.
-          // Dual-shape read, same as my-works.tsx:147.
-          const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
-          throw new Error(errorMessage(body, `search failed (${res.status})`));
+          // `responseErrorMessage` carries that dual-shape read and adds the half this site was
+          // missing: a bodyless failure fell back to `search failed (${res.status})`, so the
+          // reader was shown "Search failed: search failed (500)".
+          //
+          // Set-and-return rather than throw. Throwing routed this message through the same catch
+          // that receives a dropped connection, and the catch could not tell the two apart — so
+          // `err.message` was rendered either way and a network drop printed "Failed to fetch".
+          const said = await responseErrorMessage(res, 'That search could not be run. Please try again.');
+          // Same staleness guard the catch below applies: a superseded query must not paint its
+          // failure over the live one's results.
+          if (mine === seq.current) setState({ kind: 'error', message: said });
+          return;
         }
         const page = (await res.json()) as Page;
         if (mine !== seq.current) return;
@@ -98,9 +107,12 @@ export function CatalogSearch({
           const results = [...prior, ...page.results.filter((r) => !seen.has(resultKey(r)))];
           return { kind: 'ok', page: { results, total: page.total, totalCapped: page.totalCapped } };
         });
-      } catch (err) {
+      } catch {
+        // Only transport and parse failures reach here now — a dropped connection, an abort, a
+        // body that is not JSON. None of them have a message written for a reader (`fetch` rejects
+        // with the literal words "Failed to fetch"), so none of them is asked for one.
         if (mine === seq.current) {
-          setState({ kind: 'error', message: err instanceof Error ? err.message : 'search failed' });
+          setState({ kind: 'error', message: 'That search could not be run. Please check your connection and try again.' });
         }
       } finally {
         if (mine === seq.current) {
@@ -167,7 +179,10 @@ export function CatalogSearch({
 
       {state?.kind === 'error' && !busy && (
         <p role="alert" className="mt-3 rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
-          Search failed: {state.message}
+          {/* No "Search failed:" prefix. The message is now a whole sentence — prefixing it gave
+              "Search failed: That search could not be run." and, on a throttle, stapled a label
+              onto copy that was already saying something better. */}
+          {state.message}
         </p>
       )}
 

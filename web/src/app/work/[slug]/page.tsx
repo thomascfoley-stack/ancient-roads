@@ -22,6 +22,7 @@ import {
 import type { WorkSource, WorkTocUnit } from '@/lib/work';
 import { WorkReader, type WorkReaderSeek } from '@/components/work-reader';
 import { WorkToc } from '@/components/work-toc';
+import { TextSkeleton } from '@/components/skeleton';
 import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -304,7 +305,10 @@ export default function WorkPage() {
   }
 
   if (!work) {
-    return <p className="py-24 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>;
+    // The whole page is waiting on `/api/work/[slug]`, so this is the one that read as a blank
+    // screen with a word in the middle of it. In the reading measure so the bars land where the
+    // text will.
+    return <TextSkeleton label="Loading this work" lines={7} className="reading-measure mx-auto px-6 py-24" />;
   }
 
   const pct = progress && total > 0 ? clamp01((progress.ordinal - 1 + progress.scrollPct) / total) : 0;
