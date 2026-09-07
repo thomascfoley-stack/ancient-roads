@@ -23,7 +23,13 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { MULTI_USER_UPLOADS, multiUserUploadsEnabled, uploadDenial } from '@/lib/user-corpus/access';
+import { MULTI_USER_ENV, MULTI_USER_UPLOADS, multiUserUploadsEnabled, uploadDenial } from '@/lib/user-corpus/access';
+
+/** The ceiling must stay a literal CI can read; see "cannot be raised by the environment alone". */
+const ACCESS_SRC = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../src/lib/user-corpus/access.ts',
+);
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -73,21 +79,64 @@ describe('A7 - the SEC-1 upload gate', () => {
 
   it('keeps multi-user uploads disabled while an in-path advisory is ignored', () => {
     const stillIgnored = inPath.filter((id) => IGNORED.includes(id));
-    if (stillIgnored.length > 0) {
-      expect(
-        MULTI_USER_UPLOADS,
-        `SEC-1 is open: ${stillIgnored.join(', ')} still in pnpm.auditConfig.ignoreGhsas. ` +
+    // UNCONDITIONAL. This was `if (stillIgnored.length > 0) { expect(...) }`, and the ignore list
+    // is empty today — so the body never ran and the `it()` reported green having asserted
+    // NOTHING: the exact shape of the open 2026-08-31 finding, in the gate that guards SEC-1
+    // (false-confidence audit, 2026-09-07). Written as an implication instead, so the assertion
+    // always executes and its truth is the property: no in-path advisory is ignored, OR the
+    // ceiling is down.
+    // Negation, not `=== false`: `MULTI_USER_UPLOADS` narrows to the literal `true`, so an
+    // equality comparison against `false` is a TS2367 typecheck error (and an annotated `const`
+    // does not widen it). The property is the runtime value, which `!` reads without comparing.
+    expect(
+      stillIgnored.length === 0 || !MULTI_USER_UPLOADS,
+      stillIgnored.length === 0
+        ? ''
+        : `SEC-1 is open: ${stillIgnored.join(', ')} still in pnpm.auditConfig.ignoreGhsas. ` +
           'UPLOADER_DESIGN §4 forbids multi-user upload until the Better Auth direct cutover ' +
           'lands and these ids are removed. Set MULTI_USER_UPLOADS back to false.',
-      ).toBe(false);
-    }
+    ).toBe(true);
   });
 
   it('cannot be raised by the environment alone', () => {
     // The ceiling is the committed constant; the env switch only narrows it. Without this, a CI
     // assertion on the constant would say nothing about what production is actually serving.
-    const on = { [`USER_CORPUS_MULTI_USER`]: 'true' };
-    expect(multiUserUploadsEnabled(on)).toBe(MULTI_USER_UPLOADS);
+    //
+    // THE ASSERTION IS THE COMPOSITION, NOT THE OUTCOME. This read
+    // `expect(multiUserUploadsEnabled(on)).toBe(MULTI_USER_UPLOADS)`, which the day the constant
+    // became `true` collapsed into `expect(true).toBe(true)` — dropping `MULTI_USER_UPLOADS &&`
+    // from access.ts left it green (false-confidence audit, 2026-09-07). Both factors are now
+    // exercised INDEPENDENTLY, which no single value of the constant can satisfy vacuously:
+    // with the env off the answer is false whatever the ceiling says, and with the env on the
+    // answer is the ceiling itself.
+    const on = { [MULTI_USER_ENV]: 'true' };
+    const off = { [MULTI_USER_ENV]: 'false' };
+    expect(multiUserUploadsEnabled(off), 'the env switch is not consulted').toBe(false);
+    expect(multiUserUploadsEnabled({}), 'an unset env switch must not open uploads').toBe(false);
+
+    // AND THE CEILING IS CONSULTED — which, while the ceiling is `true`, NO runtime assertion can
+    // observe: `true && B` and `B` are the same function, so every input gives the same answer.
+    // That is exactly how the previous version died — `expect(multiUserUploadsEnabled(on))
+    //   .toBe(MULTI_USER_UPLOADS)` became `expect(true).toBe(true)` the day the constant flipped,
+    // and deleting `MULTI_USER_UPLOADS &&` from access.ts stayed green. Re-proved on 2026-09-07:
+    // the runtime rewrite went green against that same seed too.
+    //
+    // So the check is STRUCTURAL, and says so rather than pretending otherwise. Comments are
+    // stripped first: a check a comment can satisfy is a check that cannot fail (the lesson from
+    // session-mock-surface.test.ts the same night).
+    const accessCode = readFileSync(ACCESS_SRC, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const fn = /export function multiUserUploadsEnabled\([^)]*\)[^{]*\{([\s\S]*?)\n\}/.exec(accessCode);
+    expect(fn, 'multiUserUploadsEnabled moved or was renamed').not.toBeNull();
+    expect(
+      fn![1],
+      'the env switch alone decides multi-user upload — the committed ceiling is not in the expression, '
+        + 'so CI can no longer see what production is serving',
+    ).toMatch(/MULTI_USER_UPLOADS/);
+    // The ceiling is a literal, not an env read: a `MULTI_USER_UPLOADS = process.env.X === '1'`
+    // would satisfy everything above while making it invisible to this suite again.
+    expect(accessCode).toMatch(/export const MULTI_USER_UPLOADS = (?:true|false);/);
   });
 });
 

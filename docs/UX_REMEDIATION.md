@@ -3019,3 +3019,57 @@ error on the cover costs more credibility than it should.
 - Dead `small-caps` class (never defined) still on `app/studies/page.tsx` and `plans-client.tsx`.
 - `SLOW_ANSWER_NOTICE_MS = 90_000` still derives from the n=3 dev-local series; two production
   series now exist (owner's call).
+
+### Filed 2026-09-07 from the My Works false-confidence audit (#4)
+
+Full findings and the five closed CRITICALs: `docs/evidence/my-works-false-confidence-2026-09-07/findings.md`.
+Each item below carries the audit's one-line PRODUCT seed — the change that *should* turn the named
+test red and does not. None is a known product defect; each is a check that would not notice one.
+
+- **Mocked `runAsUser` means the SQL under test never runs.** `retry-claim-guard.test.ts:28,34`
+  (delete the claim CAS predicate at `documents.ts:305-307` → green) and
+  `duplicate-checksum-race.test.ts:26,34,42` (delete the D8 `AND NOT EXISTS` at `documents.ts:185-187`
+  → green, dedupe race re-opens). Both need a DB-backed leg racing two real calls.
+- **Rate-limit BUCKET KEYS are never executed** — `upload-direct-guards.test.ts:156` mocks
+  `@/lib/rate-limit` wholly, so `corpus-complete:min` → `corpus-upload:min` halves the upload budget
+  green. `upload-rate-limit.test.ts:85` shows the honest shape.
+- **"BEFORE a presign is issued" asserts only a status code** (`upload-direct-guards.test.ts:114,126`);
+  the presign helpers are plain arrows, never spies. Move the quota block below the presign → green.
+- **Source greps satisfiable by a COMMENT** — `retry-claim-guard.test.ts:51` is already satisfied by
+  the comment at `documents.ts:231`; same shape in `blob-failure-heal.test.ts:35`,
+  `heal-attempts-ceiling.test.ts:66`, `ownership-assertion.test.ts:23`,
+  `duplicate-checksum-race.test.ts:50`. Strip comments before matching, as
+  `session-mock-surface.test.ts` now does.
+- **`heal-attempts-ceiling.test.ts:63` greps the wrong file** for the retry's `resetAttempts`
+  default, which lives at `documents.ts:297` (`?? true` → `?? false` → the Retry button silently
+  stops resetting and the document can never be claimed).
+- **`retry-after-header.test.ts`'s `ROUTES` list omits the two routes the product actually uses**
+  (`upload-url`, `upload-complete`). Delete `upload-complete`'s header → green.
+- **The scanned-PDF floor is never fed a page in `1..99`** — the stamp-only scan page it exists for.
+  `parse.ts:75` `< MIN_CHARS_PER_PAGE` → `< 1` stays green. And `MIN_CHARS_PER_PAGE` itself,
+  documented as MEASURED (n=120/n=12), is pinned by nothing: any value in `[11, 1350]` is green.
+- **The translation-confidence FORMULA is asserted against no computed value** — `confidence = 0.9`
+  at `translation-detect.ts:123` is green, and that number is written into every anchor row.
+  `FALLBACK_CONFIDENCE` is self-referential in both its references.
+- **`model-parity.test.ts` covers one of the two call sites it names** — the tautology it was
+  written to kill can be restored at `suggested-readings.ts:121` and stay green.
+- **The D1 readings wedge can be reintroduced green**: `READINGS_AFTER_INGEST` is a constant no
+  product code reads. Adding a `setReadingsState(..., 'pending')` after `queue.ts:193` wedges every
+  fresh document with all six `readings-not-wedged` tests passing.
+- **`search-limit-default.test.ts` mocks the layer the default lives in** — `DEFAULT_LIMIT` → 1 at
+  `search.ts:44` restores B019's symptom (every My Works search yields one result) green.
+- **`draft-check.test.ts:58` has never been observed green**: it dies at vitest's 5s default while
+  the real corpus join runs (2.7s alone). Give it an explicit timeout like its siblings.
+- **`ask-additive-not-load-bearing.test.ts:62` hand-copies `teach.ts`'s `RetrievalContext`**, so
+  appending user voices to `sectionIds` at `teach.ts:320` — the verdict condition — stays green.
+- **Skip hygiene**: `ownership-assertion.test.ts:31` reports PASS while running nothing (a LICENSING
+  property); `upload-quota.test.ts:63`, `quota-toctou.test.ts:22`, `anchor.test.ts:15`,
+  `translation-detect.test.ts:29` skip with a bare `console.warn` and land in the skip ceiling's
+  residual bucket miscounted as missing secrets.
+- **Never tested at all**: `checkCorpusCompleteRateLimit` (no threshold, no fail-closed, no bucket
+  name); `upload-complete`'s entire success path; route-level cross-tenant reads on
+  `documents/[id]`; the tradition-gap RANKING and slug→title resolution;
+  `work-beside-tradition.tsx`. `/ask` cross-tenant isolation has a proof but no CI job runs it with
+  a database.
+- **Still open from 2026-08-31**: `upload-direct-guards.test.ts:161`'s `as never` cast. This pass
+  did not re-examine it.
