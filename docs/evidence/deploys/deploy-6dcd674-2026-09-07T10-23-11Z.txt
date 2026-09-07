@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-09-07T10:28:35Z
+sha:             6dcd674f45c789376c8377738751cf18d5444ed5
+branch:          fix/rail-row-marks
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-1g0m7ymxh-home-network-hardening.vercel.app
+deployment_id:   dpl_2S3qFezZaS32CuWScxsiKcr3mwYc
+alias:           ancientpaths.app
+alias_serves:    dpl_2S3qFezZaS32CuWScxsiKcr3mwYc
+state:           live
