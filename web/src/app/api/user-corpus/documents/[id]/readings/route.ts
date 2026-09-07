@@ -101,6 +101,12 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   // write bumps updated_at, the staleness heartbeat, so done first it would make a stale
   // crashed-kick 'pending' look fresh and wedge the escape hatch shut (caught red by the
   // stale-escape leg of readings-reentrancy).
+  //
+  // setSearchCategories runs INSIDE this try (not before it): the claim has already flipped the
+  // row to 'pending' with a fresh updated_at, so a transient DB error during that UPDATE must be
+  // reported as 'failed', not left as a silent 'pending' corpse that the staleness escape hatch
+  // cannot reach for the full READINGS_STALE_MS window. Same catch as the after() scheduling arm;
+  // caught red by the setSearchCategories-throws leg of readings-setSearchCategories-failure.
   const won = await claimReadingsStart(user.id, id, READINGS_STALE_MS);
   if (!won) {
     return NextResponse.json(
@@ -108,15 +114,14 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
       { status: 409 },
     );
   }
-  await setSearchCategories(user.id, id, categories);
-
   try {
+    await setSearchCategories(user.id, id, categories);
     after(async () => {
       await runReadingsJob(user.id, id, categories);
     });
   } catch (e) {
-    // The row already says 'pending', so a scheduling failure must say so rather than leave a
-    // document waiting for a job that was never queued.
+    // The row already says 'pending', so a failure here (setSearchCategories OR after() scheduling)
+    // must say so rather than leave a document waiting for a job that was never queued.
     await setReadingsState(user.id, id, {
       status: 'failed',
       error: `could not start the search: ${String((e as Error)?.message ?? e)}`.slice(0, 300),

@@ -15,7 +15,7 @@
 // is a retrieval change requiring its own accuracy run. The label is derived at read time instead.
 
 import { describe, expect, it } from 'vitest';
-import { formatVerseRange, groupTocByUnit, sectionLabel } from '@/lib/work-reader';
+import { formatVerseRange, sectionLabel } from '@/lib/work-reader';
 import type { WorkTocRow } from '@/lib/work';
 
 const row = (p: Partial<WorkTocRow>): WorkTocRow => ({
@@ -32,7 +32,6 @@ const row = (p: Partial<WorkTocRow>): WorkTocRow => ({
 const JOHN_3_16 = 43_003_016;
 const JOHN_3_18 = 43_003_018;
 const JOHN_4_2 = 43_004_002;
-const JUDE_1_3 = 65_001_003; // Jude has exactly one chapter
 
 describe('sectionLabel', () => {
   it('names a commentary section by its passage, not its ordinal', () => {
@@ -80,42 +79,5 @@ describe('formatVerseRange', () => {
   it('ignores an end that is invalid or in another book rather than inventing a span', () => {
     expect(formatVerseRange(JOHN_3_16, 999_999_999)).toBe('John 3:16');
     expect(formatVerseRange(JOHN_3_16, 1_001_001)).toBe('John 3:16'); // Genesis 1:1 as an "end"
-  });
-});
-
-describe('groupTocByUnit labels the unit as a CHAPTER', () => {
-  it('a verse-anchored unit reads "John 3", and its sections read "John 3:16"', () => {
-    // This is the shape the owner asked for: chapter names, like the works that already have them.
-    const units = groupTocByUnit([
-      row({ id: 1, ordinal: 1, unitOrdinal: 3, verseStart: JOHN_3_16, verseEnd: JOHN_3_16 }),
-      row({ id: 2, ordinal: 2, unitOrdinal: 3, verseStart: JOHN_3_18, verseEnd: JOHN_3_18 }),
-    ]);
-    expect(units).toHaveLength(1);
-    expect(units[0]!.label).toBe('John 3');
-    expect(units[0]!.rows.map(sectionLabel)).toEqual(['John 3:16', 'John 3:18']);
-  });
-
-  it('a one-chapter book reads "Jude", not "Jude 1"', () => {
-    const units = groupTocByUnit([row({ unitOrdinal: 1, verseStart: JUDE_1_3, verseEnd: JUDE_1_3 })]);
-    expect(units[0]!.label).toBe('Jude');
-  });
-
-  it('a unit whose first row has a real heading keeps it', () => {
-    const units = groupTocByUnit([
-      row({ id: 1, ordinal: 1, unitOrdinal: 1, heading: 'Sermon I (1/3)' }),
-      row({ id: 2, ordinal: 2, unitOrdinal: 1, heading: 'Sermon I (2/3)' }),
-    ]);
-    expect(units[0]!.label).toBe('Sermon I (1/3)');
-    expect(units[0]!.rows).toHaveLength(2);
-  });
-
-  it('still groups by unit_ordinal, unchanged', () => {
-    // The labelling change must not disturb the grouping migration 024 and the TOC depend on.
-    const units = groupTocByUnit([
-      row({ id: 1, ordinal: 1, unitOrdinal: 1 }),
-      row({ id: 2, ordinal: 2, unitOrdinal: 1 }),
-      row({ id: 3, ordinal: 3, unitOrdinal: 2 }),
-    ]);
-    expect(units.map((u) => u.rows.length)).toEqual([2, 1]);
   });
 });

@@ -10,6 +10,7 @@ import {
   decodePane,
   deskHref,
   encodePane,
+  paneKey,
   paneRegisterLabel,
   replacePane,
   withPane,
@@ -19,6 +20,7 @@ import {
 
 const scripture = (book: string, chapter: number): Pane => ({ kind: 'scripture', book, chapter });
 const work = (slug: string): Pane => ({ kind: 'work', slug });
+const workAt = (slug: string, ordinal: number): Pane => ({ kind: 'work', slug, ordinal });
 
 describe('pane encoding round-trips', () => {
   it('a scripture pane survives encode → decode', () => {
@@ -32,6 +34,18 @@ describe('pane encoding round-trips', () => {
   it('a book slug containing a hyphen and a digit round-trips (1-john, song-of-solomon)', () => {
     expect(decodePane('scripture:1-john/2')).toEqual(scripture('1-john', 2));
     expect(decodePane('scripture:song-of-solomon/8')).toEqual(scripture('song-of-solomon', 8));
+  });
+
+  it('a work pane with an ordinal survives encode → decode', () => {
+    expect(decodePane(encodePane(workAt('adam-clarke', 8075)))).toEqual(workAt('adam-clarke', 8075));
+  });
+
+  it('paneKey is the work IDENTITY — it ignores the ordinal encodePane round-trips', () => {
+    // The renderer keys React children on paneKey and the parser dedupes on it; ordinal is a
+    // landing position, not which work the pane is, so it must not distinguish two same-work panes.
+    expect(paneKey(work('adam-clarke'))).toBe('work:adam-clarke');
+    expect(paneKey(workAt('adam-clarke', 8075))).toBe('work:adam-clarke');
+    expect(paneKey(scripture('john', 3))).toBe('scripture:john/3');
   });
 });
 
@@ -86,6 +100,52 @@ describe('the pane ceiling is enforced in the parser', () => {
     const repeated = decodeDesk(['scripture:john/3', 'work:a']);
     const joined = decodeDesk(['scripture:john/3,work:a']);
     expect(joined).toEqual(repeated);
+  });
+});
+
+describe('the same work never occupies two panes — ordinal is a landing position, not identity', () => {
+  // The pre-ordinal dedup keyed on encodePane, which folds the ordinal into the string. Two panes
+  // for the SAME work that differed only in ordinal (or where one carried one and the other did
+  // not) were treated as DISTINCT and never collapsed — a second cell, and (because the renderer
+  // keys children by paneKey, no ordinal) a React duplicate-key warning. Dedup now keys on paneKey.
+
+  it('decodeDesk dedupes a bare work against the same work with an ordinal (first wins)', () => {
+    const out = decodeDesk(['work:adam-clarke', 'work:adam-clarke:8075']);
+    expect(out).toHaveLength(1);
+    expect(encodePane(out[0]!)).toBe('work:adam-clarke');
+  });
+
+  it('decodeDesk dedupes regardless of order — the ordinal-bearing entry wins when it comes first', () => {
+    const out = decodeDesk(['work:adam-clarke:8075', 'work:adam-clarke']);
+    expect(out).toHaveLength(1);
+    expect(encodePane(out[0]!)).toBe('work:adam-clarke:8075');
+  });
+
+  it('withPane collapses a re-add of an open work across the ordinal boundary, adopting the new ordinal', () => {
+    // Mirrors the library "+" producer: openDesk has `work:adam-clarke` (no ordinal); the re-add
+    // carries an ordinal because a Scripture pane is now open. withPane must NOT add a second cell.
+    const open: Pane[] = [scripture('jhn', 3), work('adam-clarke')];
+    const next = withPane(open, workAt('adam-clarke', 8075));
+    expect(next).toHaveLength(2);
+    expect(next.map(encodePane)).toEqual(['scripture:jhn/3', 'work:adam-clarke:8075']);
+  });
+
+  it('withPane keeps the pane in its place (no reshuffle) when collapsing across ordinals', () => {
+    const open: Pane[] = [work('a'), scripture('jhn', 3), work('adam-clarke')];
+    const next = withPane(open, workAt('adam-clarke', 8075));
+    // adam-clarke stays at index 2; nothing else moves.
+    expect(next.map(encodePane)).toEqual(['work:a', 'scripture:jhn/3', 'work:adam-clarke:8075']);
+  });
+
+  it('the library-producer chain emits a single same-work href, not two', () => {
+    // decodeDesk + withPane + deskHref is exactly what library/[catalog]/page.tsx calls, in that
+    // order. With a Scripture pane open and the work re-added with an ordinal, the href must name
+    // the work once — this is the href the reader's "+" click would land on.
+    const openDesk = decodeDesk(['work:adam-clarke,scripture:jhn/3']);
+    const href = deskHref(withPane(openDesk, workAt('adam-clarke', 8075)));
+    const pValues = new URLSearchParams(href.slice('/desk?'.length)).getAll('p');
+    expect(pValues.filter((v) => v.startsWith('work:adam-clarke'))).toEqual(['work:adam-clarke:8075']);
+    expect(pValues).toHaveLength(2);
   });
 });
 
@@ -174,6 +234,13 @@ describe('replacePane — a pane navigates itself without touching its neighbour
     // Same rule decodeDesk and withPane apply: the desk never shows the same thing twice.
     const next = replacePane(desk, 0, work('spurgeon-sermons'));
     expect(next.map(encodePane)).toEqual(['work:spurgeon-sermons', 'work:matthew-henry']);
+  });
+
+  it('replacing with a work already open collapses across the ordinal boundary', () => {
+    // The collapse is by paneKey (work identity), so an ordinal-bearing pane still matches its bare
+    // counterpart and the desk never shows the same work twice — even at different landing spots.
+    const next = replacePane(desk, 0, workAt('spurgeon-sermons', 42));
+    expect(next.map(encodePane)).toEqual(['work:spurgeon-sermons:42', 'work:matthew-henry']);
   });
 
   it('replacing a pane with itself is stable', () => {

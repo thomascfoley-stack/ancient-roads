@@ -220,7 +220,7 @@ above. This strengthens the case for ruling item 12.
 - F-119 — changing highlight colour leaves old row behind
 - F-120 / F-125 — silent annotation loss on failed save
 - F-117 / F-152 / F-136 — list caps print page size as total
-- F-134 — uploads advertise 25 MB; Vercel's platform body cap rejects 6 MB (413 confirmed). Fix is a client-direct Blob upload, not config. See UX_RUNTIME_VERIFICATION.md.
+- F-134 — uploads advertise 25 MB; Vercel's platform body cap rejects 6 MB (413 confirmed). **Fixed 2026-08-30** by the direct-to-Blob presigned-URL upload (`docs/DIRECT_UPLOAD_DESIGN.md`): uploads bypass the function cap, the platform cap itself is unchanged. See UX_RUNTIME_VERIFICATION.md.
 - F-145 — notes/bookmarks invisible in reader
 - F-143 — multi-verse copy takes only first verse
 - F-144 — reader does not restore scroll

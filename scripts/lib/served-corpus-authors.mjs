@@ -148,6 +148,42 @@ export function isRulingAdmittedWorkSlug(slug) {
   return year !== undefined && year < ADR112_CUTOFF_YEAR;
 }
 
+/**
+ * THE FLIP-TIME SERVING BAN — the embeddings-surface twin of `scanServedCorpusAuthors`.
+ *
+ * `publish-flip.mjs` is the ONLY gate that runs at flip time for the embeddings surface, and the
+ * question it must answer there is the same one `scanServedCorpusAuthors` answers for the static
+ * JSON surface: "may this row be SERVED?". The static surface applies the surname-token rule with
+ * its two recorded ways OUT — an ADR-112 owner ruling admitting the WORK, and a reviewed clearance
+ * of the PERSON. Before this function existed the flip gate called `isMustNotServe()` alone, which
+ * is forename-first / exact-match only and CANNOT see a surname-first author string
+ * ("Chesterton, Gilbert Keith", "Lewis, C.S.") — the exact gap the 2026-08-18 chesterton-preexistence
+ * incident exploited (a banned author became served, then sat serving until a later CI run).
+ *
+ * This mirrors `scanServedCorpusAuthors`'s per-entry decision (must || surnameHit) so the two
+ * surfaces AGREE: a work the deploy gate admits the flip gate admits, and a banned author the
+ * deploy gate refuses the flip gate refuses — in ANY format. The surname rule and its exemptions
+ * are the SAME lists, mirrored from web/src/lib/must-not-serve-audit.ts and pinned identical by
+ * test/invariants/served-corpus-authors.test.ts, so widening one side without the other goes red.
+ *
+ * Pure on purpose: the flip gate runs inside a live transaction, so — like `eligibility`/`flipDelta`
+ * — the only way to exercise it in CI is to factor the decision out where a test can reach it.
+ *
+ * @param {string|null|undefined} author  embeddings metadata->>'author' (any format)
+ * @param {string|null|undefined} work    embeddings metadata->>'work' (the slug); used ONLY for
+ *   the ADR-112 ruling admission. A null/empty work cannot claim an admission (fail closed).
+ * @returns {boolean} true when the row must NOT be served. A null/empty author returns false here
+ *   ON PURPOSE so the flip gate's SEPARATE unattributed-author check owns that failure mode.
+ */
+export function isServingBanned(author, work) {
+  if (isMustNotServe(author)) return true;
+  return (
+    authorSurnameLooksMustNotServe(author) &&
+    !isRulingAdmittedWorkSlug(typeof work === 'string' ? work : '') &&
+    !(typeof author === 'string' && author in REVIEWED_SURNAME_CLEARANCES)
+  );
+}
+
 function walkJson(dir) {
   const out = [];
   if (!existsSync(dir)) return out;

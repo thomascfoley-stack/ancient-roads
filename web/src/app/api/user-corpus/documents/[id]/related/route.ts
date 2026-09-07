@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
+import { apiError } from '@/lib/api-error';
 import { getDocument } from '@/lib/user-corpus/documents';
 import { relatedVoices } from '@/lib/user-corpus/related-voices';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { corpusPredicate } from '@/lib/user-corpus/tradition-gap';
+import type { DocStatus } from '@/lib/user-corpus/types';
 import { logEvent } from '@/lib/observability';
 
 export const runtime = 'nodejs';
@@ -19,31 +21,60 @@ export const maxDuration = 30;
  */
 const PREDICATE = corpusPredicate(LEGAL_CORPUS_FILTER);
 
+/** The four claim statuses — a row in one of these IS still being indexed, not yet searchable. */
+const IN_FLIGHT: DocStatus[] = ['queued', 'parsing', 'chunking', 'embedding'];
+
 interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
+// Returns `Response`, not `NextResponse`: the app-wide error envelope (`apiError`, lib/api-error.ts
+// / docs/API_ERRORS.md) is framework-free and returns the global Web `Response`. NextResponse
+// extends Response, so every JSON return below still satisfies this — same shape as the sibling
+// search route (D35, e4542c97).
+export async function GET(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
 
   const { id } = await ctx.params;
-  const doc = await getDocument(user.id, id);
-  // 404 rather than 403 for a document that is not theirs, matching the sibling routes.
-  if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  // Nothing is embedded before the document is indexed, so the honest answer is "still indexing",
-  // not an empty shelf that reads as "the library has nothing like this".
-  if (doc.status !== 'ready') {
-    logEvent('match_outcome', { kind: 'semantic', documentId: id, userId: user.id, outcome: 'pending', voices: 0, ms: 0 });
-    return NextResponse.json({ voices: [], comparable: false, pending: true }, { status: 200 });
-  }
-
   // Same three outcomes as the anchor route, and the same rule: the operation is logged, the
   // document never is.
+  //
+  // A DB fault ANYWHERE in here — `getDocument` as much as the `relatedVoices` sweeps — must
+  // return the stable error envelope, never escape as Next's raw 500. `getDocument` used to sit
+  // outside the try, so a pool exhaustion or query timeout on the lookup escaped the handler
+  // entirely; this route and the sibling `voices` route are the two /api/* handlers the D35
+  // envelope sweep missed, and the `search` route is the precedent.
   const t0 = Date.now();
   try {
+    const doc = await getDocument(user.id, id);
+    // 404 rather than 403 for a document that is not theirs, matching the sibling routes.
+    if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    // Nothing is embedded before the document is indexed, so the honest answer is "still indexing",
+    // not an empty shelf that reads as "the library has nothing like this". That is only honest for
+    // the claim statuses — `failed` and `empty` are terminal/stopped, not in flight, and are
+    // surfaced by the next branch rather than reported as "still being indexed".
+    if (IN_FLIGHT.includes(doc.status)) {
+      logEvent('match_outcome', { kind: 'semantic', documentId: id, userId: user.id, outcome: 'pending', voices: 0, ms: 0 });
+      return NextResponse.json({ voices: [], comparable: false, pending: true }, { status: 200 });
+    }
+
+    // Terminal/stopped states are NOT "still indexing". `empty` is a permanent verdict (the retry
+    // endpoint refuses it with 409 — retrying cannot change the result); `failed` is stopped — the
+    // drain has given up on the row and it will not reach `ready` again until a manual retry. Report
+    // the verdict and its actionable `parseError` reason instead of a `pending: true` that lies about
+    // a finished failure and swallows the cause. The reason is returned to the caller, never logged
+    // — it is the same `parseError` the documents list already carries to this client.
+    if (doc.status === 'failed' || doc.status === 'empty') {
+      logEvent('match_outcome', { kind: 'semantic', documentId: id, userId: user.id, outcome: doc.status, voices: 0, ms: 0 });
+      return NextResponse.json(
+        { voices: [], comparable: false, pending: false, failed: doc.status, reason: doc.parseError },
+        { status: 200 },
+      );
+    }
+
     const result = await relatedVoices(user.id, id, PREDICATE);
     logEvent('match_outcome', {
       kind: 'semantic',
@@ -62,6 +93,10 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
       ms: Date.now() - t0, message,
     });
     console.error('[user-corpus] semantic match failed:', message);
-    return NextResponse.json({ error: 'INTERNAL' }, { status: 500 });
+    // The envelope api-error.ts says every /api/* error uses (docs/API_ERRORS.md), rather than
+    // Next's raw 500 or the bare `{ error: 'INTERNAL' }` this returned before: that shape put a
+    // machine token where every other route puts `{ error: { code, message } }`, so a client that
+    // rendered the field would have shown a reader the word INTERNAL.
+    return apiError('INTERNAL');
   }
 }

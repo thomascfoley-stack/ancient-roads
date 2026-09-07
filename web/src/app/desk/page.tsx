@@ -25,7 +25,7 @@ import { BookPicker } from '@/components/book-picker';
 import { DeskPane } from '@/components/desk-pane';
 import { BOOK_BY_BOOK_SLUG, BOOKS } from '@/lib/bible';
 import { resolveBookSlug } from '@bible/ref-parse';
-import { MAX_PANES, decodeDeskReport, deskGridShape, deskHref, encodePane, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
+import { MAX_PANES, decodeDeskReport, deskGridShape, deskHref, encodePane, paneKey, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
 import { count } from '@/lib/plural';
 
 // The grid's classes, as STATIC lookups. Tailwind only emits classes it can see in source, so a
@@ -233,7 +233,7 @@ function DeskInner() {
       >
         {panes.map((pane, i) => (
           <div
-            key={`${pane.kind}:${pane.kind === 'work' ? pane.slug : `${pane.book}/${pane.chapter}`}`}
+            key={paneKey(pane)}
             // A grid cell now (was a flex-1 column): the grid owns the cell's box on both axes, so
             // `flex-1` is gone — `min-h-0 min-w-0` is what keeps the pane's own scroll inside the
             // cell instead of blowing the grid out. `min-h-[60vh]` only matters in the mobile

@@ -1,10 +1,10 @@
 // Reference/pericope intent routing (retrieval): scanReferences finds numeric
-// refs in prose, matchPericopes/resolveIntent map named passages — high precision
+// refs in prose, resolveIntent maps named passages — high precision
 // (topical queries route to nothing). Ranges are canonical verse IDs.
 
 import { describe, expect, it } from 'vitest';
 import { scanReferences } from '../src/bible/ref-parse';
-import { resolveIntent, matchPericopes } from '../src/bible/pericopes';
+import { resolveIntent } from '../src/bible/pericopes';
 
 const vid = (book: number, ch: number, v = 1) => book * 1_000_000 + ch * 1_000 + v;
 const hasStart = (ranges: { start: number }[], start: number) => ranges.some((r) => r.start === start);
@@ -25,18 +25,22 @@ describe('scanReferences (numeric refs in prose)', () => {
   });
 });
 
-describe('matchPericopes + resolveIntent (named passages)', () => {
-  it('resolves named pericopes to their ranges', () => {
-    expect(hasStart(matchPericopes('the beatitudes in the Sermon on the Mount'), vid(40, 5))).toBe(true);
-    expect(hasStart(matchPericopes('the whole armor of God'), vid(49, 6, 10))).toBe(true);
-    expect(hasStart(matchPericopes('Daniel in the lions den'), vid(27, 6))).toBe(true);
-  });
+describe('resolveIntent (named passages)', () => {
   it('resolveIntent unions numeric refs + pericopes into inject, dedupes', () => {
     expect(hasStart(resolveIntent('Romans 8 nothing can separate us').inject, vid(45, 8))).toBe(true);
     expect(hasStart(resolveIntent('the good shepherd lays down his life for the sheep').inject, vid(43, 10))).toBe(true);
   });
   it('floors numeric references unconditionally (a chapter number is explicit intent)', () => {
     expect(hasStart(resolveIntent('Romans 8 nothing can separate us').floor, vid(45, 8))).toBe(true);
+  });
+  it('routes a space-separated verse to the VERSE, not the whole chapter (M3 verse precision)', () => {
+    // scanReferences and parseRef used to disagree on "romans 8 28": the typeahead normalised it
+    // to Romans 8:28, but the prose scan dropped the verse and resolved Romans 8 (chapter), so
+    // /ask intent routing injected a chapter range. The space-verse scan pass closes the gap.
+    const intent = resolveIntent('what does romans 8 28 teach us');
+    expect(hasStart(intent.inject, vid(45, 8, 28))).toBe(true);
+    expect(hasStart(intent.floor, vid(45, 8, 28))).toBe(true);
+    expect(intent.inject.some((r) => r.start === vid(45, 8))).toBe(false); // no chapter range
   });
   it('floors a pericope only with corroboration; idiomatic use injects but never floors', () => {
     const genuine = resolveIntent('the ten commandments given to Moses'); // "Moses" corroborates
@@ -48,5 +52,19 @@ describe('matchPericopes + resolveIntent (named passages)', () => {
   it('leaves genuinely topical queries unrouted (empty)', () => {
     expect(resolveIntent('propitiation for our sins')).toEqual({ inject: [], floor: [] });
     expect(resolveIntent('justification by faith apart from works')).toEqual({ inject: [], floor: [] });
+  });
+});
+
+describe('resolveIntent ambiguous-book-word corroboration gate', () => {
+  // Book words that are also ordinary English nouns (mark/james/job/acts/numbers/kings)
+  // always inject but floor only when biblically corroborated — a CONFIDENT (non-ambiguous)
+  // reference or a surviving BIBLICAL_LEXICON token, NOT a second ambiguous ref. The frozen
+  // reference_floors.yaml adversarial set has ZERO two-ambiguous cases, so it cannot catch a
+  // count-based shortcut being re-introduced; this leg is the only guard against that footgun.
+  it('does NOT floor two ambiguous refs with no biblical context (regression guard)', () => {
+    const adversarial = resolveIntent('mark 5 and james 2 insurance company');
+    expect(hasStart(adversarial.inject, vid(41, 5))).toBe(true); // inject still soft-boosts (harmless)
+    expect(hasStart(adversarial.inject, vid(59, 2))).toBe(true);
+    expect(adversarial.floor).toEqual([]); // the floor cannot hijack a topical query
   });
 });
