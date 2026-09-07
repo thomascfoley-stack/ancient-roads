@@ -26,7 +26,23 @@ publish is legally irreversible and never auto-fires.
 
 Add one entry per work. This file is the **per-work provenance + license
 registry** — the compliance gate reads it, so it is written *before* ingest,
-not after. Shape (array of works; verified against the live file):
+not after.
+
+> **If the work came from `ingest/candidates.config.json`, this step IS the
+> promotion** (2026-09-07). A candidate carries a target edition and source but
+> not the fields the gates enforce. To promote: write the full entry here
+> (`provenance.url` + `edition` + `year`, an allowed licence, and a
+> `provenance.acquire.adapter` that actually exists), then **delete the candidate
+> from `candidates.config.json`**. `test/invariants/candidates-disjoint-from-sources.test.ts`
+> goes red if a slug is in both files, and red if an *excluded* work appears here at all.
+>
+> **Check `blocked_on` before you start.** A candidate marked
+> `blocked_on: "archive-adapter"` cannot be ingested — `adapter-loop.ts` dispatches
+> only `ccel` and `gutenberg`, and an entry naming an adapter that does not exist is
+> silently skipped, which looks like success. 115 of the 135 current candidates are
+> in this state.
+
+Shape (array of works; verified against the live file):
 
 ```json
 {

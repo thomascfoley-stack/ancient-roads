@@ -4,7 +4,7 @@
 
 **The principle, above all others** (`THE_LOOP.md`): *the verifier is the bottleneck — no unit of work is "done" without a check that could have failed.* **A loop is only as safe as the weakest per-work check it runs.** So this is not "let the agent ingest everything"; it is "give every work a check that can reject it, auto-apply only known fixes to known failures, and stop the loop itself the moment a machine is out of its depth."
 
-Companions: `INGESTION_HARNESS_DESIGN.md` (the state machine + autonomy tiers this drives), `HISTORY_RETRIEVAL_DESIGN.md` (the historian head), `ACQUISITION_MANIFEST.md` (the queue), the `overnight-run` and `quality-slice` skills (the standing procedures this automates).
+Companions: `INGESTION_HARNESS_DESIGN.md` (the state machine + autonomy tiers this drives), `HISTORY_RETRIEVAL_DESIGN.md` (the historian head), `ingest/candidates.config.json` (the queue of what is not yet acquired — **not ingestible until promoted into `ingest/sources.config.json`**; `ACQUISITION_MANIFEST.md` is now its prose companion for edition judgement, not the queue itself), the `overnight-run` and `quality-slice` skills (the standing procedures this automates).
 
 ---
 
