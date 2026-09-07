@@ -120,7 +120,12 @@ describe('related/route — a DB fault returns the envelope, never a raw 500', (
   });
 
   it('a not-yet-ready document returns 200 pending:true and never reaches relatedVoices', async () => {
-    getDocument.mockResolvedValue({ id: 'd1', status: 'processing' });
+    // 'embedding', not 'processing'. There is no 'processing' status — the union is
+    // queued|parsing|chunking|embedding|ready|failed|empty — and this fixture only ever worked
+    // because the route asked `status !== 'ready'`, which swept every unreal value into "pending"
+    // too. This PR replaces that with an explicit IN_FLIGHT list precisely so that `failed` and
+    // `empty` stop being reported as "still indexing", and an invalid status no longer passes.
+    getDocument.mockResolvedValue({ id: 'd1', status: 'embedding' });
     const res = await call();
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ voices: [], comparable: false, pending: true });
