@@ -3106,3 +3106,14 @@ test red and does not. None is a known product defect; each is a check that woul
 - **`docs/UX_REMEDIATION.md:691`** still quotes the L1b block's original slow-notice copy as the
   whole prescribed string; after #219 that is the `verifying`-only branch. Second divergence
   recorded in that block.
+- **The naming lock renamed the heading and left the browser tab saying the old word.**
+  `library/uploads/page.tsx` exports `metadata = { title: 'My uploads' }` while its `h1` reads
+  `My Works` — so the tab, the bookmark and the history entry all still say "uploads". Introduced
+  by `5ae1a6a5`, the very commit whose subject is "N1: apply the naming lock to the label surfaces,
+  strings only", and live ever since. The guard is not absent — `naming-lock.test.ts` lists this
+  exact file in `LABEL_FILES`; its extraction just never reaches a `metadata` export, so the file
+  reads as covered while one of its two user-visible strings is not. **This is the watchlist shape
+  in miniature** (`MASTER_HISTORY.md §watchlist`): a match set narrower than the property it is
+  read as proving. Verified in a browser at 375px on 2026-09-07 — `document.title` is
+  `My uploads · Ancient Paths` above an `h1` of `My Works`. Pre-existing, not a deploy blocker;
+  the fix is one string plus widening the guard to `metadata.title` across `LABEL_FILES`.
