@@ -1,5 +1,65 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 (later) — PR #235 merged, My Works rename shipped (#3), My Works test audit (#4)
+
+**Owner:** "od the pr #235 merge. ok fix #3 the best way. do #4 as well."
+
+**PR #235 merged** at `df6783da`. `origin/main` now contains the live sha `d323fff3` and the whole
+night's work. **The merge-to-main gap every board header has recorded since 2026-08-18 is closed.**
+The earlier attempt failed only because a direct push to the default branch is refused by this
+session's permission policy; `gh pr merge` is the supported path and needed no new permission.
+
+**#3 — My Works editing (ADR-123).** A title was the filename minus its extension, written once at
+upload and writable by nothing: no PATCH on any user-corpus route, no update function in
+`documents.ts`. The only way to rename was delete and re-upload, which re-spends the paid embedding
+run. Shipped: `PATCH /api/user-corpus/documents/[id]` behind `guardUser` and the CSRF floor;
+`renameDocument` sets `title` and `updated_at` and nothing else; `titleVerdict` is the rule (one
+line, no control characters, never empty, ≤200 measured after normalising, **refuses rather than
+truncating**). The "Looks like: Romans 8 · 21 March 1871" chip becomes actionable — "Use this" opens
+the rename prefilled and does NOT save, which is the confirm flow the design deferred. Answers
+outstanding decision **B2** with the title, not a `preached_on` column: a date nothing sorts by is
+speculative generality. Not optimistic, unlike the sibling delete — the old name stands until the
+server agrees, and the editor keeps what you typed on a failure. Red first (`titleVerdict is not a
+function`, `PATCH is not a function`); 16 lib/route tests against the dev database + 6 component
+tests green.
+
+**The other half of #3 could not ship, and the reason is structural.** Citing your own upload inside
+a study needs a `study_blocks` column: `CHECK (kind <> 'clipping' OR (source_id IS NOT NULL OR
+section_id IS NOT NULL))` requires every clipping to resolve to a CORPUS key, and the library panel
+is corpus-only by design. That is a migration, which must reach production BEFORE the code that
+reads it — the ordering this repo inverted once already. Design, SQL and the single owner action:
+`docs/pm/orders/2026-09-07-cite-your-own-work.md`.
+
+**#4 — the false-confidence pass owed since 2026-08-31.** Three read-only agents over ~55 files,
+partitioned so none overlapped. **No product defect found; every finding is a check that would not
+notice one.** 5 CRITICAL (all closed, each red-proved), 13 HIGH and the rest filed with their exact
+seeds — `docs/evidence/my-works-false-confidence-2026-09-07/findings.md`, backlog entries in
+`UX_REMEDIATION.md`. Two shapes dominate: **a bare `return` inside `it()` reports PASS, not skip**
+(three tradition-gap legs, including the only test that proves a user-owned row cannot surface, were
+green ticks asserting nothing wherever the owner credential is absent — which is CI), and **a mocked
+`runAsUser` means the SQL under test never runs** (the claim CAS and the D8 dedupe clause can both
+be deleted green).
+
+**One audit claim I disproved rather than took on trust.** The proposed seed for the NULL-`byte_size`
+quota finding — "drop the COALESCE" — is not a reddening change: SQL `sum()` skips nulls rather than
+being poisoned by one, and where it genuinely is null the driver returns `null`, which `Number()`
+already makes 0. The COALESCE has no observable behaviour and `quota.ts`'s own comment overstates
+it. Taking the finding on trust would have produced a test with a false SEED comment, which is the
+defect the pass exists to remove. Recorded in the findings.
+
+**Also corrected mid-fix:** my first repair of the SEC-1 ceiling went GREEN against its own seed —
+while `MULTI_USER_UPLOADS` is `true`, no runtime assertion can distinguish `true && B` from `B`.
+The check is structural now and says so.
+
+**NOT DONE / UNVERIFIED.**
+* The 13 HIGH findings are filed, not fixed. The 2026-08-31 `as never` at
+  `upload-direct-guards.test.ts:161` was not re-examined by this pass and remains open.
+* The rename has no browser leg: exercised in jsdom only, like the rest of tonight's UI work.
+* `main` is merged but NOT deployed — live is still `d323fff3`, which does not carry the rename or
+  the audit fixes.
+* The 35 `detail/*` PRs (the second half of "#2") are still not landed. They are now unblocked:
+  main carries the deploy-harness and session-mock fixes their CI needs.
+
 ## 2026-09-07 — Sidebar C, four UX sweeps merged, and main's hidden red — LIVE `d323fff3` (`dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a`, 04:47Z); PR #235 to main waits on the owner
 
 **Owner, in session (2026-09-07):** on the build menu (`docs/pm/orders/2026-09-07-build-menu.md`):
