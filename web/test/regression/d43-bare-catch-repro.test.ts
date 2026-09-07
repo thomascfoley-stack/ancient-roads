@@ -34,14 +34,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 // stubbed (and listContinueReading/listLibraryItems for the signed-in no-regression cases).
 const requireUser = vi.fn();
 
-vi.mock('@/lib/session', async () => {
-  const real = await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure');
-  return {
-    requireUser: () => requireUser(),
-    authFailureResponse: real.authFailureResponse,
-    isAuthServiceUnavailable: real.isAuthServiceUnavailable,
-  };
-});
+// SPREAD, not a member list. The real helpers are already used here — but naming them one by
+// one is the shape that broke eighteen sibling mocks the day D43 added a third export, so
+// test/invariants/session-mock-surface.test.ts requires the module itself.
+vi.mock('@/lib/session', async () => ({
+  ...(await vi.importActual<typeof import('@/lib/auth-failure')>('@/lib/auth-failure')),
+  requireUser: () => requireUser(),
+}));
 
 // The hub page's Promise.all runs the catalog leg unconditionally; stub it so an outage rejects
 // personal() but the page still resolves the public side. CATALOGS/CATALOG_IDS are pure taxonomy
