@@ -642,7 +642,10 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
         <p className="mt-3 font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">
           {state === 'signedout'
             ? 'Sign in to bring your own sermons and papers into the library.'
-            : 'Uploads are not available on this account yet.'}
+            // "Uploads" is the one name this surface was ruled never to carry (UX_REMEDIATION §2):
+            // the surface is My Works and the counted noun is "items". Wording only — the state
+            // this reports is unchanged.
+            : 'My Works is not available on this account yet.'}
         </p>
         {state === 'signedout' && (
           <Link

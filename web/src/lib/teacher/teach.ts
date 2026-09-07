@@ -146,11 +146,18 @@ export type LaneFlags = { songVerse?: boolean; sermons?: boolean; theology?: boo
 // init + connection warmup; the flag lets the measurement run separate that tail honestly.
 const instance = { served: 0 };
 
+// `signal` is the READER'S OWN Stop, threaded from the request. Without it, pressing Stop only
+// tore down the client's reader: the server kept embedding, kept composing through the whole
+// MAX_RETRIES budget, and the route then stored the finished answer — so Stop followed by "Ask
+// again" billed and stored the same question twice. Aborting throws out of teach() rather than
+// returning a result, so the caller cannot mistake a stopped run for a completed one and persist
+// it. The guards sit at every point where the NEXT step would spend money.
 export async function teach(
   query: string,
-  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags; userId?: string } = {},
+  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags; userId?: string; signal?: AbortSignal } = {},
 ): Promise<TeachRun> {
   const emit = opts.onEvent ?? (() => {});
+  const signal = opts.signal;
   const maxDurationMs = opts.maxDurationMs ?? ASK_MAX_DURATION_MS;
   const composeMs = composeTimeoutMs(maxDurationMs);
   const startedAt = Date.now();
@@ -179,9 +186,12 @@ export async function teach(
     return { result, meta: { attempts, firstCheck, ...meta, stageMs, coldStart, rejections } };
   };
 
+  // Before the first paid call: a request the reader already stopped costs nothing at all.
+  signal?.throwIfAborted();
+
   emit({ stage: 'retrieving' });
   let stageStart = Date.now();
-  const queryVec = await embedQuery(query);
+  const queryVec = await embedQuery(query, { signal });
   stageMs.embed = Date.now() - stageStart;
   const intent = resolveIntent(query);
   const ranges = intent.inject;
@@ -314,6 +324,10 @@ export async function teach(
   let lastViolations: Violation[] = [];
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // The retries are the expensive part — up to MAX_RETRIES+1 composes for one question. A
+    // reader who stopped mid-attempt must not fund the next one.
+    signal?.throwIfAborted();
+
     if (deadlineExceeded(startedAt, maxDurationMs)) {
       lastViolations = lastViolations.length > 0
         ? lastViolations
@@ -336,10 +350,14 @@ export async function teach(
     let raw: string;
     const composeStart = Date.now();
     try {
-      raw = await compose(systemPrompt, prompt, { timeoutMs: composeMs });
+      raw = await compose(systemPrompt, prompt, { timeoutMs: composeMs, signal });
       stageMs.compose.push(Date.now() - composeStart);
     } catch (e) {
       stageMs.compose.push(Date.now() - composeStart);
+      // A compose the READER cancelled is not a model failure: recording it as `llm_error`
+      // would file the reader's own Stop as a rejection in the failure-code diagnostic and
+      // pollute the retry prompt. Rethrow so the caller sees an abort, not a bad generation.
+      signal?.throwIfAborted();
       lastViolations = [{ check: 'llm_error', message: (e as Error).message }];
       if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
       recordRejection(attempt, lastViolations);

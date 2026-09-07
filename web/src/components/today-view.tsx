@@ -37,6 +37,13 @@ type State =
   | { status: 'error' }
   | { status: 'ready'; card: TodayCard };
 
+// How long the office waits for the devotional before admitting it did not arrive. The load had
+// NO bound at all: a request that is accepted and never answered (a hung CDN edge, a captive
+// portal) left this screen on "Opening today's page…" forever, with no error and no retry — a
+// reader cannot tell a slow morning from a broken one. Short, because this is a UI wait: a reader
+// looking at a blank morning should be told inside a few seconds, not a minute.
+const OFFICE_TIMEOUT_MS = 15_000;
+
 function localToday(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -53,20 +60,37 @@ export function TodayView() {
     // the local noon boundary made Spurgeon's half and Daily Light's half disagree —
     // a false provenance label over the wrong reading. One instant, every consumer.
     const now = new Date();
+    let deadline: ReturnType<typeof setTimeout> | undefined;
     (async () => {
-      try {
-        const res = await fetch('/devotional/morning-evening.json');
+      const load = async (): Promise<TodayCard | null> => {
+        const res = await fetch('/devotional/morning-evening.json', {
+          // Releases the socket rather than leaving it half-open; the race below is what
+          // guarantees the STATE moves on, since a stalled read may never reject.
+          signal: AbortSignal.timeout(OFFICE_TIMEOUT_MS),
+        });
         if (!res.ok) throw new Error(`devotional ${res.status}`);
         const data = (await res.json()) as DevotionalData;
         // Voices come from the reader's own loader (already license-filtered); today.ts
         // re-filters + grounds them to the passage. Local date/time decides which entry.
-        const card = await resolveToday(now, data, (slug, ch) =>
+        return resolveToday(now, data, (slug, ch) =>
           fetchCommentary(slug, ch).then((d) => d?.entries ?? []),
         );
+      };
+      // The deadline covers the WHOLE load, not just the fetch: resolveToday goes on to pull
+      // commentary, so bounding the JSON alone would leave the same hang one call later.
+      const timeout = new Promise<never>((_, reject) => {
+        deadline = setTimeout(() => reject(new Error('devotional load timed out')), OFFICE_TIMEOUT_MS);
+      });
+      try {
+        const card = await Promise.race([load(), timeout]);
         if (!live) return;
         setState(card ? { status: 'ready', card } : { status: 'error' });
       } catch {
+        // Timed out or failed — either way the reader is told, and the error state below offers
+        // the Word. The two other office loads degrade to absence independently and are untouched.
         if (live) setState({ status: 'error' });
+      } finally {
+        clearTimeout(deadline);
       }
     })();
     // The office pieces degrade INDEPENDENTLY to absence: a missing file or a
@@ -103,6 +127,7 @@ export function TodayView() {
     })();
     return () => {
       live = false;
+      clearTimeout(deadline);
     };
   }, []);
 
