@@ -71,6 +71,13 @@
 > The copy itself (job 1) is unaffected by all preconditions and can run as written (copy
 > all 58; held works stay staged on prod too, marked by this packet).
 
+> **⚠ OWNER'S NOTE — THIS IS NOT A CLEAN SET (added 2026-09-07, stands whatever the
+> structural validation says).** Flipping the 314 publishes some works containing
+> hygiene-class non-authorial matter — indexes, title pages, publisher colophons,
+> editor apparatus labels, transcriber credits. The structural filter does not address
+> that class, and the detector demonstrably misses it (6/15 on never-seen works). I
+> accept this as a reversible cost of publishing the batch; it is not a clean set.
+
 **What this is:** the paste-ready runbook for the overdue owner batch from the 2026-09-06
 ingestion session. Two jobs, in order:
 
