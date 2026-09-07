@@ -9,7 +9,7 @@
 // the suite never pays for it.
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -59,8 +59,11 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
-function emit(name: string, html: string) {
+function emit(name: string, html: string, mustContain: string) {
   if (!OUT) return;
+  // Not assertion-free: what is written must be the state the name claims, or the composite
+  // built from it would be labelled wrongly (deep audit, 2026-09-07).
+  expect(html, `${name} does not show "${mustContain}"`).toContain(mustContain);
   mkdirSync(OUT, { recursive: true });
   writeFileSync(join(OUT, `${name}.html`), html);
 }
@@ -70,7 +73,7 @@ describe.skipIf(!OUT)('render Sidebar C states to HTML for the browser leg', () 
     pathname.current = '/ask';
     const { container } = render(<SidebarNavContent />);
     await waitFor(() => screen.getByText(THREADS[0]!.title));
-    emit('rail-ask', container.innerHTML);
+    emit('rail-ask', container.innerHTML, 'More research');
   });
 
   it('on /studies — studies open by itself; prayers opened by hand', async () => {
@@ -79,20 +82,20 @@ describe.skipIf(!OUT)('render Sidebar C states to HTML for the browser leg', () 
     await waitFor(() => screen.getByText(STUDIES[0]!.title));
     fireEvent.click(screen.getByRole('button', { name: /Prayer journal/ }));
     await waitFor(() => screen.getByText(/For Sarah/));
-    emit('rail-studies', container.innerHTML);
+    emit('rail-studies', container.innerHTML, 'All prayers');
   });
 
   it('on /library — the shelves, everything of yours closed', async () => {
     pathname.current = '/library';
     const { container } = render(<SidebarNavContent />);
     await waitFor(() => screen.getByText('Commentaries'));
-    emit('rail-library', container.innerHTML);
+    emit('rail-library', container.innerHTML, 'In the library');
   });
 
   it('mobile sheet on /ask — touch rows', async () => {
     pathname.current = '/ask';
     const { container } = render(<SidebarNavContent touch />);
     await waitFor(() => screen.getByText(THREADS[0]!.title));
-    emit('sheet-ask', container.innerHTML);
+    emit('sheet-ask', container.innerHTML, 'min-h-[44px]');
   });
 });

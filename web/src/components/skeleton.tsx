@@ -43,8 +43,11 @@ export function TextSkeleton({
   /** Spacing for the box this sits in. The bars themselves are not configurable. */
   className?: string;
 }) {
+  // `role="status"` is what makes the label AUDIBLE. `aria-busy` alone only tells assistive tech
+  // to defer updates inside a live region — on a plain div it announces nothing, and three sites
+  // that had `<p role="status">Loading…</p>` would have gone silent (deep audit, 2026-09-07).
   return (
-    <div aria-busy="true" className={className}>
+    <div role="status" aria-busy="true" className={className}>
       <span className="sr-only">{label}</span>
       <div aria-hidden className="animate-pulse space-y-3">
         {Array.from({ length: lines }, (_, i) => (

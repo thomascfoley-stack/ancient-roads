@@ -142,16 +142,20 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // THE SAME ARGUMENT, ON THE BIGGER FILE. The rule above was written for the devotional
-        // pair at "~2.3MB together"; the commentary chapter that /home fetches alongside them is
-        // LARGER — measured over all 732 day-halves of the Spurgeon calendar: p50 0.99 MB,
-        // p90 3.08 MB, and 9.15 MB on the five days the reading lands in Psalm 119 — and it had
-        // no Cache-Control at all, so the biggest payload on the page was also the only one
-        // revalidating on every visit. Same policy as the devotional files: these change at
-        // deploy/ingest time, never per request.
+        // THE SAME ARGUMENT, ON THE BIGGER FILE — with a SHORTER window. The commentary chapter
+        // /home fetches beside the devotionals is larger (p50 0.99 MB, p90 3.08 MB, 9.15 MB on the
+        // five Psalm-119 days) and carried no Cache-Control of its own in local dev. Two things
+        // the first draft got wrong (deep audit, 2026-09-07): in production these paths are
+        // REWRITTEN to the Blob store (`beforeFiles` below, when CORPUS_CDN_BASE is set), so
+        // "no Cache-Control at all" was a local measurement stated as a production fact — and the
+        // URLs are not content-hashed while the corpus is re-synced by script WITHOUT a deploy,
+        // so a day of freshness plus a week of stale-while-revalidate would hide a repaired
+        // chapter for eight days (the 2026-08-18 CDN-freshness deploy was this exact class). Five
+        // minutes fresh, an hour stale: enough to stop the per-visit revalidation, short enough
+        // that a re-sync is visible before anyone files it as a defect.
         source: '/commentaries/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+          { key: 'Cache-Control', value: 'public, max-age=300, stale-while-revalidate=3600' },
         ],
       },
     ];

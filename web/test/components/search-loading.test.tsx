@@ -53,7 +53,9 @@ describe('/search loading boundary', () => {
     // The results list is hairline-separated in the real page (`border-y edge`). Any hairline the
     // skeleton draws must go through .edge, never the pair that loses the cascade in dark mode.
     const html = container.innerHTML;
-    expect(html, 'hairlines go through .edge').toContain('edge');
+    // The CLASS, not the substring — "edge" inside an attribute value or a word like "hedge"
+    // satisfied the first draft (deep audit, 2026-09-07).
+    expect(container.querySelector('.edge'), 'hairlines go through .edge').not.toBeNull();
     expect(html, 'the measured-broken border pair must not be reintroduced').not.toMatch(
       /border-stone-200[^"]*dark:border-stone-800/,
     );

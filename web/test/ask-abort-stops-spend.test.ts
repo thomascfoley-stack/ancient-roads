@@ -194,7 +194,10 @@ describe('Stop on /ask stops spending', () => {
     );
   });
 
-  it('P2b: an aborted ask writes no answer row and schedules no ask_outcome', async () => {
+  // Named for what it PROVES: the mock decides whether teach() rejects, and the route skips both
+  // writes for ANY rejection — so this leg shows the route's ordering, not the abort itself. The
+  // abort itself is P1a/P1b, against the real teach() (deep audit, 2026-09-07).
+  it('P2b: a teach() that rejects (as an aborted one does) writes no answer row and schedules no ask_outcome', async () => {
     const controller = new AbortController();
     // Models the pipeline HONESTLY on both sides of the fix: given a signal, teach() stops when
     // it aborts; given none — the defect — it cannot know, so it finishes and the route persists.

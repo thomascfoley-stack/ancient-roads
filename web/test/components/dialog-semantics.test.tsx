@@ -201,6 +201,10 @@ describe('save-to-study — the study picker', () => {
 
     await screen.findByRole('button', { name: /Rahab/ });
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    // PRECONDITION: focus actually LEFT the trigger for the picker. Without this line the
+    // restore assertion below could not fail — if the dialog never took focus, `activeElement`
+    // was the trigger the whole time (deep audit, 2026-09-07).
+    await waitFor(() => expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true));
 
     pressEscape();
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -251,7 +255,15 @@ describe('study-editor — the Export menu', () => {
     fireEvent.click(trigger);
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
 
-    fireEvent.keyDown(trigger, { key: 'Escape' });
+    // A disclosure does not move focus into itself, so the reader Tabs into it. Put focus on the
+    // first item BEFORE Escape: otherwise the restore assertion below cannot fail, because focus
+    // never left the summary (deep audit, 2026-09-07).
+    const firstItem = trigger.closest('details')?.querySelector<HTMLElement>('a, button:not(summary)');
+    expect(firstItem, 'the export menu renders no focusable item').toBeTruthy();
+    firstItem!.focus();
+    expect(document.activeElement).toBe(firstItem);
+
+    fireEvent.keyDown(firstItem!, { key: 'Escape' });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement).toBe(trigger);
   });

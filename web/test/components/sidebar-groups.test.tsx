@@ -229,6 +229,11 @@ describe('Sidebar C — five places, and everything of yours as a group', () => 
     render(<SidebarNavContent />);
     const del = await screen.findByRole('button', { name: /Delete research thread: Thread 1/ });
     expect(del).toBeTruthy();
-    expect(within(del.closest('li') ?? del.parentElement!).queryByRole('button', { name: /Delete research thread: Thread 1/ })).toBeTruthy();
+    // The control sits IN THE ROW of the thread it names — beside that thread's own link, not
+    // somewhere in the panel. (The first draft searched an ancestor of `del` for `del`, which
+    // could not fail — deep audit, 2026-09-07.)
+    const row = del.parentElement!;
+    expect(within(row).getByRole('link', { name: /Thread 1/ }).getAttribute('href')).toBe(`/ask/${THREADS[0]!.id}`);
+    expect(within(row).queryByRole('link', { name: /Thread 2/ })).toBeNull();
   });
 });

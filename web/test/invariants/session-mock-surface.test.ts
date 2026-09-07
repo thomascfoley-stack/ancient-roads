@@ -44,12 +44,23 @@ function everyTestFile(dir: string): string[] {
   return out;
 }
 
-/** Strip comments so a mention in prose can never satisfy the check. */
+/**
+ * Strip comments so a mention in prose can never satisfy the check — with string literals kept
+ * whole, in ONE pass, so a `/*` inside a line comment or a string can never open a phantom block
+ * comment. The first draft stripped block comments first, and a header line reading `/api/*`
+ * swallowed forty lines of db-fault-returns-envelope.test.ts INCLUDING its real mock: the guard
+ * was silently not guarding one of its own files, and its floor had six files of headroom to
+ * hide it in (deep audit, 2026-09-07). The positive control below is what would have caught it.
+ */
 function code(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  return src.replace(
+    /("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
+    (match: string, str: string | undefined) => (str !== undefined ? str : ''),
+  );
 }
+
+const MOCK_CALL = /vi\.mock\(\s*['"]@\/lib\/session['"]/;
+const THIS_FILE = 'session-mock-surface.test.ts';
 
 /**
  * The factory body of a `vi.mock('@/lib/session', ...)` call, by brace balance from the call's
@@ -70,15 +81,28 @@ function sessionMockFactory(src: string): string | null {
   return src.slice(start);
 }
 
-const FILES_WITH_A_SESSION_MOCK = everyTestFile(TEST_ROOT)
-  .filter((f) => /vi\.mock\(\s*['"]@\/lib\/session['"]/.test(code(readFileSync(f, 'utf8'))));
+const ALL_TEST_FILES = everyTestFile(TEST_ROOT).filter((f) => !f.endsWith(THIS_FILE));
+const FILES_WITH_A_SESSION_MOCK = ALL_TEST_FILES
+  .filter((f) => MOCK_CALL.test(code(readFileSync(f, 'utf8'))));
+/** The same set found WITHOUT stripping — every file that so much as mentions the call. */
+const FILES_MENTIONING_THE_MOCK = ALL_TEST_FILES
+  .filter((f) => MOCK_CALL.test(readFileSync(f, 'utf8')));
 
 describe('every @/lib/session mock carries the module’s real failure surface', () => {
   // ANTI-VACUITY. If a refactor renames the module or the mocks move, this suite would otherwise
   // pass by having nothing to check — the "gate nobody runs" entry on the same watchlist. The
-  // floor is the count measured on the day it was written, minus room to delete a few.
+  // floor is close to the count measured on the day it was written (22), with room to delete a
+  // couple — not six, which was enough headroom to hide a dropped file.
   it('finds the session mocks at all', () => {
-    expect(FILES_WITH_A_SESSION_MOCK.length).toBeGreaterThanOrEqual(15);
+    expect(FILES_WITH_A_SESSION_MOCK.length).toBeGreaterThanOrEqual(20);
+  });
+
+  // POSITIVE CONTROL ON THE STRIPPER. Every file that mentions the call in its raw text must
+  // still be found after comments are stripped — otherwise the stripper, not the mock, decides
+  // what this suite covers. (A file that mentioned the call ONLY in prose would legitimately
+  // diverge here; none does today, and one appearing should be a deliberate edit to this line.)
+  it('the comment stripper drops no file that carries the mock', () => {
+    expect([...FILES_WITH_A_SESSION_MOCK].sort()).toEqual([...FILES_MENTIONING_THE_MOCK].sort());
   });
 
   it.each(FILES_WITH_A_SESSION_MOCK.map((f) => [f.slice(TEST_ROOT.length + 1), f]))(

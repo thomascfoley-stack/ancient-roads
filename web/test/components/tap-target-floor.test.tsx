@@ -137,6 +137,9 @@ describe('history-results — the filter and Show controls clear 44px', () => {
     render(<HistoryResults data={PAYLOAD} query="Herod in Jerusalem" threadId={null} />);
     const [copy] = screen.getAllByRole('button', { name: 'Copy citation' });
     expectMeetsFloor(copy!, 'the copy-citation button');
+    // A TARGET has two axes. `expectMeetsFloor` reads height only; a 44×32 square would pass it
+    // (deep audit, 2026-09-07).
+    expect(copy!.className, 'the copy-citation button is narrower than the 44px floor').toMatch(/\b(?:w-11|min-w-\[44px\])\b/);
   });
 
   it('and the 30px chip still PAINTS at 30px — the hit box grew, the chip did not', () => {
@@ -174,6 +177,9 @@ describe('marketing surfaces clear 44px', () => {
     const links = [...container.querySelectorAll<HTMLElement>('a[href]')].filter(
       (a) => !a.className.includes('skip-link'),
     );
+    // A loop over nothing proves nothing: the nav has at least the wordmark, five places and the
+    // two doors (deep audit, 2026-09-07).
+    expect(links.length, 'the marketing nav rendered no links to measure').toBeGreaterThanOrEqual(5);
     for (const l of links) expectMeetsFloor(l, `the nav item "${l.textContent?.trim()}"`);
   });
 });

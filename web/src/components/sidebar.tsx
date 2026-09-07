@@ -9,6 +9,7 @@ import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
 import { bibleTabHref, DEFAULT_BIBLE_HREF } from '@/lib/bible-position';
 import { libraryLabel } from '@/lib/library-nav';
+import { TextSkeleton } from '@/components/skeleton';
 
 // --- user-defined study sections (parent/child). Stored locally per user
 // while the real feature (saved work, conversation) is still coming soon;
@@ -364,19 +365,27 @@ function railGroupsKey(userId: string): string {
 function useRailGroups(userId: string | undefined, pathname: string) {
   const [stored, setStored] = useState<Partial<Record<GroupKey, boolean>>>({});
   const [session, setSession] = useState<Partial<Record<GroupKey, boolean>>>({});
+  // Mirror of `stored` for the write path: state updaters must be pure (StrictMode double-invokes
+  // them), so the localStorage write happens OUTSIDE the updater, from this ref.
+  const storedRef = useRef<Partial<Record<GroupKey, boolean>>>({});
 
   useEffect(() => {
-    if (!userId) { setStored({}); return; }
+    if (!userId) { storedRef.current = {}; setStored({}); return; }
+    let next: Partial<Record<GroupKey, boolean>> = {};
     try {
       const raw = localStorage.getItem(railGroupsKey(userId));
       const parsed: unknown = raw ? JSON.parse(raw) : {};
-      setStored(typeof parsed === 'object' && parsed !== null ? (parsed as Partial<Record<GroupKey, boolean>>) : {});
+      if (typeof parsed === 'object' && parsed !== null) next = parsed as Partial<Record<GroupKey, boolean>>;
     } catch {
-      setStored({});
+      next = {};
     }
+    storedRef.current = next;
+    setStored(next);
   }, [userId]);
 
-  useEffect(() => { setSession({}); }, [pathname]);
+  // Cleared on every navigation so the page's own group re-opens on arrival — and on a change of
+  // user, so a sign-out/sign-in without navigating cannot carry the previous reader's overrides.
+  useEffect(() => { setSession({}); }, [pathname, userId]);
 
   const isOpen = useCallback(
     (g: GroupDef) => session[g.key] ?? (g.owns(pathname) || stored[g.key] === true),
@@ -388,15 +397,14 @@ function useRailGroups(userId: string | undefined, pathname: string) {
       const next = !isOpen(g);
       setSession((s) => ({ ...s, [g.key]: next }));
       if (g.owns(pathname) || !userId) return;
-      setStored((prev) => {
-        const merged = { ...prev, [g.key]: next };
-        try {
-          localStorage.setItem(railGroupsKey(userId), JSON.stringify(merged));
-        } catch {
-          // storage unavailable (private mode); the choice holds for this visit
-        }
-        return merged;
-      });
+      const merged = { ...storedRef.current, [g.key]: next };
+      storedRef.current = merged;
+      setStored(merged);
+      try {
+        localStorage.setItem(railGroupsKey(userId), JSON.stringify(merged));
+      } catch {
+        // storage unavailable (private mode); the choice holds for this visit
+      }
     },
     [isOpen, pathname, userId],
   );
@@ -436,7 +444,15 @@ function NavGroup({
   onNavigate?: () => void;
 }) {
   const [items, setItems] = useState<GroupItem[] | null>(null);
+  // The current list, for the delete rollback: updaters must stay pure, so the "previous" value
+  // is read from here rather than captured inside `setItems`.
+  const itemsRef = useRef<GroupItem[] | null>(null);
+  itemsRef.current = items;
   const [error, setError] = useState(false);
+  // A FAILED DELETE is its own message, not the load error: the first draft flipped `error` on a
+  // rollback, which printed "Could not be loaded." over a list that had loaded fine, for the life
+  // of the mount (deep audit, 2026-09-07). This is announced, and cleared on the next attempt.
+  const [removeFailed, setRemoveFailed] = useState<string | null>(null);
   const [unfolded, setUnfolded] = useState(false);
   // Two-step delete, kept from the research-history rows this generalises: the first tap arms
   // the row, the second removes it (PR1c/UX-2 lineage — always visible, never hover-only).
@@ -467,14 +483,22 @@ function NavGroup({
   const remove = useCallback(async (id: string) => {
     if (!def.remove) return;
     setArming(null);
-    let previous: GroupItem[] | null = null;
-    setItems((prev) => { previous = prev; return prev?.filter((i) => i.id !== id) ?? prev; });
+    setRemoveFailed(null);
+    const previous = itemsRef.current;
+    const label = previous?.find((i) => i.id === id)?.label ?? 'that';
+    setItems((prev) => prev?.filter((i) => i.id !== id) ?? prev);
     let ok = false;
     try { ok = await def.remove(id); } catch { ok = false; }
-    if (!ok) { setItems(previous); setError(true); }
+    if (!ok) {
+      setItems(previous);
+      setRemoveFailed(`Could not delete “${label}”. It is still here.`);
+    }
   }, [def]);
 
-  const panelId = `rail-group-${def.key}`;
+  // Suffixed by instance: the desktop rail stays mounted (display:none) below `md` while the
+  // Menu sheet renders a second copy of this content, and two elements with one id would make
+  // every `aria-controls` on the visible sheet point at the hidden rail (deep audit, 2026-09-07).
+  const panelId = `rail-group-${def.key}-${touch ? 'sheet' : 'rail'}`;
   const shown = items === null ? null : unfolded ? items : items.slice(0, GROUP_CAP);
   const beyond = items ? Math.max(0, items.length - GROUP_CAP) : 0;
   const quiet = 'px-4 py-1 text-xs text-stone-500 dark:text-stone-400';
@@ -484,7 +508,8 @@ function NavGroup({
       <button
         type="button"
         aria-expanded={open}
-        aria-controls={panelId}
+        // The panel exists only while open; a dangling IDREF is the majority state otherwise.
+        aria-controls={open ? panelId : undefined}
         onClick={onToggle}
         className={`flex w-full items-center gap-2 px-2 text-left text-micro font-semibold uppercase tracking-wider transition-colors ease-gentle ${
           touch ? 'min-h-[44px]' : 'min-h-[36px]'
@@ -500,10 +525,11 @@ function NavGroup({
       {open && (
         <div id={panelId}>
           {shown === null ? (
-            <p className={quiet}>Loading…</p>
+            <TextSkeleton label={`Loading ${def.label.toLowerCase()}`} lines={3} className="px-4 py-2" />
           ) : (
             <>
               {error && <p className={quiet}>Could not be loaded.</p>}
+              {removeFailed && <p role="alert" className={quiet}>{removeFailed}</p>}
               {shown.length === 0 && !error && <p className={quiet}>{def.empty}</p>}
               {shown.map((it) =>
                 it.href === null ? (
@@ -522,7 +548,12 @@ function NavGroup({
                       onClick={() => (arming === it.id ? void remove(it.id) : setArming(it.id))}
                       onBlur={() => setArming((cur) => (cur === it.id ? null : cur))}
                       aria-label={arming === it.id ? `Confirm delete: ${it.label}` : `Delete research thread: ${it.label}`}
-                      className={`mr-1 shrink-0 px-2 py-1 text-micro transition-colors ease-gentle ${
+                      // A destructive control at the 44px floor in the sheet (`touch`), and a
+                      // 32px square on the desktop rail whose rows are 32px tall. The first draft
+                      // was ~27px everywhere (deep audit, 2026-09-07).
+                      className={`mr-1 flex shrink-0 items-center justify-center text-micro transition-colors ease-gentle ${
+                        touch ? 'h-11 w-11' : 'h-8 w-8'
+                      } ${
                         arming === it.id
                           ? 'font-semibold text-red-700 dark:text-red-400'
                           : 'text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200'
@@ -554,6 +585,7 @@ function NavGroup({
               {!def.all && beyond > 0 && (
                 <button
                   type="button"
+                  aria-expanded={unfolded}
                   onClick={() => setUnfolded((v) => !v)}
                   className={`flex w-full items-center gap-2.5 px-2 text-left text-sm text-accent-700 transition-colors ease-gentle hover:text-stone-900 dark:text-accent-400 dark:hover:text-stone-200 ${row}`}
                 >
@@ -588,7 +620,7 @@ function LibraryShelves({
   onNavigate?: () => void;
 }) {
   return (
-    <div className="mt-3 border-t border-stone-50 pt-2 dark:border-stone-800">
+    <div className="mt-3 border-t rail-rule pt-2">
       <div className="mb-1 px-4">
         <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
           In the library
@@ -706,8 +738,9 @@ export function SidebarNavContent({
           <LibraryShelves pathname={pathname} row={row} onNavigate={onNavigate} />
         )}
 
-        {/* Yours. Internal rail rule: parchment-on-vellum, not .edge (see the settings block). */}
-        <div className="mt-3 border-t border-stone-50 px-2 pt-2 dark:border-stone-800">
+        {/* Yours. Internal rail rule: parchment on vellum via `.rail-rule` (globals.css) — `.edge`
+            is invisible on the vellum rail in light, and the layered pair loses in dark. */}
+        <div className="mt-3 border-t rail-rule px-2 pt-2">
           {signedIn
             ? GROUPS.map((g) => (
                 <NavGroup
@@ -751,8 +784,9 @@ export function SidebarNavContent({
 
       {/* Bottom: settings and the account. NOT .edge: on the rail's vellum surface the edge
           hairline is vellum-on-vellum (invisible), so internal rail rules use parchment on
-          vellum, the way the mockup's vellum commentary aside uses a white/20 rule. */}
-      <div className="border-t border-stone-50 px-2 py-2 dark:border-stone-800">
+          vellum, the way the mockup's vellum commentary aside uses a white/20 rule — as the
+          unlayered `.rail-rule`, because the layered pair never painted its dark value. */}
+      <div className="border-t rail-rule px-2 py-2">
         <SidebarLink
           href="/settings"
           icon={<SettingsIcon />}
@@ -996,10 +1030,11 @@ export function Sidebar() {
       // In writing mode this expanded state is the rail's hover/⌘\ overlay: leaving it puts the
       // rail back. Outside writing mode there is no rail, so there is nothing to restore.
       onMouseLeave={writing ? () => setRailOpen(false) : undefined}
+      aria-label="Navigation"
       className="hidden w-64 flex-col border-r edge bg-stone-200 md:flex dark:bg-stone-900"
     >
-      {/* Header. Internal rail rule: parchment-on-vellum, not .edge (see the settings block). */}
-      <div className="flex items-center justify-between border-b border-stone-50 px-4 py-3 dark:border-stone-800">
+      {/* Header. Internal rail rule: parchment-on-vellum via `.rail-rule` (see the settings block). */}
+      <div className="flex items-center justify-between border-b rail-rule px-4 py-3">
         {/* PRD §6: wordmark is EB Garamond 18px/500, ink. */}
         <Link href="/home" className="font-display text-[18px] font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-200">
           Ancient Paths
@@ -1242,10 +1277,19 @@ function SidebarLink({
  * the tooltip and the accessible name cannot disagree (A095).
  */
 function IconRailLinks({ pathname, bibleHref }: { pathname: string; bibleHref: string }) {
+  // DERIVED, both halves: the five places, then the two groups a visitor can enter — from the
+  // same `VISITOR_ROWS` the signed-out rail renders, so this rail and that one cannot name the
+  // journal differently. (The first draft hand-typed those two rows and labelled the journal
+  // "My prayers" while the group next to it said "Prayer journal", the §2 name — the exact
+  // second hand-kept list this file's header warns about. Deep audit, 2026-09-07.)
   const links: Place[] = [
     ...places(bibleHref),
-    { href: '/prayers', label: 'My prayers', icon: <PrayerIcon />, active: (p) => p.startsWith('/prayers') },
-    { href: '/plans', label: 'Reading plans', icon: <CalendarIcon />, active: (p) => p.startsWith('/plans') },
+    ...VISITOR_ROWS.map((g) => ({
+      href: g.signedOut,
+      label: g.label,
+      icon: g.icon,
+      active: (p: string) => p.startsWith(g.signedOut),
+    })),
     { href: '/settings', label: 'Settings', icon: <SettingsIcon />, active: (p) => p === '/settings' },
   ];
   return (

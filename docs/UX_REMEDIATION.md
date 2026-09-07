@@ -3001,9 +3001,12 @@ error on the cover costs more credibility than it should.
   group opening itself, the library shelves folded behind Library. Filed from it: counts on closed
   groups (needs cheap totals), a research list page (until then research unfolds in place), a
   per-prayer deep link, a `limit` on `/api/prayers`.
-- Stop stops *waiting* only — `api/ask/stream/route.ts` does not read `req.signal`; thread it into
-  `teach()` so a Stop also stops the spend. Until then a Stop-then-"Ask again" writes the question
-  twice server-side (the first run still lands its answer).
+- ~~Stop stops *waiting* only — `api/ask/stream/route.ts` does not read `req.signal`; thread it into
+  `teach()` so a Stop also stops the spend.~~ **CLOSED 2026-09-07** (`8a3ab7b0`, `fix/ux-small-batch`):
+  the route hands `req.signal` to `teach()`, which aborts embed, compose and every retry;
+  `test/ask-abort-stops-spend.test.ts`. Still open from it: the question row is written before
+  `teach()` for an already-aborted request (I-2 was decided for a crash, not a disconnect), and
+  whether Vercel's runtime propagates a client disconnect to `req.signal` is asserted, not measured.
 - Desk pane at an ordinal (`desk.ts` already carries `ordinal` on `WorkPane` from F-158; the pane
   never seeks to it) + a secondary "Open on desk" on result cards.
 - Persist resolved `sectionOrdinal`s for pre-2026-09-06 threads instead of re-locating on every

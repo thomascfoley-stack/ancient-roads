@@ -2405,8 +2405,10 @@ state (see 4).
 
 **Evidence:** `docs/evidence/sidebar-c-2026-09-07/` — `findings.md` (the two test re-points, recorded
 before the edits, and the deviations from the mockup with reasons), `red-proof-repoints.log` (each
-re-point red then green), `unit-run-summary.log` (whole suite green bar the recorded DB flake, which
-passes alone), `live-home-signed-out-{1440,390}.png` (the dev server, signed out), and
+re-point red then green), `unit-run-summary.log` (whole suite at the Sidebar C tree `4b3efc9`+, green
+bar the recorded DB flake, which passes alone — the merged tree's gate run is
+`docs/evidence/ux-batch-2026-09-07/audit-run-3.log`, AUDIT PASSED at `1f30752c`, and the deep-audit
+fixes after it are in the WORKLOG), `live-home-signed-out-{1440,390}.png` (the dev server, signed out), and
 `composite-*.png` — the signed-in states rendered from the REAL component with fixture data and the
 app's compiled stylesheet (`render/*.html` is the component's markup). The composites are a
 faithful render, not a live session: the groups are signed-in only and sign-in is owner-only, so the

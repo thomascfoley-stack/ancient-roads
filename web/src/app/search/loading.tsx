@@ -34,18 +34,20 @@ export default function SearchLoading() {
 
         {[0, 1, 2].map((g) => (
           <section key={g} className="mb-8">
+            {/* No bare `rounded`: the ladder is zeroed but that one is not on it and paints real
+                corners (skeleton.tsx's own note). The first draft of this file carried five. */}
             <div className="mb-3 flex items-baseline gap-3 py-1">
-              <div className="h-3 w-3 shrink-0 rounded bg-stone-200/50 dark:bg-stone-800/70" />
-              <div className="h-3 w-28 rounded bg-stone-200/60 dark:bg-stone-800/80" />
+              <div className="h-3 w-3 shrink-0 bg-stone-200/50 dark:bg-stone-800/70" />
+              <div className="h-3 w-28 bg-stone-200/60 dark:bg-stone-800/80" />
             </div>
 
             <ul className="border-y edge">
               {rows.map((w, i) => (
                 <li key={i} className="border-b edge py-4 last:border-b-0">
                   {/* Each row is three lines in the real markup: title, attribution, snippet. */}
-                  <div className={`h-5 ${w} rounded bg-stone-200/70 dark:bg-stone-800`} />
-                  <div className="mt-1.5 h-3 w-40 rounded bg-stone-200/50 dark:bg-stone-800/70" />
-                  <div className="mt-2 h-3.5 w-[88%] rounded bg-stone-200/50 dark:bg-stone-800/70" />
+                  <div className={`h-5 ${w} bg-stone-200/70 dark:bg-stone-800`} />
+                  <div className="mt-1.5 h-3 w-40 bg-stone-200/50 dark:bg-stone-800/70" />
+                  <div className="mt-2 h-3.5 w-[88%] bg-stone-200/50 dark:bg-stone-800/70" />
                 </li>
               ))}
             </ul>

@@ -1,5 +1,79 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — Sidebar C, four UX sweeps merged, and main's hidden red — BUILT; AUDIT [pending]
+
+**Owner, in session (2026-09-07):** on the build menu (`docs/pm/orders/2026-09-07-build-menu.md`):
+"#1 do it · #2 do it · #5 fix it · #6 knock that out"; "#3 / #4 i don't understand" (My Works editing;
+My Works testing) — explained in chat, NOT started. Earlier the same session: "Push back if you
+think I'm wrong" on the sidebar note, and "no idea what this means" on a build-log line — recorded
+as a working preference (translate tooling into product meaning or leave it out).
+
+**Branch `redesign/ask`** (base: live `d6e85f3`; PR #235 to main). Sequence, each commit pushed:
+
+* **`main` was red on `db-invariants` for fifteen days and nobody could see it** (`4b3efc9`). Two
+  round-trip suites mocked `@/lib/session` by hand; D43 (`c11bc84`, 2026-08-23) gave 19 routes a
+  third import, `authFailureResponse`. Reproduced locally against dev (2 failed / 25 passed, the CI
+  error verbatim); sixteen more mocks were waiting, not passing. All eighteen now spread the real
+  module; `test/invariants/session-mock-surface.test.ts` holds the rule as SHAPE and was red-proved
+  (3 → 4 on reverting one file). Its first regex failed two already-correct files; fixed the check,
+  not the files. Why invisible: the `audit` workflow runs on branches and PRs, never on pushes to
+  `main`.
+* **Sidebar C — ADR-122** (`bdb4f8ee`, fix `cec3d1fa`). Five places; Research history / My studies /
+  Prayer journal / My Works / Reading plans as groups capped at three, closed = one row, the page's
+  own group opens itself (not remembered), hand-opened groups remembered per user, library shelves
+  fold behind Library, signed-out keeps plans + journal as rows, groups fetch lazily on open. One
+  table each for places and groups feeds the rail, the icon rail and the mobile sheet. Red first
+  (`sidebar-groups.test.tsx`, 10/11 red on the old rail). Two re-points recorded before editing and
+  red-proved after (`docs/evidence/sidebar-c-2026-09-07/`). Deviations from the mockup with reasons
+  in `findings.md` (no closed-row counts; research unfolds in place; prayer rows plain, dated).
+  **A slip:** `bdb4f8ee` carried a type error (`href` after the literal-href edit) because the last
+  edit came after the clean typecheck and vitest does not typecheck — caught by the post-merge
+  typecheck, fixed in `cec3d1fa`. Lesson applied below: typecheck is the LAST thing before commit.
+* **Four sweeps, each in its own worktree, red-first, merged** (`589c582b`, `45248837`, `23557749`,
+  `d0a0ccd6`): small batch (`fix/ux-small-batch`: Stop now stops the SPEND — `req.signal` through
+  `teach()` to the DeepInfra call; `/search` loading; `/studies` signed-out state; four small lies;
+  Daily Office fetch bounded at 15s); error voice + skeleton (`fix/ux-error-voice`: no status codes
+  or vendor strings reach the DOM; a shared `skeleton.tsx` on 11 waits); notes remove + `/home`
+  (`fix/ux-notes-and-home`: per-row two-step remove on `/library/notes`; `/home` was fetching the
+  WHOLE YEAR of two devotionals — 2.24 MB — to show one morning: day-sharded to ~6 KB, 367×, plus
+  `Cache-Control` on `/commentaries`); a11y + targets (`fix/ux-a11y-targets`: four dialogs get
+  `useDialog` semantics, a real StrictMode bug in `useDialog`'s focus-restore fixed, 21 targets to
+  44px, a nav "Request access" CTA — Chrome-verified at 375/1280 by that sweep). Two conflicts
+  resolved by keeping both sides (`today-view.tsx`: day URL inside the bounded fetch;
+  `save-to-study.tsx`: two imports). Two agent test files failed the web/test typecheck the agents'
+  `tsc -p .` does not cover — fixed (`1f30752c`).
+
+**Verification** (`docs/evidence/ux-batch-2026-09-07/`).
+* `npm run audit` ×3 on the merged tree: run 1 (started pre-a11y merge) red on ONE leg — the
+  web/test typecheck, the two agent test files above — every other gate green; run 2 (a11y merged,
+  before the test fix) same single red leg, and every test suite green with no DB flake (331 files /
+  2,065 tests + 92 / 1,069 + 2 / 30); **run 3 on the final tree `1f30752c`: AUDIT PASSED — all gates
+  green** (`audit-run-3.log`): both typechecks, both lints, knip, deps advisory (512 prod packages,
+  none un-ignored), tests + coverage, Layer-1 invariants + regressions, hygiene, the deploy.sh
+  harness, Gate B licensing.
+* Whole-suite run on the Sidebar C tree before the merges: green bar `licensing.test.ts`'s
+  legal-pool leg timing out under load, which passes alone (8.9s) — the flake recorded 2026-09-06
+  (`docs/evidence/sidebar-c-2026-09-07/unit-run-summary.log`).
+* Deep audit, four lenses in one batch (attack surface + AI pipeline · client + a11y · data/ops/
+  deploy/docs · tests-as-evidence): **no CRITICAL; four HIGH, all on surfaces the sweeps had just
+  touched** — a throttled sign-in reported as a wrong password (the line the error-voice sweep
+  rewrote), five bare `rounded` on the search skeleton, a status code in a file that sweep opened, and
+  a `/*` inside a line comment that made my own mock guard skip a file. Twenty-four items fixed before
+  deploy, the rest filed — `docs/evidence/ux-batch-2026-09-07/deep-audit.md`. The fix commit is
+  followed by `audit-run-4.log` on the final tree: [pending]
+
+**NOT DONE / UNVERIFIED.**
+* Live signed-in walks: the sidebar's groups and the /ask redesign — owner-only sign-in; composites
+  of the real component with the real CSS stand in (labelled). A live tap in the mobile Menu sheet —
+  the Browser pane took screenshots but timed out on every click while hidden; Playwright is not a
+  package here.
+* The browser legs of the small-batch, error-voice and notes-and-home UI changes at 390/desktop:
+  those sweeps ran jsdom + typecheck only (their worktrees had no env / corpus). The a11y sweep did
+  its own Chrome pass.
+* "#2" second half — the 35 `detail/*` PRs — NOT started; sequenced after main is updated.
+* "#3" My Works editing and "#4" My Works testing — NOT started (owner asked what they mean).
+* `req.signal` abort under the real Vercel runtime is asserted by tests, not measured live.
+
 ## 2026-09-06 — /ask redesign (field-first) + results open the book at the quoted section, with a way back — LIVE `d6e85f3` (`dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ`, READY 2026-09-07T02:33Z)
 
 **Owner, in session:** "too busy… a bit of a mess"; "when something is running it's not discernible";

@@ -85,7 +85,15 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
           setPassages(v.rangesConsidered);
           setPending(v.pending);
         } else {
-          setVoicesError(vRes.status === 401 ? 'unauthenticated' : `The tradition could not be loaded. (${vRes.status})`);
+          // No status number in the copy (deep audit, 2026-09-07): a reader is told what happened,
+          // not what the transport said.
+          setVoicesError(
+            vRes.status === 401
+              ? 'unauthenticated'
+              : vRes.status === 429
+                ? 'Too many requests just now. Give it a minute and try again.'
+                : 'The tradition could not be loaded just now.',
+          );
         }
       } catch {
         if (alive) setError('That document could not be loaded. Check your connection and try again.');

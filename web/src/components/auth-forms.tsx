@@ -341,17 +341,26 @@ export function AuthForm({ path }: { path: AuthMode }) {
         'reset-password': 'That reset link has expired or has already been used.',
       };
       const failure = authFailure(e);
+      // D41, on the surface where it costs an account recovery: a THROTTLE is not a wrong
+      // password. The auth server's 429 normalises to `over_request_rate_limit` / status 429; sent
+      // to the curated sentence it read "That email and password do not match" (sign-in) or "That
+      // reset link has expired" (reset) — both false, both sending the reader to a reset they do
+      // not need, which is then throttled harder (deep audit, 2026-09-07).
+      const throttled = failure !== null && (failure.status === 429 || failure.code === 'over_request_rate_limit');
       setError(
-        failure
-          ? failure.code && INPUT_FAULT_CODES.has(failure.code) && e instanceof Error && e.message
-            ? e.message
-            : CURATED[path]
-          : // NOT `e instanceof Error ? e.message`. A dropped connection is not an `authFailure`
-            // either, so it took this branch and printed "Failed to fetch". Only our own marked
-            // sentences are shown as written.
-            e instanceof CuratedError
-            ? e.message
-            : 'Something went wrong. Please check your connection and try again.',
+        throttled
+          ? 'Too many attempts just now. Wait a minute and try again.'
+          : failure
+            ? failure.code && INPUT_FAULT_CODES.has(failure.code) && e instanceof Error && e.message
+              ? e.message
+              : CURATED[path]
+            : // NOT `e instanceof Error ? e.message`. A dropped connection is not an `authFailure`
+              // either, so it took this branch and printed "Failed to fetch". Only our own marked
+              // sentences are shown as written — and the fallback names no cause, because a 5xx
+              // that failed to parse is not the reader's connection.
+              e instanceof CuratedError
+              ? e.message
+              : 'Something went wrong. Please try again.',
       );
     } finally {
       setBusy(false);

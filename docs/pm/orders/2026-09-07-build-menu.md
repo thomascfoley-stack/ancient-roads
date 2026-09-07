@@ -30,7 +30,7 @@ date is a summary of this file, not a second source.
 
 | # | Item | What the user gets | Size | Source |
 |---|---|---|---|---|
-| A1 | **Sidebar C** — capped, collapsible groups (canvas board "C", 2026-09-06) | Five fixed places; Research / Studies / Prayers / My Works / Reading plans as groups capped at 3 with a count when closed; the current page's group opens itself; state remembered; the 11 library rows fold behind Library; one nav table feeds rail, icon rail and mobile sheet | M | canvas; `UX_REMEDIATION.md` N2 supersession (ADR-121) |
+| A1 | **Sidebar C** — capped, collapsible groups (canvas board "C", 2026-09-06) | Five fixed places; Research / Studies / Prayers / My Works / Reading plans as groups capped at 3 (no counts when closed — the APIs report no totals; ADR-122 clause 7); the current page's group opens itself; state remembered; the 11 library rows fold behind Library; one nav table feeds rail, icon rail and mobile sheet | M | canvas; `UX_REMEDIATION.md` N2 supersession (ADR-121) |
 | A2 | **Land the PR pile** — fix the two session mocks, merge #235, rebase the 35 detail PRs (and #212 study-editor draft, #216 search GET→POST, #204 blob-delete, #214 my-works routing among them) | ~35 real bug fixes already written and tested, currently unreachable | M aggregate, S each | `gh pr list`; this file §ground truth |
 | A3 | **My Works: rename + accept the "Looks like" suggestion** — `PATCH /api/user-corpus/documents/[id]`, inline title edit, one-click apply on the chip | A document named `sermon-draft-FINAL-v3` can be renamed; "Romans 8 · 21 March 1871" can be accepted instead of just displayed | S | `my-works.tsx:934`; `documents.ts` (no update fn); `MY_WORKS_DRAFT_AND_METADATA_DESIGN.md:50-52` |
 | A4 | **My Works: cite your own upload inside a study** — library panel searches My Works, inserts a clipping | The two live features finally meet; attribution copies the `/ask` "From your library" pattern already ruled | M | `study-editor.tsx` / `study-library-panel.tsx` (zero hits for uploads) |
@@ -83,6 +83,15 @@ tests, watch a first session).
 3. **A3 + A4 My Works** — rename/accept (S) then cite-in-study (M).
 4. **A5 A6 A7 A13** — the S-sized UX batch.
 5. **B3** is the cheapest owner action on the board and unblocks the most.
+
+## Status after the same night (2026-09-07, session 2 — the owner said "#1 do it · #2 do it · #5 fix it · #6 knock that out")
+
+Done on `redesign/ask` (WORKLOG 2026-09-07): **A1** (ADR-122), **A2 first half** (the session-mock
+red on main + the guard; the 35 detail PRs are NOT landed yet), **A5**, **A6**, **A7**, **A8**, **A9**,
+**A10**, **A11** (day-sharded, 367×), **A12**, **A13**, **A14**. Not done: A3, A4 (the owner asked what
+they mean), A15, A16 (partial — `ask-answer.tsx` only; six `small-caps` sites remain), A17 (deploy.sh
+unchanged), A18, A19. Ground truth at that point: `origin/main` 42 commits behind, 0 ahead — the "23"
+above was measured at `c5ed477` and is superseded.
 
 ## Not read by the sweeps (their own lists)
 

@@ -336,7 +336,7 @@ describe('sidebar MY STUDIES (design §7.1)', () => {
     // Scoped to the STUDIES group's own panel: every group shares one honest failure line since
     // Sidebar C, and the research group on /ask has a panel of its own that would match too.
     const panel = await waitFor(() => {
-      const el = container.querySelector('#rail-group-studies');
+      const el = container.querySelector('#rail-group-studies-rail');
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });

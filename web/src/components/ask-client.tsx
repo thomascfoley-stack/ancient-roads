@@ -211,8 +211,9 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
         }
       }
       // The reader ended it. Checked BEFORE the L1 guard below, whose copy would otherwise claim
-      // the stream failed. Honest limit: the route does not read the request signal, so Stop stops
-      // waiting — the server finishes on its own, and the thread row already exists.
+      // the stream failed. Since 2026-09-07 the route reads the request signal and hands it to
+      // teach(), so Stop stops the SPEND as well as the wait (test/ask-abort-stops-spend.test.ts);
+      // the question row written before teach() still exists, which is what "Ask again" needs.
       if (ac.signal.aborted) { markStopped(); return; }
       // L1 — THE TERMINAL-STATE GUARD, and the hole it closes is not an exception. The `catch`
       // below covers throws; it does NOT cover the stream simply ENDING without a `done` or `error`

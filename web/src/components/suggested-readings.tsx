@@ -192,7 +192,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
         </div>
       ) : state?.status === 'failed' ? (
         <p role="alert" className="font-serif text-[14px] text-amber-800 dark:text-amber-300">
-          The search failed: {state.error ?? 'no reason recorded'}
+          The search could not be completed. It can be run again from the document.
         </p>
       ) : !state ? (
         loadFailed ? (
