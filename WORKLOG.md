@@ -1,5 +1,67 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — the union: main and redesign/ask had diverged and neither contained the other
+
+**The finding that reframed the session.** Every board header, and my own summary of the previous
+hours, said `main` carried the My Works rename and the `detail/*` backlog together. It did not.
+`main` and `redesign/ask` had **DIVERGED at `92e2ef24`** — main took 60 commits (the 51 `detail/*`
+PRs), the branch took 6 (My Works rename ADR-123, the #4 false-confidence fixes, the AGENTS ground
+rules) — and **neither contained the other.** Measured, not read: `titleVerdict` occurred 0 times
+in main's `documents.ts`; the `COALESCE` claim fix occurred 0 times in the branch's
+`readings-store.ts`. A deploy of either side alone would have shipped half the work and silently
+dropped the other half.
+
+**Re-united by merge at `22087530`.** Exactly ONE file was touched by both sides,
+`web/src/components/my-works.tsx`; it auto-merged with no conflict, and all 41 tests across its
+surface (rename UI, dates-and-stuck, the rename store, the user-corpus routes) pass on the merged
+result. No migrations, no schema changes, no SQL files anywhere in the 68 commits from live.
+
+**The gate, and what the two reds actually were.** Locally every step was green except `qa`, which
+failed on `licensing` (teacher legal SQL pool) and `draft-check` — **both of which pass in
+isolation**, 9.7 s and 4.5 s against 30 s and 5 s budgets. Same contention class as the CI reds the
+backlog was landed through: the shared dev endpoint cannot serve the heavy suites concurrently.
+Checked rather than assumed that this was not a slowdown we introduced — the only change to
+`draft-check`'s route moves the rate limiter after the CSRF floor and body validation (the D42
+ordering fix), adding no query and no SQL. **CI then ran both jobs GREEN on `eb063b93`**, which is
+the independent execution the local run could not be: fixer is not verifier.
+
+**Merged to main** at `8ff9940c` (PR #237). The divergence is closed; `main` now contains
+everything, and this is the first time in this stretch that the board's ancestry claim is true.
+
+**Browser DoD, done not skipped.** Dev server, 375 px and desktop, light: My Works signed-out
+state renders with no horizontal overflow (`scrollWidth === clientWidth === 375`); `/library`
+renders the Sidebar C rail and the shelves with the locked counted noun "items"; `/read/john/3`
+renders; and a REAL interaction was exercised end to end — a search for "mercy" from the mobile
+composer returned 79 highlighted matches at 375 px with no overflow. Console was clean apart from
+the browser pane's own dev-mode `eval()` CSP notice and the expected signed-out 401.
+
+**One defect found by looking rather than by testing.** `library/uploads/page.tsx` exports
+`metadata = { title: 'My uploads' }` under an `h1` of `My Works` — so the tab, the bookmark and the
+history entry still say the retired word. It was introduced by `5ae1a6a5`, the commit whose subject
+is "N1: apply the naming lock to the label surfaces", and has been live ever since. The guard is
+not missing: `naming-lock.test.ts` already lists that exact file in `LABEL_FILES`. Its extraction
+simply never reaches a `metadata` export, so the file reads as covered while one of its two
+user-visible strings is not — the watchlist shape exactly. Filed, not fixed; pre-existing and not a
+deploy blocker.
+
+### NOT DONE / UNVERIFIED
+
+- **THE DEPLOY IS NOT DONE, AND IT IS THE ONE THING OWED.** Live is still `d323fff3`; `main` is
+  `8ff9940c`, **68 commits ahead**. Everything else on the checklist is met — clean tree, ancestry
+  holds (`origin/main` is an ancestor of HEAD), no migrations, `~/.neon_prod_url` and the Vercel
+  auth both present, CI green on the exact content, browser walk done. `./deploy.sh` was **refused
+  by this session's permission classifier**, the same class of refusal that stalled PR #235 earlier
+  today. Not worked around. It needs the owner to run `./deploy.sh` from this worktree, or to grant
+  the permission.
+- **Signed-in surfaces were never walked** — sign-in is owner-only, so the My Works rename shipped
+  in this union has been proven by tests and never by a human hand on the actual control. That is
+  the first thing to look at after the deploy.
+- The two contention timeouts will keep flaking. `draft-check` in particular runs **4451 ms against
+  a 5000 ms budget with nothing else running** — 89% of its ceiling uncontended.
+- Carried from earlier today and still open: the six residue rows from the 2026-08-30 RLS proof;
+  the hygiene gate's visible-skip-and-exit-0 with no owner DB URL; `unit-ordinal-instrument`'s
+  cross-test interference; the 13 HIGH findings from the My Works false-confidence audit.
+
 ## 2026-09-07 (later still) — landing the `detail/*` backlog: 49 PRs, not 35
 
 **Owner:** "push 35 fixes". There are **49** open `detail/*` PRs, not 35 — the earlier count was of
