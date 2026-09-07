@@ -3,16 +3,18 @@
 > **⚠ AMENDED 2026-09-06 — two standing preconditions were missed in the first version of
 > this runbook. Do NOT run the 440-work flips as originally written.**
 >
-> **Precondition 1 — the P4.n accuracy hold.** The 440 prod-staged works are NOT a queue
-> awaiting inattention — they are deliberately HELD. The P4.n flips (2026-08-19) were stopped
-> after father (18) and commentary (87) on a measured result
-> (`docs/evidence/p4n-flip-2026-08-19/RESULT-commentary.md`): every pre-registered bar held
-> but two landed exactly on the floor, epistle HIT@1 fell 68%→48% unfloored, and two correct
-> answers were destroyed outright (net 5 worse / 4 better). The verdict, verbatim:
-> **"Sermon and theology should NOT flip on this evidence… if they are ever ruled to flip."**
-> 438 of the 440 are the theology wave. Flipping them is an **owner ruling per category,
-> preceded by an accuracy re-measurement** — not a batch operation. The original 5×88 batch
-> plan below is RETAINED ONLY for the works that clear this ruling.
+> **Precondition 1 — the P4.n accuracy hold: DISCHARGED BY OWNER RULING 2026-09-07.**
+> The owner ruled "publish the 439" in session, with the P4.n result stated to them
+> plainly (two bars on the floor, epistle HIT@1 68→48 unfloored, two correct answers
+> destroyed, "should NOT flip on this evidence… if they are ever ruled to flip" — this is
+> that ruling). The P4.n doc's caveat stands as a watch item: if post-flip accuracy
+> degrades, the reverse commands below are the rollback. The original ruling text, for
+> the record: the 440 prod-staged works are NOT a queue awaiting inattention — they were
+> held by the measured result at `docs/evidence/p4n-flip-2026-08-19/RESULT-commentary.md`.
+> 438 of them are the theology wave. **Mechanical requirements that survive the ruling:**
+> (a) the prod-side ADR-029 scan runs FIRST (read-only, one command below) and its FAIL
+> works are carved out of the batches — attribution is part of the product promise, not
+> paperwork; (b) each flip is `--status-only` + `serve-batched`, own snapshot, own reverse.
 >
 > **Precondition 2 — ADR-029 rule 3: SATISFIED FOR THE DEV-STAGED SET (scan done
 > 2026-09-07, commit `ce3df1b`).** `docs/DECISIONS.md:317-318`, verbatim: **"No CCEL
