@@ -1,0 +1,11 @@
+=== RED-PROOF: the guard's positive control catches a stripper that drops a file ===
+stripper reverted to the first draft
+   × every @/lib/session mock carries the module’s real failure surface > the comment stripper drops no file that carries the mock 3ms
+     → expected [ …(21) ] to deeply equal [ …(22) ]
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 22 passed (23)
+
+=== restored: green ===
+ Test Files  1 passed (1)
+      Tests  24 passed (24)

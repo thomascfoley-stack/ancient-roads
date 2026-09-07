@@ -99,6 +99,26 @@ export function decodePane(raw: string): Pane | null {
 }
 
 /**
+ * The pane IDENTITY key — what the desk dedups by and what the renderer keys React children on.
+ *
+ * `encodePane` is the SERIALISER: it folds a work pane's `ordinal` into the string so the landing
+ * position round-trips through the URL. `ordinal` is NOT part of which work the pane is, though —
+ * it is an initial scroll/landing position beside an open Scripture passage (F-158, see WorkPane).
+ * Two panes for the SAME work — one bare and one with an ordinal, or two with different ordinals —
+ * are the same pane, so deduping by `encodePane` let a re-add of an already-open work slip through
+ * as a "different" pane (a second cell, and a React duplicate-key warning).
+ *
+ * This key excludes the ordinal: `work:slug` for a work pane, identical to `encodePane` for a
+ * scripture pane. `decodeDeskReport`, `withPane`, and `replacePane` dedupe by it, and the desk
+ * page uses it as the React child key — one definition of "the same pane", shared by the parser
+ * and the renderer, so the two surfaces can never disagree about what counts as a duplicate.
+ */
+export function paneKey(p: Pane): string {
+  if (p.kind === 'scripture') return `scripture:${p.book}/${p.chapter}`;
+  return `work:${p.slug}`;
+}
+
+/**
  * What the parser did with a desk URL: the panes that fit, and how many did not.
  *
  * A078 — THE CAP WAS ENFORCED IN SILENCE. An over-long desk URL rendered the panes that fit and
@@ -135,7 +155,7 @@ export function decodeDeskReport(values: readonly string[]): DeskDecodeReport {
   for (const raw of values.flatMap((v) => v.split(','))) {
     const pane = decodePane(raw);
     if (!pane) continue;
-    const key = encodePane(pane);
+    const key = paneKey(pane);
     if (seen.has(key)) continue;
     seen.add(key);
     // Past the cap we keep SCANNING instead of breaking — the only change to the original loop.
@@ -190,8 +210,13 @@ export function deskGridShape(count: number): { cols: number; rows: number } {
 /**
  * Add a pane, returning the new desk. At the cap the OLDEST pane is evicted, not the newest: the
  * reader just asked for the new thing, so dropping it would make the button appear broken. Adding
- * a pane that is already open is a no-op rather than a reshuffle — the thing they asked for is
- * already in front of them.
+ * a pane for a work already on the desk collapses onto that pane in place — the desk never shows
+ * the same work twice, and the pane keeps its place (never a reshuffle). If the new pane carries a
+ * different landing ordinal the existing pane adopts it (F-158: a re-add beside an open Scripture
+ * passage jumps the work there instead of staying put); with the same ordinal this is a no-op.
+ *
+ * Dedup is by `paneKey` (work identity, ignoring `ordinal`) — see the comment on `paneKey` for why
+ * the ordinal is a landing position and not part of which work the pane is.
  *
  * A078, THE HALF THIS FUNCTION CANNOT FIX. That eviction is silent at its one real call site:
  * `app/library/[catalog]/page.tsx` builds the "+" href as `deskHref(withPane(openDesk, work))`, so
@@ -205,10 +230,16 @@ export function deskGridShape(count: number): { cols: number; rows: number } {
  * produced it is worse than the defect.
  */
 export function withPane(panes: readonly Pane[], pane: Pane): Pane[] {
-  const key = encodePane(pane);
-  if (panes.some((p) => encodePane(p) === key)) return [...panes];
-  const next = [...panes, pane];
-  return next.length > MAX_PANES ? next.slice(next.length - MAX_PANES) : next;
+  const key = paneKey(pane);
+  const at = panes.findIndex((p) => paneKey(p) === key);
+  if (at === -1) {
+    const next = [...panes, pane];
+    return next.length > MAX_PANES ? next.slice(next.length - MAX_PANES) : next;
+  }
+  // The same work is already open: collapse onto it in place. No second cell (the desk never shows
+  // the same work twice), and adopting the new pane keeps F-158's "open near the passage" for a
+  // re-add that carries a new ordinal; the pane keeps its index, so this is never a reshuffle.
+  return panes.map((p, i) => (i === at ? pane : p));
 }
 
 /** Remove the pane at `index`. Out-of-range is a no-op. */
@@ -219,13 +250,15 @@ export function withoutPane(panes: readonly Pane[], index: number): Pane[] {
 
 /**
  * Replace the pane at `index` in place, keeping its position. Out-of-range is a no-op. Replacing
- * with a pane already open elsewhere on the desk collapses the duplicate: the desk never shows the
- * same thing twice (the same rule `withPane` applies on add).
+ * with a pane already open elsewhere on the desk collapses the duplicate: the desk never shows
+ * the same thing twice (the same rule `withPane` applies on add). The collapse is by `paneKey`
+ * (work identity, ignoring `ordinal`), so a work is never shown twice even across different
+ * landing positions.
  */
 export function replacePane(panes: readonly Pane[], index: number, pane: Pane): Pane[] {
   if (index < 0 || index >= panes.length) return [...panes];
-  const key = encodePane(pane);
-  const dupAt = panes.findIndex((p, i) => i !== index && encodePane(p) === key);
+  const key = paneKey(pane);
+  const dupAt = panes.findIndex((p, i) => i !== index && paneKey(p) === key);
   const next = panes.map((p, i) => (i === index ? pane : p));
   return dupAt === -1 ? next : next.filter((_, i) => i !== dupAt);
 }

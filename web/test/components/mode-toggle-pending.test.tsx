@@ -65,4 +65,13 @@ describe('the Voices | History toggle', () => {
     expect(SOURCE).toMatch(/prefetch=\{mode !== 'voices'\}/);
     expect(SOURCE).toMatch(/prefetch=\{mode !== 'history'\}/);
   });
+
+  it('paints no corners', () => {
+    // The radius ladder is zeroed (globals.css) so `rounded-*` utilities are no-ops — but a BARE
+    // `rounded` is not on the ladder and paints real corners, on the header surface, against
+    // the PRD's square-corners rule (UX_POLISH_AUDIT P2, mode-toggle.tsx:42). SEED: add it -> RED.
+    // Comments stripped first: the file's own header records the old class by name.
+    const code = SOURCE.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(code).not.toMatch(/\brounded\b/);
+  });
 });

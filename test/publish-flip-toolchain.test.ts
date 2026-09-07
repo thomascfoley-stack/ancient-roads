@@ -469,7 +469,7 @@ describe('thayers evidence gate', () => {
     expect(thayersEvidenceError(['thayers-lexicon'], { reverse: true, evidenceText: null })).toBeNull();
     expect(thayersEvidenceError(['bdb-lexicon'], { reverse: false, evidenceText: null })).toBeNull();
   });
-  it('the SHIPPED CLI obeys the same gate in both directions (subprocess, no DB)', () => {
+  it('the SHIPPED CLI refuses at the same gate (subprocess, no DB, no evidence file)', () => {
     // 2026-08-22 (W-BASEFIX): this leg used to assert the repo LACKED the evidence file and
     // then watch the refusal. That precondition went stale when the 2026-08-22 verification
     // session committed the real evidence (abe5252: prod/dev thayers byte-identical, sha256
@@ -488,7 +488,11 @@ describe('thayers evidence gate', () => {
     fs.writeFileSync(manifest, JSON.stringify({ slugs: ['thayers-lexicon'] }));
     const runCli = () => {
       try {
-        execFileSync('node', ['scripts/publish-flip.mjs', `--slugs=${manifest}`], {
+        // `--evidence=` into the temp dir, like the harness at the top of this file: without it
+        // publish-flip.mjs wrote `flip-run-*.log` into the TRACKED docs/evidence/work-order-v2-stage2/
+        // on every `npm run audit`, and deploy.sh then refused the dirty tree — filed in
+        // UX_REMEDIATION §9 (2026-09-06), fixed 2026-09-07.
+        execFileSync('node', ['scripts/publish-flip.mjs', `--slugs=${manifest}`, `--evidence=${tmp}`], {
           cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
           // No connection string on purpose: a run that passes the gate must die there,
           // which is what leg 1 asserts. Delete, don't blank — the value is never printed.

@@ -91,6 +91,58 @@ describe('stripProductText — applied to every event, not just pageviews', () =
     expect(Object.keys(out)).toEqual([]);
   });
 
+  it('sanitizes the $session_entry_* family — the entry URL leaks on every event, not only $current_url', () => {
+    // posthog-js's SessionPropsManager.getSessionProps() attaches $session_entry_url — the
+    // session's entry page's full href, including ?q=<question> — to EVERY event in a session,
+    // merged in BEFORE sanitize_properties runs. A hand-list that names only $current_url /
+    // $referrer / $pathname / $initial_* missed it, so the question left on $session_entry_url
+    // verbatim while $current_url beside it was stripped. Each seed below turns red on that
+    // old list: $session_entry_url keeps its ?q=leak.
+    const out = stripProductText({
+      $session_entry_url: 'https://ancientpaths.app/ask?q=leak&utm_source=newsletter',
+      $session_entry_referrer: 'https://ancientpaths.app/search?q=leak',
+      $session_entry_pathname: '/ask?q=leak',
+      $current_url: 'https://ancientpaths.app/ask?q=leak',
+    });
+    expect(JSON.stringify(out)).not.toContain('leak');
+    // URL-bearing session keys are sanitized by the same allowlist as $current_url …
+    expect(out.$session_entry_url).toBe('https://ancientpaths.app/ask?utm_source=newsletter');
+    expect(out.$session_entry_referrer).toBe('https://ancientpaths.app/search');
+    expect(out.$session_entry_pathname).toBe('/ask');
+    // … and the campaign param on the entry URL survives, the same property $current_url has.
+    expect(out.$current_url).toBe('https://ancientpaths.app/ask');
+  });
+
+  it('leaves non-URL $session_entry_* and top-level campaign props untouched', () => {
+    // The $session_entry_ prefix is applied to host/referring_domain/utm_* too; only the
+    // URL-bearing keys are sanitized. A blanket "strip everything under $session_entry_" would
+    // delete campaign attribution, so this pins that it does NOT.
+    const out = stripProductText({
+      $session_entry_host: 'ancientpaths.app',
+      $session_entry_referring_domain: 'ancientpaths.app',
+      $session_entry_utm_source: 'newsletter',
+      utm_campaign: 'launch',
+    });
+    expect(out).toEqual({
+      $session_entry_host: 'ancientpaths.app',
+      $session_entry_referring_domain: 'ancientpaths.app',
+      $session_entry_utm_source: 'newsletter',
+      utm_campaign: 'launch',
+    });
+  });
+
+  it('deletes title — $pageview sets it to document.title, which could quote the question', () => {
+    // posthog-core sets properties['title'] = document.title on $pageview. A future dynamic
+    // <title> (e.g. for share previews) could put the reader's question in it; the title carries
+    // no campaign value, so it is deleted outright rather than sanitized.
+    const out = stripProductText({
+      title: 'Ask — is God cruel?',
+      $current_url: 'https://ancientpaths.app/ask?q=leak',
+    });
+    expect(out).not.toHaveProperty('title');
+    expect(out.$current_url).toBe('https://ancientpaths.app/ask');
+  });
+
   it('leaves posthog’s own top-level campaign properties untouched', () => {
     // These are what the UTM dashboards actually read: posthog-js sends them as separate
     // properties, independent of the URL. If a future edit started filtering unknown keys

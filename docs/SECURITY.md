@@ -105,7 +105,7 @@ with no Content-Type floor** — cookie-authenticated routes that would parse a 
 `text/plain`/`form` POST, the classic CSRF precondition. RED log:
 `docs/evidence/swarm-2026-08-22/w-sec-csrf/` (branch `swarm/W-SEC-CSRF-csrf-floor`).
 
-**Fix committed, UNVERIFIED** (Wave 7 never ran; §2.3 of the closeout order): one shared guard
+**Fix committed, VERIFIED (Wave 7, 2026-08-23)** (binding red-proofs in `docs/pm/swarm-2026-08-22/verdicts/wave7-verdicts.md`; §2.3 of the closeout order): one shared guard
 `web/src/lib/csrf-floor.ts` applied to 16 handlers (mutating methods must present the parsed
 Content-Type, else 415/400 per `docs/API_ERRORS.md`); the invariant
 `web/test/invariants/csrf-content-type-floor.test.ts` derives its route list by glob — not

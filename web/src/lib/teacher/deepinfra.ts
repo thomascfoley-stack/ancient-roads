@@ -19,8 +19,19 @@ function apiKey(): string {
   return k;
 }
 
+// Combine the call's own wall-clock budget with the caller's cancellation signal, so a reader
+// who presses Stop releases the socket immediately instead of paying out the timeout. Neither
+// signal replaces the other: the timeout still bounds a request nobody cancelled.
+function withCallerSignal(timeoutMs: number, caller?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return caller ? AbortSignal.any([caller, timeout]) : timeout;
+}
+
 // Embed a single query. Returns a 1024-dim vector comparable with the stored corpus.
-export async function embedQuery(text: string): Promise<number[]> {
+export async function embedQuery(
+  text: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<number[]> {
   const res = await fetch(`${BASE_URL}/embeddings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey()}` },
@@ -29,7 +40,7 @@ export async function embedQuery(text: string): Promise<number[]> {
       input: [text.slice(0, MAX_INPUT_CHARS)],
       encoding_format: 'float',
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: withCallerSignal(30_000, opts.signal),
   });
   if (!res.ok) throw new Error(`Embedding request failed: ${res.status} ${await res.text()}`);
   const json = (await res.json()) as { model?: string; data: { embedding: number[] }[] };
@@ -54,7 +65,7 @@ export const composeModel = COMPOSE_MODEL;
 export async function compose(
   systemPrompt: string,
   userPrompt: string,
-  opts: { timeoutMs?: number } = {},
+  opts: { timeoutMs?: number; signal?: AbortSignal } = {},
 ): Promise<string> {
   const timeoutMs = opts.timeoutMs ?? 120_000;
   const res = await fetch(`${BASE_URL}/chat/completions`, {
@@ -72,7 +83,7 @@ export async function compose(
       // Qwen3 thinking mode wastes tokens/latency; disable it deterministically.
       chat_template_kwargs: { enable_thinking: false },
     }),
-    signal: AbortSignal.timeout(timeoutMs),
+    signal: withCallerSignal(timeoutMs, opts.signal),
   });
   if (!res.ok) throw new Error(`Compose request failed: ${res.status} ${await res.text()}`);
   const json = (await res.json()) as {

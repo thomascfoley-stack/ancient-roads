@@ -53,11 +53,13 @@ const declared = opt('target');
 const slugsArg = opt('slugs');
 const slugsPath = slugsArg ?? 'docs/evidence/adr029-scan-2026-09-06/input-slugs.txt';
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error('DATABASE_URL is required (dev owner credential; prod only under SCAN_ALLOW_PROD=1 with the owner\'s go)');
-// Narrowed alias for use inside hoisted function declarations — TS treats them as
-// potentially called before the guard above, so `url` stays string|undefined in there.
-const DB_URL: string = url;
+// Narrowed to `string` HERE, at module scope: the throw guard does not carry into `main()` below
+// (hoisted function declarations read the un-narrowed type), so `hostOf(url)` there was a
+// `string | undefined` argument and the cutover-gate typecheck was red on the live branch —
+// fixed independently on both sides of this merge; kept origin/main's shape.
+const urlMaybe = process.env.DATABASE_URL;
+if (!urlMaybe) throw new Error('DATABASE_URL is required (dev owner credential; prod only under SCAN_ALLOW_PROD=1 with the owner\'s go)');
+const url: string = urlMaybe;
 if (!declared) throw new Error('--target=<endpoint-id> is required');
 if (isProdHost(url)) {
   // Prod path (C-3 remediation): explicit consent flag AND an exact declared endpoint,
@@ -113,7 +115,7 @@ function span(findings: Finding[]): string {
 }
 
 async function main() {
-  const client = new pg.Client({ connectionString: DB_URL, ssl: { rejectUnauthorized: false }, application_name: 'adr029-nonauthorial-scan' });
+  const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false }, application_name: 'adr029-nonauthorial-scan' });
   await client.connect();
   try {
     await client.query('BEGIN');
@@ -122,7 +124,7 @@ async function main() {
       throw new Error('STOP: read-only transaction not in force');
     }
     report(`detector version : ${DETECTOR_VERSION}`);
-    report(`target           : ${hostOf(DB_URL)} (read-only txn; credentials not printed)`);
+    report(`target           : ${hostOf(url)} (read-only txn; credentials not printed)`);
 
     if (mode === 'labelled') await labelled(client);
     else if (mode === 'scan') await scan(client);

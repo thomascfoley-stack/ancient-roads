@@ -3,12 +3,12 @@ import { after } from 'next/server';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { checkCorpusCompleteRateLimit } from '@/lib/rate-limit';
 import { requireJsonContentType } from '@/lib/csrf-floor';
-import { getUserDocument, deleteUserDocument } from '@/lib/user-corpus/blob';
-import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument } from '@/lib/user-corpus/documents';
+import { getUserDocument, deleteUserDocument, putUserDocument, blobPathname } from '@/lib/user-corpus/blob';
+import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument, isHealable, healPlan, requeueForRetry } from '@/lib/user-corpus/documents';
 import { checksum, sniffType } from '@/lib/user-corpus/sniff';
-import { drain } from '@/lib/user-corpus/queue';
+import { drain, MAX_ATTEMPTS } from '@/lib/user-corpus/queue';
 import { QuotaExceeded } from '@/lib/user-corpus/quota';
-import { UploadRefused } from '@/lib/user-corpus/types';
+import { UploadRefused, type UserDocument } from '@/lib/user-corpus/types';
 
 // Records a document whose bytes were uploaded directly to Vercel Blob via a
 // presigned URL (see upload-url/route.ts). The function never saw the bytes in
@@ -19,6 +19,87 @@ import { UploadRefused } from '@/lib/user-corpus/types';
 // docs/evidence/f134-probe-2026-08-30.txt).
 
 export const runtime = 'nodejs';
+
+/** Best-effort drain kick — same fire-and-forget contract as the legacy upload route: by the time
+ *  this runs the row exists and the bytes are stored, so a scheduling throw must never turn a
+ *  succeeded upload into a 500. `after()` throws outside a real Next.js request scope, which is
+ *  why the throw is caught here rather than allowed to reach the route's catch. */
+function kickDrain(userId: string): void {
+  try {
+    after(async () => {
+      try {
+        await drain(userId);
+      } catch (e) {
+        console.error('[user-corpus] drain failed after upload-complete:', String((e as Error)?.message ?? e));
+      }
+    });
+  } catch (e) {
+    console.error('[user-corpus] could not schedule the drain; document stays queued:', String((e as Error)?.message ?? e));
+  }
+}
+
+/** D11 (DEEP_SWEEP) — the dedupe path both the pre-flight `findByChecksum` and the
+ *  in-transaction race (`DuplicateDocument`) funnel through. A re-upload whose bytes already
+ *  match a HEALABLE row (`blobUrl` null because the blob was never stored, or `status === 'failed'`)
+ *  is the repair gesture the drain/retry messages prescribe — store the fresh bytes onto the
+ *  existing row's canonical pathname, re-queue it, and kick the drain. The just-uploaded blob at
+ *  `orphanPathname` is orphaned in every dedupe outcome, so it is deleted before returning. */
+async function healOrDuplicate(
+  user: { id: string },
+  existing: UserDocument,
+  bytes: Uint8Array,
+  orphanPathname: string,
+): Promise<NextResponse> {
+  const deleteOrphan = () =>
+    deleteUserDocument(orphanPathname).catch((e) => {
+      console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
+    });
+
+  if (!isHealable(existing)) {
+    await deleteOrphan();
+    return NextResponse.json(
+      { document: existing, duplicateOf: existing.id, message: 'You have already uploaded this file.' },
+      { status: 200 },
+    );
+  }
+
+  const plan = healPlan(existing, MAX_ATTEMPTS);
+  if (plan.action === 'exhausted') {
+    await deleteOrphan();
+    return NextResponse.json(
+      {
+        document: existing,
+        duplicateOf: existing.id,
+        healed: false,
+        message:
+          'That file has already failed to process several times, so re-uploading it will not help. ' +
+          'Delete it and try a different copy, or a different format.',
+      },
+      { status: 200 },
+    );
+  }
+
+  if (plan.action === 'store-and-requeue') {
+    await putUserDocument(user.id, existing.id, bytes);
+    await setBlobPathname(user.id, existing.id, blobPathname(user.id, existing.id));
+  }
+  const requeued = await requeueForRetry(user.id, existing.id, { resetAttempts: plan.resetAttempts });
+  kickDrain(user.id);
+  await deleteOrphan();
+  return NextResponse.json(
+    {
+      document: existing,
+      duplicateOf: existing.id,
+      healed: true,
+      message: requeued
+        ? plan.action === 'store-and-requeue'
+          ? 'That file was already uploaded but had not been stored. It has been restored and queued.'
+          : 'That file is already uploaded. It has been queued to try processing again.'
+        : 'That file is already uploaded and is being processed right now.',
+    },
+    { status: 200 },
+  );
+}
 
 export async function POST(req: NextRequest) {
   const csrf = requireJsonContentType(req);
@@ -71,17 +152,13 @@ export async function POST(req: NextRequest) {
     const type = sniffType(bytes, name);
     const sum = await checksum(bytes);
 
-    // Dedupe — same rule as the original route. If the bytes already exist, the
-    // new blob is orphaned; delete it before returning the existing document.
+    // Dedupe — same rule as the original route (D11): if the bytes already exist the new blob is
+    // orphaned, BUT a re-upload of a HEALABLE row (blob never stored, or failed processing) is the
+    // repair gesture, not a no-op. The helper stores the fresh bytes onto the existing row,
+    // re-queues it, and deletes the just-uploaded orphan.
     const existing = await findByChecksum(user.id, sum);
     if (existing) {
-      await deleteUserDocument(pathname).catch((e) => {
-        console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
-      });
-      return NextResponse.json(
-        { document: existing, duplicateOf: existing.id, message: 'You have already uploaded this file.' },
-        { status: 200 },
-      );
+      return await healOrDuplicate(user, existing, bytes, pathname);
     }
 
     const documentId = pathname.split('/').pop()!;
@@ -96,13 +173,9 @@ export async function POST(req: NextRequest) {
       throw e;
     });
     if (created instanceof DuplicateDocument) {
-      await deleteUserDocument(pathname).catch((e) => {
-        console.error('[upload-complete] could not delete orphaned blob:', (e as Error).message);
-      });
-      return NextResponse.json(
-        { document: created.existing, duplicateOf: created.existing.id, message: 'You have already uploaded this file.' },
-        { status: 200 },
-      );
+      // The winner of a dedupe race may still be healable (its setBlobPathname has not run yet, or
+      // also threw). The same heal applies before returning it unchanged.
+      return await healOrDuplicate(user, created.existing, bytes, pathname);
     }
     const doc = created;
 
@@ -110,17 +183,7 @@ export async function POST(req: NextRequest) {
 
     // Fire-and-forget drain — same contract as the original route. The upload
     // has succeeded; a scheduling failure must not turn into a 500.
-    try {
-      after(async () => {
-        try {
-          await drain(user.id);
-        } catch (e) {
-          console.error('[user-corpus] drain failed after upload-complete:', String((e as Error)?.message ?? e));
-        }
-      });
-    } catch (e) {
-      console.error('[user-corpus] could not schedule the drain:', String((e as Error)?.message ?? e));
-    }
+    kickDrain(user.id);
 
     return NextResponse.json({ document: doc }, { status: 201 });
   } catch (e) {

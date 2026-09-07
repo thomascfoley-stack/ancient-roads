@@ -51,21 +51,35 @@ function focusOrder(container: HTMLElement): string[] {
   ).map((el) => (el.textContent ?? '').trim());
 }
 
+// 2026-09-06 — THE ROSTER GREW BY ONE; THE PROPERTY DID NOT CHANGE. "Request access" joined the
+// header (the landing page's only call to action was the last element of a ~4,500px scroll, and
+// the chrome that follows a reader down it offered only a door for people who already had an
+// account). The two lists below therefore gained an entry.
+//
+// This is the one edit to this file that is legitimate: what A098 pins is that DOM order IS the
+// paint order and that neither `order-*` nor a positive `tabindex` is doing the work — all three
+// still asserted below, and the new pill is authored in the cell where it paints, last, because it
+// paints rightmost. Editing the ARRAYS to admit a genuinely new control is not the same act as
+// editing them to admit a regression: the moment "Request access" moves ahead of the three links,
+// or "Log in" moves behind it, this file goes red again and should.
+const HEADER_TAB_ORDER = [
+  'Skip to content',
+  'Ancient Paths',
+  'Home',
+  'Features',
+  'Why',
+  'Log in',
+  'Request access',
+];
+
 describe('A098 — marketing header focus order', () => {
-  it('walks skip link → wordmark → Home → Features → Why → Log in on the home page', () => {
+  it('walks skip link → wordmark → Home → Features → Why → Log in → Request access on the home page', () => {
     const { container } = render(<MarketingNav active="home" />);
 
     // SEED THE DEFECT: put the "Log in" <Link> back above the links <div> in nav.tsx (with its
-    // `sm:order-3`) -> RED here, with "Log in" arriving second instead of last. That is exactly
-    // the zigzag as filed.
-    expect(focusOrder(container)).toEqual([
-      'Skip to content',
-      'Ancient Paths',
-      'Home',
-      'Features',
-      'Why',
-      'Log in',
-    ]);
+    // `sm:order-3`) -> RED here, with "Log in" arriving second instead of second-to-last. That is
+    // exactly the zigzag as filed.
+    expect(focusOrder(container)).toEqual(HEADER_TAB_ORDER);
   });
 
   it('keeps that order on every marketing page, and the count never changes', () => {
@@ -75,14 +89,7 @@ describe('A098 — marketing header focus order', () => {
     for (const page of ['home', 'features', 'why'] satisfies MarketingPage[]) {
       cleanup();
       const { container } = render(<MarketingNav active={page} />);
-      expect(focusOrder(container), `focus order broke on the ${page} page`).toEqual([
-        'Skip to content',
-        'Ancient Paths',
-        'Home',
-        'Features',
-        'Why',
-        'Log in',
-      ]);
+      expect(focusOrder(container), `focus order broke on the ${page} page`).toEqual(HEADER_TAB_ORDER);
     }
   });
 

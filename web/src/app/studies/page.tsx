@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { currentUser } from '@/lib/session';
 import { listStudies, STUDIES_PAGE_LIMIT, type Study } from '@/lib/studies';
 import { DISPLAY_LOCALE } from '@/lib/locale';
@@ -39,7 +38,45 @@ export default async function StudiesPage({
 }) {
   const sp = await searchParams;
   const user = await currentUser();
-  if (!user) redirect('/auth/sign-in');
+
+  // The masthead is the same for a stranger and for a reader — it is what tells the stranger
+  // whether signing in is worth it. Only the body below differs.
+  const intro = (
+    <div>
+      <h1 className="font-display text-3xl font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-200">
+        My Studies
+      </h1>
+      <p className="mt-2 font-serif leading-relaxed text-stone-500 dark:text-stone-400">
+        Your own writing beside attributed passages from the library — durable bodies of work,
+        kept to your account.
+      </p>
+    </div>
+  );
+
+  // SIGNED OUT: show what this surface IS, then invite. This used to `redirect('/auth/sign-in')`,
+  // which threw a visitor at a login form for a page they had never seen and could not evaluate.
+  // Every other LIST surface renders a signed-out state instead — /library/books, /library/notes,
+  // /search, /library/uploads, the verse panel — and this is the pattern they share. `NewStudyButton`
+  // is deliberately absent here: a control whose POST would 401 is a control that appears to work
+  // and does not. No listStudies() call either — there is no user id to query with.
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-[80ch] px-6 py-12 md:py-20">
+        <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">{intro}</header>
+        <div className="mt-12 py-16 text-center">
+          <p className="mb-4 font-serif text-stone-500 dark:text-stone-400">
+            Sign in to keep studies of your own.
+          </p>
+          <Link
+            href="/auth/sign-in"
+            className="inline-flex min-h-[44px] items-center border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
+          >
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // Both cursor params together or neither (the route's own rule), and both well-formed —
   // anything else starts at the top rather than erroring on a hand-edited URL.
@@ -93,15 +130,7 @@ export default async function StudiesPage({
   return (
     <div className="mx-auto max-w-[80ch] px-6 py-12 md:py-20">
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
-        <div>
-          <h1 className="font-display text-3xl font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-200">
-            My Studies
-          </h1>
-          <p className="mt-2 font-serif leading-relaxed text-stone-500 dark:text-stone-400">
-            Your own writing beside attributed passages from the library — durable bodies of work,
-            kept to your account.
-          </p>
-        </div>
+        {intro}
         <NewStudyButton />
       </header>
 

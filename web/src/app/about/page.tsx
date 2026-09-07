@@ -63,8 +63,11 @@ export default function About() {
         >
           Request early access
         </Link>
+        {/* /home is where a reader LANDS after signing in, not where they sign in. On the one
+            public page a stranger reaches, this button was the front door and it opened onto a
+            gated route. /auth/sign-in is the real form, and the only sign-in route in the app. */}
         <Link
-          href="/home"
+          href="/auth/sign-in"
           className="inline-flex min-h-[48px] items-center border border-stone-500 px-6 font-sans text-sm font-semibold tracking-[0.02em] text-stone-600 hover:bg-stone-500 hover:text-stone-50 dark:border-stone-400 dark:text-stone-300 dark:hover:bg-stone-400 dark:hover:text-stone-950"
         >
           Log in

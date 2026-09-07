@@ -15,7 +15,11 @@ const requireUser = vi.fn();
 const teach = vi.fn();
 
 vi.mock('@/lib/rate-limit', () => ({ checkAskRateLimit: (...a: unknown[]) => checkAskRateLimit(...a) }));
-vi.mock('@/lib/session', () => ({ requireUser: () => requireUser() }));
+// Spreads the REAL @/lib/auth-failure so this mock carries every export the route imports, not
+// just the ones this file thought of — see the note in library-shelf-round-trip.test.ts. Held by
+// test/invariants/session-mock-surface.test.ts.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')), requireUser: () => requireUser() }));
 vi.mock('@/lib/teacher/teach', () => ({ teach: (...a: unknown[]) => teach(...a) }));
 // ADR-116 gated beta: the teacher is owner-only. Not what this test is about — allow, so the
 // ordering under test is reachable.

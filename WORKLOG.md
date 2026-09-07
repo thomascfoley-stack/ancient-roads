@@ -273,6 +273,200 @@ another session active on main today; merged).
   committed in `bca2459b`). Still unidentified; it runs in THIS worktree.
 - Deep-audit of the wave (owner deferred until translations ship).
 - The 454-file materialization vs publish state reconciliation — owner ruling needed.
+## 2026-09-07 — Sidebar C, four UX sweeps merged, and main's hidden red — LIVE `d323fff3` (`dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a`, 04:47Z); PR #235 to main waits on the owner
+
+**Owner, in session (2026-09-07):** on the build menu (`docs/pm/orders/2026-09-07-build-menu.md`):
+"#1 do it · #2 do it · #5 fix it · #6 knock that out"; "#3 / #4 i don't understand" (My Works editing;
+My Works testing) — explained in chat, NOT started. Earlier the same session: "Push back if you
+think I'm wrong" on the sidebar note, and "no idea what this means" on a build-log line — recorded
+as a working preference (translate tooling into product meaning or leave it out).
+
+**Branch `redesign/ask`** (base: live `d6e85f3`; PR #235 to main). Sequence, each commit pushed:
+
+* **`main` was red on `db-invariants` for fifteen days and nobody could see it** (`4b3efc9`). Two
+  round-trip suites mocked `@/lib/session` by hand; D43 (`c11bc84`, 2026-08-23) gave 19 routes a
+  third import, `authFailureResponse`. Reproduced locally against dev (2 failed / 25 passed, the CI
+  error verbatim); sixteen more mocks were waiting, not passing. All eighteen now spread the real
+  module; `test/invariants/session-mock-surface.test.ts` holds the rule as SHAPE and was red-proved
+  (3 → 4 on reverting one file). Its first regex failed two already-correct files; fixed the check,
+  not the files. Why invisible: the `audit` workflow runs on branches and PRs, never on pushes to
+  `main`.
+* **Sidebar C — ADR-122** (`bdb4f8ee`, fix `cec3d1fa`). Five places; Research history / My studies /
+  Prayer journal / My Works / Reading plans as groups capped at three, closed = one row, the page's
+  own group opens itself (not remembered), hand-opened groups remembered per user, library shelves
+  fold behind Library, signed-out keeps plans + journal as rows, groups fetch lazily on open. One
+  table each for places and groups feeds the rail, the icon rail and the mobile sheet. Red first
+  (`sidebar-groups.test.tsx`, 10/11 red on the old rail). Two re-points recorded before editing and
+  red-proved after (`docs/evidence/sidebar-c-2026-09-07/`). Deviations from the mockup with reasons
+  in `findings.md` (no closed-row counts; research unfolds in place; prayer rows plain, dated).
+  **A slip:** `bdb4f8ee` carried a type error (`href` after the literal-href edit) because the last
+  edit came after the clean typecheck and vitest does not typecheck — caught by the post-merge
+  typecheck, fixed in `cec3d1fa`. Lesson applied below: typecheck is the LAST thing before commit.
+* **Four sweeps, each in its own worktree, red-first, merged** (`589c582b`, `45248837`, `23557749`,
+  `d0a0ccd6`): small batch (`fix/ux-small-batch`: Stop now stops the SPEND — `req.signal` through
+  `teach()` to the DeepInfra call; `/search` loading; `/studies` signed-out state; four small lies;
+  Daily Office fetch bounded at 15s); error voice + skeleton (`fix/ux-error-voice`: no status codes
+  or vendor strings reach the DOM; a shared `skeleton.tsx` on 11 waits); notes remove + `/home`
+  (`fix/ux-notes-and-home`: per-row two-step remove on `/library/notes`; `/home` was fetching the
+  WHOLE YEAR of two devotionals — 2.24 MB — to show one morning: day-sharded to ~6 KB, 367×, plus
+  `Cache-Control` on `/commentaries`); a11y + targets (`fix/ux-a11y-targets`: four dialogs get
+  `useDialog` semantics, a real StrictMode bug in `useDialog`'s focus-restore fixed, 21 targets to
+  44px, a nav "Request access" CTA — Chrome-verified at 375/1280 by that sweep). Two conflicts
+  resolved by keeping both sides (`today-view.tsx`: day URL inside the bounded fetch;
+  `save-to-study.tsx`: two imports). Two agent test files failed the web/test typecheck the agents'
+  `tsc -p .` does not cover — fixed (`1f30752c`).
+
+**Verification** (`docs/evidence/ux-batch-2026-09-07/`).
+* `npm run audit` ×3 on the merged tree: run 1 (started pre-a11y merge) red on ONE leg — the
+  web/test typecheck, the two agent test files above — every other gate green; run 2 (a11y merged,
+  before the test fix) same single red leg, and every test suite green with no DB flake (331 files /
+  2,065 tests + 92 / 1,069 + 2 / 30); **run 3 on the final tree `1f30752c`: AUDIT PASSED — all gates
+  green** (`audit-run-3.log`): both typechecks, both lints, knip, deps advisory (512 prod packages,
+  none un-ignored), tests + coverage, Layer-1 invariants + regressions, hygiene, the deploy.sh
+  harness, Gate B licensing.
+* Whole-suite run on the Sidebar C tree before the merges: green bar `licensing.test.ts`'s
+  legal-pool leg timing out under load, which passes alone (8.9s) — the flake recorded 2026-09-06
+  (`docs/evidence/sidebar-c-2026-09-07/unit-run-summary.log`).
+* Deep audit, four lenses in one batch (attack surface + AI pipeline · client + a11y · data/ops/
+  deploy/docs · tests-as-evidence): **no CRITICAL; four HIGH, all on surfaces the sweeps had just
+  touched** — a throttled sign-in reported as a wrong password (the line the error-voice sweep
+  rewrote), five bare `rounded` on the search skeleton, a status code in a file that sweep opened, and
+  a `/*` inside a line comment that made my own mock guard skip a file. Twenty-four items fixed before
+  deploy, the rest filed — `docs/evidence/ux-batch-2026-09-07/deep-audit.md`. The guard's own
+  fix was red-proved by reverting its stripper (`red-proof-guard-stripper.log`: 21 files found
+  against 22 that carry the mock → red; restored → 24/24).
+* `audit-run-4.log` on the fix commit `25ec4479`: **RED on 11 desk tests** — one of the deep-audit
+  fixes over-generalised. Making every `TextSkeleton` a `role="status"` region meant a loading
+  desk pane collided with the pane-cap notice, which three desk suites assert is the desk's ONLY
+  status role (A078). The audit was right about the three sites that had `<p role="status">` on
+  live and wrong to make it the default; `announce` is now opt-in and those three pass it.
+  **`audit-run-5.log` on the final tree `14872048`: AUDIT PASSED — all gates green** (331 files /
+  2,067 tests in the Layer-1 leg, 92 / 1,069 unit, 2 / 30 root; both typechecks, both lints, knip,
+  deps, hygiene, the deploy.sh harness, Gate B). The residue generator, fixed, left nothing behind.
+  CI on `25ec4479` had gone red on the same eleven desk tests the local run caught (33 hits of the
+  same error), which is the local gate and CI agreeing.
+
+* **Deploy — live, verified by the script AND independently.** `deploy.sh` exit 0 from this
+  worktree at `d323fff3` (docs-only atop the gate-green `14872048`); every gate passed, the CLI's
+  READY poll returned this time, and the script's identity check found `ancientpaths.app` served
+  by `dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a` — receipt `state: live`
+  (`docs/evidence/deploys/deploy-d323fff-2026-09-07T04-41-54Z.txt`). Independent probe outside the
+  gate: the served stylesheet carries `.rail-rule` and `.reader-dark .rail-rule`, a class that
+  exists in no file at the prior live `d6e85f3`. CI green on both jobs at `d323fff3` before the
+  deploy (`db-invariants` green for the second run in a row since the mock fix). **`main` NOT
+  updated:** the fast-forward push (`git push origin HEAD:main`) was refused by the agent session's
+  permission policy on the default branch. PR #235 is CI-green, 0 behind and fast-forwardable; the
+  merge-to-main gap every board header since 2026-08-18 has recorded closes with one owner click.
+  The 35 `detail/*` PRs (the second half of "#2") are sequenced behind that: they need main to
+  carry the deploy-harness and session-mock fixes before their CI can go green; the rebase-and-
+  land script is written (`land-detail-prs.sh`, in the session scratchpad — to be filed under
+  `scripts/` when it runs) and NOT run.
+
+**NOT DONE / UNVERIFIED.**
+* Live signed-in walks: the sidebar's groups and the /ask redesign — owner-only sign-in; composites
+  of the real component with the real CSS stand in (labelled). A live tap in the mobile Menu sheet —
+  the Browser pane took screenshots but timed out on every click while hidden; Playwright is not a
+  package here.
+* The browser legs of the small-batch, error-voice and notes-and-home UI changes at 390/desktop:
+  those sweeps ran jsdom + typecheck only (their worktrees had no env / corpus). The a11y sweep did
+  its own Chrome pass.
+* "#2" second half — the 35 `detail/*` PRs — NOT started; sequenced after main is updated.
+* "#3" My Works editing and "#4" My Works testing — NOT started (owner asked what they mean).
+* `req.signal` abort under the real Vercel runtime is asserted by tests, not measured live.
+
+## 2026-09-06 — /ask redesign (field-first) + results open the book at the quoted section, with a way back — LIVE `d6e85f3` (`dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ`, READY 2026-09-07T02:33Z)
+
+**Owner, in session:** "too busy… a bit of a mess"; "when something is running it's not discernible";
+results must open "into the EXACT spot" with a clear way back; then, over three composer treatments
+explained in plain terms, **"ok go with #3 for me"**, and **"fix and deploy them now live in prod."**
+Rulings and their amendments are in **ADR-121** (`docs/DECISIONS.md`); the design canvas is
+https://claude.ai/code/artifact/ea3fc1e7-cfb8-4dc4-b9df-870cbbaee6d1.
+
+**Base.** `fix/q1-signed-out-state` (this repo's checkout) was 197 commits behind `origin/main` and
+what is live is `602bd9e` on `fix/ux-overnight-sweep`, 20 ahead of main. Worktree `redesign/ask` =
+union of `origin/fix/ux-overnight-sweep` and `origin/main` (`39d2b85`), so the deploy contains both
+what is live and main (deploy.sh's ancestry gate holds). Main's own F24 attempt (the reader ignoring a
+`#s<n>` that arrives after mount) failed F24's red-proof test; the fix was ported onto main's page.
+
+**What shipped (24 files changed, 857+/1046−, plus 26 new).**
+* `/ask`: `ask-client.tsx` (1,130 lines) split into `ask-types` · `ask-empty-state` · `ask-composer`
+  · `ask-scope-row` · `ask-progress` · `ask-answer`, re-exporting `InitialThread` and
+  `SLOW_ANSWER_NOTICE_MS`. Field-first composer: the box holds only the question and a hairline Ask;
+  the search scope is one quiet line under the box, travelling with the sticky form. Header two lines;
+  "Currently answering from the Gospels" retired (false; 65 books). History invitation as a hairline
+  row. The page frame (viewport `min-h`) moved to `app/ask/page.tsx` + `[id]/page.tsx` so the mode
+  toggle is inside the measure — the 50px overhang that put the composer over the first screen is
+  gone. Running: a `.progress-travel` bar under the question and along the box edge, active step in
+  ink, a real Stop (AbortController; 300ms double-click guard). 429/503: the envelope message + "Try
+  again in about …", retry disabled until then, clamped ≤ 86 400 s. Scroll once per appended turn.
+  Dead `small-caps` class on attributions → `[font-variant:all-small-caps]`. `mode-toggle.tsx`: two
+  words, no box.
+* Results → `/work/<slug>?from=ask:<threadId>&fq=<question>#s<ordinal>`. `lib/source-ordinal.ts`
+  parses register ids; `lib/work.ts` `locateSections` resolves classic commentary rows in ONE
+  `unnest … WITH ORDINALITY` statement over `section_anchors` (cap 200, `status='published'`);
+  `lib/teacher/section-locate.ts` writes one metadata field, never reorders, never rejects;
+  `teach.ts` awaits it only where the rows ship. `history-context-bar.tsx` handles `from=ask:`,
+  dismisses per thread, and is `sticky bottom-0` (in flow at the top it left the viewport on landing,
+  y = −168px measured). `thread-restore.tsx` heals Back from the reader (Next 16 copies the current
+  route tree onto a `replaceState`'d entry). Reader's Continue chip lifts over the strip on mobile.
+* Also: `fast-uri` override 3.1.5 → 3.1.7 (four HIGH advisories the audit gate flagged — pre-existing
+  on live); `scripts/adr029-nonauthorial-scan.mts` typecheck fix (pre-existing red on live).
+
+**Verification.**
+* Red first: `docs/evidence/ask-redesign-2026-09-06/red-run.log` — 10 failures across 7 files on the
+  unchanged code; the plumbing tests' red output is transcribed in `findings.md`. Three source-reading
+  tests re-pointed to the split files, documented BEFORE the edits (findings.md) and red-proofed after
+  (`red-proof-repoints.log`) — one of them was found satisfiable by a comment and TIGHTENED.
+* `npm run audit`: `audit-run.log` red on 4 legs (2 pre-existing on live, 2 DB-timeout flakes under
+  load that pass alone); `audit-run-2.log` **AUDIT PASSED — all gates green**; `audit-run-3.log`, on
+  the final tree after the deep-audit hardening, is green on every gate except the SAME two DB
+  tests timing out under full-suite load (`licensing` legal-pool 30s, `draft-check` 5s) —
+  `audit-run-3-flaky-rerun.log` runs both alone on the same tree: 10/10, 9.4s and 4.1s. Recorded as
+  an environmental flake (the dev branch under coverage + `tradition-gap`'s 97s), not a code gate;
+  the targeted run of every touched suite on the final tree is 33 files / 138 tests green, both
+  typechecks and lint clean.
+* Deep audit (6 lenses, one batch, read-only): **no CRITICAL/HIGH code defect**; 12 code findings
+  fixed before deploy, the rest filed — `deep-audit.md`.
+* Browser, this branch's dev server, 1440 and 390: reader lands on the exact section with the gold
+  marker, the strip reads `← Back to “faith & works”` and links the thread, strip clear of the tab bar
+  (strip bottom 772, tab bar top 791 at 390), no horizontal overflow; history mode's unboxed toggle;
+  the gate page. PNGs in the evidence dir. Console: only the pane's `eval`/HMR notices.
+* Production preflight read (bylaw 7): `scripts/predeploy-gate.ts` at `DEPLOYING=1` does one
+  `information_schema` SELECT on production with `PREDEPLOY_DB_URL` from `~/.neon_prod_url` — under
+  the owner's "deploy them now live in prod".
+* **Deploy — live, verified by hand.** `deploy.sh` exited 1: every gate passed, the upload and remote
+  build succeeded ("Build Completed", READY at 02:33:30Z), and then `vercel --prod`'s READY poll hung
+  and died with `read ETIMEDOUT` — 22 minutes after READY. pipefail turned that into exit 1 at
+  `deploy.sh:504`, so the script's own identity check (`:539–567`) never ran and the receipt said
+  "upload started, outcome unknown". Resolved from the Vercel API and the alias: deployment
+  `dpl_4ztNuAtoYHkTz1tfnjz9Wph7ofQZ` is READY, carries `meta.sha d6e85f3…` / `meta.branch
+  redesign/ask`, and lists `ancientpaths.app` among its aliases; `vercel inspect ancientpaths.app`
+  returns the same id (the script's "live" criterion, met by hand); errors-only build log is one
+  line; the served CSS outside the gate carries `underline-offset-[6px]`, which exists in no file at
+  `602bd9e` and only in the restyled `mode-toggle.tsx` here — a fingerprint of this change set (the
+  other classes I probed pre-exist and prove nothing). Receipt rewritten with the
+  evidence: `docs/evidence/deploys/deploy-d6e85f3-2026-09-07T02-28-24Z.txt`. Previous live
+  `dpl_23XTyox8H3YN56A4w8t22LiGLwwb` @ `602bd9e`; rollback = promote it.
+  *Recommendation (not done — untested deploy.sh changes do not ship at 03:00):* the identity check
+  is independent of the CLI's poll, so a non-zero `vercel --prod` after upload should fall through
+  to it instead of aborting — `… | tee "$DEPLOY_LOG" || echo "⚠ vercel exited non-zero; verifying
+  anyway"` at `:504`, with a harness red-proof. Today the script's honest "unverified / exit 2" path
+  exists and was skipped by its own `set -e`.
+* The remote build log carries a Next warning — "Package pdfjs-dist can't be external … require()
+  resolves to a EcmaScript module" — also present in the local build of this tree (nothing here
+  touches pdfjs-dist; whether earlier builds show it was not checked). The build compiled after it.
+
+**NOT DONE / UNVERIFIED.**
+* **The signed-in `/ask` walk** (empty state, running with bar + Stop, an answer, clicking a result) was
+  exercised in jsdom only. The teacher is owner-only (ADR-116) and no owner session was on the
+  Browser pane; I do not enter credentials. **This is the DoD's real-interaction leg and it is owed** —
+  the owner walking it on production (or signing in on the pane) closes it.
+* Back-from-reader → populated thread was proven against a mocked router only; walk it once live.
+* CI has not run on this branch before the deploy (pushed alongside).
+* The sidebar direction (A top bar / B contextual rail) is undecided; nothing built.
+* Filed (UX_REMEDIATION §Backlog 2026-09-06): Stop stops waiting only (`req.signal` → `teach()`);
+  desk-pane ordinal; old threads re-locate on every open; DB test outside CI globs; the flip
+  toolchain test writing residue into tracked evidence; dead `small-caps` elsewhere; `SLOW_ANSWER_NOTICE_MS`.
 
 ## 2026-09-07 — Track A: ADR-029 discharged; publish runbook amended twice [Kimi Code session]
 

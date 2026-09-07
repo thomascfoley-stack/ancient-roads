@@ -158,7 +158,11 @@ describe('requireJsonContentType — the guard itself', () => {
 
 // One representative route exercised end-to-end (the mock idiom of history-search-route.test.ts):
 // the floor, not just the helper, wired into a shipped handler.
-vi.mock('@/lib/session', () => ({ requireUser: vi.fn() }));
+// Spreads the REAL @/lib/auth-failure so this mock carries every export the route imports, not
+// just the ones this file thought of — see the note in library-shelf-round-trip.test.ts. Held by
+// test/invariants/session-mock-surface.test.ts.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')), requireUser: vi.fn() }));
 vi.mock('@/lib/rate-limit', () => ({ checkHistorySearchRateLimit: vi.fn() }));
 vi.mock('@/lib/history-search-db', () => ({ searchHistory: vi.fn() }));
 

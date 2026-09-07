@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
+import { apiError } from '@/lib/api-error';
 import { getDocument } from '@/lib/user-corpus/documents';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { corpusPredicate, traditionGap } from '@/lib/user-corpus/tradition-gap';
@@ -32,34 +33,44 @@ interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
+// Returns `Response`, not `NextResponse`: the app-wide error envelope (`apiError`, lib/api-error.ts
+// / docs/API_ERRORS.md) is framework-free and returns the global Web `Response`. NextResponse
+// extends Response, so every JSON return below still satisfies this — same shape as the sibling
+// search route (D35, e4542c97).
+export async function GET(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
 
   const { id } = await ctx.params;
-  // 404 rather than 403 for a document that is not theirs, matching the sibling routes: RLS makes
-  // it invisible anyway, and distinguishing "not yours" from "does not exist" confirms an id to
-  // someone who cannot read it.
-  const doc = await getDocument(user.id, id);
-  if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  // A document that has not finished indexing has no anchors yet, so the join would honestly
-  // return nothing. Say which of the two it is rather than showing an empty shelf.
-  if (doc.status !== 'ready') {
-    logEvent('match_outcome', { kind: 'anchor', documentId: id, userId: user.id, outcome: 'pending', voices: 0, ms: 0 });
-    return NextResponse.json(
-      { voices: [], authorCount: 0, rangesConsidered: 0, pending: true },
-      { status: 200 },
-    );
-  }
-
   // The matching operation is logged three ways — hit, empty, error — because "empty" is the
   // interesting failure here and it is indistinguishable from "hit" in a plain error rate: a
   // paraphrasing sermon anchors nothing and returns zero voices without anything going wrong
   // (see related-voices.ts's header for the measured case). Content is never logged.
+  //
+  // A DB fault ANYWHERE in here — `getDocument` as much as the `traditionGap` join — must return
+  // the stable error envelope, never escape as Next's raw 500. `getDocument` used to sit outside
+  // the try, so a pool exhaustion or query timeout on the lookup escaped the handler entirely;
+  // this route and the sibling `related` route are the two /api/* handlers the D35 envelope sweep
+  // missed, and the `search` route is the precedent.
   const t0 = Date.now();
   try {
+    // 404 rather than 403 for a document that is not theirs, matching the sibling routes: RLS makes
+    // it invisible anyway, and distinguishing "not yours" from "does not exist" confirms an id to
+    // someone who cannot read it.
+    const doc = await getDocument(user.id, id);
+    if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    // A document that has not finished indexing has no anchors yet, so the join would honestly
+    // return nothing. Say which of the two it is rather than showing an empty shelf.
+    if (doc.status !== 'ready') {
+      logEvent('match_outcome', { kind: 'anchor', documentId: id, userId: user.id, outcome: 'pending', voices: 0, ms: 0 });
+      return NextResponse.json(
+        { voices: [], authorCount: 0, rangesConsidered: 0, pending: true },
+        { status: 200 },
+      );
+    }
+
     const result = await traditionGap(user.id, id, PREDICATE);
     logEvent('match_outcome', {
       kind: 'anchor',
@@ -79,8 +90,10 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
       ms: Date.now() - t0, message,
     });
     console.error('[user-corpus] anchor match failed:', message);
-    // The envelope api-error.ts says every /api/* error uses, rather than Next's raw 500 —
-    // the same repair /api/search/commentaries got on 2026-08-02.
-    return NextResponse.json({ error: 'INTERNAL' }, { status: 500 });
+    // The envelope api-error.ts says every /api/* error uses (docs/API_ERRORS.md), rather than
+    // Next's raw 500 or the bare `{ error: 'INTERNAL' }` this returned before: that shape put a
+    // machine token where every other route puts `{ error: { code, message } }`, so a client that
+    // rendered the field would have shown a reader the word INTERNAL.
+    return apiError('INTERNAL');
   }
 }

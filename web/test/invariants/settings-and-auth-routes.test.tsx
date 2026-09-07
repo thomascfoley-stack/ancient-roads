@@ -79,6 +79,38 @@ describe('the controls actually write the same keys the reader reads', () => {
     expect(DARK_CLASS, 'the theme constant and the CSS selector disagree').toBe(m![1]);
   });
 
+  it('no plain-CSS rule is stranded on a bare `.dark` selector', () => {
+    // The test above pins the `dark:` VARIANT to DARK_CLASS, but it has a blind spot: a hand-written
+    // plain-CSS rule keyed on a bare `.dark` class — `html.dark`, `.dark { ... }`, `.dark :focus-visible`
+    // — needs no `dark:` utility and was therefore never checked. Nothing in the runtime writes a
+    // bare `dark` token onto <html> (the inline script and the hook both toggle `.reader-dark`), so
+    // such a rule can never match and silently ships dead. That is exactly the SEC-1 regression:
+    // three rules left on `.dark` made the dark-mode `:focus-visible` outline stay at accent-600 and
+    // fail WCAG 2.1 1.4.11 on the passage-pane close button.
+    //
+    // The check is over the CSS WITH COMMENTS STRIPPED: the file's own header documents this history
+    // using the words `.dark`, and a check that fires on its own documentation would green by deleting
+    // the reasoning. Scan selectors, not prose.
+    // SEED: change any of `html.reader-dark` / `.reader-dark {` / `.reader-dark :focus-visible` back
+    // to `.dark` -> RED.
+    const cssNoComments = read('web/src/app/globals.css')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const stranded = /\.dark(?![\w-])/.exec(cssNoComments);
+    expect(
+      stranded,
+      'a plain-CSS rule is keyed on `.dark`, a class nothing writes to <html> — retarget it ' +
+        'to `.reader-dark` (the class the inline script, the hook, and the `dark:` variant all use)',
+    ).toBeNull();
+    // Non-vacuity: stripping every dark rule must not be a way to green. The three retargeted rules
+    // are present, so a regex that found none of them would mean the check is looking at the wrong file.
+    expect(cssNoComments, 'html.reader-dark color-scheme rule was lost').toMatch(/html\.reader-dark\s*\{[^}]*color-scheme:\s*dark/);
+    expect(cssNoComments, 'the dark token block (which owns --ring) is not keyed on .reader-dark')
+      .toMatch(/\.reader-dark\s*\{[\s\S]*?--ring:\s*var\(--color-accent-400\)/);
+    expect(cssNoComments, 'the dark :focus-visible override is not keyed on .reader-dark')
+      .toMatch(/\.reader-dark\s+:focus-visible\s*\{[\s\S]*?outline-color:\s*var\(--color-accent-400\)/);
+  });
+
   it('choosing Dark sets that class, and persists it', () => {
     const css = read('web/src/app/globals.css');
     const cssClass = /@custom-variant dark \(&:where\(\.([a-z-]+),/.exec(css)![1]!;

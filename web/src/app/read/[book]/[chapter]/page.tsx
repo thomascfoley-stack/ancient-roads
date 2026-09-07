@@ -225,14 +225,6 @@ export default function ReaderPage() {
   // Same contract: per-device, never throws, corrupt reads as "no position". Keyed by book+chapter
   // so a translation switch does not lose the place.
   //
-  // `history.scrollRestoration = 'manual'` is the other half of the fix: without it the browser's
-  // own bfcache/navigation scroll reset fires AFTER our restore and wins, which is why the first
-  // version measured scrollTo(500) firing and still landed at 0.
-  // ── F-144 — restore the reader's scroll position within the chapter ─────────────────────────
-  // The work reader already does this (`saveWorkProgress`/`loadWorkProgress`); Scripture did not.
-  // Same contract: per-device, never throws, corrupt reads as "no position". Keyed by book+chapter
-  // so a translation switch does not lose the place.
-  //
   // THE SCROLL CONTAINER IS <main id="main">, NOT THE WINDOW. AppShell wraps every page in
   // `flex h-dvh overflow-hidden` with `<main className="overflow-y-auto">` inside it, so
   // `window.scrollY` is always 0 here and the scroll lives on that element. The save and the
@@ -313,12 +305,24 @@ export default function ReaderPage() {
   const openStudy = useCallback(
     (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord, selection?: WordSelection) => {
       if (!panelOpenRef.current) {
-        // An entry with the SAME url — the panel needs something for Back to pop, and nothing
-        // more. Re-aiming an already-open panel (verse to verse, word to commentary) pushes
-        // nothing, so a reader who taps six verses still presses Back once.
-        window.history.pushState(null, '', window.location.href);
-        pushedStudyEntry.current = true;
-        panelOpenRef.current = true;
+        // K-6 deep-link arrival: the current entry ALREADY carries `#v<n>:study` (the hash effect
+        // calling us is what opened the panel). Pushing `window.location.href` here would push
+        // that hash onto the stack a second time, then `closeStudy` would take its `history.back()`
+        // branch and land back on the original, still-hash-carrying entry — the hash would never
+        // be stripped, and any later `data` change (a translation switch) would re-fire the hash
+        // effect and re-open the panel the reader just dismissed. Skip the push; `closeStudy` then
+        // falls through to its `replaceState` and clears the hash. (48f00e69 re-gated this on
+        // `panelOpenRef` and lost this case; restored here.)
+        if (/:study$/.test(window.location.hash)) {
+          panelOpenRef.current = true;
+        } else {
+          // An entry with the SAME url — the panel needs something for Back to pop, and nothing
+          // more. Re-aiming an already-open panel (verse to verse, word to commentary) pushes
+          // nothing, so a reader who taps six verses still presses Back once.
+          window.history.pushState(null, '', window.location.href);
+          pushedStudyEntry.current = true;
+          panelOpenRef.current = true;
+        }
       }
       setStudy({ verse, tab, focusWordIdx, focusWord, selection });
     },

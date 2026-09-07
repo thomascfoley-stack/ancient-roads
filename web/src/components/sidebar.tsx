@@ -9,6 +9,7 @@ import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
 import { bibleTabHref, DEFAULT_BIBLE_HREF } from '@/lib/bible-position';
 import { libraryLabel } from '@/lib/library-nav';
+import { TextSkeleton } from '@/components/skeleton';
 
 // --- user-defined study sections (parent/child). Stored locally per user
 // while the real feature (saved work, conversation) is still coming soon;
@@ -112,6 +113,542 @@ function useMoreBelow<T extends HTMLElement>() {
   return { ref, moreBelow };
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE NAV TABLES — Sidebar C (owner: "#1 do it", 2026-09-07; canvas board "C · Rail with capped,
+// collapsible groups"; test/components/sidebar-groups.test.tsx).
+//
+// ONE table for the places and ONE for the groups. The full rail, the icon rail and the mobile
+// Menu sheet all render from them, so they cannot disagree — two hand-kept copies of a
+// destination list is the failure this file has logged sixteen times.
+//
+// FIVE PLACES NEVER MOVE: Home · Bible · Ask · Desk · Library. Everything that is YOURS is a group.
+// Closed, a group is one row. Open, it is its three most recent and a way to all of them — and
+// "all of them" is a PAGE, never an inline list of everything (forty threads in a rail is the mess
+// this replaces). The group for the page you are on opens by itself; the rest remember how you
+// left them (`useRailGroups`). Reading plans, which used to be a sixth place, is a group: a
+// schedule over the reading surfaces, not one of them (A072's own comment drew that line). The
+// eleven Library rows fold behind the Library place and appear only while you are in the library
+// (`LibraryShelves`) — they are shelves you browse, not things of yours.
+//
+// Before this: five links, Research history (5 threads, a delete control on each), My studies (5),
+// Prayer journal, eleven Library rows, Settings — every one of them always visible, nothing
+// closable, ~30 rows on a signed-in desktop. Owner: "super clean".
+// ---------------------------------------------------------------------------------------------
+
+interface Place {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  active: (pathname: string) => boolean;
+}
+
+/** The five places. `bibleHref` is the reader's remembered position (A034), so this is a function
+ *  of it rather than a constant. */
+function places(bibleHref: string): Place[] {
+  return [
+    { href: '/home', label: 'Home', icon: <HomeIcon />, active: (p) => p === '/home' },
+    { href: bibleHref, label: 'Bible', icon: <BookIcon />, active: (p) => p.startsWith('/read') },
+    { href: '/ask', label: 'Ask', icon: <AskIcon />, active: (p) => p.startsWith('/ask') },
+    // `=== '/desk'`, not startsWith: the Desk's state lives in its query string (A072).
+    { href: '/desk', label: 'Desk', icon: <DeskIcon />, active: (p) => p === '/desk' },
+    { href: '/library', label: 'Library', icon: <BookStackIcon />, active: (p) => p.startsWith('/library') },
+  ];
+}
+
+type GroupKey = 'research' | 'studies' | 'prayers' | 'works' | 'plans';
+
+interface GroupItem {
+  id: string;
+  /** `null` renders a plain row: prayers have no per-entry page, and three links that all open
+   *  the same journal would be three small lies. */
+  href: string | null;
+  label: string;
+  icon: React.ReactNode;
+  /** A short trailing note — a date, a status — in the muted colour. */
+  meta?: string;
+}
+
+interface GroupDef {
+  key: GroupKey;
+  label: string;
+  icon: React.ReactNode;
+  /** The page that lists all of them. `null` for research, which has no list page yet: that ONE
+   *  group may unfold further in place (see NavGroup), because threads 4..N would otherwise be
+   *  reachable from nowhere. Filed: a research list page, after which this becomes a link. */
+  all: { href: string; label: string } | null;
+  /** The pages this group belongs to. It opens itself there — and being open THERE is not
+   *  remembered, or every group is open within a week and the rail is busy again. */
+  owns: (pathname: string) => boolean;
+  /** Where a visitor without an account goes instead of a group. `null` = not shown signed out
+   *  (a visitor has no research, studies or uploads; they can have a plan or a prayer). */
+  signedOut: string | null;
+  url: string;
+  parse: (body: unknown) => GroupItem[];
+  /** Said quietly when the list is empty — never a header over nothing. */
+  empty: string;
+  /** DELETE one item, resolving to whether it went. Absent = no delete control. */
+  remove?: (id: string) => Promise<boolean>;
+}
+
+/** Three. The owner said "3-4 max"; three keeps two open groups inside a 768px-tall rail. */
+const GROUP_CAP = 3;
+
+/** The most a group fetches. Research needs more than the cap because it unfolds in place; the
+ *  API's own ceiling is 50 (`listThreads`). Prayers come whole from `/api/prayers` (≤200, full
+ *  bodies) — fetched only when that group is OPENED, never on mount, which is why groups load
+ *  lazily at all. A `limit` on that route is filed. */
+const RESEARCH_FETCH = 50;
+
+// --- narrowing helpers: the bodies are JSON from our own routes, typed as unknown at the edge ---
+
+function rowsOf(body: unknown, key: string): Record<string, unknown>[] {
+  if (typeof body !== 'object' || body === null) return [];
+  const v = (body as Record<string, unknown>)[key];
+  if (!Array.isArray(v)) return [];
+  return v.filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null);
+}
+
+function strOf(r: Record<string, unknown>, k: string): string | null {
+  const v = r[k];
+  return typeof v === 'string' ? v : null;
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** "Sun 6" — hand-formatted so it reads the same in every locale and every test. */
+function dayStamp(iso: string | null): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? undefined : `${WEEKDAYS[d.getDay()]} ${d.getDate()}`;
+}
+
+/** A prayer has no title; its opening words are its name in the rail. */
+function openingWords(body: string, max = 48): string {
+  const line = body.trim().split(/\r?\n/)[0] ?? '';
+  return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line;
+}
+
+const accentDot = (
+  <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
+);
+
+const GROUPS: GroupDef[] = [
+  {
+    key: 'research',
+    label: 'Research history',
+    icon: <AskIcon />,
+    all: null,
+    owns: (p) => p.startsWith('/ask'),
+    signedOut: null,
+    url: `/api/research?limit=${RESEARCH_FETCH}`,
+    parse: (body) =>
+      rowsOf(body, 'threads').flatMap((r) => {
+        const id = strOf(r, 'id');
+        const title = strOf(r, 'title');
+        return id && title ? [{ id, href: `/ask/${id}`, label: title, icon: accentDot }] : [];
+      }),
+    empty: 'Nothing yet — the questions you ask collect here.',
+    remove: async (id) => {
+      const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
+      return res.ok;
+    },
+  },
+  {
+    key: 'studies',
+    // The user-facing name per owner ruling E1 (2026-08-12); design §7.1.
+    label: 'My studies',
+    icon: <BookStackIcon />,
+    all: { href: '/studies', label: 'All studies' },
+    owns: (p) => p.startsWith('/studies') || p.startsWith('/study/'),
+    signedOut: null,
+    url: '/api/studies',
+    parse: (body) => {
+      const summaries: StudySummary[] = rowsOf(body, 'studies').flatMap((r) => {
+        const id = strOf(r, 'id');
+        const title = strOf(r, 'title');
+        const updated_at = strOf(r, 'updated_at');
+        if (!id || !title || !updated_at) return [];
+        return [{ id, title, updated_at, pinned_at: strOf(r, 'pinned_at') }];
+      });
+      // Pinned first, then recents — the same order the save-to-study picker uses, so the two
+      // surfaces never disagree about which studies are "recent".
+      return orderStudiesForNav(summaries, GROUP_CAP).map((s) => ({
+        id: s.id,
+        href: `/studies/${s.id}`,
+        label: s.title,
+        icon: <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: dotColor(s.id) }} />,
+      }));
+    },
+    empty: 'Nothing yet — save a passage or a voice to start one.',
+  },
+  {
+    key: 'prayers',
+    // "Prayer journal", per the §2 naming lock (amended 2026-08-08: not "Prayers").
+    label: 'Prayer journal',
+    icon: <PrayerIcon />,
+    all: { href: '/prayers', label: 'All prayers' },
+    owns: (p) => p.startsWith('/prayers'),
+    signedOut: '/prayers',
+    url: '/api/prayers',
+    parse: (body) =>
+      rowsOf(body, 'prayers').flatMap((r) => {
+        const id = strOf(r, 'id');
+        const text = strOf(r, 'body');
+        if (!id || !text) return [];
+        return [{ id, href: null, label: openingWords(text), icon: <PrayerIcon />, meta: dayStamp(strOf(r, 'created_at')) }];
+      }),
+    empty: 'Nothing yet — your prayers collect here.',
+  },
+  {
+    key: 'works',
+    // The label is DERIVED, never typed: the naming lock retires this name as a hand-typed
+    // literal in label surfaces, and lib/library-nav is its one source.
+    label: libraryLabel('/library/uploads'),
+    icon: <BookStackIcon />,
+    all: { href: '/library/uploads', label: `All ${libraryLabel('/library/uploads')}` },
+    owns: (p) => p.startsWith('/library/uploads'),
+    signedOut: null,
+    url: '/api/user-corpus/documents',
+    parse: (body) =>
+      rowsOf(body, 'documents').flatMap((r) => {
+        const id = strOf(r, 'id');
+        const title = strOf(r, 'title');
+        const status = strOf(r, 'status');
+        if (!id || !title) return [];
+        return [{
+          id,
+          href: `/library/uploads/${id}`,
+          label: title,
+          icon: <BookStackIcon />,
+          // Only a state worth knowing about rides along; "ready" is the silent default.
+          meta: status && status !== 'ready' ? status : undefined,
+        }];
+      }),
+    empty: 'Nothing yet — upload a sermon or a manuscript.',
+  },
+  {
+    key: 'plans',
+    label: 'Reading plans',
+    icon: <CalendarIcon />,
+    all: { href: '/plans', label: 'All plans' },
+    owns: (p) => p.startsWith('/plans'),
+    signedOut: '/plans',
+    url: '/api/plans',
+    parse: (body) =>
+      rowsOf(body, 'plans').flatMap((r) => {
+        const id = strOf(r, 'id');
+        const title = strOf(r, 'title');
+        return id && title ? [{ id, href: `/plans/${id}`, label: title, icon: <CalendarIcon /> }] : [];
+      }),
+    empty: 'Nothing yet — start a plan and it appears here.',
+  },
+];
+
+/** The two groups every visitor can enter, as plain rows for a visitor without an account. */
+const VISITOR_ROWS = GROUPS.filter((g): g is GroupDef & { signedOut: string } => g.signedOut !== null);
+
+function railGroupsKey(userId: string): string {
+  return `rail-groups:v1:${userId}`;
+}
+
+/**
+ * Which groups are open, and why. Two layers, deliberately:
+ *   stored   — what the reader chose BY HAND on a page the group did not belong to. Persisted.
+ *   session  — this visit's overrides, cleared on every navigation so the page's own group
+ *              re-opens on arrival even if it was closed a moment ago.
+ * open = session ?? (the page owns it || stored). Opening the page's own group is never written
+ * to storage: that is the amendment that keeps the rail clean over time.
+ *
+ * Storage is read in an effect, never during render — reading localStorage during render is the
+ * React #418 this file has already paid for twice (the Sign in/out branch, the Bible link).
+ */
+function useRailGroups(userId: string | undefined, pathname: string) {
+  const [stored, setStored] = useState<Partial<Record<GroupKey, boolean>>>({});
+  const [session, setSession] = useState<Partial<Record<GroupKey, boolean>>>({});
+  // Mirror of `stored` for the write path: state updaters must be pure (StrictMode double-invokes
+  // them), so the localStorage write happens OUTSIDE the updater, from this ref.
+  const storedRef = useRef<Partial<Record<GroupKey, boolean>>>({});
+
+  useEffect(() => {
+    if (!userId) { storedRef.current = {}; setStored({}); return; }
+    let next: Partial<Record<GroupKey, boolean>> = {};
+    try {
+      const raw = localStorage.getItem(railGroupsKey(userId));
+      const parsed: unknown = raw ? JSON.parse(raw) : {};
+      if (typeof parsed === 'object' && parsed !== null) next = parsed as Partial<Record<GroupKey, boolean>>;
+    } catch {
+      next = {};
+    }
+    storedRef.current = next;
+    setStored(next);
+  }, [userId]);
+
+  // Cleared on every navigation so the page's own group re-opens on arrival — and on a change of
+  // user, so a sign-out/sign-in without navigating cannot carry the previous reader's overrides.
+  useEffect(() => { setSession({}); }, [pathname, userId]);
+
+  const isOpen = useCallback(
+    (g: GroupDef) => session[g.key] ?? (g.owns(pathname) || stored[g.key] === true),
+    [session, stored, pathname],
+  );
+
+  const toggle = useCallback(
+    (g: GroupDef) => {
+      const next = !isOpen(g);
+      setSession((s) => ({ ...s, [g.key]: next }));
+      if (g.owns(pathname) || !userId) return;
+      const merged = { ...storedRef.current, [g.key]: next };
+      storedRef.current = merged;
+      setStored(merged);
+      try {
+        localStorage.setItem(railGroupsKey(userId), JSON.stringify(merged));
+      } catch {
+        // storage unavailable (private mode); the choice holds for this visit
+      }
+    },
+    [isOpen, pathname, userId],
+  );
+
+  return { isOpen, toggle };
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg aria-hidden className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={open ? 'M6 9l6 6 6-6' : 'M9 6l6 6-6 6'} />
+    </svg>
+  );
+}
+
+/**
+ * One group of yours. Fetches ONLY once it is open (a closed group costs no request — prayers are
+ * full texts, and five groups on every mount would be five requests for a rail that shows one).
+ * Three honest states once open: loading / could not load / the list. Empty is a quiet line, not
+ * a header over nothing.
+ */
+function NavGroup({
+  def,
+  open,
+  onToggle,
+  pathname,
+  row,
+  touch,
+  onNavigate,
+}: {
+  def: GroupDef;
+  open: boolean;
+  onToggle: () => void;
+  pathname: string;
+  row: string;
+  touch: boolean;
+  onNavigate?: () => void;
+}) {
+  const [items, setItems] = useState<GroupItem[] | null>(null);
+  // The current list, for the delete rollback: updaters must stay pure, so the "previous" value
+  // is read from here rather than captured inside `setItems`.
+  const itemsRef = useRef<GroupItem[] | null>(null);
+  itemsRef.current = items;
+  const [error, setError] = useState(false);
+  // A FAILED DELETE is its own message, not the load error: the first draft flipped `error` on a
+  // rollback, which printed "Could not be loaded." over a list that had loaded fine, for the life
+  // of the mount (deep audit, 2026-09-07). This is announced, and cleared on the next attempt.
+  const [removeFailed, setRemoveFailed] = useState<string | null>(null);
+  const [unfolded, setUnfolded] = useState(false);
+  // Two-step delete, kept from the research-history rows this generalises: the first tap arms
+  // the row, the second removes it (PR1c/UX-2 lineage — always visible, never hover-only).
+  const [arming, setArming] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || items !== null) return;
+    let live = true;
+    void (async () => {
+      try {
+        const res = await fetch(def.url);
+        if (!live) return;
+        // A 401 mid-session (sign-out raced the fetch) is an empty list, not an error — the
+        // prayer-journal lesson about auth state versus faults.
+        if (res.status === 401) { setItems([]); return; }
+        if (!res.ok) { setError(true); setItems([]); return; }
+        setItems(def.parse(await res.json()));
+      } catch {
+        if (live) { setError(true); setItems([]); }
+      }
+    })();
+    return () => { live = false; };
+  }, [open, items, def]);
+
+  // OPTIMISTIC WITH ROLLBACK: the row goes at once and comes back if the request fails — a
+  // spinner on a delete reads as "did that work?", and a row that stayed gone would be a lie
+  // about the account's contents.
+  const remove = useCallback(async (id: string) => {
+    if (!def.remove) return;
+    setArming(null);
+    setRemoveFailed(null);
+    const previous = itemsRef.current;
+    const label = previous?.find((i) => i.id === id)?.label ?? 'that';
+    setItems((prev) => prev?.filter((i) => i.id !== id) ?? prev);
+    let ok = false;
+    try { ok = await def.remove(id); } catch { ok = false; }
+    if (!ok) {
+      setItems(previous);
+      setRemoveFailed(`Could not delete “${label}”. It is still here.`);
+    }
+  }, [def]);
+
+  // Suffixed by instance: the desktop rail stays mounted (display:none) below `md` while the
+  // Menu sheet renders a second copy of this content, and two elements with one id would make
+  // every `aria-controls` on the visible sheet point at the hidden rail (deep audit, 2026-09-07).
+  const panelId = `rail-group-${def.key}-${touch ? 'sheet' : 'rail'}`;
+  const shown = items === null ? null : unfolded ? items : items.slice(0, GROUP_CAP);
+  const beyond = items ? Math.max(0, items.length - GROUP_CAP) : 0;
+  const quiet = 'px-4 py-1 text-xs text-stone-500 dark:text-stone-400';
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        aria-expanded={open}
+        // The panel exists only while open; a dangling IDREF is the majority state otherwise.
+        aria-controls={open ? panelId : undefined}
+        onClick={onToggle}
+        className={`flex w-full items-center gap-2 px-2 text-left text-micro font-semibold uppercase tracking-wider transition-colors ease-gentle ${
+          touch ? 'min-h-[44px]' : 'min-h-[36px]'
+        } ${
+          open
+            ? 'text-stone-900 dark:text-stone-200'
+            : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
+        }`}
+      >
+        <Chevron open={open} />
+        <span className="flex-1 truncate">{def.label}</span>
+      </button>
+      {open && (
+        <div id={panelId}>
+          {shown === null ? (
+            <TextSkeleton label={`Loading ${def.label.toLowerCase()}`} lines={3} className="px-4 py-2" />
+          ) : (
+            <>
+              {error && <p className={quiet}>Could not be loaded.</p>}
+              {removeFailed && <p role="alert" className={quiet}>{removeFailed}</p>}
+              {shown.length === 0 && !error && <p className={quiet}>{def.empty}</p>}
+              {shown.map((it) =>
+                it.href === null ? (
+                  <div key={it.id} className={`flex items-center gap-2.5 px-2 text-sm text-stone-500 dark:text-stone-400 ${row}`}>
+                    <span className="flex w-4 items-center justify-center">{it.icon}</span>
+                    <span className="min-w-0 flex-1 truncate">{it.label}</span>
+                    {it.meta && <span className="shrink-0 text-micro text-stone-400 dark:text-stone-500">{it.meta}</span>}
+                  </div>
+                ) : def.remove ? (
+                  <div key={it.id} className="relative flex items-center">
+                    <div className="min-w-0 flex-1">
+                      <SidebarLink href={it.href} icon={it.icon} label={it.label} active={pathname === it.href} row={row} onNavigate={onNavigate} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => (arming === it.id ? void remove(it.id) : setArming(it.id))}
+                      onBlur={() => setArming((cur) => (cur === it.id ? null : cur))}
+                      aria-label={arming === it.id ? `Confirm delete: ${it.label}` : `Delete research thread: ${it.label}`}
+                      // A destructive control at the 44px floor in the sheet (`touch`), and a
+                      // 32px square on the desktop rail whose rows are 32px tall. The first draft
+                      // was ~27px everywhere (deep audit, 2026-09-07).
+                      className={`mr-1 flex shrink-0 items-center justify-center text-micro transition-colors ease-gentle ${
+                        touch ? 'h-11 w-11' : 'h-8 w-8'
+                      } ${
+                        arming === it.id
+                          ? 'font-semibold text-red-700 dark:text-red-400'
+                          : 'text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200'
+                      }`}
+                    >
+                      {arming === it.id ? 'Delete?' : '×'}
+                    </button>
+                  </div>
+                ) : (
+                  <div key={it.id} className="flex items-center">
+                    <div className="min-w-0 flex-1">
+                      <SidebarLink href={it.href} icon={it.icon} label={it.label} active={pathname === it.href} row={row} onNavigate={onNavigate} tier="shelf" />
+                    </div>
+                    {it.meta && <span className="mr-2 shrink-0 text-micro text-stone-400 dark:text-stone-500">{it.meta}</span>}
+                  </div>
+                ),
+              )}
+              {def.all && (
+                <SidebarLink
+                  href={def.all.href}
+                  icon={<span aria-hidden className="inline-block w-2" />}
+                  label={`${def.all.label} →`}
+                  active={pathname === def.all.href}
+                  row={row}
+                  onNavigate={onNavigate}
+                  tier="shelf"
+                />
+              )}
+              {!def.all && beyond > 0 && (
+                <button
+                  type="button"
+                  aria-expanded={unfolded}
+                  onClick={() => setUnfolded((v) => !v)}
+                  className={`flex w-full items-center gap-2.5 px-2 text-left text-sm text-accent-700 transition-colors ease-gentle hover:text-stone-900 dark:text-accent-400 dark:hover:text-stone-200 ${row}`}
+                >
+                  <span aria-hidden className="inline-block w-4" />
+                  <span className="flex-1 truncate">{unfolded ? 'Fewer' : `More research · ${beyond}`}</span>
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The shelves, shown only while you are in the library. The corpus hub used to be UNREACHABLE
+ * (no `a[href="/library"]` anywhere in the shell — ship-committee LENS 1, BROKEN #1); the Library
+ * place above fixes that for every page, and this block is the browse once you are there.
+ *
+ * DERIVED from CATALOG_IDS, not typed out: adding the Historians catalog on 2026-08-01 shipped a
+ * shelf nothing linked to — the ELEVENTH "hand-maintained expected set that nothing enforces".
+ * `sidebar-catalog-nav.test.tsx` fails if any catalog has no link.
+ */
+function LibraryShelves({
+  pathname,
+  row,
+  onNavigate,
+}: {
+  pathname: string;
+  row: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="mt-3 border-t rail-rule pt-2">
+      <div className="mb-1 px-4">
+        <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+          In the library
+        </span>
+      </div>
+      <SidebarLink href="/library" icon={<BookStackIcon />} label="All items" active={pathname === '/library'} row={row} onNavigate={onNavigate} tier="shelf" />
+      {CATALOG_IDS.map((id) => (
+        <SidebarLink
+          key={id}
+          href={`/library/${id}`}
+          icon={CATALOG_ICON[id] ?? <QuoteIcon />}
+          label={CATALOGS[id].label}
+          active={pathname.startsWith(`/library/${id}`)}
+          row={row}
+          tier="shelf"
+          onNavigate={onNavigate}
+        />
+      ))}
+      {/* The passage-by-passage browse. Kept linked: moving it off /library/commentaries would
+          otherwise orphan a working surface (LIBRARY_READER_DESIGN §18). */}
+      <SidebarLink href="/library/passages" icon={<QuoteIcon />} label={libraryLabel('/library/passages')} tier="shelf" active={pathname.startsWith('/library/passages')} row={row} onNavigate={onNavigate} />
+      <SidebarLink href="/library/notes" icon={<BookStackIcon />} label={libraryLabel('/library/notes')} tier="shelf" active={pathname.startsWith('/library/notes')} row={row} onNavigate={onNavigate} />
+      <SidebarLink href="/library/word-study" icon={<LanguagesIcon />} label={libraryLabel('/library/word-study')} tier="shelf" active={pathname.startsWith('/library/word-study')} row={row} onNavigate={onNavigate} />
+      <SidebarLink href="/library/uploads" icon={<BookStackIcon />} label={libraryLabel('/library/uploads')} tier="shelf" active={pathname.startsWith('/library/uploads')} row={row} onNavigate={onNavigate} />
+    </div>
+  );
+}
+
 // Shared nav content, rendered inside the desktop rail and the mobile menu
 // sheet. `touch` widens rows to comfortable tap-target sizes; `onNavigate`
 // lets the mobile sheet close itself after a link is chosen.
@@ -124,32 +661,33 @@ export function SidebarNavContent({
 }) {
   const pathname = usePathname();
   // A034 — the Bible link went to John 1 unconditionally, discarding the reader's position. This
-  // component feeds BOTH the desktop rail and MobileNav's Menu sheet (mobile-nav.tsx:161), so the
+  // component feeds BOTH the desktop rail and MobileNav's Menu sheet (mobile-nav.tsx:182), so the
   // hardlink here was the phone user's second route to the old behaviour even after the bottom tab
-  // was fixed. Same shape as mobile-nav's: seeded with the DEFAULT so the first client render
-  // matches the server's (reading localStorage during render is the React #418 this repo has paid
-  // for twice), and keyed on `pathname` rather than `[]` because the rail stays mounted across
-  // client navigations and a one-shot effect would freeze at boot.
+  // was fixed. Seeded with the DEFAULT so the first client render matches the server's (reading
+  // localStorage during render is the React #418 this repo has paid for twice), and keyed on
+  // `pathname` rather than `[]` because the rail stays mounted across client navigations and a
+  // one-shot effect would freeze at boot.
   const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
   useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
-  // See the sign-in/sign-out branch below: this exists solely to keep the first client render
-  // identical to the server's.
+  // THE SERVER HAS NO SESSION, so it renders the signed-OUT branch; `useSession` resolves only in
+  // the browser. Rendering the signed-IN branch on the client's first pass is a server/client
+  // text mismatch — a React #418 on every page load carrying this sidebar, which is every page.
+  // `mounted` holds the first client render identical to the server's; the real session takes
+  // over on the next one. That is why the groups (signed-in only) also key off `signedIn`.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const signedIn = mounted && !!session?.user;
   const [sections, setSections] = useState<StudySection[] | null>(null);
   // B044 — Sign out arms on the first tap and fires on the second. The authenticated QA fleet's
-  // one BLOCKER was an accidental sign-out from inside the Menu sheet, and the diagnosis fits the
-  // geometry: the sheet slides up UNDER the finger (bottom-anchored animate-slide-up, and
-  // transform-animated rows hit-test at their animated position), so a habitual second tap lands
-  // on whatever row is transiting — and Sign out was a single-tap row styled identically to the
-  // nav links around it. The research-thread delete two rows down already carries this exact
-  // arming pattern for the same reason ("a single stray tap must not destroy"); signing out
-  // mid-task destroys the reader's place and, on the QA run, took two further sessions with it.
-  // Disarms on blur so an armed row cannot lie in wait.
+  // one BLOCKER was an accidental sign-out from inside the Menu sheet: the sheet slides up UNDER
+  // the finger, so a habitual second tap lands on whatever row is transiting — and Sign out was a
+  // single-tap row styled like the links around it. Disarms on blur so an armed row cannot lie
+  // in wait.
   const [signOutArmed, setSignOutArmed] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const groups = useRailGroups(userId, pathname);
 
   useEffect(() => {
     try {
@@ -181,169 +719,55 @@ export function SidebarNavContent({
         ref={navRef}
         className={`flex-1 overflow-y-auto px-2 py-3 ${moreBelow ? 'scroll-fade-b' : ''}`}
       >
-        {/* Quick links */}
+        {/* The five places */}
         <div className="mb-1 px-2">
-          <SidebarLink
-            href="/home"
-            icon={<HomeIcon />}
-            label="Home"
-            active={pathname === '/home'}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href={bibleHref}
-            icon={<BookIcon />}
-            label="Bible"
-            active={pathname.startsWith('/read')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href="/ask"
-            icon={<AskIcon />}
-            label="Ask"
-            active={pathname.startsWith('/ask')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          {/* A072 / B043 — THE DESK HAD NO ENTRY POINT IN ANY NAVIGATION, ANYWHERE.
-              (R1 part 1, docs/pm/orders/2026-08-17-three-ux-rulings.md: "A nav entry, desktop and
-              mobile menu. Cheapest, largest effect.")
-
-              Four separate enumerations of this rail's links found no `/desk` among them, and they
-              were right. The only two routes into the Desk that shipped are the library row's "+"
-              (`app/library/[catalog]/page.tsx`, whose meaning is itself a filed finding — UX-2) and
-              ask-client's per-result link. BOTH of those put a pane on a desk; NEITHER goes to the
-              desk. So a reader could not reach an empty one at all, and a reader who had built one
-              could not get back to it after navigating away. That is the same orphaned-surface bug
-              this file's Library block already records twice (the hub, then My Works) — on the one
-              surface the product was built around.
-
-              ONE ENTRY CLOSES BOTH FINDINGS, because this component is the shared nav content:
-              the desktop rail renders it at line ~554, and `mobile-nav.tsx:134` renders the SAME
-              component inside its menu sheet (`<SidebarNavContent touch onNavigate={onClose} />`).
-              Verified by reading that file, and asserted by driving the mobile menu in
-              `test/components/desk-nav-and-session-note.test.tsx` rather than by trusting the
-              import — if the sheet ever stops sharing this content, B043 reopens and that goes red.
-
-              PLACED WITH THE READING SURFACES, above Reading plans: Home / Bible / Ask / Desk are
-              places you go to read, Reading plans is a schedule over them.
-
-              `pathname === '/desk'`, not `startsWith`: the Desk's state lives in the QUERY STRING
-              (`?p=…`), which is not part of `pathname`, so the route is exact and has no children.
-              An exact test cannot light up on a future `/desktop`-shaped sibling either. */}
-          <SidebarLink
-            href="/desk"
-            icon={<DeskIcon />}
-            label="Desk"
-            active={pathname === '/desk'}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href="/plans"
-            icon={<CalendarIcon />}
-            label="Reading plans"
-            active={pathname.startsWith('/plans')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          {/* THE SERVER HAS NO SESSION, so it renders the signed-OUT branch; `useSession` resolves
-              only in the browser. Rendering the signed-IN branch on the client's first pass is a
-              server/client text mismatch ("Sign in" vs "Sign out") — a React #418 on every page
-              load carrying this sidebar, which is every page. Found by the A7b walk 2026-08-02.
-              `mounted` holds the first client render identical to the server's; the real session
-              takes over on the next one. The alternative — rendering nothing until mounted — is
-              the SAME bug, because the server still rendered a link. */}
-          {mounted && session?.user ? (
-            <SidebarButton
-              icon={<LogOutIcon />}
-              label={signOutArmed ? 'Sign out?' : 'Sign out'}
-              row={row}
-              onBlur={() => setSignOutArmed(false)}
-              // A failed sign-out used to navigate to '/' anyway, leaving the reader on the
-              // marketing page still authenticated while believing they had signed out. On a
-              // shared device that is a false security signal, which is worse than an error.
-              onClick={async () => {
-                // First tap arms (B044); the second, while armed, signs out.
-                if (!signOutArmed) { setSignOutArmed(true); setSignOutError(null); return; }
-                setSignOutArmed(false);
-                // Better Auth's own client, not a hand-rolled POST. The route that used to serve
-                // this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family now -- and
-                // it sat at /api/auth/sign-out, SHADOWING the catch-all handler Better Auth mounts
-                // there. It is deleted; this is the supported path.
-                //
-                // The failure branch is main's and is kept: signOut() can reject, and a sign-out
-                // that quietly does nothing while the reader believes they are signed out is the
-                // worst outcome on a shared machine.
-                try {
-                  const { error } = await authClient.signOut();
-                  if (error) throw new Error(error.message ?? 'sign-out failed');
-                  window.location.href = '/';
-                } catch {
-                  setSignOutError('Sign out failed. You are still signed in. Please try again.');
-                }
-              }}
-            />
-          ) : (
+          {places(bibleHref).map((p) => (
             <SidebarLink
-              href="/auth/sign-in"
-              icon={<UserIcon />}
-              label="Sign in"
-              active={pathname.startsWith('/auth')}
+              key={p.label}
+              href={p.href}
+              icon={p.icon}
+              label={p.label}
+              active={p.active(pathname)}
               row={row}
               onNavigate={onNavigate}
             />
-          )}
-          {signOutError && (
-            <p role="alert" className="px-4 py-1 text-xs text-red-800 dark:text-red-200">
-              {signOutError}
-            </p>
-          )}
+          ))}
         </div>
 
-        {/* RESEARCH HISTORY (ASK_HISTORY_DESIGN §4.6, built 2026-08-16): recent threads,
-            then /ask as "All research". Fetch-backed and signed-in only, for the same
-            reason as MY STUDIES below — a signed-out visitor has no history, and an empty
-            shelf or an auth-error line would be worse than nothing. */}
-        {mounted && session?.user && (
-          <ResearchHistory pathname={pathname} row={row} onNavigate={onNavigate} />
+        {pathname.startsWith('/library') && (
+          <LibraryShelves pathname={pathname} row={row} onNavigate={onNavigate} />
         )}
 
-        {/* MY STUDIES (design §7.1; the user-facing name per owner ruling E1, 2026-08-12):
-            pinned studies first, then updated_at recents, then "All studies". This is the
-            rail's first FETCH-BACKED section — everything above is static links or
-            localStorage seeds — so it renders only for a signed-in reader (a signed-out
-            visitor HAS no studies; showing the section would be an empty shelf or, worse,
-            an error line reporting the app's own auth state as a fault — the prayer-journal
-            lesson). Loading and failure are stated honestly and quietly, and "All studies"
-            stays reachable in every state. The writing-mode rail above is deliberately NOT
-            updated: its comment makes any addition there its own design decision. */}
-        {mounted && session?.user && (
-          <MyStudies pathname={pathname} row={row} onNavigate={onNavigate} />
-        )}
-
-        {/* PRAYER JOURNAL — N4's repurposing of CHANNELS, pointing at the shipped PR1a surface.
-            The block allows exactly two states for this section, the real journal or nothing, and
-            says so in terms: "No third state." */}
-        <div className="mt-4">
-          <div className="mb-1 px-4">
-            <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-              Prayer journal
-            </span>
-          </div>
-          <SidebarLink
-            href="/prayers"
-            icon={<PrayerIcon />}
-            label="My prayers"
-            active={pathname.startsWith('/prayers')}
-            row={row}
-            onNavigate={onNavigate}
-          />
+        {/* Yours. Internal rail rule: parchment on vellum via `.rail-rule` (globals.css) — `.edge`
+            is invisible on the vellum rail in light, and the layered pair loses in dark. */}
+        <div className="mt-3 border-t rail-rule px-2 pt-2">
+          {signedIn
+            ? GROUPS.map((g) => (
+                <NavGroup
+                  key={g.key}
+                  def={g}
+                  open={groups.isOpen(g)}
+                  onToggle={() => groups.toggle(g)}
+                  pathname={pathname}
+                  row={row}
+                  touch={touch}
+                  onNavigate={onNavigate}
+                />
+              ))
+            : VISITOR_ROWS.map((g) => (
+                <SidebarLink
+                  key={g.key}
+                  href={g.signedOut}
+                  icon={g.icon}
+                  label={g.label}
+                  active={pathname.startsWith(g.signedOut)}
+                  row={row}
+                  onNavigate={onNavigate}
+                />
+              ))}
         </div>
 
-        {/* Study sections (user-defined parent/child) */}
+        {/* Study sections (user-defined parent/child) — legacy, pre-N4; see StudySectionView. */}
         {sections?.map((section) => (
           <StudySectionView
             key={section.id}
@@ -356,98 +780,13 @@ export function SidebarNavContent({
             }
           />
         ))}
-
-        {/* Library */}
-        <div className="mt-4">
-          <div className="mb-1 px-4">
-            <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-              Library
-            </span>
-          </div>
-          {/* The corpus hub. Was UNREACHABLE: no `a[href="/library"]` existed anywhere
-              in the shell, so the Library hub, every catalog and every /work/<slug>
-              Book Reader page could only be reached by typing a URL (ship-committee
-              LENS 1, BROKEN #1). The nav item labelled "Library" pointed at
-              /library/commentaries — which was then shadowed by the passage-browse
-              page and never rendered the catalog (BROKEN #2, now resolved: the browse
-              moved to /library/passages per LIBRARY_READER_DESIGN §18). */}
-          <SidebarLink
-            href="/library"
-            icon={<BookStackIcon />}
-            label="All items"
-            active={pathname === '/library'}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          {/* DERIVED from CATALOG_IDS, not typed out. These three links used to be hardcoded, so
-              adding the Historians catalog on 2026-08-01 shipped a shelf with works on it that
-              nothing in the shell linked to — the ELEVENTH instance of "a hand-maintained expected
-              set that nothing enforces", and the same orphaning the comment above records for the
-              Library hub itself. Now a new catalog appears here by existing.
-              `sidebar-catalog-nav.test.ts` fails if any catalog has no link. */}
-          {CATALOG_IDS.map((id) => (
-            <SidebarLink
-              key={id}
-              href={`/library/${id}`}
-              icon={CATALOG_ICON[id] ?? <QuoteIcon />}
-              label={CATALOGS[id].label}
-              active={pathname.startsWith(`/library/${id}`)}
-              row={row}
-              tier="shelf"
-              onNavigate={onNavigate}
-            />
-          ))}
-          {/* The passage-by-passage browse/search. Kept linked: moving it off
-              /library/commentaries would otherwise orphan a working surface —
-              the same failure this block exists to fix. */}
-          <SidebarLink
-            href="/library/passages"
-            icon={<QuoteIcon />}
-            label={libraryLabel('/library/passages')}
-            tier="shelf"
-            active={pathname.startsWith('/library/passages')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href="/library/notes"
-            icon={<BookStackIcon />}
-            label={libraryLabel('/library/notes')}
-            tier="shelf"
-            active={pathname.startsWith('/library/notes')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href="/library/word-study"
-            icon={<LanguagesIcon />}
-            label={libraryLabel('/library/word-study')}
-            tier="shelf"
-            active={pathname.startsWith('/library/word-study')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          {/* MY WORKS WAS UNREACHABLE FROM HERE, which made the whole feature invisible to anyone
-              who navigates by the sidebar -- which is everyone. It was linked from the /library
-              index page and nowhere else, so it existed, worked, and could not be found.
-              This is the same failure the comment 30 lines up describes ("orphan a working
-              surface"), repeated on the newest shelf. */}
-          <SidebarLink
-            href="/library/uploads"
-            icon={<BookStackIcon />}
-            label={libraryLabel('/library/uploads')}
-            tier="shelf"
-            active={pathname.startsWith('/library/uploads')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-        </div>
       </nav>
 
-      {/* Bottom: settings. NOT .edge: on the rail's vellum surface the edge hairline is
-          vellum-on-vellum (invisible), so internal rail rules use parchment on vellum,
-          the way the mockup's vellum commentary aside uses a white/20 rule. */}
-      <div className="border-t border-stone-50 px-2 py-2 dark:border-stone-800">
+      {/* Bottom: settings and the account. NOT .edge: on the rail's vellum surface the edge
+          hairline is vellum-on-vellum (invisible), so internal rail rules use parchment on
+          vellum, the way the mockup's vellum commentary aside uses a white/20 rule — as the
+          unlayered `.rail-rule`, because the layered pair never painted its dark value. */}
+      <div className="border-t rail-rule px-2 py-2">
         <SidebarLink
           href="/settings"
           icon={<SettingsIcon />}
@@ -456,6 +795,51 @@ export function SidebarNavContent({
           row={row}
           onNavigate={onNavigate}
         />
+        {signedIn ? (
+          <SidebarButton
+            icon={<LogOutIcon />}
+            label={signOutArmed ? 'Sign out?' : 'Sign out'}
+            row={row}
+            onBlur={() => setSignOutArmed(false)}
+            // A failed sign-out used to navigate to '/' anyway, leaving the reader on the
+            // marketing page still authenticated while believing they had signed out. On a
+            // shared device that is a false security signal, which is worse than an error.
+            onClick={async () => {
+              // First tap arms (B044); the second, while armed, signs out.
+              if (!signOutArmed) { setSignOutArmed(true); setSignOutError(null); return; }
+              setSignOutArmed(false);
+              // Better Auth's own client, not a hand-rolled POST. The route that used to serve
+              // this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family now -- and
+              // it sat at /api/auth/sign-out, SHADOWING the catch-all handler Better Auth mounts
+              // there. It is deleted; this is the supported path.
+              //
+              // The failure branch is main's and is kept: signOut() can reject, and a sign-out
+              // that quietly does nothing while the reader believes they are signed out is the
+              // worst outcome on a shared machine.
+              try {
+                const { error } = await authClient.signOut();
+                if (error) throw new Error(error.message ?? 'sign-out failed');
+                window.location.href = '/';
+              } catch {
+                setSignOutError('Sign out failed. You are still signed in. Please try again.');
+              }
+            }}
+          />
+        ) : (
+          <SidebarLink
+            href="/auth/sign-in"
+            icon={<UserIcon />}
+            label="Sign in"
+            active={pathname.startsWith('/auth')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+        )}
+        {signOutError && (
+          <p role="alert" className="px-4 py-1 text-xs text-red-800 dark:text-red-200">
+            {signOutError}
+          </p>
+        )}
       </div>
     </>
   );
@@ -646,10 +1030,11 @@ export function Sidebar() {
       // In writing mode this expanded state is the rail's hover/⌘\ overlay: leaving it puts the
       // rail back. Outside writing mode there is no rail, so there is nothing to restore.
       onMouseLeave={writing ? () => setRailOpen(false) : undefined}
+      aria-label="Navigation"
       className="hidden w-64 flex-col border-r edge bg-stone-200 md:flex dark:bg-stone-900"
     >
-      {/* Header. Internal rail rule: parchment-on-vellum, not .edge (see the settings block). */}
-      <div className="flex items-center justify-between border-b border-stone-50 px-4 py-3 dark:border-stone-800">
+      {/* Header. Internal rail rule: parchment-on-vellum via `.rail-rule` (see the settings block). */}
+      <div className="flex items-center justify-between border-b rail-rule px-4 py-3">
         {/* PRD §6: wordmark is EB Garamond 18px/500, ink. */}
         <Link href="/home" className="font-display text-[18px] font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-200">
           Ancient Paths
@@ -667,214 +1052,6 @@ export function Sidebar() {
       </div>
       <SidebarNavContent />
     </aside>
-  );
-}
-
-/** How many studies the rail lists before "All studies" takes over (design §7.1 says
- *  pinned-then-recents, not a count; the cap is the rail's real estate, not a data rule). */
-const MY_STUDIES_NAV_CAP = 5;
-
-/**
- * MY STUDIES (design §7.1) — the sidebar's first fetch-backed section. Pinned studies first,
- * then `updated_at` recents (orderStudiesForNav, shared with the save-to-study picker so the
- * two surfaces never disagree about the order), capped, with "All studies" always reachable.
- * Fetches once per mount of the nav content; a 401 mid-session (sign-out raced the fetch) is
- * an empty list, not an error — the prayer-journal lesson about auth state vs. faults.
- */
-function MyStudies({
-  pathname,
-  row,
-  onNavigate,
-}: {
-  pathname: string;
-  row: string;
-  onNavigate?: () => void;
-}) {
-  const [studies, setStudies] = useState<StudySummary[] | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let live = true;
-    void (async () => {
-      try {
-        const res = await fetch('/api/studies');
-        if (!live) return;
-        if (res.status === 401) { setStudies([]); return; }
-        if (!res.ok) { setError(true); setStudies([]); return; }
-        const data = (await res.json()) as { studies?: StudySummary[] };
-        setStudies(Array.isArray(data.studies) ? data.studies : []);
-      } catch {
-        if (live) { setError(true); setStudies([]); }
-      }
-    })();
-    return () => {
-      live = false;
-    };
-  }, []);
-
-  return (
-    <div className="mt-4">
-      <div className="mb-1 px-4">
-        <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-          My studies
-        </span>
-      </div>
-      {studies === null ? (
-        <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">Loading…</p>
-      ) : (
-        <>
-          {error && (
-            <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">
-              Your studies could not be loaded.
-            </p>
-          )}
-          {orderStudiesForNav(studies, MY_STUDIES_NAV_CAP).map((s) => (
-            <SidebarLink
-              key={s.id}
-              href={`/studies/${s.id}`}
-              icon={
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: dotColor(s.id) }}
-                />
-              }
-              label={s.title}
-              active={pathname === `/studies/${s.id}`}
-              row={row}
-              onNavigate={onNavigate}
-            />
-          ))}
-          <SidebarLink
-            href="/studies"
-            icon={<BookStackIcon />}
-            label="All studies"
-            active={pathname === '/studies'}
-            row={row}
-            onNavigate={onNavigate}
-          />
-        </>
-      )}
-    </div>
-  );
-}
-
-const RESEARCH_NAV_CAP = 5;
-
-// RESEARCH HISTORY (ASK_HISTORY_DESIGN §4.6). Mirrors MyStudies deliberately: fetch once,
-// three honest states (loading / failed / list), never an error line for a signed-out reader
-// (the caller already gates on session). Threads link to /ask/{id} — the durable URL that
-// makes back-from-the-reader work by construction (§4.3).
-function ResearchHistory({
-  pathname,
-  row,
-  onNavigate,
-}: {
-  pathname: string;
-  row: string;
-  onNavigate?: () => void;
-}) {
-  const [threads, setThreads] = useState<{ id: string; title: string }[] | null>(null);
-  const [error, setError] = useState(false);
-  // Two-step, not window.confirm: the first tap arms the row, the second removes it. A thread is
-  // a real piece of the reader's work and this is irreversible, so a single stray tap must not
-  // destroy one — but a native confirm() dialog in a sidebar is heavier than the action deserves.
-  const [arming, setArming] = useState<string | null>(null);
-
-  // OPTIMISTIC WITH ROLLBACK. The row disappears immediately, and comes back if the request
-  // fails — the alternative is a spinner on a delete, which reads as "did that work?".
-  const remove = useCallback(async (id: string) => {
-    setArming(null);
-    let previous: { id: string; title: string }[] | null = null;
-    setThreads((prev) => {
-      previous = prev;
-      return prev?.filter((t) => t.id !== id) ?? prev;
-    });
-    try {
-      const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(String(res.status));
-    } catch {
-      setThreads(previous);
-      setError(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    let live = true;
-    void (async () => {
-      try {
-        const res = await fetch(`/api/research?limit=${RESEARCH_NAV_CAP}`);
-        if (!live) return;
-        if (res.status === 401) { setThreads([]); return; }
-        if (!res.ok) { setError(true); setThreads([]); return; }
-        const data = (await res.json()) as { threads?: { id: string; title: string }[] };
-        setThreads(Array.isArray(data.threads) ? data.threads : []);
-      } catch {
-        if (live) { setError(true); setThreads([]); }
-      }
-    })();
-    return () => {
-      live = false;
-    };
-  }, []);
-
-  // No threads yet and no error → render nothing. The section earns its place with content;
-  // an empty "Research history" header over zero rows is a shelf with a label and no books.
-  if (threads !== null && threads.length === 0 && !error) return null;
-
-  return (
-    <div className="mt-4">
-      <div className="mb-1 px-4">
-        <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-          Research history
-        </span>
-      </div>
-      {threads === null ? (
-        <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">Loading…</p>
-      ) : (
-        <>
-          {error && (
-            <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">
-              Your research could not be loaded.
-            </p>
-          )}
-          {/* Every /ask persists a thread and NOTHING could remove one — no control here, none on
-              the thread page, no endpoint (2026-08-17 authenticated QA pass, which left nine on the
-              owner's real account and filed it as an outstanding action item). The remove control
-              is ALWAYS VISIBLE rather than hover-only: this repo has already shipped an
-              affordance that existed on a pointer and did not exist on touch (UX-2), and a
-              delete nobody can find is the bug being fixed here. */}
-          {threads.slice(0, RESEARCH_NAV_CAP).map((t) => (
-            <div key={t.id} className="relative flex items-center">
-              <div className="min-w-0 flex-1">
-                <SidebarLink
-                  href={`/ask/${t.id}`}
-                  icon={
-                    <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
-                  }
-                  label={t.title}
-                  active={pathname === `/ask/${t.id}`}
-                  row={row}
-                  onNavigate={onNavigate}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => (arming === t.id ? void remove(t.id) : setArming(t.id))}
-                onBlur={() => setArming((cur) => (cur === t.id ? null : cur))}
-                aria-label={arming === t.id ? `Confirm delete: ${t.title}` : `Delete research thread: ${t.title}`}
-                className={`mr-1 shrink-0 rounded px-2 py-1 text-micro transition-colors ease-gentle ${
-                  arming === t.id
-                    ? 'font-semibold text-red-700 dark:text-red-400'
-                    : 'text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200'
-                }`}
-              >
-                {arming === t.id ? 'Delete?' : '\u00d7'}
-              </button>
-            </div>
-          ))}
-        </>
-      )}
-    </div>
   );
 }
 
@@ -938,11 +1115,10 @@ function StudySectionView({
         // They resolve to `/prayers` rather than being made inert, because that is TRUE and not
         // merely convenient: `PR1a`'s first-launch carry-forward already migrated these items into
         // the prayer journal, so the journal genuinely contains what the reader is clicking.
-        const href = '/prayers';
         return (
           <SidebarLink
             key={item.id}
-            href={href}
+            href="/prayers"
             icon={
               // The `#` glyph was the channel concept's; it is retired with it.
               <span
@@ -951,7 +1127,7 @@ function StudySectionView({
               />
             }
             label={item.name}
-            active={pathname === href}
+            active={pathname === '/prayers'}
             row={row}
             onNavigate={onNavigate}
           />
@@ -1087,43 +1263,42 @@ function SidebarLink({
 }
 
 /**
- * THE ICON RAIL'S DESTINATIONS — one list, rendered by BOTH narrow rails.
+ * THE ICON RAIL'S DESTINATIONS — rendered by BOTH narrow rails (writing mode, and the collapsed
+ * rail a tablet boots into).
  *
- * A DELIBERATE SUBSET, not a mirror of the full nav: a rail this narrow offers the few places a
- * reader might actually leave for. Adding a destination here is a design decision, not a sync
- * task — do NOT derive this from the catalog list. (The Desk, added to the full nav on 2026-08-17
- * by A072, is deliberately not here: putting it on the rail is that same design decision and
- * belongs to whoever makes it, not to A093's layout fix.)
+ * DERIVED, since Sidebar C: the five places from `places()` (one table with the full rail, so the
+ * rails cannot drift), then the two groups every visitor can enter — the journal, because the
+ * writing-mode rail exists precisely while a prayer is being composed and must still reach it,
+ * and Reading plans, which was a place until C — then Settings. The narrower rail offers only the
+ * places a reader might actually leave for; adding one is a design decision, not a sync task.
  *
- * WHY IT IS A COMPONENT RATHER THAN A LIST IN ONE BRANCH. It was inline in the writing-mode rail
- * until A093 gave the collapsed rail the same job — a tablet boots into the collapsed rail, so
- * that rail had to stop being a chevron on an empty strip. Two rails that render "the same
- * destinations" from two typed lists agree on the day they are written and drift afterwards;
- * that is the failure mode this repo keeps a running count of. One list cannot drift, and
  * `test/components/sidebar-tablet-default.test.tsx` asserts the two rails still match by
- * rendering both and comparing.
- *
- * Every link carries `aria-label` AND `title`: the glyphs are the only label a sighted reader
- * gets, and the two attributes are set from one binding so they cannot disagree (A095's lesson,
- * applied where it was already correct).
+ * rendering both and comparing. Every link carries `aria-label` AND `title` from one binding, so
+ * the tooltip and the accessible name cannot disagree (A095).
  */
 function IconRailLinks({ pathname, bibleHref }: { pathname: string; bibleHref: string }) {
-  const links = [
-    { href: '/home', label: 'Home', icon: <HomeIcon /> },
-    { href: bibleHref, label: 'Bible', icon: <BookIcon /> },
-    { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
-    { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
-    { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
-    { href: '/library', label: 'All items', icon: <BookStackIcon /> },
-    { href: '/settings', label: 'Settings', icon: <SettingsIcon /> },
+  // DERIVED, both halves: the five places, then the two groups a visitor can enter — from the
+  // same `VISITOR_ROWS` the signed-out rail renders, so this rail and that one cannot name the
+  // journal differently. (The first draft hand-typed those two rows and labelled the journal
+  // "My prayers" while the group next to it said "Prayer journal", the §2 name — the exact
+  // second hand-kept list this file's header warns about. Deep audit, 2026-09-07.)
+  const links: Place[] = [
+    ...places(bibleHref),
+    ...VISITOR_ROWS.map((g) => ({
+      href: g.signedOut,
+      label: g.label,
+      icon: g.icon,
+      active: (p: string) => p.startsWith(g.signedOut),
+    })),
+    { href: '/settings', label: 'Settings', icon: <SettingsIcon />, active: (p) => p === '/settings' },
   ];
   return (
     <>
       {links.map((l) => {
-        const active = l.href === '/home' ? pathname === '/home' : pathname.startsWith(l.href);
+        const active = l.active(pathname);
         return (
           <Link
-            key={l.href}
+            key={l.label}
             href={l.href}
             aria-label={l.label}
             title={l.label}

@@ -20,7 +20,7 @@
 // server refused. Errors now render as an error.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { errorMessage } from '@/lib/api-error-message';
+import { responseErrorMessage } from '@/lib/api-error-message';
 import Link from 'next/link';
 import type { CatalogId } from '@/lib/catalog';
 import { sanitizeSnippet } from '@/lib/snippet';
@@ -43,11 +43,17 @@ export function CatalogSearch({
   catalog,
   label,
   traditions = [],
+  sub,
 }: {
   catalog: CatalogId;
   label: string;
   /** The active tradition selection, owned by the page URL. Empty means unfiltered. */
   traditions?: readonly string[];
+  /** The active sub-filter (Hymns vs Poetry on `hymns-poetry`), owned by the page URL. Omitted
+   *  means the whole catalog. The route applies it via `typesFor(catalog, sub)`, narrowing the
+   *  catalog fence the SAME way `listCatalogWorks` narrows the work list — so a lit sub chip
+   *  cannot scope the list while the search box queries the union. */
+  sub?: string;
 }) {
   const [q, setQ] = useState('');
   const [state, setState] = useState<State | null>(null);
@@ -58,6 +64,10 @@ export function CatalogSearch({
   // Stable key for the selection, so the re-run effect below depends on the VALUES rather than on
   // the array identity a server component hands us fresh on every render (which would loop).
   const tradKey = [...traditions].sort().join(',');
+  // Same shape for the sub-filter: a derived primitive key so `run`'s identity changes on a
+  // VALUE change and the re-run effect re-fires. The list already narrowed on `?sub=`; the box
+  // now reads the same `?sub=`, closing the divergence that already held for tradition (2026-08-01).
+  const subKey = sub ?? '';
 
   // `offset` drives BOTH a fresh search (0, replaces `state`) and Load More (results.length so
   // far, appends). One function for both, distinguished by the offset, keeps "what a page looks
@@ -78,6 +88,11 @@ export function CatalogSearch({
         // form; repeating is used here because a tradition containing a comma would corrupt the
         // joined form and silently drop a filter.
         for (const t of tradKey ? tradKey.split(',') : []) params.append('tradition', t);
+        // The sub-filter narrows the catalog fence the SAME way it narrows the work list. Omit
+        // the param when no chip is lit so the route treats the request as the whole catalog — an
+        // empty `sub` must not become a server-side filter (the route 400s on any unknown sub,
+        // and `''` is not an own key of any catalog's `subFilters`).
+        if (subKey) params.set('sub', subKey);
 
         const res = await fetch(`/api/search/works?${params.toString()}`);
         if (!res.ok) {
@@ -86,9 +101,18 @@ export function CatalogSearch({
           // publicReadThrottle at the top of the same route answers 429 with the apiError
           // envelope { error: { code, message } }. Reading `body.error` blindly coerced the
           // object and showed the reader "[object Object]" in place of the throttle copy.
-          // Dual-shape read, same as my-works.tsx:147.
-          const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
-          throw new Error(errorMessage(body, `search failed (${res.status})`));
+          // `responseErrorMessage` carries that dual-shape read and adds the half this site was
+          // missing: a bodyless failure fell back to `search failed (${res.status})`, so the
+          // reader was shown "Search failed: search failed (500)".
+          //
+          // Set-and-return rather than throw. Throwing routed this message through the same catch
+          // that receives a dropped connection, and the catch could not tell the two apart — so
+          // `err.message` was rendered either way and a network drop printed "Failed to fetch".
+          const said = await responseErrorMessage(res, 'That search could not be run. Please try again.');
+          // Same staleness guard the catch below applies: a superseded query must not paint its
+          // failure over the live one's results.
+          if (mine === seq.current) setState({ kind: 'error', message: said });
+          return;
         }
         const page = (await res.json()) as Page;
         if (mine !== seq.current) return;
@@ -98,9 +122,12 @@ export function CatalogSearch({
           const results = [...prior, ...page.results.filter((r) => !seen.has(resultKey(r)))];
           return { kind: 'ok', page: { results, total: page.total, totalCapped: page.totalCapped } };
         });
-      } catch (err) {
+      } catch {
+        // Only transport and parse failures reach here now — a dropped connection, an abort, a
+        // body that is not JSON. None of them have a message written for a reader (`fetch` rejects
+        // with the literal words "Failed to fetch"), so none of them is asked for one.
         if (mine === seq.current) {
-          setState({ kind: 'error', message: err instanceof Error ? err.message : 'search failed' });
+          setState({ kind: 'error', message: 'That search could not be run. Please check your connection and try again.' });
         }
       } finally {
         if (mine === seq.current) {
@@ -109,12 +136,15 @@ export function CatalogSearch({
         }
       }
     },
-    [catalog, tradKey],
+    [catalog, tradKey, subKey],
   );
 
   // Re-run from the top when the filter changes, so results can never be stale against the lit
   // chips — a filter change always replaces (offset 0), never appends. Guarded on a non-empty
-  // query: toggling chips with an empty box must not fire a search.
+  // query: toggling chips with an empty box must not fire a search. The sub-filter rides this same
+  // path transitively: `run`'s identity changes when `subKey` changes (see its deps), so a sub-chip
+  // toggle re-fires this effect — without that, the box would show the prior sub's results under a
+  // newly-lit chip (the staleness shape the send-half of the fix would otherwise reintroduce).
   const submitted = useRef('');
   useEffect(() => {
     if (submitted.current) void run(submitted.current, 0);
@@ -167,7 +197,10 @@ export function CatalogSearch({
 
       {state?.kind === 'error' && !busy && (
         <p role="alert" className="mt-3 rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
-          Search failed: {state.message}
+          {/* No "Search failed:" prefix. The message is now a whole sentence — prefixing it gave
+              "Search failed: That search could not be run." and, on a throttle, stapled a label
+              onto copy that was already saying something better. */}
+          {state.message}
         </p>
       )}
 

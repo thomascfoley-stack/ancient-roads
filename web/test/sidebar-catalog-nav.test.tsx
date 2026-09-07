@@ -40,9 +40,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { CATALOGS, CATALOG_IDS } from '@/lib/catalog-defs';
 
 // The two things the shell needs from outside itself. Neither is the subject here: the nav must
-// render its catalog links for a signed-out visitor on any route, so both are stubbed at their
-// least interesting value rather than exercised.
-vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
+// render its catalog links for a signed-out visitor, so both are stubbed at their least interesting
+// value rather than exercised.
+//
+// RE-POINTED 2026-09-07 (Sidebar C; docs/evidence/sidebar-c-2026-09-07/findings.md): the eleven
+// library rows now appear only while you are IN the library — elsewhere "Library" is one place,
+// the way the owner approved on the canvas — so the route is `/library`, not `/`. Every assertion
+// below is unchanged, and the source-scan legs above never depended on the route at all. The
+// property survives intact: while browsing the library, every catalog is one click away, derived
+// from CATALOG_IDS, so the next catalog added appears by existing. Red-proof: render at `/ask`.
+vi.mock('next/navigation', () => ({ usePathname: () => '/library' }));
 vi.mock('@/lib/auth/client', () => ({ authClient: { useSession: () => ({ data: null }) } }));
 
 // jsdom implements MutationObserver but NOT ResizeObserver, and the rail's `useMoreBelow` (which

@@ -62,7 +62,10 @@ describe('the sidebar drops to an icon rail while a prayer is being written', ()
     // SEED: remove the `writing && !railOpen` branch in Sidebar -> RED. The 256px nav stays up
     // and the compose view is again a widget beside an admin panel.
     expect(fullNav(), 'the full nav is still up while writing').toBeNull();
-    expect(screen.getByRole('link', { name: 'My prayers' }), 'the rail lost its destinations').toBeTruthy();
+    // RE-POINTED 2026-09-07: the icon rail now derives its two visitor rows from the same table
+    // as the full rail, so the journal carries its §2 name ("Prayer journal"), not the old link
+    // label. The property — the writing-mode rail can still reach the journal — is unchanged.
+    expect(screen.getByRole('link', { name: 'Prayer journal' }), 'the rail lost its destinations').toBeTruthy();
 
     act(() => setPrayerWriting(false));
     expect(fullNav(), 'the full sidebar did not come back after writing').toBeTruthy();

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { type Book, TRANSLATIONS, type Translation } from '@/lib/bible';
+import { DialogPanel } from '@/lib/use-dialog';
 import { BookPicker } from './book-picker';
 import { ReaderSettings } from './reader-settings';
 
@@ -97,14 +98,24 @@ export function ReaderHeader({
           אα
         </button>
         <div className="relative" ref={versionRef}>
+          {/* The list is a dialog, not a bare div: it opens with focus in it, Tab cycles inside it
+              and Escape hands focus back (lib/use-dialog). Before this it closed on an outside
+              MOUSEDOWN and nothing else, so a keyboard reader who opened it had no way out but to
+              tab blindly through the chapter behind it. */}
           <button
             onClick={() => setVersionOpen((v) => !v)}
+            aria-haspopup="dialog"
+            aria-expanded={versionOpen}
             className="min-h-[44px] border edge px-3 text-xs font-medium text-stone-500 hover:bg-stone-900 hover:text-stone-50 sm:min-h-0 sm:py-1.5 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950"
           >
             {translation.abbr}
           </button>
           {versionOpen && (
-            <div className="absolute right-0 top-full mt-1 max-h-[70dvh] w-56 overflow-y-auto overscroll-contain border edge bg-paper py-1 dark:bg-stone-900">
+            <DialogPanel
+              label="Choose a translation"
+              onClose={() => setVersionOpen(false)}
+              className="absolute right-0 top-full mt-1 max-h-[70dvh] w-56 overflow-y-auto overscroll-contain border edge bg-paper py-1 dark:bg-stone-900"
+            >
               {/* S2 item 1. A reader hunting for ESV/NIV/NLT finds them silently absent and reads
                   that as a gap. It is a stance: every translation here is public domain, which is
                   precisely why this product can quote them at length and license them onward.
@@ -131,7 +142,7 @@ export function ReaderHeader({
                   <span className="text-xs text-stone-500 dark:text-stone-400">{t.abbr}</span>
                 </button>
               ))}
-            </div>
+            </DialogPanel>
           )}
         </div>
         </div>

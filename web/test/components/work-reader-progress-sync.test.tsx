@@ -22,7 +22,7 @@ const SLUG = 'qa-sync-work';
 // The session, flipped per-case. Signed-out readers must never call the route at all.
 let signedIn = true;
 vi.mock('@/lib/auth/use-signed-in', () => ({ useSignedIn: () => signedIn }));
-vi.mock('next/navigation', () => ({ useParams: () => ({ slug: SLUG }) }));
+vi.mock('next/navigation', () => ({ useParams: () => ({ slug: SLUG }), usePathname: () => `/work/${SLUG}` }));
 
 // The reader component is DOM-and-scroll machinery (IntersectionObserver, rAF, a live scroller)
 // that jsdom cannot drive meaningfully. Standing in for it with something that reports a position

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AskClient } from '@/components/ask-client';
 import { HistoryAsk } from '@/components/history-ask';
 import { ModeToggle } from '@/components/mode-toggle';
+import { ThreadRestore } from '@/components/thread-restore';
 import { currentUser } from '@/lib/session';
 import { isTeacherAllowed } from '@/lib/teacher-access';
 
@@ -9,6 +10,13 @@ export const metadata = {
   title: 'Ask',
   description: 'Ask a question and hear what commentators across the traditions have said, quoted and attributed, never interpreted.',
 };
+
+// THE PAGE OWNS THE COLUMN'S HEIGHT (2026-09-06). AskClient used to size itself to the viewport
+// while the mode toggle above it sat outside that measure, so the document was always ~50px taller
+// than the scrollport and the sticky composer covered the bottom of the "centred" first screen.
+// The frame wraps BOTH, and the toggle stays a sibling of AskClient rather than moving inside it
+// (ask-history-invite.test.tsx takes the FIRST /ask?mode=history link in the document).
+const FRAME = 'flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] flex-col md:min-h-[calc(100dvh-1px)]';
 
 // Two modes, two contracts (HISTORY_RETRIEVAL_DESIGN §5 stage 0): voices composes attributed
 // answers; history points into sources and never summarizes. Separate surfaces on one entry.
@@ -19,6 +27,7 @@ export default async function AskPage(props: { searchParams: Promise<{ mode?: st
   if (mode === 'history') {
     return (
       <>
+        <ThreadRestore />
         <ModeToggle mode="history" />
         <HistoryAsk initialQuery={typeof q === 'string' && q.trim() ? q : undefined} />
       </>
@@ -34,10 +43,13 @@ export default async function AskPage(props: { searchParams: Promise<{ mode?: st
   if (!user || !isTeacherAllowed(user)) return <TeacherUnavailable />;
 
   return (
-    <>
+    <div className={FRAME}>
+      {/* Back from the reader lands here under a thread URL (the live ask relabelled it with
+          replaceState); ThreadRestore turns that into a real navigation to the thread. */}
+      <ThreadRestore />
       <ModeToggle mode="voices" />
       <AskClient />
-    </>
+    </div>
   );
 }
 

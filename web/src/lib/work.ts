@@ -100,6 +100,51 @@ export async function findWorkOrdinalForVerseId(
   return rows[0]?.ordinal ?? null;
 }
 
+/**
+ * What an /ask retrieval row carries when its sourceId names no section: the work slug
+ * (`metadata.work`), the anchor range (`metadata.verseId` / `verseEnd`) and the chunk text.
+ * Classic commentaries were written to sections/section_anchors 1:1 from the embeddings rows
+ * (src/ingest/migrate-sections-slice.ts), so these three identify the section by equality.
+ */
+export interface SectionLocator {
+  work: string;
+  verseId: number;
+  verseEnd: number;
+  content: string;
+}
+
+/** Cap on one locateSections batch. An ask resolves a handful of rows; anything past the cap
+ *  is answered null rather than queried, so no caller can turn this into an unbounded scan. */
+export const LOCATE_SECTIONS_MAX = 200;
+
+/**
+ * Resolve section ordinals for a batch of locators — index-aligned with the input, null where
+ * nothing published matches. ONE statement for the whole batch: the locators are unnested
+ * WITH ORDINALITY, joined to `section_anchors` by exact range (anchors_range_idx) under the
+ * published filter, and `body = content` breaks a tie between sections sharing a range (the
+ * exact chunk wins; otherwise the lowest ordinal on that range). Empty input never queries.
+ */
+export async function locateSections(locs: readonly SectionLocator[]): Promise<(number | null)[]> {
+  if (locs.length === 0) return [];
+  const batch = locs.slice(0, LOCATE_SECTIONS_MAX);
+  const sql = getDb();
+  const rows = (await sql.query(
+    `SELECT DISTINCT ON (p.i) p.i::int AS i, s.ordinal::int AS ordinal
+       FROM unnest($1::text[], $2::int[], $3::int[], $4::text[]) WITH ORDINALITY AS p(work, vstart, vend, content, i)
+       JOIN sources src       ON src.slug = p.work AND src.status = 'published'
+       JOIN section_anchors a ON a.verse_id_start = p.vstart AND a.verse_id_end = p.vend
+       JOIN sections s        ON s.id = a.section_id AND s.source_id = src.id
+      ORDER BY p.i, (s.body = p.content) DESC, s.ordinal`,
+    [batch.map((l) => l.work), batch.map((l) => l.verseId), batch.map((l) => l.verseEnd), batch.map((l) => l.content)],
+  )) as Array<{ i: number | string; ordinal: number | string }>;
+  const out: (number | null)[] = new Array<number | null>(locs.length).fill(null);
+  for (const r of rows) {
+    const i = Number(r.i) - 1; // WITH ORDINALITY is 1-based
+    if (i >= 0 && i < batch.length) out[i] = Number(r.ordinal);
+  }
+  return out;
+}
+
 export interface WorkSectionsPage {
   sections: WorkSectionRow[];
   /** Keyset cursor for the next page: the last returned ordinal, or null when this

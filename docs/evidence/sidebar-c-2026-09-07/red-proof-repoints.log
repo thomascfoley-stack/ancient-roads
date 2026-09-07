@@ -1,0 +1,23 @@
+=== 1. GREEN after the re-points ===
+ Test Files  2 passed (2)
+      Tests  25 passed (25)
+
+=== 2. RED-PROOF catalog leg: render at /ask instead of /library ===
+   × the sidebar actually RENDERS a link to every catalog > one anchor per catalog, with its label — commenting the block out goes red here 500ms
+     → no sidebar link to /library/commentaries — the commentaries shelf is unreachable from the shell: expected false to be true // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+
+=== 3. RED-PROOF studies leg: remove the click that opens the group ===
+   × sidebar MY STUDIES (design §7.1) > renders pinned studies first, then recents, then "All studies" — signed in, once opened 1089ms
+     → expected null to be truthy
+   × sidebar MY STUDIES (design §7.1) > a failed fetch is an honest quiet line, with the "All studies" link still reachable 1126ms
+     → expected null to be truthy
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  2 failed | 17 passed (19)
+
+=== 4. GREEN again after restore ===
+ Test Files  2 passed (2)
+      Tests  25 passed (25)

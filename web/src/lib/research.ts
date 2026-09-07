@@ -55,10 +55,10 @@ export interface ResearchTurn {
   answer: StoredAnswer | null; // null = the ask crashed after the question row was written
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export function isThreadId(s: unknown): s is string {
-  return typeof s === 'string' && UUID_RE.test(s);
-}
+// The id check moved to lib/thread-id.ts (a client component needs it without this module);
+// re-exported so this module's importers are unchanged.
+import { isThreadId } from './thread-id';
+export { isThreadId };
 
 /** One transaction, one statement (I1-L2): thread + question row cannot orphan each other.
  *  Written BEFORE teach() runs (design I-2). Returns both ids; qid pairs the answer (I1-M1). */

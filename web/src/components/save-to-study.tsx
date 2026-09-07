@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { TextSkeleton } from './skeleton';
+import { useDialog } from '@/lib/use-dialog';
 
 // THE ONE CANONICAL SAVE-TO-STUDY VERB (design §7.5, R3; build file P2/W4). Every surfaced
 // corpus item on every surface — ask answers today; reader and search surfaces import this
@@ -173,6 +175,11 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
   const [pickerOpen, setPickerOpen] = useState(false);
   // The saved block, while its toast is up — `Change?` moves exactly this block.
   const [saved, setSaved] = useState<{ studyId: string; title: string; blockId: string } | null>(null);
+  // Snapshot of the block to move, taken when "Change?" is tapped. The 6s toast timer below
+  // clears `saved` even while the picker is open; `onPick` reads `pendingMove` (not `saved`)
+  // so the move's delete-source cannot be dropped by the timer racing the pick — keeping a
+  // duplicate a visible failure only, never a silent one (see the header's design intent).
+  const [pendingMove, setPendingMove] = useState<{ studyId: string; blockId: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -180,6 +187,12 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
     const t = setTimeout(() => setSaved(null), 6000);
     return () => clearTimeout(t);
   }, [saved]);
+
+  // The move snapshot is only meaningful while the picker is open; clear it on close so a
+  // stale {studyId, blockId} from a previous move cannot leak into a later save's `onPick`.
+  useEffect(() => {
+    if (!pickerOpen) setPendingMove(null);
+  }, [pickerOpen]);
 
   const postClip = useCallback(async (studyId: string): Promise<SaveOutcome> => {
     const body =
@@ -289,7 +302,7 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
         <StudyPicker
           busy={busy}
           newStudyTitle={newStudyTitle}
-          onPick={(target) => void saveTo(target, saved ? { studyId: saved.studyId, blockId: saved.blockId } : undefined)}
+          onPick={(target) => void saveTo(target, pendingMove ?? undefined)}
           onClose={closePicker}
         />
       )}
@@ -299,7 +312,10 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
           <span className="font-medium text-stone-700 dark:text-stone-300">Saved to {saved.title}.</span>{' '}
           <button
             type="button"
-            onClick={() => setPickerOpen(true)}
+            onClick={() => {
+              setPendingMove(saved ? { studyId: saved.studyId, blockId: saved.blockId } : null);
+              setPickerOpen(true);
+            }}
             className="font-medium text-accent-700 underline underline-offset-2 hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200"
           >
             Change?
@@ -328,7 +344,12 @@ function StudyPicker({
 }) {
   const [studies, setStudies] = useState<StudySummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  // This picker already had `role="dialog"`, an Escape handler and a focus return; what it did not
+  // have was the TRAP, so Tab walked straight out of an open picker into the page beneath while
+  // its own click-away scrim still covered the screen. useDialog supplies all four, so the
+  // hand-rolled halves come out rather than run twice (its Escape listener is capture-phase and
+  // stops propagation, which would have swallowed the onKeyDown one anyway).
+  const { ref: dialogRef, dialogProps } = useDialog(onClose, 'Choose a study');
 
   useEffect(() => {
     let live = true;
@@ -359,13 +380,16 @@ function StudyPicker({
     };
   }, []);
 
-  // Move focus into the picker once its contents arrive. If the list is capped, the first
-  // focusable item is a study; otherwise it is "New study". Closing returns focus to the trigger.
+  // Move focus into the picker once its contents ARRIVE. useDialog has already put focus inside on
+  // open — at that moment the only focusable is "New study", because the list is still loading —
+  // and this moves it onto the first study once there is one. `dialogRef` is in the deps because
+  // it now comes from a hook rather than a bare useRef, so the linter cannot prove it stable; the
+  // ref object never changes identity, so the effect still runs only when `studies` does.
   useEffect(() => {
     if (studies === null) return;
     const first = dialogRef.current?.querySelector('button, a[href]') as HTMLElement | null;
     first?.focus();
-  }, [studies]);
+  }, [studies, dialogRef]);
 
   const createAndPick = async () => {
     try {
@@ -389,16 +413,12 @@ function StudyPicker({
       <div className="fixed inset-0 z-10" onClick={onClose} aria-hidden="true" />
       <div
         ref={dialogRef}
-        role="dialog"
-        aria-label="Choose a study"
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose();
-        }}
+        {...dialogProps}
         className="edge absolute left-0 z-20 mt-1 w-64 border bg-stone-50 p-2 dark:bg-stone-950"
       >
-        {studies === null && (
-          <p className="px-2 py-1.5 text-xs text-stone-500 dark:text-stone-400">Loading…</p>
-        )}
+        {/* A short list in a 64-wide popover: three bars, because the popover is already open at a
+            fixed width and the reader is looking straight at it. */}
+        {studies === null && <TextSkeleton label="Loading your studies" lines={3} className="px-2 py-1.5" />}
         {error && (
           <p role="alert" className="px-2 py-1.5 text-xs text-red-800 dark:text-red-200">
             {error}

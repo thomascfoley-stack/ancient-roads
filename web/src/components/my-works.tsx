@@ -422,7 +422,11 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
           }
 
           // Direct PUT to Blob — the browser talks to the store, not to us.
-          const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', body: file });
+          const putRes = await fetch(urlData.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file,
+          });
           if (!putRes.ok) {
             outcome = 'failed';
             message = 'The file could not be stored. Please try again.';
@@ -575,12 +579,20 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       // the same box because "have I written on Romans 8" and "what did I say about grace" are the
       // same question to the person asking.
       const looksLikeRef = /^[1-3]?\s?[A-Za-z][A-Za-z.]*\s+\d/.test(q);
-      const url = looksLikeRef
-        ? `/api/user-corpus/search?ref=${encodeURIComponent(q)}`
-        : `/api/user-corpus/search?q=${encodeURIComponent(q)}`;
+      // POST + application/json, not a GET query string: the search route is state-changing (a paid
+      // embedding on the request path + a victim-attributed audit row), so it sits behind the CSRF
+      // Content-Type floor (csrf-floor.ts). A GET has no Content-Type to gate, so a cross-site
+      // top-level navigation could carry the SameSite=Lax session cookie and run the handler as the
+      // victim; requiring application/json forces a preflight on cross-origin callers, which the
+      // browser then refuses.
+      const payload = looksLikeRef ? { ref: q } : { q };
       let r: Response;
       try {
-        r = await fetch(url);
+        r = await fetch('/api/user-corpus/search', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
       } catch {
         setSearchNote('That search could not be run. Check your connection and try again.');
         return;
@@ -642,7 +654,10 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
         <p className="mt-3 font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">
           {state === 'signedout'
             ? 'Sign in to bring your own sermons and papers into the library.'
-            : 'Uploads are not available on this account yet.'}
+            // "Uploads" is the one name this surface was ruled never to carry (UX_REMEDIATION §2):
+            // the surface is My Works and the counted noun is "items". Wording only — the state
+            // this reports is unchanged.
+            : 'My Works is not available on this account yet.'}
         </p>
         {state === 'signedout' && (
           <Link

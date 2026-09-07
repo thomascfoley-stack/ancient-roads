@@ -28,6 +28,7 @@ import { DISPLAY_LOCALE } from '@/lib/locale';
 import { authClient } from '@/lib/auth/client';
 import { runCarryForward } from '@/lib/prayer-carry-forward';
 import { setPrayerWriting } from '@/lib/prayer-writing-mode';
+import { TextSkeleton } from '@/components/skeleton';
 
 interface Prayer {
   id: string;
@@ -437,7 +438,7 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
       )}
 
       {prayers === null ? (
-        <p className="mt-12 font-serif text-stone-500 dark:text-stone-400">Loading…</p>
+        <TextSkeleton label="Loading your prayer journal" lines={4} className="mt-12" />
       ) : signedOut ? (
         <p className="mt-12 font-serif text-stone-500 dark:text-stone-400">
           Your prayers are kept to your account, so they stay yours alone.

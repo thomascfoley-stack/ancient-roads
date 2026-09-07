@@ -42,7 +42,11 @@ const SECTION_BODY = `QA surface section body ${SECTION_TOKEN} — staged and pu
 const session: { user: { id: string; email: string } | null } = {
   user: { id: testUser, email: 'qa@example.test' },
 };
-vi.mock('@/lib/session', () => ({
+// Spreads the REAL @/lib/auth-failure so this mock carries every export the route imports, not
+// just the ones this file thought of — see the note in library-shelf-round-trip.test.ts. Held by
+// test/invariants/session-mock-surface.test.ts.
+vi.mock('@/lib/session', async () => ({
+  ...(await import('@/lib/auth-failure')),
   requireUser: async () => {
     if (!session.user) throw new Error('Unauthorized');
     return session.user;

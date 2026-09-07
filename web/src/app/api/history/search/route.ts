@@ -2,7 +2,7 @@
 // Deterministic retrieval, no LLM composition: the only model call is embedding the query.
 // Fail closed everywhere — an error returns nothing, never partial or unverified content.
 import { NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { requireUser, authFailureResponse } from '@/lib/session';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { checkHistorySearchRateLimit } from '@/lib/rate-limit';
 import { searchHistory } from '@/lib/history-search-db';
@@ -24,13 +24,15 @@ function parseBody(raw: unknown): string | null {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  // requireUser in its OWN try (the A1-16 pattern): an auth failure must be a 401, never the
-  // catch-all 500 that would hide it.
+  // requireUser in its OWN try (the A1-16 pattern): an auth failure must be 401 only for a
+  // genuinely missing session, never the catch-all 500 that would hide it. An auth-SERVICE
+  // outage is 503 (D43) — telling a signed-in reader they are signed out bounces them to a
+  // sign-in flow that also cannot work.
   let userId: string;
   try {
     userId = (await requireUser()).id;
-  } catch {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  } catch (e) {
+    return authFailureResponse(e);
   }
 
   const csrfFloor = requireJsonContentType(req);

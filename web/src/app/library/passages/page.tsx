@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { sanitizeSnippet } from '@/lib/snippet';
+import { responseErrorMessage } from '@/lib/api-error-message';
+import { TextSkeleton } from '@/components/skeleton';
 import {
   BOOKS,
   BOOK_BY_BOOK_SLUG,
@@ -24,6 +26,17 @@ import {
 } from '@/components/commentary-panel';
 
 const BOOK_BY_NUM = new Map(BOOKS.map((b) => [b.bookNum, b]));
+
+/**
+ * A refusal the SERVER described — carrying a sentence already fit to show a reader.
+ *
+ * It exists only to be distinguishable in the `.catch` from everything else that can land there:
+ * a dropped connection, an abort, a body that is not JSON. Those reject with the runtime's own
+ * words ("Failed to fetch"), which must never be rendered, and without a marker the catch had no
+ * way to tell one from the other — so it rendered `err.message` for both.
+ */
+class SearchRefused extends Error {}
+
 const DEBOUNCE_MS = 300;
 const PAGE_SIZE = 20;
 
@@ -325,10 +338,19 @@ export default function PassageSearchPage() {
     const params = new URLSearchParams({ q: debouncedQuery, limit: String(PAGE_SIZE), offset: String(searchPage * PAGE_SIZE) });
     if (traditionFilter) params.set('tradition', traditionFilter);
 
+    // The `!r.ok` branch used to throw an Error whose message interpolated r.status, and the catch
+    // rendered `err.message`, so a reader was shown "Search failed (500)" — and, on a dropped
+    // connection, fetch's own "Failed to fetch". The refusal and the transport failure are now
+    // handled apart: the refusal gets the server's curated copy (or its status's meaning) via
+    // `responseErrorMessage`, and the catch — which can now only be a transport or parse
+    // failure — gets one sentence of ours, never the exception's.
     fetch(`/api/search/commentaries?${params}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`Search failed (${r.status})`);
-        return r.json();
+      .then(async (r) => {
+        if (!r.ok) {
+          const said = await responseErrorMessage(r, 'That search could not be run. Please try again.');
+          throw new SearchRefused(said);
+        }
+        return r.json() as Promise<{ results: SearchResult[]; total: number; totalCapped?: boolean }>;
       })
       .then((data: { results: SearchResult[]; total: number; totalCapped?: boolean }) => {
         if (mine !== searchSeq.current) return;
@@ -346,9 +368,13 @@ export default function PassageSearchPage() {
           return [...prev, ...data.results.filter((r) => !seen.has(r.id))];
         });
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (mine !== searchSeq.current) return;
-        setSearchError(err instanceof Error ? err.message : 'Search failed');
+        setSearchError(
+          err instanceof SearchRefused
+            ? err.message
+            : 'That search could not be run. Please check your connection and try again.',
+        );
         // D17 secondary: this wiped ALL results even when only a Load-more page failed,
         // destroying pages the reader already had. Only a page-0 failure clears.
         if (searchPage === 0) {
@@ -594,7 +620,7 @@ export default function PassageSearchPage() {
           </div>
 
           {loading ? (
-            <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+            <TextSkeleton label="Loading commentary on this passage" lines={6} className="py-16" />
           ) : entries.length === 0 ? (
             <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">
               No commentary available for {book.name} {book.chapterCount === 1 ? '' : chapter} yet.

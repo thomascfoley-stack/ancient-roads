@@ -119,6 +119,52 @@ describe('N3 — the Book Reader can put a work on the reader’s shelf', () => 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy());
   });
 
+  // ...AND IT SAYS SO. Reverting silently is the same lie one step later: the reader pressed
+  // Save, watched the label say "Saved", then watched it flip back on its own with nothing to
+  // explain it. A revert nobody is told about is indistinguishable from a UI glitch, and the
+  // reader's next move is to press it again and get the same silence.
+  // SEED: drop the `setFailed(true)` in the catch and this goes red while the revert test above
+  // stays green — which is exactly the gap it was covering for.
+  it('SAYS the write failed, rather than reverting in silence', async () => {
+    renderHeader(true);
+    const btn = await waitFor(() => screen.getByRole('button', { name: 'Save' }));
+    fetchMock.mockImplementation(async (_u: string, init?: RequestInit) =>
+      (init?.method ?? 'GET') === 'GET'
+        ? new Response(JSON.stringify({ shelf: null }), { status: 200 })
+        : new Response('nope', { status: 500 }),
+    );
+    await act(async () => {
+      btn.click();
+    });
+
+    const status = await waitFor(() => screen.getByRole('status'));
+    expect(status.textContent, 'the reader is told the save did not happen').toMatch(/not saved/i);
+  });
+
+  // The message is about THIS attempt: a retry that succeeds must clear it, or the surface keeps
+  // reporting a failure that no longer describes anything.
+  it('clears the failure message once a later write succeeds', async () => {
+    renderHeader(true);
+    const btn = await waitFor(() => screen.getByRole('button', { name: 'Save' }));
+    fetchMock.mockImplementation(async (_u: string, init?: RequestInit) =>
+      (init?.method ?? 'GET') === 'GET'
+        ? new Response(JSON.stringify({ shelf: null }), { status: 200 })
+        : new Response('nope', { status: 500 }),
+    );
+    await act(async () => {
+      btn.click();
+    });
+    await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
+
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    await act(async () => {
+      screen.getByRole('button', { name: 'Save' }).click();
+    });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved' })).toBeTruthy());
+    expect(screen.queryByRole('status'), 'a stale failure notice is its own small lie').toBeNull();
+  });
+
   // A failed READ must not render a control that claims the work is unsaved when it may not be.
   it('renders no control when the state cannot be read', async () => {
     fetchMock.mockImplementation(async () => new Response('boom', { status: 500 }));

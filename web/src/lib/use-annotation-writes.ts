@@ -94,6 +94,21 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   interface ClearEntry { controller: AbortController; superseded: boolean; settled: Promise<unknown>; }
   const activeClears = useRef<Map<number, ClearEntry>>(new Map());
 
+  // F-119 race: a whole-verse recolour REPLACES the prior colour, so the prior POST must not
+  // land after a newer recolour's (or clear's) verse-level DELETE has emptied the verse. The
+  // DELETE-then-POST sequence it relies on was already gated by F-121 (`await pendingClear.settled`
+  // below), which sequences an EXTERNAL clear's DELETE ahead of the new span — but addHighlight's
+  // own POST had no symmetric supersession guard. With two rapid whole-verse taps (separate React
+  // batches), the first tap's POST is still awaiting its own clear's DELETE round-trip when the
+  // second tap's DELETE lands and empties the verse; the first POST then dispatches onto the empty
+  // verse and re-adds the now-intermediate colour — a stale row nothing ever removes. Track the
+  // latest whole-verse highlight per verse (mirroring `activeClears`); any newer whole-verse write
+  // or a clear marks it superseded, and the POST re-checks that flag after its gate resolves and
+  // skips the fetch if a newer write landed in the window. `clearVerse` already supersession-aware
+  // for clears — this is the matching half for the POST it launches.
+  interface HighlightEntry { superseded: boolean; }
+  const activeHighlights = useRef<Map<number, HighlightEntry>>(new Map());
+
   const verseId = useCallback(
     (verse: number) => encodeVerseId({ book: bookNum!, chapter: chapterNum, verse }),
     [bookNum, chapterNum],
@@ -277,12 +292,30 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       }
       const entry: ClearEntry = { controller: new AbortController(), superseded: false, settled: Promise.resolve() };
       activeClears.current.set(verse, entry);
+      // A clear also supersedes any in-flight whole-verse highlight POST for this verse: the
+      // reader asked to clear, so a pending recolour must not land after this DELETE and re-add
+      // its colour to the now-empty verse. `addHighlight`'s POST checks this flag, post-gate.
+      const pendingHighlight = activeHighlights.current.get(verse);
+      if (pendingHighlight) {
+        pendingHighlight.superseded = true;
+      }
       // Captured by `paint`, read by `rollback` — always the freshest prior value, including on a
       // retry (where "prior" is whatever `rollback` already restored after the first failure).
       let previous: StoredSpan[] | undefined;
+      // The spans THIS clear was asked to remove, snapshotted once on the first paint. A clear
+      // whose DELETE ultimately fails and settles unregisters itself from `activeClears`, so a
+      // later addHighlight on the same verse can no longer mark it `superseded` — the banner's
+      // `retry` (the `attempt` closure below) stays armed and destructive. On a replay, any span
+      // present in the verse that was NOT in this snapshot is a newer write that arrived after
+      // the clear settled; re-running the verse-level DELETE would soft-delete it server-side
+      // too. Refusing the replay preserves the newer write; the banner is replaced with a
+      // no-retry message telling the reader to reload. See test/use-annotation-writes-clearverse-
+      // retry.test.tsx.
+      let originalSpans: StoredSpan[] | undefined;
       const paint = () => {
         setHighlights((prev) => {
           previous = prev.get(verse);
+          originalSpans ??= previous;
           const next = new Map(prev);
           next.delete(verse);
           return next;
@@ -308,27 +341,48 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           body: JSON.stringify({ kind: 'highlight', verseId: verseId(verse) }),
           signal: entry.controller.signal,
         });
-      const settled = runPersist(
-        // A superseded clear's rollback re-adds the old spans beside the new one, so the reader
-        // sees BOTH colours plus this banner. A regular clear's rollback restores only the old
-        // spans. The message names what actually happened in each case.
-        () => entry.superseded
+      // A superseded clear's rollback re-adds the old spans beside the new one, so the reader
+      // sees BOTH colours plus this banner. A regular clear's rollback restores only the old
+      // spans. The message names what actually happened in each case.
+      const message = () =>
+        entry.superseded
           ? "Couldn't remove the old highlight — both colours are saved."
-          : "Couldn't clear the highlight",
-        paint,
-        request,
-        rollback,
-        () => entry.superseded,
-        () => {
-          // Identity, not key: a superseded clear's completion must not remove the NEWER clear
-          // that replaced it in the registry — otherwise the next addHighlight finds no
-          // pendingClear and POSTs with no sequencing, which is the race F-121 exists to close.
-          if (activeClears.current.get(verse) === entry) activeClears.current.delete(verse);
-        },
-      );
-      entry.settled = settled ?? Promise.resolve();
+          : "Couldn't clear the highlight";
+      const onSettled = () => {
+        // Identity, not key: a superseded clear's completion must not remove the NEWER clear
+        // that replaced it in the registry — otherwise the next addHighlight finds no
+        // pendingClear and POSTs with no sequencing, which is the race F-121 exists to close.
+        if (activeClears.current.get(verse) === entry) activeClears.current.delete(verse);
+      };
+      // clearVerse builds its own `attempt` (rather than going through `runPersist`, like
+      // toggleBookmark) so it can guard the replay: the original clear always runs, but a replay
+      // that finds a newer span on the verse refuses instead of wiping it. `id` is minted here,
+      // once per logical clear, and reused across every retry of this one clear — the same
+      // invariant `runPersist` upholds for its callers.
+      const id = ++writeSeq.current;
+      const attempt = () => {
+        // Only guard REPLAYS: `originalSpans` is undefined until the first paint captures it, so
+        // the original clear always proceeds. On a replay, compare the current verse state to
+        // the original snapshot (identity, not value — the inverse of the rollback comparison).
+        // Copied to a const so TS keeps the narrowing — `originalSpans` is reassigned inside the
+        // `paint` closure, so its declared `| undefined` otherwise returns inside this check.
+        const original = originalSpans;
+        if (original !== undefined) {
+          const now = highlightsRef.current.get(verse) ?? [];
+          if (now.some((s) => !original.includes(s))) {
+            // Refuse the destructive replay. No `retry`: re-running would refuse again, and the
+            // verse has moved on from what this clear was supposed to clear. The reader is told
+            // to reload; the newer write is preserved on client and server.
+            setWriteError({ id, message: "Couldn't clear the highlight — a newer edit arrived; reload to refresh." });
+            return Promise.resolve();
+          }
+        }
+        paint();
+        return beginPersist(id, message, request, rollback, attempt, () => entry.superseded, onSettled);
+      };
+      entry.settled = attempt() ?? Promise.resolve();
     },
-    [verseId, runPersist],
+    [verseId, beginPersist],
   );
 
   // Add a highlight span. range === null → whole verse (the tap-a-verse path).
@@ -348,6 +402,20 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       const pendingClear = activeClears.current.get(verse);
       if (pendingClear) {
         pendingClear.superseded = true;
+      }
+      // F-119 supersession (whole-verse replace only): register THIS call as the latest
+      // whole-verse write for the verse, superseding any prior one still in flight. A sub-verse
+      // span (range !== null) appends, so it neither supersedes a prior POST nor registers here —
+      // its POST must always land. `clearVerse` above already marked the prior entry superseded
+      // when this recolour cleared the old colour; the line below is the symmetric guard for the
+      // rare case the prior write registered but no clear ran (and the self-evident "this is now
+      // the latest" marker the POST closure reads). The POST skips its fetch when it is no longer
+      // the latest whole-verse write for the verse.
+      const highlightEntry: HighlightEntry | undefined = range === null ? { superseded: false } : undefined;
+      if (highlightEntry) {
+        const priorHighlight = activeHighlights.current.get(verse);
+        if (priorHighlight) priorHighlight.superseded = true;
+        activeHighlights.current.set(verse, highlightEntry);
       }
       const optimistic: StoredSpan = {
         start: range?.start ?? null,
@@ -394,6 +462,15 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       };
       const request = async () => {
         if (pendingClear) await pendingClear.settled.catch(() => {});
+        // A newer whole-verse recolour or a clear landed while this POST waited on its clear's
+        // DELETE round-trip. Don't dispatch — re-POSTing this (now-intermediate) colour onto an
+        // empty verse would persist a row the reader never sees while editing and never asked
+        // for, which is exactly the F-119 race. Resolve the run as a no-op success so the
+        // failure path doesn't surface an error for a write the reader no longer intends; the
+        // UI already shows the newer colour (the rollback/skip is a no-op — identity-based).
+        if (highlightEntry?.superseded) {
+          return new Response(null, { status: 200 });
+        }
         return fetch('/api/annotations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -407,7 +484,13 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           }),
         });
       };
-      runPersist("Couldn't save your highlight", paint, request, rollback);
+      runPersist("Couldn't save your highlight", paint, request, rollback, undefined, () => {
+        // Drop this entry from the registry once the POST has settled — but only if it is still
+        // ours, so a superseding whole-verse write's newer entry is never swept out from under it.
+        if (highlightEntry && activeHighlights.current.get(verse) === highlightEntry) {
+          activeHighlights.current.delete(verse);
+        }
+      });
     },
     [verseId, translationId, runPersist, clearVerse],
   );

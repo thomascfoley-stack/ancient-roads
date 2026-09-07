@@ -2988,3 +2988,34 @@ One correction to pass back to whoever prepared the deck: its cover slide states
 High rather than four. Small, but the deck holds itself to the standard that every
 recommendation is tied to a reproduced behaviour rather than an opinion — a stray arithmetic
 error on the cover costs more credibility than it should.
+
+### Filed 2026-09-06 from the /ask redesign (ADR-121) — Backlog additions
+
+- **`L1` amendment, recorded here because L1's Do-NOT said "do not touch the staged progress
+  sequence":** the sequence is untouched; an indeterminate `.progress-travel` bar, the active step
+  one colour tier up, and a real Stop were added beside it under the owner's 2026-09-06 report that
+  a running ask was "not discernible". ADR-121.
+- **`N2` Do-NOT ("no accordion") is superseded for the SIDEBAR only** once the owner picks a
+  direction from the 2026-09-06 canvas ("think collapsables"). **Picked and built 2026-09-07: board C,
+  ADR-122** — five fixed places, every group of yours capped at three and collapsible, the page's own
+  group opening itself, the library shelves folded behind Library. Filed from it: counts on closed
+  groups (needs cheap totals), a research list page (until then research unfolds in place), a
+  per-prayer deep link, a `limit` on `/api/prayers`.
+- ~~Stop stops *waiting* only — `api/ask/stream/route.ts` does not read `req.signal`; thread it into
+  `teach()` so a Stop also stops the spend.~~ **CLOSED 2026-09-07** (`8a3ab7b0`, `fix/ux-small-batch`):
+  the route hands `req.signal` to `teach()`, which aborts embed, compose and every retry;
+  `test/ask-abort-stops-spend.test.ts`. Still open from it: the question row is written before
+  `teach()` for an already-aborted request (I-2 was decided for a crash, not a disconnect), and
+  whether Vercel's runtime propagates a client disconnect to `req.signal` is asserted, not measured.
+- Desk pane at an ordinal (`desk.ts` already carries `ordinal` on `WorkPane` from F-158; the pane
+  never seeks to it) + a secondary "Open on desk" on result cards.
+- Persist resolved `sectionOrdinal`s for pre-2026-09-06 threads instead of re-locating on every
+  open of `/ask/[id]`; iterate newest-first or chunk past `LOCATE_SECTIONS_MAX`.
+- `web/test/work-locate-sections-db.test.ts` sits outside the `db-invariants` CI globs
+  (`test/invariants/`, `test/user-corpus/`), so the SQL executes only on a developer machine.
+- `test/publish-flip-toolchain.test.ts` runs `scripts/publish-flip.mjs` without `--evidence`, which
+  writes `flip-run-*.log` residue into the TRACKED `docs/evidence/work-order-v2-stage2/` on every
+  `npm run audit` — and `deploy.sh` then refuses the dirty tree. Point the test at a temp dir.
+- Dead `small-caps` class (never defined) still on `app/studies/page.tsx` and `plans-client.tsx`.
+- `SLOW_ANSWER_NOTICE_MS = 90_000` still derives from the n=3 dev-local series; two production
+  series now exist (owner's call).

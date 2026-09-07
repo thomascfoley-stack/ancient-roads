@@ -1,0 +1,19 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/.claude/worktrees/ask/web
+
+ ✓ test/user-corpus/draft-check.test.ts (4 tests) 11116ms
+   ✓ draft check > anchors a draft in-process — detection live, no rows written, no spend 6855ms
+   ✓ draft check > finds the user's own document on the same passage, and the tradition beside it 4053ms
+ ✓ test/invariants/licensing.test.ts (6 tests) 15720ms
+   ✓ Layer 1 — licensing invariant (behavioral) > search path: Tyndale Study Notes is never returned 334ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher legal SQL pool: no quarantined author in top candidates 9389ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher LEGAL_CORPUS_FILTER admits ALL 9 served voices (presence) 590ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher retrieveCommentary: no quarantined author in returned chunks 1141ms
+   ✓ Layer 1 — static reader forbidden-provenance ratchet > forbidden-provenance count may only decrease (or must be zero) 1856ms
+
+ Test Files  2 passed (2)
+      Tests  10 passed (10)
+   Start at  19:26:11
+   Duration  16.00s (transform 98ms, setup 0ms, collect 205ms, tests 26.84s, environment 0ms, prepare 55ms)
+

@@ -6,6 +6,7 @@ import { fetchCommentary, type CommentaryEntry } from '@/lib/bible';
 import { decodeVerseId, formatVerseId } from '@bible/verse-id';
 import { BOOK_BY_NUM } from '@bible/books';
 import { SuggestedReadings } from './suggested-readings';
+import { TextSkeleton } from './skeleton';
 
 // One sermon, read beside the voices on the passages it engages.
 //
@@ -84,7 +85,15 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
           setPassages(v.rangesConsidered);
           setPending(v.pending);
         } else {
-          setVoicesError(vRes.status === 401 ? 'unauthenticated' : `The tradition could not be loaded. (${vRes.status})`);
+          // No status number in the copy (deep audit, 2026-09-07): a reader is told what happened,
+          // not what the transport said.
+          setVoicesError(
+            vRes.status === 401
+              ? 'unauthenticated'
+              : vRes.status === 429
+                ? 'Too many requests just now. Give it a minute and try again.'
+                : 'The tradition could not be loaded just now.',
+          );
         }
       } catch {
         if (alive) setError('That document could not be loaded. Check your connection and try again.');
@@ -272,7 +281,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
                       {st && (
                         <div className="border-t edge px-4 py-3">
                           {st.loading ? (
-                            <p role="status" className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Loading…</p>
+                            <TextSkeleton label="Loading this voice" lines={3} announce />
                           ) : st.error ? (
                             <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">{st.error}</p>
                           ) : (
@@ -309,7 +318,9 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
           {/* Parchment surface with a 1px hairline — no card chrome (PRD §3). */}
           <div className="border edge px-5 py-6 sm:px-8 lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto dark:bg-stone-900">
             {doc === null ? (
-              <p role="status" className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading…</p>
+              // The h1 above already draws its own title bar for this same wait (D18); this is the
+              // body half of it, so the whole column holds its shape rather than half of it.
+              <TextSkeleton label="Loading your document" lines={7} announce />
             ) : sections.length === 0 ? (
               <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">
                 {doc.status === 'ready'

@@ -54,8 +54,15 @@ function stubFetch(overrides: Partial<Record<'me' | 'dl' | 'plans' | 'commentary
     const u = String(url);
     const ok = (json: unknown) => ({ ok: true, status: 200, json: async () => json }) as unknown as Response;
     const fail = (status: number) => ({ ok: false, status, json: async () => ({}) }) as unknown as Response;
-    if (u.includes('morning-evening')) return overrides.me ? ok(await overrides.me()) : ok(SPURGEON);
-    if (u.includes('daily-light')) return overrides.dl ? ok(await overrides.dl()) : ok(DAILY_LIGHT);
+    // The devotional statics are now ONE FILE PER DAY (scripts/split-devotional-by-day.mjs):
+    // /home fetched the whole 366-day calendar — 2.24 MB across the two files — to render one
+    // morning. So this stub serves what the CDN now serves: the day's value, keyed out of the
+    // year-shaped fixture by the MM-DD in the URL. The fixtures stay year-shaped because that is
+    // the source of truth they mirror, and slicing by the URL makes the stub STRICTER than it
+    // was — ask for the wrong day and the entry comes back undefined.
+    const dayOf = (path: string) => path.match(/\/(\d{2}-\d{2})\.json$/)?.[1] ?? '';
+    if (u.includes('morning-evening')) return overrides.me ? ok(await overrides.me()) : ok(SPURGEON[dayOf(u) as keyof typeof SPURGEON]);
+    if (u.includes('daily-light')) return overrides.dl ? ok(await overrides.dl()) : ok(DAILY_LIGHT[dayOf(u) as keyof typeof DAILY_LIGHT]);
     if (u.includes('/api/plans')) return overrides.plans === null as unknown ? fail(401) : overrides.plans ? ok(await overrides.plans()) : ok(PLANS);
     if (u.includes('/api/commentary') || u.includes('commentary')) return ok({ entries: [] });
     return fail(404);

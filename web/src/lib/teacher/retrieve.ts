@@ -22,6 +22,10 @@ export interface RetrievedChunk {
     // for register works; register-label-embeddings.mjs backfills it for the classic
     // commentary set by author match). Not every served row has it yet.
     work?: string;
+    // The row's `sections.ordinal` in that work, for the reader deep link
+    // (/work/[slug]#s{ordinal}). Attached AFTER retrieval by teacher/section-locate.ts —
+    // never read by retrieval, ranking, or the verifier. Absent when unresolved.
+    sectionOrdinal?: number;
   };
 }
 

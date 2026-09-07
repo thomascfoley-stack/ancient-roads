@@ -73,6 +73,22 @@ export async function publicReadThrottle(req: Request, bucket: string, sql: Sql 
   const key = throttleKey(clientIp(req), bucket);
   const r = await checkGateRateLimit(key, sql, PUBLIC_READ_PER_MIN, PUBLIC_READ_PER_HOUR);
   if (!r.ok) {
+    // Branch on the binding cap, like the ask / user-corpus limiters (api/ask/route.ts,
+    // api/user-corpus/search/route.ts). The reused gate limiter returns limited:'hour' with
+    // retryAfterSec:3600 when its HOUR leg binds; squashing that into RATE_LIMIT_MINUTE + "in a
+    // moment" told an hour-throttled reader to retry at once while Retry-After: 3600 — the code
+    // (the contract's branch field, docs/API_ERRORS.md) and the human message both lied.
+    //
+    // The hour leg is REACHABLE on this surface, not theoretical: this call passes
+    // PUBLIC_READ_LIMIT_PER_HOUR (600) as the perHour override, so a shared IP — carrier NAT,
+    // church wifi, a library — trips the hour cap on ordinary reading.
+    //
+    // The hour branch takes api-error.ts's registered message rather than repeating it here.
+    // The minute branch keeps this surface's own wording, which deliberately differs from the
+    // registry's question-oriented default.
+    if (r.limited === 'hour') {
+      return apiError('RATE_LIMIT_HOUR', { retryAfterSec: r.retryAfterSec ?? 3600 });
+    }
     return apiError('RATE_LIMIT_MINUTE', {
       message: 'Too many requests. Please slow down and try again in a moment.',
       retryAfterSec: r.retryAfterSec ?? 60,
@@ -105,9 +121,17 @@ export async function publicReadPageThrottle(bucket: string, sql: Sql = getDb())
   const key = throttleKey(ip, bucket);
   const r = await checkGateRateLimit(key, sql, PUBLIC_READ_PER_MIN, PUBLIC_READ_PER_HOUR);
   if (!r.ok) {
+    // Same branch as publicReadThrottle. The page surface is the worse case for the unbranched
+    // shape: an HTML page has no Retry-After header, and /search renders only `message` (drops
+    // retryAfterSec), so an hour trip reported as "in a moment" gave NO backoff signal at all.
+    // The hour message names the magnitude ("about an hour") so the page carries an honest signal
+    // in the prose itself, not just in the dropped retryAfterSec field.
+    const hour = r.limited === 'hour';
     return {
-      message: 'Too many searches. Please slow down and try again in a moment.',
-      retryAfterSec: r.retryAfterSec ?? 60,
+      message: hour
+        ? 'You’ve reached the hourly limit. Please try again in about an hour.'
+        : 'Too many searches. Please slow down and try again in a moment.',
+      retryAfterSec: r.retryAfterSec ?? (hour ? 3600 : 60),
     };
   }
   // Same fleet-wide ceiling as the request-level throttle — an SSR page load runs the same

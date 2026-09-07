@@ -6,7 +6,7 @@
 // Seeded with the groupings that are genuinely uncontested across traditions. Extending this
 // table later costs one entry; it does not need to be exhaustive on day one.
 
-import { BOOKS, BOOK_BY_SLUG } from '@/bible/books';
+import { BOOKS } from '@/bible/books';
 
 export interface CanonicalGroup {
   label: string;
@@ -55,21 +55,4 @@ export const CANONICAL_GROUPS: Record<string, CanonicalGroup> = {
 
 export function resolveCanonicalGroup(key: string): CanonicalGroup | undefined {
   return CANONICAL_GROUPS[key];
-}
-
-// Self-check, run by the integrity test — every listed slug must be a real book, no group
-// empty, no duplicate slug within a group. Exported so the test asserts THIS function's
-// verdict rather than re-deriving its own copy of the same logic.
-export function validateCanonicalGroups(): string[] {
-  const problems: string[] = [];
-  for (const [key, group] of Object.entries(CANONICAL_GROUPS)) {
-    if (group.books.length === 0) problems.push(`${key}: empty book list`);
-    const seen = new Set<string>();
-    for (const slug of group.books) {
-      if (!BOOK_BY_SLUG.has(slug)) problems.push(`${key}: "${slug}" is not a real book slug`);
-      if (seen.has(slug)) problems.push(`${key}: "${slug}" listed twice`);
-      seen.add(slug);
-    }
-  }
-  return problems;
 }

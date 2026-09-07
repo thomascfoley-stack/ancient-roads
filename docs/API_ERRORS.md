@@ -29,6 +29,7 @@ Every error response, all endpoints:
 | Code | HTTP | Headers | User-facing message |
 |---|---|---|---|
 | `RATE_LIMIT_MINUTE` | 429 | `Retry-After: <sec>` | "You've reached the limit of {n} questions per minute. Please wait {sec} seconds and try again." |
+| `RATE_LIMIT_HOUR` | 429 | `Retry-After: <sec>` | "You've reached the hourly limit for this page. Please wait {sec} seconds and try again." |
 | `RATE_LIMIT_DAY` | 429 | `Retry-After: <sec>` | "You've reached today's limit of {n} questions. Your limit resets at {time}. If you need more during the beta, let us know." |
 | `UNAUTHENTICATED` | 401 | — | "Please sign in to continue." |
 | `GATE_LOCKED` | 503 | — | "This site is temporarily unavailable." *(Fires when `SITE_PASSWORD` is unset in production — a misconfigured deploy. Log LOUDLY server-side; never reveal the cause to the client.)* |

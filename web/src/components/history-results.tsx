@@ -43,6 +43,11 @@ function workHref(slug: string, ordinal: number, threadId: string | null, query:
   return `/work/${slug}${params}#s${ordinal}`;
 }
 
+// THE CHIP AND ITS TARGET ARE TWO DIFFERENT BOXES. The pill keeps painting at 30px — growing it
+// to 44 would push this filter row off the one line it shares with "Matched:" — and the thumb gets
+// a transparent 44px box around it instead. Same split ask-scope-row.tsx writes down: the text is
+// the control, the padding is the target. CHIP_HIT goes on the <button>, CHIP on a <span> inside.
+const CHIP_HIT = 'inline-flex min-h-[44px] items-center';
 const CHIP = 'inline-flex min-h-[30px] items-center border px-2.5 text-xs transition-colors ease-gentle';
 const CHIP_ON = 'border-accent-400 bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200';
 const CHIP_OFF = 'edge text-stone-600 hover:bg-accent-50/50 dark:text-stone-400 dark:hover:bg-accent-950/20';
@@ -124,13 +129,13 @@ export function HistoryResults({ data, query, threadId }: {
             {data.interpretation.entities.map((e) => (
               <button
                 key={e.slug} type="button" aria-pressed={!offEntities.has(e.slug)}
-                className={`${CHIP} ${offEntities.has(e.slug) ? `${CHIP_OFF} opacity-40` : CHIP_ON}`}
+                className={CHIP_HIT}
                 onClick={() => setOffEntities((prev) => {
                   const next = new Set(prev);
                   if (next.has(e.slug)) next.delete(e.slug); else next.add(e.slug);
                   return next;
                 })}
-              >{e.label}</button>
+              ><span className={`${CHIP} ${offEntities.has(e.slug) ? `${CHIP_OFF} opacity-40` : CHIP_ON}`}>{e.label}</span></button>
             ))}
             {data.interpretation.period && (
               <span className={`${CHIP} ${CHIP_ON} tabular-nums`}>{periodBadge([data.interpretation.period.start, data.interpretation.period.end])}</span>
@@ -149,9 +154,9 @@ export function HistoryResults({ data, query, threadId }: {
             {buckets.map(([c, n]) => (
               <button
                 key={c} type="button" aria-pressed={bucket === c}
-                className={`${CHIP} tabular-nums ${bucket === c ? CHIP_ON : CHIP_OFF}`}
+                className={CHIP_HIT}
                 onClick={() => setBucket((b) => (b === c ? null : c))}
-              >{c < 0 ? `${-c}c B.C.` : `${c}c`} · {n}</button>
+              ><span className={`${CHIP} tabular-nums ${bucket === c ? CHIP_ON : CHIP_OFF}`}>{c < 0 ? `${-c}c B.C.` : `${c}c`} · {n}</span></button>
             ))}
           </div>
         </div>
@@ -213,17 +218,19 @@ export function HistoryResults({ data, query, threadId }: {
                       </div>
                       <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-stone-600 transition-colors ease-gentle group-hover:text-stone-900 sm:line-clamp-2 dark:text-stone-300 dark:group-hover:text-stone-100">{s.excerpt}</p>
                     </Link>
+                    {/* Same split as the chips: the bordered square still paints at 32px, the
+                        target around it is 44. */}
                     <button
                       type="button" aria-label="Copy citation" title="Copy citation"
-                      className="h-8 w-8 shrink-0 self-center border edge text-xs text-stone-500 transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center self-center text-stone-500 transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
                       onClick={() => void cite(s, g.work)}
-                    >{copied === s.sectionId ? '✓' : '⧉'}</button>
+                    ><span className="flex h-8 w-8 items-center justify-center border edge text-xs">{copied === s.sectionId ? '✓' : '⧉'}</span></button>
                   </li>
                 ))}
               </ul>
               {g.sections.length > 3 && (
                 <button
-                  type="button" aria-expanded={open} className="mt-1.5 text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
+                  type="button" aria-expanded={open} className="mt-1.5 inline-flex min-h-[44px] items-center text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
                   onClick={() => setExpanded((prev) => {
                     const next = new Set(prev);
                     if (next.has(g.work.slug)) next.delete(g.work.slug); else next.add(g.work.slug);

@@ -244,7 +244,7 @@ export function StudyPanel({
         <div className="min-h-[30vh] flex-1 overflow-y-auto">
           {tab === 'commentaries' && <CommentariesTab entries={entries} loadFailed={entriesLoadFailed} onRetry={onRetryCommentaries} />}
           {tab === 'word' && <WordTab words={originalWords} lang={lang} focusIdx={focusWordIdx} selection={selection} />}
-          {tab === 'notes' && <NotesTab annotation={annotation} />}
+          {tab === 'notes' && <NotesTab key={verseNum} annotation={annotation} />}
           {/* PRAY — block PR1a. An ACTION, not a fourth tab: commentaries/word/notes are facets of
               the verse, and prayer is something the reader does with it. Making it a tab would file
               responding-to-the-text alongside studying it, which is the exact conflation the block
