@@ -44,15 +44,25 @@ simply never reaches a `metadata` export, so the file reads as covered while one
 user-visible strings is not — the watchlist shape exactly. Filed, not fixed; pre-existing and not a
 deploy blocker.
 
-### NOT DONE / UNVERIFIED
+**SHIPPED — `5fdb8f46` is live on `ancientpaths.app`** (receipt `dpl_14iyWtqAUW4pUShLh8Q6PXj4CP6o`,
+2026-09-07T08:58:58Z, `alias_serves == deployment_id`, `state: live`), owner-executed because the
+agent session's permission classifier refused `./deploy.sh` and that was not worked around.
+**`main` == live: the merge-to-main gap every board header has carried since 2026-08-18 is CLOSED.**
 
-- **THE DEPLOY IS NOT DONE, AND IT IS THE ONE THING OWED.** Live is still `d323fff3`; `main` is
-  `8ff9940c`, **68 commits ahead**. Everything else on the checklist is met — clean tree, ancestry
-  holds (`origin/main` is an ancestor of HEAD), no migrations, `~/.neon_prod_url` and the Vercel
-  auth both present, CI green on the exact content, browser walk done. `./deploy.sh` was **refused
-  by this session's permission classifier**, the same class of refusal that stalled PR #235 earlier
-  today. Not worked around. It needs the owner to run `./deploy.sh` from this worktree, or to grant
-  the permission.
+**The first deploy attempt was BLOCKED, and the gate was right.** I told the owner to run
+`./deploy.sh` from a worktree I had fast-forwarded to `8ff9940c` — and then merged PR #238, which
+put a merge commit `5fdb8f46` on `main` that the worktree did not have. The ancestry gate refused:
+`origin/main has 1 commit(s) this tree does not have`, naming the commit and warning that deploying
+would move the alias to a tree missing shipped work. **That is the gate catching its author's own
+sequencing error**, exactly the class it was built for after three shipped features were lost in one
+day. Fixed by fast-forwarding to `5fdb8f46`; `DEPLOY_ALLOW_BEHIND=1` was explicitly NOT used.
+
+**Verified independently of the deploy script**, because the script asserting its own success is not
+evidence: fetched the live alias's served stylesheets and grepped for `html.reader-dark`, a rule this
+union ADDED and the previous live build did not contain — present, with 435 `.reader-dark`
+occurrences, and a negative control (`.reader-darkness`) returning 0 to prove the grep discriminates.
+
+### NOT DONE / UNVERIFIED
 - **Signed-in surfaces were never walked** — sign-in is owner-only, so the My Works rename shipped
   in this union has been proven by tests and never by a human hand on the actual control. That is
   the first thing to look at after the deploy.
