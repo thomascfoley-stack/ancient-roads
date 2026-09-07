@@ -1,5 +1,50 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-06 — Acquisitions executed; translations deploy BLOCKED on the D3 corpus-store token [Kimi Code session]
+
+Owner directives executed: "english only forget latin" · "do the acquisitions and push to
+prod" · "go ahead on the owner batch."
+
+**English Institutes — the hole was a phantom.** `calvin-institutes` (Beveridge 1845) was
+already ingested AND published on prod (3,448 sections / 3,448 flat embeddings, re-measured);
+the manifest merely carried two WRONG entries (`calvin-institutio1/2` = Latin page-scans).
+Both deleted per the owner ruling (`f26b696`). The corpus had the Institutes all along.
+
+**Menno Simons — already staged on prod** (works1: 75 sections/1,078 emb; works2: 87/1,626;
+copied dev→prod 2026-08-19). They sit in the 440-work publish backlog. No ingest needed.
+
+**Luther Holman/Philadelphia ed. — vols I–II staged on dev** (`f26b696`; 8 treatises each,
+575 + 770 flat embeddings; scoped gutenberg profiles with editor-introduction exclusion,
+14/14 profile tests red-proofed). **Vols 3–5 do not exist on Gutenberg** (gutendex sweep,
+76 Luther entries) — they're an archive.org OCR-lane acquisition, not forced.
+
+**Owner publish batch — fully prepped** (`3d09cba`): runbook
+`docs/pm/orders/2026-09-06-owner-publish-batch.md` + slug files
+(`docs/evidence/corpus-copy/dev58-2026-09-06.json`, `prod440-2026-09-06-batch{1..5}.json`),
+reconciled exactly (58 dev-staged / 440 prod-staged minus hort ruling + thayers block).
+Flips are `--status-only` + `serve-batched` (measured: in-transaction serve would lock
+`sources` for 2–4 h; three historical runs died mid-flight). foxe-martyrs needs a
+`history_embeddings` backfill + serve after the batch to be /ask-retrievable.
+
+**Translations deploy — BLOCKED on D3, one owner action.** weymouth/twenty/jps are committed
+(`9b4cb08`), qa green. The CDN sync stopped correctly twice on the store-binding guard:
+the Vercel project env token binds the PRIVATE user-corpus store; `~/.corpus_blob_token`
+holds the ROTATED (dead) corpus token — WORKLOG 2026-08-18 records the owner rotating it
+the same sitting it was used. The live `ancient-paths-corpus` (`mbp8qokd9o4o9qnz`) token is
+owner-held, never on disk. **Owner action (≈2 min):** Vercel dashboard → Storage →
+ancient-paths-corpus → either mint a read-write token into `~/.corpus_blob_token`, OR
+connect the store to the `web` project with a NON-DEFAULT env prefix (e.g. `CORPUS` — the
+default would clobber the user-corpus `BLOB_READ_WRITE_TOKEN`). Then the finish is one
+scoped sync (`--prefix bible/{weymouth,twenty,jps}` — deliberately scoped so another
+session's 451-file commentary drift does NOT ride to prod) + `deploy.sh`. Sync manifest
+verified untouched by the failed runs (the guard writes only after success).
+- Also flagged from agent-23's audit: 4 NEW high advisories vs locked `fast-uri@3.1.5`
+  (GHSA-5jgf-p345-68v8, -f65p-4m7j-42xc, -fph4-wmhf-6fwf, -jqff-g426-hqxp; fix ≥3.1.6) —
+  pre-existing lockfile, advisories newer than the last green audit; needs owner
+  adjudication (upgrade or ignoreGhsas + SECURITY.md). Does NOT gate deploy.sh.
+- DRC + Brenton LXX remain blocked on versification (Vulg/LXX→KJV mapping slice needed;
+  shipping keyed-as-KJV would mis-reference text — the correct stop).
+
 ## 2026-09-06 — Static bible translations: Weymouth NT + Twentieth Century NT + JPS 1917 added; DRC + Brenton LXX BLOCKED on versification [Kimi Code session]
 
 Workorder: add five PD translations through the STATIC bible pipeline (web/public/bible).
