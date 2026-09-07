@@ -44,8 +44,46 @@ ports** onto files tonight's work had rewritten, delegated in pairs and each red
 two PRs whose test files hand-list their session mocks (#202's `search-corpus-paged-past-end`,
 #210's `d43-bare-catch-repro`, the latter naming the real helpers one by one). Both fixed to spread.
 
-**Merged so far: 8** (4 early, then #151/#205/#208/#215). The rest land as their throttled re-runs
-go green.
+**DONE: 51 merged, 2 closed as superseded, 0 open.** `origin/main` is `08f21d22`, and its tree is
+**byte-identical** to the tree the full gate was run on (`git rev-parse main^{tree}` = the verified
+tree) — the strongest form of the combined check this could have.
+
+**The long tail was database contention, measured rather than assumed.** 38 PRs sat at
+`audit=SUCCESS, db-invariants=FAILURE`. PR #226 failed FOUR consecutive attempts alongside other
+runs and passed on the fifth when it was the only run in the account, so the bar is not "a few at a
+time" but **one at a time** — the heavy suites (tradition-gap, register-end-to-end, licensing,
+section-vector-pairing) time out at 60s/120s under any concurrency. Rather than spend ~4h serially,
+the remainder were verified by building the exact resulting tree and running the full gate on it
+once, uncontended, then merging.
+
+**A REGRESSION I INTRODUCED, and the audit that bounded it.** The replay rule — take the PR's
+product commit, drop its CI-plumbing commits — is wrong whenever a product fix is BUNDLED INTO a
+plumbing commit. PR #152's was: `fix(ci): use importOriginal for session mocks; fix
+claimReadingsStart NULL handling`. Dropping it removed a three-valued-logic fix, and
+`claimReadingsStart`'s `NOT (readings_status IN (...) AND ...)` evaluates to NULL for a brand-new
+document (status NULL), excluding the row from the UPDATE: **suggested readings could not start on
+any fresh document**, the route answering 409 "already running" for a search that had never run.
+Caught by the test #152 itself shipped. Fixed in #236 with `COALESCE(..., false)`.
+**Then bounded, not assumed:** each branch's pre-replay head is still recoverable from its CI run
+history, so every merged PR's dropped commits were re-read for product-file changes —
+**46 clean, 1 to review (this one), 0 indeterminate** (`scratchpad/audit-dropped.sh`).
+
+**A bad fixture, not a conflict.** `voices-related-envelope.test.ts` seeded `status: 'processing'`,
+which is not a `DocStatus` (queued|parsing|chunking|embedding|ready|failed|empty). It passed only
+because the route asked `status !== 'ready'`, which swept unreal values into "pending" too; #217
+replaces that with an explicit IN_FLIGHT list so `failed`/`empty` stop reading as "still indexing",
+and the invalid status stopped passing with them. Fixture corrected.
+
+**TWO CORRECTIONS TO MY OWN EARLIER CLAIMS IN THIS SESSION.**
+1. I said the dev-database residue was "from my own interrupted red-proof runs". **It is not.** It
+   is six rows — `rls-test-a-1788111749` / `rls-test-b-1788111749`, one each in `user_documents`,
+   `notes`, `bookmarks` — seeded **2026-08-30 17:42 UTC** by the RLS *behavioural* proof recorded in
+   this very WORKLOG (entry 2026-08-30, "Seeded two users … with one row each"). That proof was
+   hand-run, so no suite teardown ever swept it. Eight days old and nothing to do with tonight.
+2. I said an earlier `npm run audit` on main "passed hygiene". It did not check: with no owner
+   `DATABASE_URL` the gate prints `⚠ SKIPPED (visibly): no target to inspect` and exits 0. Honest
+   and loud, but a pass I read as coverage. The residue only became visible once I started running
+   the gate WITH the database attached.
 
 **NOT DONE / UNVERIFIED.**
 * The remaining ~40 merges wait on throttled CI. **The combined result is unverified until a full

@@ -3073,3 +3073,36 @@ test red and does not. None is a known product defect; each is a check that woul
   a database.
 - **Still open from 2026-08-31**: `upload-direct-guards.test.ts:161`'s `as never` cast. This pass
   did not re-examine it.
+
+### Filed 2026-09-07 from landing the `detail/*` backlog
+
+- **Six rows of test residue in the dev database, eight days old and unswept.**
+  `rls-test-a-1788111749` / `rls-test-b-1788111749`, one row each in `user_documents`, `notes`,
+  `bookmarks`, seeded 2026-08-30 17:42 UTC by the RLS **behavioural** proof (WORKLOG 2026-08-30,
+  "Seeded two users … with one row each"). That proof was hand-run at a terminal, so no suite
+  teardown owns those rows and none will ever sweep them. `npm run audit` fails its hygiene gate on
+  any machine that runs it WITH an owner `DATABASE_URL`. Not hand-deleted: the gate's own message
+  forbids it ("Fix the TEARDOWN … never by deleting rows from a live target by hand"), and the real
+  fix is that an ad-hoc proof which writes to a shared target must clean up or be run inside a
+  rolled-back transaction, the way `annotations-polymorphic.test.ts` does.
+- **The hygiene gate passes when it has nothing to check.** With no owner `DATABASE_URL` it prints
+  `⚠ SKIPPED (visibly): no target to inspect` and exits 0. That is an honest, loud skip — but a
+  local `npm run audit` without database env reports AUDIT PASSED while never looking at residue,
+  and it read as coverage to me during this session. Worth making the summary line distinguish
+  "passed" from "skipped for want of a target".
+- **`unit-ordinal-instrument.test.ts` is not isolated from its neighbours.** It counts published
+  works and failed `expected 130 to be 131` in one full-suite run while passing alone on both `main`
+  and the candidate tree. Some sibling seeds a published work; the instrument sees it. Order- and
+  parallelism-dependent, so it will surface as an unexplained red at random.
+- **`envInt` has no test.** PR #149 was closed as superseded — main's guard is strictly stricter —
+  but that PR's 172-line red-proof was the only coverage the guard has ever had, and porting it is a
+  rewrite, not a port (different signature, error strings, empty-string semantics). The guard that
+  stops a typo silently uncapping a paid endpoint is untested.
+- **A document's `parse_error` can carry a raw upstream error string** (`queue.ts:226/232`, and
+  `:108` concatenates it forward) and `my-works.tsx:957` renders it verbatim; #217 now returns the
+  same field as `reason` from a second route. No new exposure class, but it is a live tension with
+  the "no vendor error string reaches the DOM" property enforced elsewhere this session. Fixing it
+  means touching the queue's failure writers.
+- **`docs/UX_REMEDIATION.md:691`** still quotes the L1b block's original slow-notice copy as the
+  whole prescribed string; after #219 that is the `verifying`-only branch. Second divergence
+  recorded in that block.
