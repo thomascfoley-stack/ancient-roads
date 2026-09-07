@@ -15,8 +15,43 @@ export interface ScannedEntry {
 
 export interface FrontMatterVerdict {
   apparatus: boolean;
-  kind: 'apparatus-title' | 'apparatus-heading' | 'roman-numeral-body' | null;
+  kind:
+    | 'apparatus-title'
+    | 'apparatus-heading'
+    | 'roman-numeral-body'
+    | 'word-index-title'
+    | 'publisher-catalogue-title'
+    | 'publisher-price-list-body'
+    | 'publisher-blurb-body'
+    | null;
+  strength: 'strong' | 'weak' | null;
   evidence: string | null;
+}
+
+export interface ForeignMatterVerdict {
+  foreign: boolean;
+  kind: 'foreign-work-banner' | 'foreign-work-byline' | null;
+  strength: 'strong' | 'weak' | null;
+  name: string | null;
+  evidence: string | null;
+}
+
+export interface MatterFinding {
+  index: number;
+  ordinal: number | null;
+  position: 'head' | 'tail' | 'middle';
+  apparatus: true;
+  kind: string;
+  strength: 'strong' | 'weak' | null;
+  evidence: string | null;
+  reason?: string;
+}
+
+export interface WorkMatterSweep {
+  scanned: number;
+  findings: MatterFinding[];
+  held: boolean;
+  byKind: Record<string, number>;
 }
 
 export interface FrontMatterHit extends FrontMatterVerdict {
@@ -33,8 +68,17 @@ export interface FrontMatterScan {
   byKind: Record<string, number>;
 }
 
+export declare const DETECTOR_VERSION: string;
 export declare function titleLine(entry?: ScannedEntry): string;
 export declare function frontMatterVerdict(entry?: ScannedEntry): FrontMatterVerdict;
+export declare function foreignMatterVerdict(
+  entry?: ScannedEntry,
+  opts?: { author?: string },
+): ForeignMatterVerdict;
+export declare function sweepWorkMatter(
+  sections: Array<ScannedEntry & { ordinal?: number | null }>,
+  opts?: { author?: string; head?: number; tail?: number },
+): WorkMatterSweep;
 export declare function isStub(entry?: ScannedEntry): boolean;
 export declare function scanEntries(
   entries: Iterable<ScannedEntry>,

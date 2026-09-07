@@ -1,0 +1,171 @@
+ADR-029 Track A — red-proof log (detector extension + labelled set + staged-set scan)
+====================================================================================
+
+PRE-REGISTERED BAR — written 2026-09-07T00:40Z, BEFORE any labelled-set run or staged-set
+scan, per KIMI_ORDER_corpus-coverage.md §2 ("Pre-register the bar before you run anything").
+
+Instrument under test: scripts/lib/front-matter-detector.mjs, extended per ADR-029 addendum 2
+with (a) publisher catalogue/price-list shapes, (b) machine-generated word/phrase-index shape,
+plus a head-AND-tail per-work sweep that adds author-aware foreign-matter signals (work banner
+/byline naming someone other than the declared author). Detector version tag: see
+DETECTOR_VERSION in the module; every run below records it.
+
+INPUT SET (frozen 2026-09-07T00:31Z, before this bar):
+  docs/evidence/adr029-scan-2026-09-06/input-slugs.txt
+  133 lines, sha256 2521d3463d1a8625c7cf6db5304274cab6813d2f2b78bd0f9ada7eb6a5829cf1
+  Precondition checked first: `SELECT slug FROM sources WHERE status='ingesting'` returned
+  ZERO rows, so no prior run is writing; the staged set is not a moving target.
+
+LABELLED SET (from ADR-029 + addenda) and the bar:
+
+POSITIVES — every one of these WORKS must produce at least one detector finding in the
+documented span:
+  P1  chrysostom-homilies §1–95 (Schaff's Prolegomena). NOT LIVE in dev: the order's probe
+      (`sections … slug='chrysostom-homilies' AND ordinal BETWEEN 1 AND 5`) returned ZERO rows —
+      addendum-1 suppression is applied, so a zero-finding scan of the live store would prove
+      nothing for this work. Labelled from the suppression backup
+      docs/evidence/part1/chrysostom-prolegomena-suppressed.jsonl (95 flat rows, the exact text
+      that was in the store). Expectation: the work's head row fires (Prolegomena label and/or
+      "By Philip Schaff" byline); rows 2..95 are unmarked bibliographic prose and are NOT
+      expected to fire individually — recorded, not hidden.
+  P2  origen-commentary §1–~129 (1 & 2 Clement). LIVE in dev (staged, 1,224 sections; §1 body
+      opens "The First Epistle of Clement to the Corinthians", §130 opens "Origen's Commentary
+      on the Gospel of John"). The ADR's "~129/~130" is approximate by its own words; the
+      bodies were read, no hard boundary is seeded anywhere. Expectation: ≥1 finding inside
+      §1–129 via the foreign-work banner rule.
+  P3  word/phrase-index suppression list — schaff-creeds 585, hodge-systematic 283,
+      owen-works 41, watson-works 17, maclaren-expositions 2, edwards-works 1 (929 rows).
+      NOT LIVE in dev (addendum 2 suppression applied). Labelled from
+      docs/evidence/part2/nonauthorial-matter-suppressed.jsonl (the exact suppressed bodies).
+      Expectation: ≥1 finding per work; per-row hit rate reported with denominator.
+  P4  publisher catalogues — tennyson-in-memoriam §1–5, traherne-poems §413–417,
+      spurgeon-talks-to-farmers §299–300. NOT LIVE in dev (suppressed / work killed).
+      Labelled from the same part2 backup. Expectation: every one of the 12 rows fires
+      (each row was body-verified by addendum 2 as pure catalogue/ad material).
+
+KEPT NEGATIVES — none of these may be flagged (a detector that flags one is red and does
+not ship):
+  K1  schaff-creeds "Comparative Table of the Ante-Nicene Rules of Faith" — 7 sections,
+      LIVE in dev (ordinals 1877–1883), genuine scholarship per addendum 2.
+  K2  calvin-institutes "General Index of Chapters." — 6 sections, LIVE in dev
+      (ordinals 83–88), a legible table of contents per addendum 2.
+  K3  spurgeon-talks-to-farmers §298 — the MIXED chunk (opens with real Spurgeon "Is the
+      eternal happiness of the righteous…", ends inside another book's prefatory matter).
+      The work is gone from dev (owner ruling); reconstructed verbatim from the Project
+      Gutenberg #42518 source text (the store's own provenance) as the window between the
+      start of that sentence and the start of §299's known opening ("I believe the
+      prevention or destruction of unborn human life…"). The detector must not call this
+      chunk publisher matter — per addendum 2 it is a re-slice candidate, not a finding.
+
+BAR: all documented positive WORKS detected (P1–P4: 10 works), zero KEPT negatives flagged
+(K1–K3). Sensitivity and specificity reported with denominators. The staged-set scan's
+verdict (PASS/FAIL per work) is separate from the labelled-set bar and reported in
+verdict.md with the same denominators discipline.
+
+Ordinal-axis warning heeded: section ordinals below are `sections.ordinal` on the sections
+axis only; nothing here addresses flat-store rows by that axis (addendum 2's
+Tennyson/Traherne bug class). The detector consumes {heading, body} pairs and never issues
+deletes.
+
+================================================================================
+RUN LOG (chronological, newest last)
+================================================================================
+
+[2026-09-07T00:31:43Z] RED — new labelled-set tests against the UNMODIFIED detector
+  command: corepack pnpm exec vitest run test/front-matter-detector-adr029.test.ts
+  result: 14 failed / 4 passed (18). Every new positive case fails:
+    - word/phrase-index positives fail behaviorally (frontMatterVerdict returns apparatus:false)
+    - publisher catalogue/price-list/blurb positives fail behaviorally
+    - author-aware sweep positives fail structurally (foreignMatterVerdict /
+      sweepWorkMatter do not exist yet)
+  The 4 passing are the author-free KEPT-negative cases — the old detector does not flag
+  them either; they must stay green after the change (checked again below).
+
+[2026-09-07T00:37:01Z] GREEN — extended detector (DETECTOR_VERSION 2.0.0)
+  command: corepack pnpm exec vitest run test/front-matter-detector-adr029.test.ts test/front-matter-detector.test.ts
+  result: 48 passed / 0 failed (30 pre-existing + 18 new). The 14 red cases now pass;
+  every pre-existing must-NOT-fire case stayed green throughout (they were also green at
+  RED time and are unchanged).
+  Shapes added: word-index-title, publisher-catalogue-title, publisher-price-list-body,
+  publisher-blurb-body (author-free, in frontMatterVerdict); foreign-work-banner /
+  foreign-work-byline (author-aware, in foreignMatterVerdict); sweepWorkMatter head/tail
+  sweep with position tags.
+
+[2026-09-07T00:38:50Z] LABELLED SET, run 1 — BAR FAILED (denominator bug + banner over-fire)
+  command: npx tsx scripts/adr029-nonauthorial-scan.mts --target=ep-tiny-hat-atdgpisx --mode=labelled
+  Two defects found by the run itself: (a) the runner's positive denominator was wrong
+  (10 coded, 11 labelled works: P1+P2+6 index+3 catalogue); (b) BANNER_RE carried an /i
+  flag and fired on prose non-names ("the works of Thy goodness", "life of holiness") —
+  31 noise findings in genuine Origen. Detector fixed: banner patterns case-sensitive,
+  pronoun/abstract tokens excluded; runner denominator corrected to 11.
+
+[2026-09-07T00:40:09Z] LABELLED SET, final — BAR MET (same command)
+  POSITIVES 11/11 works (sensitivity, denominator 11):
+    P1 chrysostom-homilies §1–95 (backup — NOT live, suppression applied): head row fires,
+       foreign-work-byline ". By Philip Schaff". 1/95 rows fire individually; rows 2..95
+       are unmarked bibliographic prose, as pre-registered.
+    P2 origen-commentary §1–~129 (LIVE in dev): §1 "The First Epistle of Clement" and
+       §101 "The Second Epistle of Clement" fire (foreign-work-banner); ZERO findings in
+       the genuine-Origen region §130+ — the composite boundary is detected at both
+       Clement banners, no hard boundary seeded.
+    P3 word indexes (backup): schaff-creeds 585/585, hodge-systematic 283/283,
+       owen-works 41/41, watson-works 17/17, maclaren-expositions 2/2, edwards-works 1/1
+       rows fire — 929/929.
+    P4 catalogues (backup): tennyson 5/5, traherne 5/5, spurgeon 2/2 rows fire — 12/12.
+  KEPT NEGATIVES 3/3 clean (specificity, denominator 3):
+    K1 schaff-creeds comparative table 7/7 live rows, 0 findings.
+    K2 calvin-institutes general index of chapters 6/6 live rows, 0 findings.
+    K3 spurgeon §298 mixed chunk (PG-sourced fixture), 0 findings.
+  Unit-level red→green: 14 new cases red at 00:31:43Z, 48/48 green at 00:40:09Z
+  (30 pre-existing must-NOT-fire cases green throughout).
+
+[2026-09-07T00:44Z] STAGED-SET SCAN, run 1 — 63 FAIL / 70 PASS, over-fired
+  command: npx tsx scripts/adr029-nonauthorial-scan.mts --target=ep-tiny-hat-atdgpisx --mode=scan
+  Reading the findings (ADR-029: every hit is a claim to be read) showed the author-aware
+  rules drowning in three false-positive classes: histories/biographies whose SUBJECT is
+  another work ("The Life of William Gardiner" is Foxe's own chapter; schaff-hcc chapters),
+  citations mid-body (". by R. Menzies", "Lightfoot's Commentary" in thayers), and all-caps
+  poem/chapter titles ("SODOM'S DOOM", "ZION'S APPEAL", "NEW-YEAR'S GIFT"). Plus a
+  chain-reference work tripping the price-list body rule on "--SEE Topic" lines.
+  Detector rework (still DETECTOR_VERSION 2.0.0, same shapes, sharper bounds):
+    - author-aware rules read the heading + body's first 120 chars only (title region);
+    - a body match is STRONG only with the print-boundary signature (a rule line
+      ————/____/---- within 160 chars), else WEAK; heading matches are WEAK (a heading
+      naming another work usually declares the section's subject);
+    - bylines require ≥2 name tokens (kills ". By Adam", ". By Inheritance");
+    - all-caps possessive requires a work-type noun (kills "SODOM'S DOOM", keeps
+      "HAYDN'S DICTIONARY"); "--" leader needs 4 hyphens (kills "--SEE" chain refs);
+    - abstract-noun exclusions extended ("One's Life", "Life of Thought" — real Origen
+      chapter headings that fired in run 1 of the labelled set).
+
+[2026-09-07T00:47Z] LABELLED SET after rework — BAR STILL MET
+  48/48 unit tests green; labelled set 11/11 positives, 3/3 kept negatives clean;
+  origen findings unchanged (§1, §101, both strong), zero beyond-span findings.
+
+[2026-09-07T00:49Z] STAGED-SET SCAN, final — 43 FAIL / 90 PASS / 0 EMPTY (133 works)
+  Every one of the 63 strong findings read and classified: all genuine.
+    apparatus-title 43 — title pages / contents / prefaces carried in as sections;
+    word-index-title 15 — live "Latin/German Words and Phrases" indexes in staged works
+      (the addendum-2 class, not yet suppressed in THESE works);
+    foreign-work-banner 5 — origen §1/§101 (1 & 2 Clement, dash-rule signed),
+      schaff-anf06 §16 (Julius Africanus) / §39 (Theonas), schaff-anf08 §543 (Clement).
+  Zero publisher-catalogue/price-list strong findings — none survives in the staged set.
+  Weak findings are reported per work in verdict.md, not held (owner decision #4 open).
+  Full per-work verdicts: docs/evidence/adr029-scan-2026-09-06/verdict.md.
+
+[2026-09-07T00:48:45Z] ADAPTER BOUNDARY red-proof — RED then GREEN
+  command: corepack pnpm exec vitest run test/ccel-attribution-boundary.test.ts
+  RED  (00:48:45Z, adapter unmodified): 5 failed / 5 — attributionBoundaryHold absent.
+  GREEN(00:49:31Z, boundary landed):   5 passed / 5 —
+    - composite ThML volume (1 Clement + dash-rule banner under declared author Origen)
+      is HELD, reason names foreign-work-banner / Clement;
+    - clean work (genuine Origen units, own banner) NOT held;
+    - a "Latin Words and Phrases" unit (MATTER_RE misses it) is HELD [word-index-title];
+    - the KEPT "Comparative Table of the Ante-Nicene Rules of Faith" NOT held;
+    - a weak-only work (heading names another work, no rule line) reported, NOT held.
+  Design: src/ingest/adapter-ccel.ts exports attributionBoundaryHold(sections, author);
+  acquireCcel runs it after the min-units floor and BEFORE any write (and in --no-write
+  planning, so a dry run shows the hold). held => skipped, embedded: 0, reason recorded;
+  nothing is trimmed or deleted (ADR-029 rule 2). Weak findings ride the result's
+  `matter` field as a report. The detector is the same module the publish-side scan uses
+  (scripts/lib/front-matter-detector.mjs, DETECTOR_VERSION 2.0.0) — not a second detector.

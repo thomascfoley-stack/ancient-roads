@@ -22,13 +22,44 @@ import { BOOKS } from '../bible/books.js';
 // reports success.
 import { expandCcelIdPattern } from './source-artifact-urls.mjs';
 import { writeRegisterWork, type RegisterWork, type RegisterSection } from './register-writer.js';
+import { DETECTOR_VERSION, sweepWorkMatter } from '../../scripts/lib/front-matter-detector.mjs';
 
 const CACHE = 'data/raw/ccel';
 const MIN_UNITS = 3;
 // Preferred div type per work (finest natural unit); fallback scan order otherwise.
 const UNIT_TYPE_ORDER = ['Hymn', 'Sermon', 'Poem', 'chapter', 'section', 'Chapter', 'Section', 'part'];
 
-export interface CcelWorkResult { slug: string; units: number; anchored: number; embedded: number; skipped: boolean; reason?: string }
+export interface CcelWorkResult { slug: string; units: number; anchored: number; embedded: number; skipped: boolean; reason?: string; matter?: { strong: number; weak: number; kinds: Record<string, number> } }
+
+// ── ADR-029 per-work attribution boundary (the durable repair) ───────────────
+// Addendum 1: "the adapter fix is the repair and must land before any further CCEL
+// ingest." Addendum 2: the class is ANY non-authorial matter, not only composite volumes.
+// So after a work's sections are built and before anything is written, the work goes
+// through the SAME detector the publish-side scan uses (sweepWorkMatter — head AND tail,
+// author-aware). A work with a STRONG finding is HELD: not written, not staged, reason
+// recorded — the human reads it and re-slices, exactly as ADR-029's origen remedy
+// prescribes. NOTHING is trimmed or deleted by ordinal (ADR-029 rule 2 rejects ordinal
+// surgery): the boundary holds the whole work or passes it whole. Weak findings ride
+// along in the result as a report (owner decision #4 on gating strength is open).
+export function attributionBoundaryHold(
+  sections: RegisterSection[],
+  author: string,
+): { held: boolean; reason: string | null; matter: { strong: number; weak: number; kinds: Record<string, number> } } {
+  const sweep = sweepWorkMatter(sections, { author });
+  const strong = sweep.findings.filter((f) => f.strength === 'strong');
+  const matter = { strong: strong.length, weak: sweep.findings.length - strong.length, kinds: sweep.byKind };
+  if (strong.length === 0) return { held: false, reason: null, matter };
+  const first = strong[0]!;
+  const desc = `unit ${first.index + 1}/${sections.length} (${first.position}) [${first.kind}] ${JSON.stringify(first.evidence?.slice(0, 70))}`;
+  return {
+    held: true,
+    reason:
+      `held — non-authorial matter (ADR-029, detector ${DETECTOR_VERSION}): ${strong.length} strong finding(s); first: ${desc}` +
+      (first.reason ? ` — ${first.reason}` : '') +
+      '. The work is NOT written; read the flagged units and re-slice with per-work attribution. No ordinal trim performed.',
+    matter,
+  };
+}
 
 export async function fetchCcelXml(ccelId: string): Promise<string | null> {
   mkdirSync(CACHE, { recursive: true });
@@ -305,7 +336,12 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
   if (sections.length < minUnits) return { slug: entry.slug as string, units: sections.length, anchored: 0, embedded: 0, skipped: true, reason: `only ${sections.length} units — structure not recognized` };
 
   const anchored = sections.filter((s) => s.anchors).length;
-  if (!opts.write) return { slug: entry.slug as string, units: sections.length, anchored, embedded: 0, skipped: false };
+  // ADR-029 attribution boundary — runs before ANY write, and also in --no-write planning
+  // so a dry run shows the hold the real run would take.
+  const boundary = attributionBoundaryHold(sections, entry.author as string);
+  if (boundary.held) return { slug: entry.slug as string, units: sections.length, anchored, embedded: 0, skipped: true, reason: boundary.reason ?? undefined, matter: boundary.matter };
+  if (boundary.matter.weak > 0) console.log(`  ${entry.slug as string}: ${boundary.matter.weak} weak non-authorial finding(s) reported (not held): ${JSON.stringify(boundary.matter.kinds)}`);
+  if (!opts.write) return { slug: entry.slug as string, units: sections.length, anchored, embedded: 0, skipped: false, matter: boundary.matter.weak > 0 ? boundary.matter : undefined };
 
   const registerMap: Record<string, 'hymn' | 'poetry'> = { hymn: 'hymn', poetry: 'poetry' };
   const st = entry.source_type as string;
@@ -320,7 +356,7 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
     sections,
   };
   const res = await writeRegisterWork(work);
-  return { slug: entry.slug as string, units: sections.length, anchored, embedded: res.embedded, skipped: false };
+  return { slug: entry.slug as string, units: sections.length, anchored, embedded: res.embedded, skipped: false, matter: boundary.matter.weak > 0 ? boundary.matter : undefined };
 }
 
 if (process.argv[1] && /adapter-ccel/.test(process.argv[1])) {
