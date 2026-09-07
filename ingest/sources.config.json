@@ -24810,5 +24810,56 @@
       }
     },
     "note": "A genuine MULTI-AUTHOR compilation by construction (that is what a hymnal is) — expected to flag in the ADR-029 composite detector as Stage 3's positive control, not a failure. Staged; never wired to serving by the bridge."
+  },
+  {
+    "id": "middle-liddell",
+    "slug": "middle-liddell",
+    "title": "An Intermediate Greek-English Lexicon (Middle Liddell), keyed to Strong's numbers",
+    "author": "Henry George Liddell & Robert Scott",
+    "author_died": 1898,
+    "year_written": 1889,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "CC BY-SA",
+    "attribution": "CrossWire SWORD module MLStrong (CC BY-SA 4.0), based on text from the Perseus Digital Library; underlying 1889 lexicon public domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=MLStrong",
+      "edition": "CrossWire SWORD module MLStrong 1.1 (zLD/TEI, SwordVersionDate 2023-11-23) — abridgement of the Perseus edition of the 1889 Intermediate Liddell & Scott, Strong's-keyed; module zip SHA256 e3d6a634425c1590a6c4500af7ad3d4459b9f9e11c1ba11fb751db14ca244712 (data/raw/sword/MLStrong.zip)",
+      "year": 1889,
+      "license_ref": "CC BY-SA 4.0 — DistributionLicense read verbatim from mods.d/mlstrong.conf BEFORE decode (\"Creative Commons: BY-SA 4.0\"; History_1.0.2 records CrossWire's own 2022-08-15 correction of that line). Underlying 1889 Middle Liddell is PD (Liddell d. 1898, Scott d. 1911). NOT the LSJ 9th ed. (1925-40, copyright to 2036): the .conf About names the Perseus Intermediate edition, entries are Strong's-headword-limited (4,099), and sampled entries carry the short Middle-Liddell gloss shape, not LSJ long-form articles.",
+      "acquire": {
+        "adapter": "sword",
+        "module": "MLStrong",
+        "version": "1.1",
+        "note": "src/ingest/sword-ld.ts zLD decoder (existing; licence gate at its mouth — gained the exact-spelling map \"Creative Commons: BY-SA 4.0\"→\"CC BY-SA\" after the conf was read) → 4,099 entries, rekeyed from zero-padded numerals to G<n> to share the Strong's key space with strongs-concordance and thayers-lexicon → src/ingest/reference-register-bridge.ts stages topic-keyed sections."
+      }
+    },
+    "note": "Staged; lexicons served by no lane (see thayers-lexicon note). Decoder licence gate observed failing closed on the unrecognized spelling before the mapping was added."
+  },
+  {
+    "id": "tacitus-annals",
+    "slug": "tacitus-annals",
+    "title": "The Annals (From the Passing of the Divine Augustus)",
+    "author": "Cornelius Tacitus",
+    "author_died": 120,
+    "year_written": 116,
+    "source_type": "historian",
+    "tradition": "unassigned",
+    "era": "early-church",
+    "license": "Public Domain",
+    "tier": 1,
+    "provenance": {
+      "url": "https://en.wikisource.org/wiki/The_Annals_(Tacitus)",
+      "edition": "trans. Alfred John Church & William Jackson Brodribb, 1876 (Wikisource transcription, chaptered per Book)",
+      "year": 1876,
+      "license_ref": "Public Domain — Wikisource header declares {{translation license|original=PD-old|translation=PD-old}}; Church d. 1912, Brodribb d. 1905; edition verified by READING the work header (\"Translation based on Alfred John Church and William Jackson Brodribb (1876)\") and confirming the XV.44 Christus passage in their exact wording, 2026-09-07",
+      "acquire": {
+        "adapter": "structured",
+        "note": "src/ingest/wikisource-annals.ts (committed): fetches the 12 surviving Books (1-6, 11-16; 7-10 lost in the manuscript tradition) from the Wikisource API, splits at chapter headings (721 chapters, fail-closed floors), then src/ingest/ingest-historian.ts stages sources/sections per the historian contract."
+      }
+    },
+    "note": "The clean non-Christian corroboration of Christus and the Neronian persecution (XV.44). Staged; no history read path exists (historian contract)."
   }
 ]

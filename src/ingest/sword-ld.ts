@@ -56,14 +56,26 @@ function decodeBytes(buf: Buffer, encoding: ModEncoding): string {
 
 interface ModConf { modDrv: 'zLD' | 'RawLD'; base: string; encoding: ModEncoding }
 
+// CrossWire serializes some licences with its own spelling rather than the
+// canonical manifest string. Exact-match map, reviewed spelling by spelling
+// (the gate MUST stay fail-closed on any spelling nobody has read):
+//   "Creative Commons: BY-SA 4.0" — read in mods.d/mlstrong.conf 2026-09-07;
+//   CC BY-SA 4.0 is in the allowed class (canonical "CC BY-SA"). The module
+//   even records History_1.0.2 "(2022-08-15) Fix typo in DistributionLicense".
+// Anything not in this map falls through to the literal check and throws.
+const SWORD_LICENSE_SPELLINGS: Record<string, string> = {
+  'Creative Commons: BY-SA 4.0': 'CC BY-SA',
+};
+
 function readConf(moduleDir: string): ModConf {
   const confName = readdirSync(path.join(moduleDir, 'mods.d')).find((f) => f.endsWith('.conf'));
   if (!confName) throw new Error(`${moduleDir}: no mods.d/*.conf`);
   const conf = readFileSync(path.join(moduleDir, 'mods.d', confName), 'utf8');
   const get = (k: string) => conf.match(new RegExp(`^${k}=(.*)`, 'mi'))?.[1]?.trim();
-  const license = get('DistributionLicense') ?? '';
+  const rawLicense = get('DistributionLicense') ?? '';
+  const license = SWORD_LICENSE_SPELLINGS[rawLicense] ?? rawLicense;
   if (!isAllowedLicense(license)) {
-    throw new Error(`FAIL CLOSED: ${moduleDir} DistributionLicense="${license || '(absent)'}" not in the allowed set — do not decode`);
+    throw new Error(`FAIL CLOSED: ${moduleDir} DistributionLicense="${rawLicense || '(absent)'}" not in the allowed set — do not decode`);
   }
   const modDrv = get('ModDrv');
   if (modDrv !== 'zLD' && modDrv !== 'RawLD') {
