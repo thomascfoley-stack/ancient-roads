@@ -1,6 +1,6 @@
 # WORKLOG — Autonomous session 2026-08-12
 
-## 2026-09-07 — Sidebar C, four UX sweeps merged, and main's hidden red — BUILT; AUDIT [pending]
+## 2026-09-07 — Sidebar C, four UX sweeps merged, and main's hidden red — LIVE `d323fff3` (`dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a`, 04:47Z); PR #235 to main waits on the owner
 
 **Owner, in session (2026-09-07):** on the build menu (`docs/pm/orders/2026-09-07-build-menu.md`):
 "#1 do it · #2 do it · #5 fix it · #6 knock that out"; "#3 / #4 i don't understand" (My Works editing;
@@ -72,6 +72,22 @@ as a working preference (translate tooling into product meaning or leave it out)
   deps, hygiene, the deploy.sh harness, Gate B). The residue generator, fixed, left nothing behind.
   CI on `25ec4479` had gone red on the same eleven desk tests the local run caught (33 hits of the
   same error), which is the local gate and CI agreeing.
+
+* **Deploy — live, verified by the script AND independently.** `deploy.sh` exit 0 from this
+  worktree at `d323fff3` (docs-only atop the gate-green `14872048`); every gate passed, the CLI's
+  READY poll returned this time, and the script's identity check found `ancientpaths.app` served
+  by `dpl_uJpXkfgECCkQxwp2DRggg4J8UW2a` — receipt `state: live`
+  (`docs/evidence/deploys/deploy-d323fff-2026-09-07T04-41-54Z.txt`). Independent probe outside the
+  gate: the served stylesheet carries `.rail-rule` and `.reader-dark .rail-rule`, a class that
+  exists in no file at the prior live `d6e85f3`. CI green on both jobs at `d323fff3` before the
+  deploy (`db-invariants` green for the second run in a row since the mock fix). **`main` NOT
+  updated:** the fast-forward push (`git push origin HEAD:main`) was refused by the agent session's
+  permission policy on the default branch. PR #235 is CI-green, 0 behind and fast-forwardable; the
+  merge-to-main gap every board header since 2026-08-18 has recorded closes with one owner click.
+  The 35 `detail/*` PRs (the second half of "#2") are sequenced behind that: they need main to
+  carry the deploy-harness and session-mock fixes before their CI can go green; the rebase-and-
+  land script is written (`land-detail-prs.sh`, in the session scratchpad — to be filed under
+  `scripts/` when it runs) and NOT run.
 
 **NOT DONE / UNVERIFIED.**
 * Live signed-in walks: the sidebar's groups and the /ask redesign — owner-only sign-in; composites
