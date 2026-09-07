@@ -3019,3 +3019,101 @@ error on the cover costs more credibility than it should.
 - Dead `small-caps` class (never defined) still on `app/studies/page.tsx` and `plans-client.tsx`.
 - `SLOW_ANSWER_NOTICE_MS = 90_000` still derives from the n=3 dev-local series; two production
   series now exist (owner's call).
+
+### Filed 2026-09-07 from the My Works false-confidence audit (#4)
+
+Full findings and the five closed CRITICALs: `docs/evidence/my-works-false-confidence-2026-09-07/findings.md`.
+Each item below carries the audit's one-line PRODUCT seed — the change that *should* turn the named
+test red and does not. None is a known product defect; each is a check that would not notice one.
+
+- **Mocked `runAsUser` means the SQL under test never runs.** `retry-claim-guard.test.ts:28,34`
+  (delete the claim CAS predicate at `documents.ts:305-307` → green) and
+  `duplicate-checksum-race.test.ts:26,34,42` (delete the D8 `AND NOT EXISTS` at `documents.ts:185-187`
+  → green, dedupe race re-opens). Both need a DB-backed leg racing two real calls.
+- **Rate-limit BUCKET KEYS are never executed** — `upload-direct-guards.test.ts:156` mocks
+  `@/lib/rate-limit` wholly, so `corpus-complete:min` → `corpus-upload:min` halves the upload budget
+  green. `upload-rate-limit.test.ts:85` shows the honest shape.
+- **"BEFORE a presign is issued" asserts only a status code** (`upload-direct-guards.test.ts:114,126`);
+  the presign helpers are plain arrows, never spies. Move the quota block below the presign → green.
+- **Source greps satisfiable by a COMMENT** — `retry-claim-guard.test.ts:51` is already satisfied by
+  the comment at `documents.ts:231`; same shape in `blob-failure-heal.test.ts:35`,
+  `heal-attempts-ceiling.test.ts:66`, `ownership-assertion.test.ts:23`,
+  `duplicate-checksum-race.test.ts:50`. Strip comments before matching, as
+  `session-mock-surface.test.ts` now does.
+- **`heal-attempts-ceiling.test.ts:63` greps the wrong file** for the retry's `resetAttempts`
+  default, which lives at `documents.ts:297` (`?? true` → `?? false` → the Retry button silently
+  stops resetting and the document can never be claimed).
+- **`retry-after-header.test.ts`'s `ROUTES` list omits the two routes the product actually uses**
+  (`upload-url`, `upload-complete`). Delete `upload-complete`'s header → green.
+- **The scanned-PDF floor is never fed a page in `1..99`** — the stamp-only scan page it exists for.
+  `parse.ts:75` `< MIN_CHARS_PER_PAGE` → `< 1` stays green. And `MIN_CHARS_PER_PAGE` itself,
+  documented as MEASURED (n=120/n=12), is pinned by nothing: any value in `[11, 1350]` is green.
+- **The translation-confidence FORMULA is asserted against no computed value** — `confidence = 0.9`
+  at `translation-detect.ts:123` is green, and that number is written into every anchor row.
+  `FALLBACK_CONFIDENCE` is self-referential in both its references.
+- **`model-parity.test.ts` covers one of the two call sites it names** — the tautology it was
+  written to kill can be restored at `suggested-readings.ts:121` and stay green.
+- **The D1 readings wedge can be reintroduced green**: `READINGS_AFTER_INGEST` is a constant no
+  product code reads. Adding a `setReadingsState(..., 'pending')` after `queue.ts:193` wedges every
+  fresh document with all six `readings-not-wedged` tests passing.
+- **`search-limit-default.test.ts` mocks the layer the default lives in** — `DEFAULT_LIMIT` → 1 at
+  `search.ts:44` restores B019's symptom (every My Works search yields one result) green.
+- **`draft-check.test.ts:58` has never been observed green**: it dies at vitest's 5s default while
+  the real corpus join runs (2.7s alone). Give it an explicit timeout like its siblings.
+- **`ask-additive-not-load-bearing.test.ts:62` hand-copies `teach.ts`'s `RetrievalContext`**, so
+  appending user voices to `sectionIds` at `teach.ts:320` — the verdict condition — stays green.
+- **Skip hygiene**: `ownership-assertion.test.ts:31` reports PASS while running nothing (a LICENSING
+  property); `upload-quota.test.ts:63`, `quota-toctou.test.ts:22`, `anchor.test.ts:15`,
+  `translation-detect.test.ts:29` skip with a bare `console.warn` and land in the skip ceiling's
+  residual bucket miscounted as missing secrets.
+- **Never tested at all**: `checkCorpusCompleteRateLimit` (no threshold, no fail-closed, no bucket
+  name); `upload-complete`'s entire success path; route-level cross-tenant reads on
+  `documents/[id]`; the tradition-gap RANKING and slug→title resolution;
+  `work-beside-tradition.tsx`. `/ask` cross-tenant isolation has a proof but no CI job runs it with
+  a database.
+- **Still open from 2026-08-31**: `upload-direct-guards.test.ts:161`'s `as never` cast. This pass
+  did not re-examine it.
+
+### Filed 2026-09-07 from landing the `detail/*` backlog
+
+- **Six rows of test residue in the dev database, eight days old and unswept.**
+  `rls-test-a-1788111749` / `rls-test-b-1788111749`, one row each in `user_documents`, `notes`,
+  `bookmarks`, seeded 2026-08-30 17:42 UTC by the RLS **behavioural** proof (WORKLOG 2026-08-30,
+  "Seeded two users … with one row each"). That proof was hand-run at a terminal, so no suite
+  teardown owns those rows and none will ever sweep them. `npm run audit` fails its hygiene gate on
+  any machine that runs it WITH an owner `DATABASE_URL`. Not hand-deleted: the gate's own message
+  forbids it ("Fix the TEARDOWN … never by deleting rows from a live target by hand"), and the real
+  fix is that an ad-hoc proof which writes to a shared target must clean up or be run inside a
+  rolled-back transaction, the way `annotations-polymorphic.test.ts` does.
+- **The hygiene gate passes when it has nothing to check.** With no owner `DATABASE_URL` it prints
+  `⚠ SKIPPED (visibly): no target to inspect` and exits 0. That is an honest, loud skip — but a
+  local `npm run audit` without database env reports AUDIT PASSED while never looking at residue,
+  and it read as coverage to me during this session. Worth making the summary line distinguish
+  "passed" from "skipped for want of a target".
+- **`unit-ordinal-instrument.test.ts` is not isolated from its neighbours.** It counts published
+  works and failed `expected 130 to be 131` in one full-suite run while passing alone on both `main`
+  and the candidate tree. Some sibling seeds a published work; the instrument sees it. Order- and
+  parallelism-dependent, so it will surface as an unexplained red at random.
+- **`envInt` has no test.** PR #149 was closed as superseded — main's guard is strictly stricter —
+  but that PR's 172-line red-proof was the only coverage the guard has ever had, and porting it is a
+  rewrite, not a port (different signature, error strings, empty-string semantics). The guard that
+  stops a typo silently uncapping a paid endpoint is untested.
+- **A document's `parse_error` can carry a raw upstream error string** (`queue.ts:226/232`, and
+  `:108` concatenates it forward) and `my-works.tsx:957` renders it verbatim; #217 now returns the
+  same field as `reason` from a second route. No new exposure class, but it is a live tension with
+  the "no vendor error string reaches the DOM" property enforced elsewhere this session. Fixing it
+  means touching the queue's failure writers.
+- **`docs/UX_REMEDIATION.md:691`** still quotes the L1b block's original slow-notice copy as the
+  whole prescribed string; after #219 that is the `verifying`-only branch. Second divergence
+  recorded in that block.
+- **The naming lock renamed the heading and left the browser tab saying the old word.**
+  `library/uploads/page.tsx` exports `metadata = { title: 'My uploads' }` while its `h1` reads
+  `My Works` — so the tab, the bookmark and the history entry all still say "uploads". Introduced
+  by `5ae1a6a5`, the very commit whose subject is "N1: apply the naming lock to the label surfaces,
+  strings only", and live ever since. The guard is not absent — `naming-lock.test.ts` lists this
+  exact file in `LABEL_FILES`; its extraction just never reaches a `metadata` export, so the file
+  reads as covered while one of its two user-visible strings is not. **This is the watchlist shape
+  in miniature** (`MASTER_HISTORY.md §watchlist`): a match set narrower than the property it is
+  read as proving. Verified in a browser at 375px on 2026-09-07 — `document.title` is
+  `My uploads · Ancient Paths` above an `h1` of `My Works`. Pre-existing, not a deploy blocker;
+  the fix is one string plus widening the guard to `metadata.title` across `LABEL_FILES`.

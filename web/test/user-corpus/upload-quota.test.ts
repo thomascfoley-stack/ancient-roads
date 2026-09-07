@@ -63,7 +63,9 @@ const enabled = Boolean(runtimeDbUrl());
 if (!enabled) console.warn('⚠ SKIPPED (visibly): quota suite needs APP_DATABASE_URL.');
 
 const RUN = `quota-${Date.now().toString(36)}`;
-const USERS = [0, 1, 2].map((n) => ({ id: `${RUN}-u${n}`, email: `u${n}@example.com` }));
+// u3 is the NULL-byte_size leg's own account: it seeds a row AT the byte cap, so it must not
+// share a user with the count/limit tests above.
+const USERS = [0, 1, 2, 3].map((n) => ({ id: `${RUN}-u${n}`, email: `u${n}@example.com` }));
 
 function txt(body: string): Uint8Array {
   return new TextEncoder().encode(body);
@@ -141,12 +143,40 @@ describe.skipIf(!enabled)('H5b — upload quotas', () => {
     it('rows with NULL byte_size count as zero bytes, never as a NULL that poisons the sum', async () => {
       // SUM over any NULL-carrying set must not surface as NULL -> Number(NULL)=0 -> silent allow
       // at any usage. The SQL watchlist's three-valued-logic lesson, applied to the quota.
-      await runAsUser(USERS[0]!.id, (sql) => [
+      //
+      // SEEDED OVER THE CAP, WHICH IS THE WHOLE POINT. The first version added one NULL row to a
+      // near-empty account and asserted `{ok:true}` — the same answer a broken sum gives, so the
+      // assertion was constant against itself (false-confidence audit, 2026-09-07). A NULL row is
+      // only observable ALONGSIDE rows that already exceed the cap.
+      //
+      // AND THE COALESCE ITSELF IS NOT WHAT THIS PROVES — measured, not assumed. Removing
+      // `COALESCE(…, 0)` from quota.ts does NOT redden this or any test, for two reasons the
+      // original comment got wrong: SQL `sum()` SKIPS nulls rather than being poisoned by one, so
+      // a mixed set still totals correctly; and where `sum()` genuinely is null (zero rows, or
+      // every row null) the driver hands back `null` and `Number(null)` is already 0 — the same
+      // value the COALESCE would supply. The COALESCE is belt, and no behaviour distinguishes it.
+      // What this test DOES prove is that the byte total is really consulted and really refuses
+      // with a null row present: replace the sum with a constant and it goes red.
+      const user = USERS[3]!.id;
+      await runAsUser(user, (sql) => [
         sql`INSERT INTO user_documents (user_id, title, byte_size, status)
-            VALUES (${USERS[0]!.id}, 'no-size', NULL, 'failed')`,
+            VALUES (${user}, 'over-the-cap', ${MAX_BYTES_PER_USER}, 'ready')`,
       ]);
-      const v = await checkUploadQuota(USERS[0]!.id, 1024);
-      expect(v).toEqual({ ok: true });
+      // The control: without the NULL row, this account is already refused.
+      const before = await checkUploadQuota(user, 1024);
+      expect(before.ok, 'the fixture is not over the cap — the NULL row below would prove nothing').toBe(false);
+
+      await runAsUser(user, (sql) => [
+        sql`INSERT INTO user_documents (user_id, title, byte_size, status)
+            VALUES (${user}, 'no-size', NULL, 'failed')`,
+      ]);
+      const after = await checkUploadQuota(user, 1024);
+      expect(after.ok, 'a NULL byte_size poisoned the sum and the quota stopped refusing').toBe(false);
+      if (!after.ok) {
+        expect(after.limit).toBe('bytes');
+        // And the NULL row contributed zero rather than erasing the total.
+        expect(after.bytes).toBe(MAX_BYTES_PER_USER);
+      }
     });
   });
 
