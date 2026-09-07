@@ -21,8 +21,12 @@ import { BOOKS } from '../bible/books.js';
 // Two copies of "which documents make up this work" is how an archive preserves 62 of 63 and
 // reports success.
 import { expandCcelIdPattern } from './source-artifact-urls.mjs';
-import { writeRegisterWork, type RegisterWork, type RegisterSection } from './register-writer.js';
-import { DETECTOR_VERSION, sweepWorkMatter } from '../../scripts/lib/front-matter-detector.mjs';
+import { writeRegisterWork, attributionBoundaryHold, type RegisterWork, type RegisterSection } from './register-writer.js';
+
+// ADR-029's durable repair now lives in register-writer (deep-audit H-2: the
+// boundary guarded only this adapter; it must cover every write path into the
+// same store). Re-exported so existing callers/tests keep their import site.
+export { attributionBoundaryHold };
 
 const CACHE = 'data/raw/ccel';
 const MIN_UNITS = 3;
@@ -31,35 +35,11 @@ const UNIT_TYPE_ORDER = ['Hymn', 'Sermon', 'Poem', 'chapter', 'section', 'Chapte
 
 export interface CcelWorkResult { slug: string; units: number; anchored: number; embedded: number; skipped: boolean; reason?: string; matter?: { strong: number; weak: number; kinds: Record<string, number> } }
 
-// ── ADR-029 per-work attribution boundary (the durable repair) ───────────────
-// Addendum 1: "the adapter fix is the repair and must land before any further CCEL
-// ingest." Addendum 2: the class is ANY non-authorial matter, not only composite volumes.
-// So after a work's sections are built and before anything is written, the work goes
-// through the SAME detector the publish-side scan uses (sweepWorkMatter — head AND tail,
-// author-aware). A work with a STRONG finding is HELD: not written, not staged, reason
-// recorded — the human reads it and re-slices, exactly as ADR-029's origen remedy
-// prescribes. NOTHING is trimmed or deleted by ordinal (ADR-029 rule 2 rejects ordinal
-// surgery): the boundary holds the whole work or passes it whole. Weak findings ride
-// along in the result as a report (owner decision #4 on gating strength is open).
-export function attributionBoundaryHold(
-  sections: RegisterSection[],
-  author: string,
-): { held: boolean; reason: string | null; matter: { strong: number; weak: number; kinds: Record<string, number> } } {
-  const sweep = sweepWorkMatter(sections, { author });
-  const strong = sweep.findings.filter((f) => f.strength === 'strong');
-  const matter = { strong: strong.length, weak: sweep.findings.length - strong.length, kinds: sweep.byKind };
-  if (strong.length === 0) return { held: false, reason: null, matter };
-  const first = strong[0]!;
-  const desc = `unit ${first.index + 1}/${sections.length} (${first.position}) [${first.kind}] ${JSON.stringify(first.evidence?.slice(0, 70))}`;
-  return {
-    held: true,
-    reason:
-      `held — non-authorial matter (ADR-029, detector ${DETECTOR_VERSION}): ${strong.length} strong finding(s); first: ${desc}` +
-      (first.reason ? ` — ${first.reason}` : '') +
-      '. The work is NOT written; read the flagged units and re-slice with per-work attribution. No ordinal trim performed.',
-    matter,
-  };
-}
+// ── ADR-029 per-work attribution boundary ────────────────────────────────────
+// The hold itself moved to register-writer (imported + re-exported above): it
+// runs inside writeRegisterWork for EVERY write path, and this adapter still
+// runs it early — before any write and also in --no-write planning, so a dry
+// run shows the hold the real run would take.
 
 export async function fetchCcelXml(ccelId: string): Promise<string | null> {
   mkdirSync(CACHE, { recursive: true });

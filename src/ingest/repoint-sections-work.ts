@@ -27,6 +27,7 @@ import pg from 'pg';
 import { readFileSync, existsSync } from 'fs';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
 import { assertReingestable } from './reingest-guard.js';
+import { attributionBoundaryHold } from './register-writer.js';
 
 const MODEL_SLUG = 'bge-large-en-v1.5'; // ADR-005, matches embeddings.metadata.model
 
@@ -101,8 +102,8 @@ async function main() {
   try {
     // The sources row is the register writer's — READ it, never write it
     // (published stays published, staged stays staged).
-    const { rows: srcRows } = await client.query<{ id: string; title: string; status: string }>(
-      `SELECT id, title, status FROM sources WHERE slug=$1`,
+    const { rows: srcRows } = await client.query<{ id: string; title: string; status: string; author: string }>(
+      `SELECT id, title, status, author FROM sources WHERE slug=$1`,
       [slug],
     );
     const src = srcRows[0];
@@ -147,6 +148,26 @@ async function main() {
     // land between the check and the DELETE below; and it refuses when user annotations anchor
     // into the work rather than letting the FK raise 23503 partway through (M21).
     await assertReingestable(client, slug, 'the section repoint');
+
+    // ADR-029 attribution boundary (deep-audit H-2 — every sections writer, not
+    // only the CCEL adapter). Sweeps the STAGED rows (detector's head+tail window)
+    // after the guard and BEFORE any DELETE, so a held work keeps its prior
+    // sections — nothing deleted, reason recorded. Strong findings only; weak
+    // ride along as a report (owner decision #4 open).
+    {
+      const sweepSql = (dir: 'ASC' | 'DESC') =>
+        client.query<{ heading: string | null; body: string }>(
+          `SELECT heading, body FROM (${STAGE_SELECT}) t ORDER BY ordinal ${dir} LIMIT 12`, [slug]);
+      const head = (await sweepSql('ASC')).rows;
+      const tail = (await sweepSql('DESC')).rows.reverse();
+      const boundary = attributionBoundaryHold(
+        [...head, ...tail].map((r) => ({ heading: r.heading ?? undefined, body: r.body })),
+        src.author,
+      );
+      // the catch below rolls the transaction back — nothing has been deleted
+      if (boundary.held) throw new Error(boundary.reason ?? 'held — non-authorial matter');
+      if (boundary.matter.weak > 0) console.log(`  ${slug}: ${boundary.matter.weak} weak non-authorial finding(s) reported (not held): ${JSON.stringify(boundary.matter.kinds)}`);
+    }
 
     // 1. Idempotency: clear any prior rows for this source (children first).
     await client.query(`DELETE FROM section_embeddings se USING sections s WHERE se.section_id=s.id AND s.source_id=$1`, [sourcePk]);

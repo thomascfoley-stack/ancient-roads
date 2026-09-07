@@ -24,6 +24,7 @@ import { verbatimAnchors } from './history-gazetteer.js';
 import { isAllowedLicense } from './license-manifest.js';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
 import { assertReingestable } from './reingest-guard.js';
+import { attributionBoundaryHold } from './register-writer.js';
 
 const EMBED_MAX = 1800; // chars; ~450 tokens — bge-large's 512-token budget never truncates
 const MODEL_SLUG = 'bge-large-en-v1.5';
@@ -182,6 +183,14 @@ async function main() {
       rows.push({ ordinal: rows.length + 1, heading: h, body, period: verbatimPeriod(heading) });
     });
   }
+
+  // ADR-029 attribution boundary (deep-audit H-2 — every sections writer, not
+  // only the CCEL adapter). Before BEGIN: a held work keeps its prior state —
+  // nothing deleted, nothing written, reason recorded. Strong findings only;
+  // weak ride along as a report (owner decision #4 open).
+  const boundary = attributionBoundaryHold(rows, entry.author as string);
+  if (boundary.held) throw new Error(boundary.reason ?? 'held — non-authorial matter');
+  if (boundary.matter.weak > 0) console.log(`  ${slug}: ${boundary.matter.weak} weak non-authorial finding(s) reported (not held): ${JSON.stringify(boundary.matter.kinds)}`);
 
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();

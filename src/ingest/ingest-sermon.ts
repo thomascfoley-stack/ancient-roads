@@ -24,6 +24,7 @@ import { isExplicitCitation } from './ingest-historian.js';
 import { isAllowedLicense } from './license-manifest.js';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
 import { assertReingestable } from './reingest-guard.js';
+import { attributionBoundaryHold } from './register-writer.js';
 
 const EMBED_MAX = 1800;
 const MODEL_SLUG = 'bge-large-en-v1.5';
@@ -185,6 +186,18 @@ async function main() {
   if (entry.source_type !== 'sermon') throw new Error(`manifest entry ${slug} is not source_type=sermon`);
   if (!isAllowedLicense(entry.license)) throw new Error(`FAIL CLOSED: ${slug} license "${String(entry.license)}" not in the allowed set`);
   if (typeof entry.quarantine === 'string' && entry.quarantine.trim()) throw new Error(`FAIL CLOSED: ${slug} is quarantined in the manifest: ${entry.quarantine}`);
+
+  // ADR-029 attribution boundary (deep-audit H-2 — every sections writer, not
+  // only the CCEL adapter). Sweeps the PARSED sermons (pre-chunk: the chunk
+  // headings carry stated-ref suffixes that would mask apparatus labels) before
+  // BEGIN — a held work keeps its prior state; nothing deleted, reason recorded.
+  // Strong findings only; weak ride along as a report (owner decision #4 open).
+  const boundary = attributionBoundaryHold(
+    sermons.map((s) => ({ heading: s.title, body: s.body })),
+    entry.author as string,
+  );
+  if (boundary.held) throw new Error(boundary.reason ?? 'held — non-authorial matter');
+  if (boundary.matter.weak > 0) console.log(`  ${slug}: ${boundary.matter.weak} weak non-authorial finding(s) reported (not held): ${JSON.stringify(boundary.matter.kinds)}`);
 
   const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
   const key = localEnv('DEEPINFRA_API_KEY');

@@ -1,5 +1,84 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-07 — H-4 shelf gate + H-2 generalized attribution boundary [Kimi Code session]
+
+Remediated two deep-audit findings (`docs/pm/audits/2026-09-07-wave-deep-audit.md`).
+
+**H-4 / LAUNCH_BLOCKERS §17 (shelf gap) — CLOSED at the writer.** `register-writer.ts`
+no longer materializes static shelf entries (`web/public/commentaries/`) for works
+landing as `staged`: the write moved into `writeStaticShelfEntries` behind
+`shouldMaterializeShelf(work.publish)`. Published works still materialize at ingest
+(nothing else ever writes those files). The staged-materialization behavior is
+load-bearing for the owner publish runbook's shelf flow (the flip moves only DB
+status; the already-materialized files then sync), so it survives behind the
+explicit `REGISTER_MATERIALIZE_STAGED_SHELF=1` env flag — never the default, and it
+logs a ⚠ line when it fires for a staged work. `deleteWork`'s static REMOVAL is
+deliberately ungated: re-ingesting a staged work now cleans illegitimate staged
+shelf state instead of refreshing it (repair direction, not loop-break). Red-proof:
+`test/register-writer-shelf-gate.test.ts` — before: staged ingest rewrote the
+chapter file (gate forced open → 2 reds, see evidence); after: byte-identical.
+Published ingest materializes (1 entry, other works' entries preserved).
+
+**H-2 (attribution boundary only on the CCEL adapter) — generalized at the choke
+point.** Verified there is NO single choke point across all ten write paths: six
+(adapter-ccel/-gutenberg/-helloao, ingest-topical-index, ingest-whitefield-works,
+both register bridges) traverse `writeRegisterWork`; four bespoke section writers
+(ingest-historian, ingest-sermon, repoint-sections-work, migrate-sections-slice)
+do not. So `attributionBoundaryHold` moved from adapter-ccel INTO register-writer
+and runs at the top of `writeRegisterWork` — before any env read, DB touch, or
+file write — covering the six by construction; adapter-ccel imports + re-exports
+it (its early hold and `--no-write` planning behavior unchanged). The four bespoke
+writers each call it at their own pre-destructive point (before BEGIN in
+historian/sermon; after the reingest guard and before any DELETE in repoint/
+migrate, sweeping the staged head+tail in the same row order the ordinal windows
+assign). STRONG findings hold; weak stay report-only (owner decision #4
+untouched). No ordinal surgery, no section deletion — held means hold-with-reason.
+Red-proofs (`test/register-writer-attribution-boundary.test.ts`, all run against
+scrubbed env in a sandbox cwd so no DB is reachable): a strong-finding work is
+HELD through writeRegisterWork directly, through the REAL acquireGutenberg path
+(seeded cache, keble profile), and through the real reference-register-bridge
+subprocess; clean works pass all three (they fail only on the scrubbed DB env,
+which is the proof they passed the hold); weak findings report without holding.
+Seed-sabotage: removing the hold call turns all three held-path tests RED
+(evidence log). `test/invariants/attribution-boundary-wiring.test.ts` DERIVES the
+sections-writer set from the tree and pins the hold in each — a future writer
+without the boundary goes red on commit.
+
+**Re-ingest tension (surfaced, not silently decided):** under the gate, a clean
+staged work's re-ingest fully rewrites the DB staging stores AND removes its
+staged shelf entries — strictly reparative. BUT the runbook's current shelf flow
+assumed ingest-time materialization: a work staged AFTER this fix has no shelf
+files at flip time, so a `--status-only` flip + scoped sync publishes it DB-side
+only. Operators running that flow must either ingest/re-ingest with
+`REGISTER_MATERIALIZE_STAGED_SHELF=1`, or — the correct long-term fix, NOT built
+here — add publish-time shelf materialization from the gated `sections` store to
+the flip tooling. Flagged for the owner/runbook, not decided unilaterally.
+Existing staged shelf files (pre-fix ingestions) are NOT auto-removed by the
+gate; re-ingest or the 2026-09-07 C-1/H-3 shelf cleanup removes them.
+
+**Test updates with reasons:** none required — every pre-existing suite stayed
+green unmodified (ccel-attribution-boundary passes against the re-export;
+reingest-guard-wiring's BEGIN/guard/DELETE positions undisturbed;
+adapter-register-gates' adapter list unchanged).
+
+**Suites:** root vitest 1108 passed / 5 failed — the 5 are ALL in
+`test/front-matter-detector-adr029.test.ts`, the detector another agent is
+concurrently fixing (their uncommitted WIP was in the tree; that file imports
+only the detector, zero coupling to this change; my suites pass against BOTH the
+old and their in-progress detector because I code against the exported
+`foreignMatterVerdict`/`sweepWorkMatter` interface only). tsc strict, eslint,
+knip clean. Evidence: `docs/evidence/register-writer-gates-2026-09-07/`.
+
+**NOT DONE / UNVERIFIED:**
+- The 5 detector-suite reds belong to the concurrent detector fix — not mine to
+  close; re-run the full suite after that agent lands.
+- Publish-time shelf materialization from `sections` (the durable resolution of
+  the re-ingest tension above) — owner/runbook decision.
+- The four bespoke writers' holds are code-reviewed and wiring-pinned but not
+  executed against live staged rows (needs dev DB runs of those tools).
+- `npm run audit` full gate not run end-to-end (qa leg needs the audit env);
+  typecheck/lint/knip/root-vitest legs run individually, all green.
+
 ## 2026-09-07 — Shelf cleanup: deep-audit C-1/H-3 wrong-serving REMEDIATED [Kimi Code session]
 
 Removed the four wrong-serving works from the static shelf and the production CDN:

@@ -1,0 +1,60 @@
+    );
+
+    const { rows: c } = await client.query<{ sections: string; embeddings: string }>(
+      `SELECT (SELECT count(*) FROM sections WHERE source_id=$1) AS sections,
+              (SELECT count(*) FROM section_embeddings se JOIN sections s ON s.id=se.section_id WHERE s.source_id=$1) AS embeddings`,
+      [sourcePk],
+    );
+
+    await client.query('COMMIT');
+
+    console.log('='.repeat(66));
+    console.log(`RE-POINT WORK — ${src.title} (slug=${slug}, source_id=${sourcePk}, status=${src.status} — unchanged)`);
+    console.log('='.repeat(66));
+    console.log(`  matched embeddings (work=\"${slug}\"): ${stagedCount}`);
+    console.log(`  sections inserted:                            ${c[0]!.sections}`);
+    console.log(`  section_embeddings (reused, model=${MODEL_SLUG}): ${c[0]!.embeddings}`);
+    console.log(`  prior rows replaced: sections=${prior[0]!.sections} section_embeddings=${prior[0]!.embeddings} section_anchors=${prior[0]!.anchors} (anchors deleted per FK; this tool writes none)`);
+    const ok = c[0]!.sections === c[0]!.embeddings && Number(c[0]!.sections) === stagedCount;
+    console.log(ok
+      ? '\\n✓ 1:1 — sections == section_embeddings == matched embeddings.'
+      : '\\n✗ count mismatch — investigate before relying on this work.');
+    if (!ok) process.exitCode = 1;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    await client.end();
+  }
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });
+"
+
+ ❯ test/invariants/attribution-boundary-wiring.test.ts:49:82
+     47|   it.each(SECTION_WRITERS)('%s runs the attribution boundary hold', (r…
+     48|     // SEED: delete the attributionBoundaryHold call from any one writ…
+     49|     expect(read(rel), `${rel} writes sections without the attribution …
+       |                                                                                  ^
+     50|   });
+     51| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/15]⎯
+
+ FAIL  test/invariants/attribution-boundary-wiring.test.ts > the attribution boundary covers every sections writer (H-2) > writeRegisterWork runs the hold BEFORE any DB/env side effect
+AssertionError: writeRegisterWork never calls the hold: expected -1 to be greater than -1
+ ❯ test/invariants/attribution-boundary-wiring.test.ts:57:60
+     55|     const hold = code.indexOf('attributionBoundaryHold(');
+     56|     const db = code.indexOf('new pg.Client');
+     57|     expect(hold, 'writeRegisterWork never calls the hold').toBeGreater…
+       |                                                            ^
+     58|     expect(hold, 'the hold runs after the DB connection — a held work …
+     59|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/15]⎯
+
+ Test Files  3 failed (3)
+      Tests  15 failed | 4 passed (19)
+   Start at  23:09:26
+   Duration  551ms (transform 85ms, setup 0ms, collect 177ms, tests 318ms, environment 0ms, prepare 110ms)
+

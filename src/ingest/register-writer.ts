@@ -1,7 +1,10 @@
 // The ONE writer every register adapter uses (seed + Phase 3 adapters).
 // Writes a work into: (1) the SERVED flat embeddings store (whole-chunk vectors,
 // metadata carries work/register/anchors), (2) the 006 `sources` provenance/
-// staging registry, (3) the static reader corpus for verse-ANCHORED entries.
+// staging registry, (3) the static reader corpus for verse-ANCHORED entries —
+// GATED on the landing status (staged works never touch the shelf; H-4 /
+// LAUNCH_BLOCKERS §17, see shouldMaterializeShelf). Every write also passes the
+// ADR-029 attribution boundary below before any side effect (deep-audit H-2).
 // Auto-publish only via the served lists in routing.ts/legal-corpus.ts — this
 // writer marks sources.status per the manifest serve flag + the authorized tier.
 
@@ -11,6 +14,7 @@ import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
 import { assertReingestable } from './reingest-guard.js';
 import { isAllowedLicense } from './license-manifest.js';
+import { DETECTOR_VERSION, sweepWorkMatter } from '../../scripts/lib/front-matter-detector.mjs';
 
 // Whole-chunk budget. 1200 chars keeps even token-DENSE text (hymns, Greek/
 // Hebrew) under bge-large's 512-token ceiling — 1800 overflowed on Watts
@@ -162,8 +166,115 @@ export async function deleteWork(db: pg.Client, slug: string): Promise<{ dbRows:
   return { dbRows: del.rowCount ?? 0, staticRemoved };
 }
 
+// ── ADR-029 per-work attribution boundary (moved here from adapter-ccel, deep-audit H-2) ──
+// The boundary used to guard only the CCEL adapter; Gutenberg (the catalogue
+// class's actual provenance path) and nine other write paths into the same store
+// had none. It now runs INSIDE writeRegisterWork — the choke point every register
+// write path traverses — so those paths are covered by construction, and the four
+// bespoke section writers (ingest-historian / ingest-sermon / repoint-sections-work /
+// migrate-sections-slice) call it at their own pre-destructive point (pinned by
+// test/invariants/attribution-boundary-wiring.test.ts).
+//
+// After a work's sections are built and before anything is written, the work goes
+// through the SAME detector the publish-side scan uses (sweepWorkMatter — head AND
+// tail, author-aware). A work with a STRONG finding is HELD: not written, not
+// staged, reason recorded — the human reads it and re-slices, exactly as ADR-029's
+// origen remedy prescribes. NOTHING is trimmed or deleted by ordinal (ADR-029 rule
+// 2 rejects ordinal surgery): the boundary holds the whole work or passes it
+// whole. Weak findings ride along in the result as a report (owner decision #4 on
+// gating strength is open).
+export function attributionBoundaryHold(
+  sections: RegisterSection[],
+  author: string,
+): { held: boolean; reason: string | null; matter: { strong: number; weak: number; kinds: Record<string, number> } } {
+  const sweep = sweepWorkMatter(sections, { author });
+  const strong = sweep.findings.filter((f) => f.strength === 'strong');
+  const matter = { strong: strong.length, weak: sweep.findings.length - strong.length, kinds: sweep.byKind };
+  if (strong.length === 0) return { held: false, reason: null, matter };
+  const first = strong[0]!;
+  const desc = `unit ${first.index + 1}/${sections.length} (${first.position}) [${first.kind}] ${JSON.stringify(first.evidence?.slice(0, 70))}`;
+  return {
+    held: true,
+    reason:
+      `held — non-authorial matter (ADR-029, detector ${DETECTOR_VERSION}): ${strong.length} strong finding(s); first: ${desc}` +
+      (first.reason ? ` — ${first.reason}` : '') +
+      '. The work is NOT written; read the flagged units and re-slice with per-work attribution. No ordinal trim performed.',
+    matter,
+  };
+}
+
+// ── the static shelf gate (deep-audit H-4 / LAUNCH_BLOCKERS §17) ─────────────
+// The DB path gates serving on published+served; the static shelf path
+// (web/public/commentaries → unauthenticated static JSON → corpus-blob-sync →
+// CDN) had NO gate, and this writer materialized reader entries at ingest while
+// the work was still status='staged' — measured as 454 drifted chapter files,
+// including ADR-029-held works, one full sync from serving misattribution.
+// So shelf materialization follows the work's LANDING status: published works
+// materialize at ingest (nothing else ever writes these files); staged works do
+// not. The old behavior is load-bearing for the owner publish runbook's shelf
+// flow (the flip moves only DB status; the already-materialized files then
+// sync), so it survives behind the explicit REGISTER_MATERIALIZE_STAGED_SHELF=1
+// flag — a deliberate act, never the default.
+export function shouldMaterializeShelf(publish: boolean): boolean {
+  return publish || process.env.REGISTER_MATERIALIZE_STAGED_SHELF === '1';
+}
+
+// Write this work's verse-anchored sections into the static reader corpus.
+// Extracted from writeRegisterWork so the gate above is testable without a DB.
+export function writeStaticShelfEntries(work: RegisterWork, root = 'web/public/commentaries'): number {
+  let staticEntries = 0;
+  const byChapter = new Map<string, Array<Record<string, unknown>>>();
+  for (const s of work.sections) {
+    const a = s.anchors?.[0];
+    if (!a) continue;
+    const book = Math.floor(a.verseIdStart / 1e6), chapter = Math.floor((a.verseIdStart % 1e6) / 1000);
+    if (!BOOK_SLUGS[book]) continue;
+    const k = `${BOOK_SLUGS[book]}/${chapter}`;
+    const list = byChapter.get(k) ?? [];
+    // The reader entry is filed under the START chapter. `verseEnd % 1000` on a
+    // cross-chapter anchor (start Gen 3:20, end Gen 4:2) yielded verseEnd=2 < 20
+    // — a broken range in the wrong chapter (A6 line-by-line 2026-07-17). Cap a
+    // cross-chapter/-book range at the rest of the start chapter (999).
+    const sameChapter = Math.floor(a.verseIdStart / 1000) === Math.floor(a.verseIdEnd / 1000);
+    list.push({
+      verseStart: a.verseIdStart % 1000, verseEnd: sameChapter ? a.verseIdEnd % 1000 : 999,
+      author: work.author, year: work.year, tradition: work.tradition,
+      sourceTitle: work.title, sourceUrl: work.url, text: s.heading ? `${s.heading}\n\n${s.body}` : s.body,
+      work: work.slug, register: work.sourceType, paraphrase: work.paraphrase || undefined,
+      license: work.license, // CC BY(-SA) works must carry attribution to the UI
+    });
+    byChapter.set(k, list);
+  }
+  for (const [k, entries] of byChapter) {
+    const p = path.join(root, `${k}.json`);
+    const [bookSlug, chStr] = k.split('/');
+    // create missing chapter files instead of silently dropping the entries
+    const j = existsSync(p)
+      ? (JSON.parse(readFileSync(p, 'utf8')) as { book: number; chapter: number; entries: Array<Record<string, unknown>> })
+      : { book: Object.entries(BOOK_SLUGS).find(([, s]) => s === bookSlug) ? Number(Object.entries(BOOK_SLUGS).find(([, s]) => s === bookSlug)![0]) : 0, chapter: Number(chStr), entries: [] as Array<Record<string, unknown>> };
+    mkdirSync(path.dirname(p), { recursive: true });
+    const kept = j.entries.filter((e) => e.work !== work.slug);
+    kept.push(...entries);
+    writeFileSync(p, JSON.stringify({ book: j.book, chapter: j.chapter, entries: kept }));
+    staticEntries += entries.length;
+  }
+  return staticEntries;
+}
+
+// The gated materialization writeRegisterWork calls. Returns the number of
+// entries written (0 when the gate holds a staged work off the shelf).
+export function materializeShelf(work: RegisterWork): number {
+  if (!shouldMaterializeShelf(work.publish)) return 0;
+  return writeStaticShelfEntries(work);
+}
+
 export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded: number; staticEntries: number }> {
   if (!isAllowedLicense(work.license)) throw new Error(`FAIL CLOSED: ${work.slug} license "${work.license}"`);
+  // ADR-029 attribution boundary — BEFORE any env read, DB touch, or file write,
+  // so a held work side-effects nothing anywhere (hold-with-reason, not a trim).
+  const boundary = attributionBoundaryHold(work.sections, work.author);
+  if (boundary.held) throw new Error(boundary.reason ?? 'held — non-authorial matter');
+  if (boundary.matter.weak > 0) console.log(`  ${work.slug}: ${boundary.matter.weak} weak non-authorial finding(s) reported (not held): ${JSON.stringify(boundary.matter.kinds)}`);
   const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
   const key = localEnv('DEEPINFRA_API_KEY');
   if (!dbUrl || !key) throw new Error('DATABASE_URL and DEEPINFRA_API_KEY required');
@@ -330,42 +441,19 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
     }
     console.log(`  → ${work.slug}: ${sectionsWritten} section(s), ${anchorsWritten} anchor(s) on the shelf`);
 
-    // (3) static reader corpus — verse-anchored sections only (the reader is verse-keyed)
+    // (3) static reader corpus — verse-anchored sections only (the reader is verse-keyed).
+    // GATED on the landing status (H-4 / LAUNCH_BLOCKERS §17): a work landing as
+    // 'staged' must NOT appear on the ungated static shelf; it materializes at
+    // publish. See shouldMaterializeShelf for the explicit runbook override.
+    // NOTE the interplay with (0b): deleteWork above still REMOVES this slug's
+    // prior static entries on any re-ingest — so re-ingesting a staged work
+    // cleans illegitimate staged shelf state rather than refreshing it.
     let staticEntries = 0;
-    const byChapter = new Map<string, Array<Record<string, unknown>>>();
-    for (const s of work.sections) {
-      const a = s.anchors?.[0];
-      if (!a) continue;
-      const book = Math.floor(a.verseIdStart / 1e6), chapter = Math.floor((a.verseIdStart % 1e6) / 1000);
-      if (!BOOK_SLUGS[book]) continue;
-      const k = `${BOOK_SLUGS[book]}/${chapter}`;
-      const list = byChapter.get(k) ?? [];
-      // The reader entry is filed under the START chapter. `verseEnd % 1000` on a
-      // cross-chapter anchor (start Gen 3:20, end Gen 4:2) yielded verseEnd=2 < 20
-      // — a broken range in the wrong chapter (A6 line-by-line 2026-07-17). Cap a
-      // cross-chapter/-book range at the rest of the start chapter (999).
-      const sameChapter = Math.floor(a.verseIdStart / 1000) === Math.floor(a.verseIdEnd / 1000);
-      list.push({
-        verseStart: a.verseIdStart % 1000, verseEnd: sameChapter ? a.verseIdEnd % 1000 : 999,
-        author: work.author, year: work.year, tradition: work.tradition,
-        sourceTitle: work.title, sourceUrl: work.url, text: s.heading ? `${s.heading}\n\n${s.body}` : s.body,
-        work: work.slug, register: work.sourceType, paraphrase: work.paraphrase || undefined,
-        license: work.license, // CC BY(-SA) works must carry attribution to the UI
-      });
-      byChapter.set(k, list);
-    }
-    for (const [k, entries] of byChapter) {
-      const p = path.join('web/public/commentaries', `${k}.json`);
-      const [bookSlug, chStr] = k.split('/');
-      // create missing chapter files instead of silently dropping the entries
-      const j = existsSync(p)
-        ? (JSON.parse(readFileSync(p, 'utf8')) as { book: number; chapter: number; entries: Array<Record<string, unknown>> })
-        : { book: Object.entries(BOOK_SLUGS).find(([, s]) => s === bookSlug) ? Number(Object.entries(BOOK_SLUGS).find(([, s]) => s === bookSlug)![0]) : 0, chapter: Number(chStr), entries: [] as Array<Record<string, unknown>> };
-      mkdirSync(path.dirname(p), { recursive: true });
-      const kept = j.entries.filter((e) => e.work !== work.slug);
-      kept.push(...entries);
-      writeFileSync(p, JSON.stringify({ book: j.book, chapter: j.chapter, entries: kept }));
-      staticEntries += entries.length;
+    if (shouldMaterializeShelf(work.publish)) {
+      staticEntries = writeStaticShelfEntries(work);
+      if (!work.publish) console.log(`  ⚠ ${work.slug}: REGISTER_MATERIALIZE_STAGED_SHELF=1 — ${staticEntries} shelf entries materialized for a STAGED work (runbook shelf flow; keep syncs scoped until the flip)`);
+    } else {
+      console.log(`  ⊘ ${work.slug}: lands staged — static shelf NOT materialized at ingest (materializes at publish)`);
     }
     // (4) FAIL CLOSED ON AN UNREADABLE WORK, then stamp the real status.
     //

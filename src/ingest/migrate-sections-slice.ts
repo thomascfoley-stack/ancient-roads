@@ -34,6 +34,7 @@ import { readFileSync, existsSync } from 'fs';
 import { forbiddenProvenanceDomain, FORBIDDEN_PROVENANCE_DOMAINS } from './license-manifest';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
 import { assertReingestable } from './reingest-guard.js';
+import { attributionBoundaryHold } from './register-writer.js';
 
 const MODEL_SLUG = 'bge-large-en-v1.5'; // ADR-005, matches embeddings.metadata.model
 
@@ -180,6 +181,27 @@ async function main() {
     const excludedCount = excludedIds.length;
     if (policy === 'exclude') {
       console.log(`provenance policy "exclude": ${excludedCount} of ${poolCount} rows excluded (${forbiddenDomains.join(', ') || 'none present'})`);
+    }
+
+    // ADR-029 attribution boundary (deep-audit H-2 — every sections writer, not
+    // only the CCEL adapter). Sweeps the CLEAN pool this slice would write
+    // (detector's head+tail window, same row order the ordinal window below
+    // assigns) BEFORE the sources upsert and the deletes — a held work keeps its
+    // prior state; nothing written, reason recorded. The exclusion is by the same
+    // EXACT ids the slice excludes. Strong findings only; weak ride along as a
+    // report (owner decision #4 open).
+    {
+      const SWEEP_FROM = `FROM embeddings e WHERE e.user_id IS NULL AND e.source_type='commentary' AND e.metadata->>'author' = $1 AND NOT (e.id = ANY($2::uuid[]))`;
+      const SWEEP_ORDER = `ORDER BY (e.metadata->>'verseId')::int, e.source_id, e.chunk_index`;
+      const head = (await client.query<{ content: string }>(`SELECT e.content ${SWEEP_FROM} ${SWEEP_ORDER} LIMIT 12`, [matchAuthor, excludedIds])).rows;
+      const tail = (await client.query<{ content: string }>(`SELECT e.content ${SWEEP_FROM} ${SWEEP_ORDER} DESC LIMIT 12`, [matchAuthor, excludedIds])).rows.reverse();
+      const boundary = attributionBoundaryHold(
+        [...head, ...tail].map((r) => ({ body: r.content })),
+        entry.author as string,
+      );
+      // the catch below rolls the transaction back — nothing has been written
+      if (boundary.held) throw new Error(boundary.reason ?? 'held — non-authorial matter');
+      if (boundary.matter.weak > 0) console.log(`  ${entry.slug as string}: ${boundary.matter.weak} weak non-authorial finding(s) reported (not held): ${JSON.stringify(boundary.matter.kinds)}`);
     }
 
     // 1. Upsert the source row from the reviewed config (license + provenance = Gate B).

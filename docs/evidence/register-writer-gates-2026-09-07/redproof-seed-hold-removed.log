@@ -1,0 +1,6 @@
+ ❯ test/register-writer-attribution-boundary.test.ts (6 tests | 3 failed) 316ms
+   × the attribution boundary at the writeRegisterWork choke point (H-2) > HOLDS a work with a strong finding — before any env read or DB touch 9ms
+   × the attribution boundary through the GUTENBERG path > HOLDS a composite/indexed volume at acquire time — nothing is written 3ms
+   × the attribution boundary through the reference bridge path > HOLDS a reference work carrying a machine word index 299ms
+ Test Files  1 failed (1)
+      Tests  3 failed | 3 passed (6)

@@ -1,0 +1,5 @@
+ ❯ test/register-writer-shelf-gate.test.ts (5 tests | 2 failed) 5ms
+   × the static shelf gate (H-4 / LAUNCH_BLOCKERS §17) > a work landing STAGED does not touch the shelf file at ingest 3ms
+   × the static shelf gate (H-4 / LAUNCH_BLOCKERS §17) > shouldMaterializeShelf: publish, or the explicit flag — never neither 0ms
+ Test Files  1 failed (1)
+      Tests  2 failed | 3 passed (5)
