@@ -44,9 +44,19 @@ including `licensing` and `draft-check`, the two that timed out under contention
 looked at; live signed-out rail at 1280 and 375 with the Menu sheet, no overflow, no leftover
 sections, console clean of product errors. `docs/evidence/rail-row-marks-2026-09-07/`.
 
-### NOT DONE / UNVERIFIED
+**SHIPPED — `6dcd674f` is live** (receipt `dpl_2S3qFezZaS32CuWScxsiKcr3mwYc`, 2026-09-07T10:28:35Z,
+`alias_serves == deployment_id`), owner-executed; the agent session's permission classifier refuses
+`./deploy.sh`. PR #240 merged after CI went green on both jobs at `3e5e724e`.
 
-- **Not deployed.** On `fix/rail-row-marks`, PR pending CI.
+**Verified independently of the deploy script.** Fetched the 12 JS chunks the live `/gate` references
+(1.3 MB) and grepped for strings this change REMOVED: `section name`, `Study sections fill in`,
+`Group study spaces`, `Rename ` — all **0**; the new `pl-5` panel indent — present. **The first
+attempt at this check was VACUOUS and said so**: a zsh word-splitting mistake (unquoted `$VAR` in a
+`for` list does not split in zsh) fetched one bad URL, so every count was 0 including the positive
+control — which is exactly what the positive control is for. Re-run with a `while read` loop:
+positive controls `rail-group-` and `Prayer journal` present, negative control 0.
+
+### NOT DONE / UNVERIFIED
 - **The owner's real rail has not been seen by anyone but the owner.** Composites use fixture rows.
 - Per-day date grouping ("print the date only when it differs from the row above") was offered and
   not taken; if the rail ever needs dates back, that is the shape.

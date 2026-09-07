@@ -60,3 +60,29 @@ and the pane's own `eval()` CSP notice, identical to every earlier check. Captur
 **What this does NOT prove:** the owner's real data on the owner's browser. The composites use
 fixture rows. The owner is the only one who can look at the live signed-in rail; the storage-key
 preservation (leg 5) is what makes that look safe to take.
+
+## Live verification (2026-09-07, after the deploy)
+
+`6dcd674f` serving on `ancientpaths.app`, receipt `dpl_2S3qFezZaS32CuWScxsiKcr3mwYc`,
+`alias_serves == deployment_id`, `state: live`.
+
+The site is password-gated, so the rail cannot be loaded directly. Verified by fingerprinting the
+JS the live `/gate` references — 12 immutable chunks, 1,316,833 bytes:
+
+| String | Expected | Observed |
+|---|---|---|
+| `rail-group-` (positive control) | present | 1 |
+| `Prayer journal` (positive control) | present | 1 |
+| `section name` (InlineNameForm) | 0 | 0 |
+| `Study sections fill in` (SectionEmptyState) | 0 | 0 |
+| `Group study spaces` (SectionEmptyState) | 0 | 0 |
+| `Rename ` (the pencil's aria-label) | 0 | 0 |
+| `pl-5` (new panel indent) | present | 1 |
+| `rail-group-nonexistent` (negative control) | 0 | 0 |
+
+**The first run of this check was vacuous and reported itself as such.** Under zsh an unquoted
+`$VAR` in a `for` list is not word-split, so the loop fetched one malformed URL and every count
+came back 0 — including the positive control, which is the only reason the vacuity was visible
+rather than being read as "all retired strings gone". Re-run with `while IFS= read -r`. A check
+whose failure mode looks identical to a pass needs a control that distinguishes them; this one had
+one.
