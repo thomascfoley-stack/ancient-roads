@@ -49,20 +49,23 @@
 > still named `prod440-*` for file stability — the 2026-09-07 prod-scan carve above then took
 > the five batches to 48/64/66/66/52 = 296).
 >
-> What remains flippable without further ruling: **314 works** — the flippable set is now
-> cut on the two-axis analysis of 2026-09-07 (fresh-agent partition, evidence below):
-> **detector-PASS AND structurally clean** (1:1 source item — one work, one author — by
-> construction). After the deep-audit's re-sample showed the detector alone cannot carry
-> the decision (6/15 false-PASS on never-seen works; each fix round finds a new
-> unenumerated class — an open-ended class must not be chased by example), the batch was
-> re-partitioned by source STRUCTURE, not detector confidence: SWORD modules and
-> single-work etexts/CCEL items carry no composite-volume risk by construction, and the
-> entire catastrophe class (bound-in foreign works) concentrates in composite-structure
-> sources. **24 detector-PASS-but-composite-risk works were carved OUT**
-> (`docs/evidence/corpus-copy/structural-hold-composite-risk-2026-09-07.json`: 4 Schaff
-> NPNF anthology vols + 9 collected-Works vols + 6 hymn/poetry anthologies + 2
-> multi-author reference + 3 soft calls) — held for hand-read or ADR-029 re-slice.
-> **Flippable = 38 dev-PASS + 276 prod-PASS = 314** (union-verified 2026-09-07).
+> What remains flippable without further ruling: **297 works** — the flippable set has now
+> been through FOUR passes, the last one being actual per-work reading (2026-09-08):
+> (1) detector PASS, (2) structural partition, (3) structural validation that returned
+> NOT EARNED and held the batch (190/314 flagged), and (4) a full triage READ of all 190
+> by four fresh agents with a second-pass verifier at 12/12 agreement. The triage
+> (`docs/evidence/corpus-copy/triage-verdicts-190-2026-09-08.json`) resolved the 190 as
+> 148 CLEAN (chaptered single works — the L3 heuristic's main false-positive class), 25
+> CLEAN-SAME-AUTHOR (single-author collections, attribution-safe), and **17
+> TRUE-COMPOSITE** — every one with its foreign content named (Guyon-under-Cowper,
+> La Combe-under-Fenelon, Bradford-inside-Robinson, Whittier's essay, Perkins-class
+> bound-ins) — carved to `triage-hold-reslice-17-2026-09-08.json` for ADR-029 re-slice.
+> The 124 structurally-single works were sample-corroborated 0/15 for hidden composites
+> (95% upper bound ~18% at n=15 — corroboration, not proof). **Flippable = 297**
+> (union-verified 2026-09-08). Open calibration for the owner: the CLEAN/TRUE-COMPOSITE
+> front-matter threshold is unwritten (wesley-journal CLEAN at ~4% foreign front matter
+> vs baxter-unconverted held at ~3%; boethius-tracts' 7% translators' introduction is the
+> closest call to the line — flagged by the verifier, not decided).
 > The dev 58's full findings: verdict.md + verdict-v2.md; the 16 dev-held and 143
 > prod-held works additionally triage as: 111 structurally-clean hygiene-only (fast-track
 > after mechanical cleanup — strip tail word-indexes/title pages/publisher catalogues),
@@ -82,9 +85,9 @@
 ingestion session. Two jobs, in order:
 
 1. **Copy** the 58 works staged on DEV (top-up waves 1–3) to PROD, landing `staged`.
-2. **Publish** 314 works total on PROD: the 38 verdict-PASS-and-structurally-clean of the 58
-   (after the copy) + the 276 verdict-PASS-and-structurally-clean of the 439 already staged
-   there (both numbers since the 2026-09-07 two-axis partition — see the amendment block) —
+2. **Publish** 297 works total on PROD: the triaged-clean of the 58 (after the copy) + the
+   triaged-clean of the 439 already staged there (numbers since the 2026-09-08 four-wave
+   triage + verification — see the amendment block) —
    each as a `--status-only` flip followed immediately by a
    `serve-batched` run on the same slug file. **(Job 2 was gated by the preconditions in the
    amendment block: the owner ruling of 2026-09-07 discharged P4.n; ADR-029's prod-side scan
@@ -108,7 +111,8 @@ Nothing here was executed for real by the prepping agent — the write tools are
   **Carved 2026-09-07 by the prod ADR-029 scan: 143 verdict-FAIL works moved to
   `docs/evidence/corpus-copy/prod439-held-adr029-2026-09-07.json`; 296 verdict-PASS remain
   in the five batch files** (`verdict-prod.md`, union proof `carve-union-proof.log`).
-- No delta: 38 + 276 = 314 works to publish (embedding-row counts were measured for the full
+- No delta: 297 works to publish across 6 batches (38 + 40/54/60/62/43; embedding-row counts
+  were measured for the full
   58+440 set and are now over-estimates — the 42 is the verdict-v2 re-carve of 2026-09-07 and
   the 296 is the prod-scan carve of 2026-09-07; serve-batched prints its own exact ETA).
 
@@ -157,9 +161,9 @@ dev row before the copy; otherwise they ride with the batch.
 ## Batching (and why)
 
 - **Status flips: 6 batches** — the 38 PASS as one batch, the 276 as five batches
-  (42/62/62/63/47 — carved 2026-09-07 from the original 88/88/88/87/88 by the prod ADR-029
-  scan carve and the structural partition; sizes corrected 2026-09-07 — this line
-  previously said 42/296 and 48/64/66/66/52, both stale)
+  (38 + 40/54/60/62/43 — carved 2026-09-08: the prod ADR-029 scan carve, the structural
+  partition, and the triage's 17 re-slice holds; sizes corrected again 2026-09-08 —
+  previous versions of this line were stale twice)
   scan, see amendment; file names unchanged for stability). Precedent:
   2026-08-19 flipped **87 works in a single flip** (log:
   `docs/evidence/work-order-v2-stage2/flip-run-2026-08-19T11-57-28-503Z.log`), so 42/66 per

@@ -4,7 +4,6 @@
  "batch": "5 of 5",
  "slugs": [
   "robertson-at-word",
-  "robinson-j-words",
   "ruysbroeck-adornment",
   "ryle-upper-room",
   "schleiermach-religion",
@@ -33,7 +32,6 @@
   "underhill-essentials",
   "underhill-life",
   "underhill-practical",
-  "upham-maxims",
   "ursinus-gospel",
   "vandyke-otherwiseman",
   "watson-cordial",
@@ -47,8 +45,6 @@
   "white-prophets",
   "white-steps",
   "whyte-pray",
-  "whyte-teresa",
-  "woolman-journal",
   "wyss-swiss"
  ]
 }

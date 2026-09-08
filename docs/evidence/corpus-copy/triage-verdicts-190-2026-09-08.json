@@ -1,0 +1,1334 @@
+[
+ {
+  "slug": "augustine-enchiridion",
+  "verdict": "CLEAN",
+  "basis": "Flag matched the phrase \"Life of the World To Come\" in Augustine's own chapter heading. div1 \"Chapter XXIV. The Solution to Present Spiritual Enigmas to Be Awaited in the Life of the World To Come\" opens with Enchiridion \u00a794 (\"And thus it will be that while the reprobated angels and men go on in their eternal punishment...\") \u2014 continuous Augustine text. All 33 div1s are sequential chapters of one work. Second DC.Creator name Albert C. Outler is sub=\"Translator\", recorded as such.",
+  "sections_checked": [
+   "ThML TOC (33 div1 chapter headings)",
+   "Chapter XXIV body opening",
+   "DC.Creator sub roles"
+  ]
+ },
+ {
+  "slug": "bernard-st-malachy",
+  "verdict": "CLEAN",
+  "basis": "Heuristic confused subject with authorship: the declared work IS Bernard's biography \u2014 title page \"ST BERNARD OF CLAIRVAUX'S LIFE OF ST MALACHY OF ARMAGH\". div1 \"The Life of St. Malachy\" (438k chars) is Bernard's own Vita Malachiae; div1s \"Letters of St. Bernard\" and \"Sermons of St. Bernard on the Passing of Malachy\" are also Bernard's texts. H. J. Lawlor is translator/editor (title page: \"By H. J. LAWLOR\"); Introduction/Notes/Appendix are his recorded editorial apparatus, not content under Bernard's name.",
+  "sections_checked": [
+   "Title page (series/edition credit)",
+   "ThML TOC (all div1s)",
+   "relative spans of Life/Letters/Sermons div1s"
+  ]
+ },
+ {
+  "slug": "chesterton-aquinas",
+  "verdict": "CLEAN",
+  "basis": "Flagged dev-DB heading \"V. The Real Life of St. Thomas\" is a chapter of Chesterton's own book \"St. Thomas Aquinas\" \u2014 his treatment of his subject, not another hand's biography. Dev DB body matches ThML: \"At this point, even so crude and external a sketch of a great saint involves the necessity of writing something that cannot fit in with the rest...\" \u2014 Chesterton's prose. Sole DC.Creator Author: Chesterton.",
+  "sections_checked": [
+   "dev DB sections row (heading + body start)",
+   "ThML ch. V opening",
+   "full TOC (8 chapters, one book)"
+  ]
+ },
+ {
+  "slug": "cowper-guyonpoems",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "The entire body is Madame Guyon's poetry served under declared author Cowper. Title page: \"TRANSLATIONS FROM THE FRENCH OF MADAME DE LA MOTHE GUION. (translated by William Cowper)\". Cowper's role is translator, but DC.Creator labels Cowper sub=\"Author\" (file-as/short-form) and adds 'guyon' as ccel-scheme Author. Foreign span = the whole work: all 37 poem div1s, e.g. \"The Nativity\", \"God Neither Known nor Loved by the World\", \"Aspirations of the Soul After God\" \u2014 Guyon's compositions, not Cowper's.",
+  "sections_checked": [
+   "Title page attribution",
+   "DC.Creator roles (Cowper mislabeled Author; guyon ccel-scheme)",
+   "full poem TOC (37 div1s)"
+  ]
+ },
+ {
+  "slug": "decaussade-abandonment",
+  "verdict": "CLEAN",
+  "basis": "The two DC.Creator Author entries are the SAME person (ccel scheme 'decaussade' = \"de Caussade, Jean-Pierre, S.J. (d. 1751)\") \u2014 a dedupe artifact, not two authors. All content div1s are de Caussade's: \"Abandonment to Divine Providence\", \"Spiritual Counsels of Fr. de Caussade\", \"Letters on the Practice of Abandonment...\" (e.g. \"Letter I... To Sister Elizabeth Bourcier de Monthureux.\u2014Perpignan, 1732\"). Edition credits recorded on title page: edited Rami\u00e8re, intro Dom Arnold, trans. E. J. Strickland.",
+  "sections_checked": [
+   "both title pages (edition credits)",
+   "Letters div1 opening",
+   "ThML TOC (all div1s)"
+  ]
+ },
+ {
+  "slug": "fenelon-progress",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Volume \"Spiritual Progress... FROM THE FRENCH OF FENELON AND MADAME GUYON\" (ed. Metcalf, 1853) mixes three hands under declared author Fenelon. Foreign spans: div1 \"Method of Prayer\" (title page: \"A SHORT AND VERY EASY METHOD OF PRAYER... BY MADAME GUYON\", spans 62.97%\u201386.79% of the book); div1 \"On The Way to God\" (\"CONCISE VIEW OF THE WAY TO GOD; AND OF THE STATE OF UNION BY MADAME GUYON\"); and div1 \"SPIRITUAL MAXIMS\" \u2014 heading reads \"SPIRITUAL MAXIMS ATTRIBUTED TO PERE LA COMBE, AT ONE TIME SPIRITUAL DIRECTOR OF MADAME GUYON\" \u2014 a third author's text. Only \"Christian Counsel\" and \"Spiritual Letters\" are Fenelon's.",
+  "sections_checked": [
+   "Main title page (Fenelon AND Guyon)",
+   "Method of Prayer title page + preface",
+   "On The Way to God heading",
+   "Spiritual Maxims heading (Pere La Combe)",
+   "full div1/div2 TOC"
+  ]
+ },
+ {
+  "slug": "johnson-bw-pnt",
+  "verdict": "CLEAN",
+  "basis": "B. W. Johnson's \"People's New Testament\" is a commentary edition; the flagged div1 \"The First Epistle of Paul to the Corinthians\" is Johnson's commentary ON the epistle \u2014 div2s are his own sections (\"Introduction to First Corinthians\", \"The Divisions in the Church Brought to Light\", \"Christ Crucified\"...), opening with Johnson's prose (\"The Epistles of Paul, like the prophecies of Jeremiah or Amos, were often called out by the mistakes...\"). Scripture text is the commented subject text, standard for the genre. Sole DC.Creator Author: Johnson.",
+  "sections_checked": [
+   "1 Corinthians div1 body opening",
+   "div2 headings under 1 Corinthians (17 sections)",
+   "full NT-book TOC"
+  ]
+ },
+ {
+  "slug": "mcgarvey-gospels",
+  "verdict": "CLEAN",
+  "basis": "Single jointly-authored work, attribution already complete: title page \"THE FOUR-FOLD GOSPEL OR A Harmony of the Gospels... by President J. W. McGARVEY, LL. D. and PHILIP Y. PENDLETON, A. B.\" (1914). Pendelton is co-author of the SAME work, declared sub=\"Author\" in DC.Creator \u2014 not a foreign text bound in; nothing to re-slice. Embedded gospel text is the harmonized subject text with \"comments injected in the text\" by both authors.",
+  "sections_checked": [
+   "Title page (joint byline)",
+   "DC.Creator roles (both declared Author)",
+   "Introduction opening"
+  ]
+ },
+ {
+  "slug": "neander-a-expo-phil",
+  "verdict": "CLEAN",
+  "basis": "Flagged dev-DB heading \"Epistle of Paul to the Philippians.\" is the exposition section of Neander's own commentary \u2014 dev DB body matches ThML: \"IF the Spirit of God has revealed to holy men of old the word of truth... to us, this is not to be regarded merely as an isolated fact...\" \u2014 Neander's practical exposition of his subject epistle, not Paul's text bound in as foreign content (translated from the German; sole DC.Creator Author: Neander).",
+  "sections_checked": [
+   "dev DB sections row (heading + body start)",
+   "ThML div1 body opening",
+   "TOC + translator credit"
+  ]
+ },
+ {
+  "slug": "owen-indwellingsin",
+  "verdict": "CLEAN",
+  "basis": "Flag matched \"in the lives of professors\" in Owen's own chapter heading: div2 \"Chapter XIV. The power of sin farther demonstrated by the effects it hath had in the lives of professors \u2014 First, in actual sins \u2014 Secondly, in habitual declensions.\" Body is Owen's first-person argument (\"We are now to proceed unto other evidences of that sad truth...\"). One work, one div1, sole author John Owen.",
+  "sections_checked": [
+   "Chapter XIV heading + body opening",
+   "DC.Creator (sole author)",
+   "TOC"
+  ]
+ },
+ {
+  "slug": "owen-truthinnocence",
+  "verdict": "CLEAN",
+  "basis": "Flagged div2 \"A Survey of the Sixth Chapter\" is Owen's own polemical survey of Parker's chapter \u2014 heading itself frames refutation: \"...Parker's answers to certain objections considered \u2014 Doctrine of passive obedience refuted \u2014 ...The true dignity and functions of the magistrate declared\". Embedded quotations of the opponent are standard controversy apparatus, not a bound-in work. Sole DC.Creator Author: John Owen.",
+  "sections_checked": [
+   "Survey of the Sixth Chapter heading + opening",
+   "DC.Creator (sole author)",
+   "TOC"
+  ]
+ },
+ {
+  "slug": "underhill-essentials",
+  "verdict": "CLEAN",
+  "basis": "Flag matched the topical phrase \"Doctrine of Atonement\" in Underhill's own essay title. div1 \"Mysticism and the Doctrine of Atonement\" opens \"AMONGST the problems which have to be met by those who incline to a mystical view of Christianity...\" \u2014 Underhill's prose. All div1s are her own essays in the single 1920 volume \"The Essentials of Mysticism\". Sole DC.Creator Author: Underhill.",
+  "sections_checked": [
+   "Atonement essay opening",
+   "full essay TOC (9 essays)",
+   "DC.Creator (sole author)"
+  ]
+ },
+ {
+  "slug": "boettner-predest",
+  "verdict": "CLEAN",
+  "basis": "L5 title-shape flag only: \"The Reformed Doctrine of Predestination\" is Boettner's single-author monograph; TOC is Introduction + Sections I\u2013V of one continuous argument. Sole DC.Creator Author: Boettner, Loraine. No second name anywhere in the metadata.",
+  "sections_checked": [
+   "DC.Creator/DC.Title metadata",
+   "TOC"
+  ]
+ },
+ {
+  "slug": "more-comfort",
+  "verdict": "CLEAN",
+  "basis": "L5 title-shape flag only: \"Dialogue of Comfort Against Tribulation\" is More's single work \u2014 a dialogue in form, not a composite. TOC is the dialogue + Books One\u2013Three. Sole DC.Creator Author: More, St. Thomas.",
+  "sections_checked": [
+   "DC.Creator/DC.Title metadata",
+   "TOC"
+  ]
+ },
+ {
+  "slug": "pink-just",
+  "verdict": "CLEAN",
+  "basis": "L5 title-shape flag only: \"The Doctrine of Justification\" is Pink's single-author monograph; TOC is 10 sequential chapters (\"1. Introduction\" ... \"10. Its Results\"). Sole DC.Creator Author: Pink, Arthur W.",
+  "sections_checked": [
+   "DC.Creator/DC.Title metadata",
+   "TOC"
+  ]
+ },
+ {
+  "slug": "allen-j-peace",
+  "verdict": "CLEAN",
+  "basis": "DC.Title='The Way of Peace' (James Allen); the 7 div1s ('The Power of Meditation','Star of Wisdom','The Two Masters...',...,'The Realization of Perfect Peace') are the chapter-titles of that single book \u2014 all by Allen.",
+  "sections_checked": "live XML head/DC metadata + full div1 TOC of peace.xml"
+ },
+ {
+  "slug": "allestree-government",
+  "verdict": "CLEAN",
+  "basis": "Divisions are 'Section 1: Of the Use of Speech', 'Section 2...' \u2014 numbered sections of one treatise (The Government of the Tongue).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "barclay-quakers",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Main works (Theses Theologicae + Apology) are Barclay's, but bound at head is 'Short account of the Life and Writings of Robert Barclay, published at Philadelphia, in 1805' \u2014 an anonymous third-person life OF Barclay by another hand ('this is corroborated by William Penn's Preface... and by John Gough's History').",
+  "sections_checked": "live XML div1 TOC + spot-read of div1#iii (the Short account)"
+ },
+ {
+  "slug": "barnes-ntnotes",
+  "verdict": "CLEAN",
+  "basis": "'THE GOSPEL ACCORDING TO MATTHEW','MARK',... \u2014 NT books of one commentary series (Barnes' Notes on the NT), all by Barnes.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "baxter-unconverted",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Sermons I-IV = one work (A Call to the Unconverted), but prefatory 'A Short Account of the Author...' is an anonymous editorial account quoting Baxter in 3rd person and appending 'Dr. Calamy's account of this Treatise' (Edmund Calamy) \u2014 biographical matter by other hands bound at head.",
+  "sections_checked": "live XML div1/div2 TOC + full read of div2#ii.i (the Short account)"
+ },
+ {
+  "slug": "benedict-rule",
+  "verdict": "CLEAN",
+  "basis": "'Prologue','Chapter I. Of the Kinds or the Life of Monks','Chapter II...' \u2014 74 numbered chapters of one Rule.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "bernard-loving-god",
+  "verdict": "CLEAN",
+  "basis": "'Chapter I. Why we should love God...','Chapter III...' \u2014 numbered chapters of one treatise (On Loving God).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "blois-mirror",
+  "verdict": "CLEAN",
+  "basis": "'A Table of the Things Contained in This Treatise.','Chapter I.','Chapter II...' \u2014 chapters of one treatise.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "boethius-consolation",
+  "verdict": "CLEAN",
+  "basis": "'Book I'...'Book V' \u2014 sequential books of one treatise (Consolation of Philosophy).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "boethius-tracts",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "5 separately-titled tractates ('The Trinity is One God Not Three Gods',...,'A Treatise Against Eutyches and Nestorius') \u2014 distinct works, ALL by Boethius; collection (Theological Tractates).",
+  "sections_checked": "live XML div1/div2 TOC of tracts.xml"
+ },
+ {
+  "slug": "bonar-peace",
+  "verdict": "CLEAN",
+  "basis": "Divisions are bare roman numerals I, II, III... \u2014 numbered chapters of one book.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "bounds-reality",
+  "verdict": "CLEAN",
+  "basis": "'I. PRAYER\u2014A PRIVILEGE...','II. PRAYER\u2014FILLS MAN'S...' \u2014 numbered chapters of one book on prayer.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "boyce-theology",
+  "verdict": "CLEAN",
+  "basis": "'Chapter I: The Science of Theology','Chapter II: The Being of God'... \u2014 42 chapters of one systematic theology.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "charnock-reconcil",
+  "verdict": "CLEAN",
+  "basis": "'1. First, What reconciliation is.','2. Second thing...' \u2014 numbered heads of one discourse.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-america",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "'A Meditation in a New York Hotel','A Meditation in Broadway',... \u2014 essays of one author (What I Saw in America); collection.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-defendant",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "'A Defence of Penny Dreadfuls',... \u2014 essay collection (The Defendant), all by Chesterton; collection.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-everlasting",
+  "verdict": "CLEAN",
+  "basis": "'PREPATORY NOTE','Part I. On The Creature Called Man','Part II...' \u2014 parts of one book (The Everlasting Man).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-magic",
+  "verdict": "CLEAN",
+  "basis": "'Characters','The Prelude','ACT II','ACT III' \u2014 acts of one play (Magic).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-orthodoxy",
+  "verdict": "CLEAN",
+  "basis": "Divisions are bare numerals I, II, III, IV... \u2014 9 chapters of one book (Orthodoxy).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-thingsconsidered",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "'The Case for the Ephemeral','Cockneys and Their...',... \u2014 essay collection (All Things Considered), all by Chesterton; collection.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-thursday",
+  "verdict": "CLEAN",
+  "basis": "'CHAPTER I','CHAPTER II',... \u2014 15 numbered chapters of one novel (The Man Who Was Thursday).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-whatwrong",
+  "verdict": "CLEAN",
+  "basis": "'PART ONE: THE HOMELESSNESS OF MAN','PART TWO: IMPERIALISM...' \u2014 parts of one book (What's Wrong with the World).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "chesterton-wisdom",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "'The Absence of Mr. Glass','The Paradise of Thieves',... \u2014 story collection (The Wisdom of Father Brown), all by Chesterton; collection.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "coleridge-reflection",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "First div1 is 'PRELIMINARY ESSAY. BY THE REV. JOHN M'VICKAR.' \u2014 an essay by another author (M'Vickar, the edition's editor) served ahead of Coleridge's Aids to Reflection (Author's Address, Preface, Aphorisms = Coleridge).",
+  "sections_checked": "live XML div1 TOC + spot-read of div1#i (essay's byline)"
+ },
+ {
+  "slug": "conybeare-lxxgrammar",
+  "verdict": "CLEAN",
+  "basis": "'Abbreviations','Grammar','Accidence','Syntax' \u2014 parts of one grammar.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "dante-divinecomedy",
+  "verdict": "CLEAN",
+  "basis": "'Inferno','Purgatorio','Paradiso' (+ Credits) \u2014 cantiche of one poem.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "defoe-crusoe",
+  "verdict": "CLEAN",
+  "basis": "'Chapter One','Chapter Two',... \u2014 27 numbered chapters of one novel.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "dick-j-acts",
+  "verdict": "CLEAN",
+  "basis": "'Lecture I. The Resurrection of Christ...','Lecture II. The Day of Pente...' \u2014 one lecture series (Lectures on Acts) by Dick.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "dods-likechrist",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "DC.Title='How to Become Like Christ'; 6 separately-titled papers ('The Transfiguration','Indiscreet Importunity',...), ALL by Marcus Dods; collection of addresses by one author.",
+  "sections_checked": "live XML head/DC metadata + full div1 TOC of likechrist.xml"
+ },
+ {
+  "slug": "dostoevsky-brothers",
+  "verdict": "CLEAN",
+  "basis": "'PART I'...'PART IV' \u2014 parts of one novel (Brothers Karamazov).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "dostoevsky-crimepunish",
+  "verdict": "CLEAN",
+  "basis": "'Part One'...'Part Four' + epilogue \u2014 parts of one novel (Crime and Punishment).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "dostoevsky-undernotes",
+  "verdict": "CLEAN",
+  "basis": "'Author's Note','PART I - Underground','PART II...' \u2014 parts of one novella (Notes from Underground).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "drummond-bsi",
+  "verdict": "CLEAN",
+  "basis": "'Swifts...','Slows...','Screws...' etc. are chapters of one book (Baxter's Second Innings, DC-verified div1 structure wraps all under the one title).",
+  "sections_checked": "live XML full div1 TOC of bsi.xml"
+ },
+ {
+  "slug": "drummond-greatest",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "5 separately-titled addresses ('The Greatest Thing in the World','The Programme of Christianity','The City Without a Church','The Changed Life','Pax Vobiscum') \u2014 ALL by Henry Drummond; collection.",
+  "sections_checked": "live XML full div1/div2 TOC of greatest.xml"
+ },
+ {
+  "slug": "drummond-ideal",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Declared author Drummond (The Ideal Life), but two div1s are by others: 'A Memorial Sketch by W. Robertson Nicoll' and 'A Memorial Sketch by John Watson (Ian Maclaren)' \u2014 foreign memorial sketches bound at head; remaining addresses are Drummond's.",
+  "sections_checked": "live XML full div1 TOC of ideal.xml (bylines in div titles)"
+ },
+ {
+  "slug": "drummond-life",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Declared author Drummond (A Life for a Life), but opening div1 'A Tribute' is a 3rd-person memoir of Drummond signed 'D. L. MOODY' \u2014 foreign tribute by Dwight L. Moody bound at head; the 3 addresses after it are Drummond's.",
+  "sections_checked": "live XML div1 TOC + full read of div1#iii incl. signature"
+ },
+ {
+  "slug": "edwards-affections",
+  "verdict": "CLEAN",
+  "basis": "'Part I. Concerning the nature of the affections...','Part III.' \u2014 parts of one treatise (Religious Affections).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "emmerich-lifemary",
+  "verdict": "CLEAN",
+  "basis": "'TABLE OF FIGURES','I. ANCESTORS OF THE BLESSED VIRGIN','II. THE IMMA...' \u2014 numbered sections of one work (Life of the Virgin Mary).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "feltoe-dionysius",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Declared author Feltoe, but 'Letters' and 'Treatises' divs ARE the texts of Dionysius of Alexandria ('LETTERS To Fabian, Bishop of Antioch (Eus., H.E. vi. 41...)'; 'TREATISES On the Promises (Eus., H.E. vii. 24...)') \u2014 foreign patristic texts, Feltoe is translator/editor.",
+  "sections_checked": "live XML div1/div2 TOC + spot-read of Letters and Treatises divs"
+ },
+ {
+  "slug": "fenelon-maxims",
+  "verdict": "CLEAN",
+  "basis": "'Articles 1-10','Articles 11-20',... \u2014 numbered article ranges of one work (Maxims of the Saints).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "finney-backslide",
+  "verdict": "CLEAN",
+  "basis": "'I. What backsliding in heart is not.','II...' \u2014 numbered heads of one sermon.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "finney-revivals",
+  "verdict": "CLEAN",
+  "basis": "'Lecture I. What a Revival of Religion is.','Lecture II...' \u2014 one lecture series (Lectures on Revivals).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "finney-toprofessingchristians",
+  "verdict": "CLEAN",
+  "basis": "'PUBLISHER'S NOTICE.','Chapter 1: Self Deceive...' \u2014 numbered chapters + notice of one book.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "flavel-fountain",
+  "verdict": "CLEAN",
+  "basis": "2 div1s are dedicatory epistles ('To his much honoured... Kinsman','To the Christian Read...') \u2014 Flavel's own front matter of one work.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "flavel-lovely",
+  "verdict": "CLEAN",
+  "basis": "'Christ is to be Loved','APPLICATION' \u2014 parts of one sermon.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "flavel-saintindeed",
+  "verdict": "CLEAN",
+  "basis": "'Epistle Dedicatory','A SAINT INDEED','A DOUBLE TABLE' \u2014 one work plus its own front/back matter.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "forsyth-work",
+  "verdict": "CLEAN",
+  "basis": "'I. The Difference Between God's Sacrifice and Man's','II...' \u2014 numbered chapters of one book (The Work of Christ).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "fuller-david",
+  "verdict": "CLEAN",
+  "basis": "'Davids Hainous Sinne.','Davids Hearty Repentance.','Davids Heavie Punishment.' \u2014 3 sequential parts of one sermon sequence by Fuller.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "gardner-cell",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Seven treatises are by OTHER mystics: 'II. Doctrines of St. Katherin of Seenes' (Catherine of Siena), 'IV. Of The Song of Angels... compiled by Master Walter Hylton' (Walter Hilton); CCEL note: 'includes writings from Richard Rolle, Walter Hilton, Julian of Norwich, and Richard of St. Victor'. Gardner is editor only.",
+  "sections_checked": "live XML div1 TOC + spot-read of div1#iv, #vi + editorial note"
+ },
+ {
+  "slug": "gerson-snares",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "'Biographical Notice.' bound at head is a 3rd-person life OF Gerson by the editor/translator (unsigned; narrates his death, burial and miracles at his tomb) \u2014 not by Gerson; the 5 chapters of 'Snares of the Devil' are Gerson's.",
+  "sections_checked": "live XML div1/div2 TOC + full read of div2#i_1 (the Notice)"
+ },
+ {
+  "slug": "gordon-talksfollowingchrist",
+  "verdict": "CLEAN",
+  "basis": "'The Lone Man Who Went Before','The Long, Rough Roa...' \u2014 titled chapters of one book (Quiet Talks on Following the Christ).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "gordon-talksjesus",
+  "verdict": "CLEAN",
+  "basis": "'Epigraph','A Bit Ahead','I. The Purpose of Jesus','II...' \u2014 numbered chapters of one book (Quiet Talks about Jesus).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "gordon-talkspower",
+  "verdict": "CLEAN",
+  "basis": "'Choked Channels','The Olivet Message',... \u2014 titled chapters of one book (Quiet Talks on Power).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "gordon-talkswinners",
+  "verdict": "CLEAN",
+  "basis": "'World-Winning','Winning Forces' \u2014 2 chapters of one book (Quiet Talks on World Winners).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "gray-jm-synthetic",
+  "verdict": "CLEAN",
+  "basis": "'Old Testament','New Testament' \u2014 two halves of one Bible-study book (Synthetic Bible Studies).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "griffin-sufferings",
+  "verdict": "CLEAN",
+  "basis": "'Chapter I.','Chapter II.',... \u2014 23 numbered chapters of one book.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "groom-bible",
+  "verdict": "CLEAN",
+  "basis": "'Lesson No. 1\u2014The Bible.','Lesson No. 2...',... \u2014 61 numbered lessons of one course book.",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "guyon-song",
+  "verdict": "CLEAN",
+  "basis": "'Chapter I.','Chapter II.',... \u2014 numbered chapters of one commentary (Song of Songs).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "havergal-keptuse",
+  "verdict": "CLEAN",
+  "basis": "'Our Lives kept for Jesus.','Our Moments kept for Jesus.',... \u2014 titled chapters of one book (Kept for the Master's Use).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "herbert-temple2",
+  "verdict": "CLEAN",
+  "basis": "'Chapter I. Of a Pastor.','Chapter II. Their Diversities.',... \u2014 40 chapters of one treatise (A Priest to the Temple).",
+  "sections_checked": "evidence line (TOC titles)"
+ },
+ {
+  "slug": "hoadly-acceptance",
+  "verdict": "CLEAN",
+  "basis": "Single published volume 'Several Discourses Concerning the Terms of Acceptance with God' (CCEL page: 'by Benjamin Hoadly'); 18 connected sermons I-XVIII all by Hoadly = parts of one work.",
+  "sections_checked": 21
+ },
+ {
+  "slug": "hodge-darwinism",
+  "verdict": "CLEAN",
+  "basis": "8 div1s ('Importance of the Question','Mr. Darwin's Theory','Natural Selection',...) are the chapters of Hodge's single book 'What is Darwinism?'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "hoskier-codexb1",
+  "verdict": "CLEAN",
+  "basis": "'Chapter I. Codex B. Hort's Critical Principles.' etc. = chapters of one monograph (Codex B and its Allies, vol. 1).",
+  "sections_checked": 0
+ },
+ {
+  "slug": "inge-mysticism",
+  "verdict": "CLEAN",
+  "basis": "8 Bampton lectures of one work; 'Extract From the Last Will and Testament of the La[te Rev. John Bampton]' is the standard quoted founding document prefixed to Bampton Lectures, not a bound-in work.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "inge-outspoken",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "TOC = the 11 essays of Inge's 'Outspoken Essays' (First Series): 'Our Present Discontents','Patriotism','The Birth-Rate',...,'Survival and Immortality' - all Inge's own essays.",
+  "sections_checked": 14
+ },
+ {
+  "slug": "jenyns-internal1776",
+  "verdict": "CLEAN",
+  "basis": "'Proposition I-III' + 'Conclusion' = the four parts of Jenyns's single treatise 'A View of the Internal Evidence of the Christian Religion'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "jenyns-internal1799",
+  "verdict": "CLEAN",
+  "basis": "Same single treatise (1799 ed.): Proposition I-III + Conclusion are its only parts.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "jowett-silverlining",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "TOC: 26 sermons ('Under the Fig-Tree','In Time of Flood','The Cure for Care',...) - Jowett's sermon volume 'The Silver Lining: Messages of Hope and Cheer', all by Jowett.",
+  "sections_checked": 30
+ },
+ {
+  "slug": "keble-year",
+  "verdict": "CLEAN",
+  "basis": "109 div1s are the poems of Keble's single work 'The Christian Year' (Morning, Evening, Advent Sunday, ...).",
+  "sections_checked": 0
+ },
+ {
+  "slug": "kelly-gerhardtsong",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Body is Paul Gerhardt's hymns, not Kelly's: div1 'Spiritual Songs' heads 'Of the Holy Trinity','Advent','Birth of Christ.-Christmas',... are Gerhardt's songs in Kelly's translation; CCEL's own book page declares 'by Paul Gerhardt - Hymns translated by John Kelly'. Kelly contributes only the 'Biographical Sketch'.",
+  "sections_checked": 19
+ },
+ {
+  "slug": "kierkegaard-selections",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Hollander anthology; all five excerpts (Diapsalmata, The Banquet, Fear and Trembling, Preparation for a Christian Life, The Present Moment) are Kierkegaard's own writings.",
+  "sections_checked": 7
+ },
+ {
+  "slug": "law-apracticaltreat",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Bound-in memoir by another hand before the treatise: 'Some Account of the Rev. William Law' opens in third person - 'The Rev. William Law was born in the town of King's Cliffe, in the county of Northampton, in the year 1686' - an anonymous editorial life, not by Law. Treatise chapters themselves are Law's.",
+  "sections_checked": 3
+ },
+ {
+  "slug": "law-collection",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "24 letters of Law's own 'A Collection of Letters'; letters read as Law's answers ('Answer to a Scruple... what I would do myself, in these supposed Cases').",
+  "sections_checked": 0
+ },
+ {
+  "slug": "law-humbleearnest",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Volume 'Works of the Rev. William Law' bundling three Law works: 'An Humble, Earnest, and Affectionate Address to the Clergy' + 'A Collection of Letters' (25) + 'Letters to a Lady' (3). Letters are Law's own ('Answer to a Scruple... what I would do myself'); only an anonymous 2-page 'Prefatory Advertisement' by the editor as front matter.",
+  "sections_checked": 6
+ },
+ {
+  "slug": "law-serious-call",
+  "verdict": "CLEAN",
+  "basis": "25 numbered chapters of one work, 'A Serious Call to a Devout and Holy Life'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "law-waytodivine",
+  "verdict": "CLEAN",
+  "basis": "'The First/Second/Third Dialogue' = the three dialogues composing 'The Way to Divine Knowledge'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "leightonpullan-earlychristian",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-IX + tables of one textbook 'Early Christian Doctrine' ('CHAPTER I. CHRISTIAN DOCTRINE IN ITS SIMPLEST FORM' ... 'CHAPTER IX. ST. AUGUSTINE AND THE ATHANASIAN CREED').",
+  "sections_checked": 14
+ },
+ {
+  "slug": "lewis-he-sswales",
+  "verdict": "CLEAN",
+  "basis": "Biographical chapters of one book 'Sweet Singers of Wales' by Howell Elvet Lewis; each chapter surveys a Welsh hymnist with hymns quoted in translation as evidence, not bound-in foreign works.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "lightfoot-talmud",
+  "verdict": "CLEAN",
+  "basis": "Gospel-by-gospel sections (Matthew, Mark, ...) of one commentary 'A Commentary on the New Testament from the Talmud and Hebraica'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-dayboy",
+  "verdict": "CLEAN",
+  "basis": "21 chapters (Watho, Aurora, Vesper, ...) of the single novella 'The Day Boy and the Night Girl'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-donal-grant",
+  "verdict": "CLEAN",
+  "basis": "84 chapters of the single novel 'Donal Grant'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-elginbrod",
+  "verdict": "CLEAN",
+  "basis": "Books I-III of the single novel 'David Elginbrod'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-heatherandsnow",
+  "verdict": "CLEAN",
+  "basis": "45 chapters of the single novel 'Heather and Snow'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-hope",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "12 sermons ('Salvation from Sin','The Remission of Sins','Jesus in the World',...) = MacDonald's sermon collection 'The Hope of the Gospel', all by MacDonald.",
+  "sections_checked": 12
+ },
+ {
+  "slug": "macdonald-lady",
+  "verdict": "CLEAN",
+  "basis": "36 numbered chapters of the single novel 'The Elect Lady'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-lilith",
+  "verdict": "CLEAN",
+  "basis": "47 chapters of the single novel 'Lilith'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-neighbourhood",
+  "verdict": "CLEAN",
+  "basis": "34 chapters of the single novel 'Annals of a Quiet Neighbourhood' ('Chapter I. Despondency and Consolation', ...).",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-phantastes-faerie",
+  "verdict": "CLEAN",
+  "basis": "Chapters of the single romance 'Phantastes: A Faerie Romance'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-portent",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "'The Portent and Other Stories': title novella (chs. I-XIX) plus MacDonald's own short stories 'The Cruel Painter','The Castle','The Wow O'Riven' - all by MacDonald.",
+  "sections_checked": 22
+ },
+ {
+  "slug": "macdonald-rfalconer",
+  "verdict": "CLEAN",
+  "basis": "Parts I-III (Boyhood/Youth/Manhood) of the single novel 'Robert Falconer'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-salted",
+  "verdict": "CLEAN",
+  "basis": "26 chapters of a single novel (duplicate scan of 'Salted with Fire').",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-saltedfire",
+  "verdict": "CLEAN",
+  "basis": "26 chapters of the single novel 'Salted with Fire'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-sirgibbie",
+  "verdict": "CLEAN",
+  "basis": "63 chapters of the single novel 'Sir Gibbie'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-strife",
+  "verdict": "CLEAN",
+  "basis": "12 month-sections (January-December) of the single poem-cycle 'A Book of Strife in the Form of the Diary of an Old Soul'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-there-back",
+  "verdict": "CLEAN",
+  "basis": "Note + 66 chapters of the single novel 'There and Back'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "macdonald-vicardaughter",
+  "verdict": "CLEAN",
+  "basis": "42 chapters of the single novel 'The Vicar's Daughter'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "mead-matthew-name",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Two works, both Mead: second title page reads 'The POWER OF GRACE IN Weaning the Heart FROM THE WORLD ... By the late Reverend Mr. MATTHEW MEAD. LONDON ... 1707'; ThML creator = Matthew Mead.",
+  "sections_checked": 2
+ },
+ {
+  "slug": "molinos-guide",
+  "verdict": "CLEAN",
+  "basis": "'An Account of the book' (translator's/publisher's preface) + First/Second/Third Book of the single work 'The Spiritual Guide'.",
+  "sections_checked": 73
+ },
+ {
+  "slug": "moody-anecdotes",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Alphabetical anecdote entries (Affection, Affliction, Assurance, ...) from Moody's own preaching, published as his 'Anecdotes and Illustrations'; front matter is editorial only.",
+  "sections_checked": 66
+ },
+ {
+  "slug": "moule-hebrews",
+  "verdict": "CLEAN",
+  "basis": "14 chapters ('I. Consider Him (Heb. i.-ii.)', ...) of one devotional commentary on Hebrews.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "murray-covenants",
+  "verdict": "CLEAN",
+  "basis": "Numbered chapters of one book 'The Two Covenants'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "murray-deeper",
+  "verdict": "CLEAN",
+  "basis": "8 numbered chapters of one book 'The Deeper Christian Life'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "murray-new-life",
+  "verdict": "CLEAN",
+  "basis": "52 numbered meditations of one book 'The New Life: Words of God for Young Disciples'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "murray-obedience",
+  "verdict": "CLEAN",
+  "basis": "8 chapters of one book 'The School of Obedience'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "murray-prayer",
+  "verdict": "CLEAN",
+  "basis": "31 sequential 'Lessons' of one book 'With Christ in the School of Prayer'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "murray-surrender",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "'Absolute Surrender and Other Addresses': 9 addresses ('The Fruit of the Spirit is Love','Peter's Repentance','Ye are the Branches',...) all by Murray.",
+  "sections_checked": 10
+ },
+ {
+  "slug": "murray-true-vine",
+  "verdict": "CLEAN",
+  "basis": "31 sequential meditations on John 15 = one book 'The True Vine'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "murray-waiting",
+  "verdict": "CLEAN",
+  "basis": "31 numbered daily meditations of one book 'Waiting on God'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "newman-callista",
+  "verdict": "CLEAN",
+  "basis": "36 chapters of the single novel 'Callista'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "newman-gerontius",
+  "verdict": "CLEAN",
+  "basis": "Seven 'Phases' of the single poem 'The Dream of Gerontius'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "newton-messiah1",
+  "verdict": "CLEAN",
+  "basis": "Sermons I-XXV of Newton's single work 'Messiah: Fifty Expository Discourses' (vol. 1), all by Newton.",
+  "sections_checked": 27
+ },
+ {
+  "slug": "newton-messiah2",
+  "verdict": "CLEAN",
+  "basis": "Sermons XXVI-L of the same single work (vol. 2), all by Newton.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "orrce-holylife",
+  "verdict": "CLEAN",
+  "basis": "Sequential chapters of one book, Charles E. Orr's 'The More Excellent Way / The Holy Life' ('THE WAY THE SAIL IS SET','HOW TO LIVE THE CHRIST-LIFE',...).",
+  "sections_checked": 49
+ },
+ {
+  "slug": "orrce-lambs",
+  "verdict": "CLEAN",
+  "basis": "Sequential chapters of one book, Orr's 'Food for Lambs' ('FEEDING THE LAMBS','FOOD FOR THE LAMBS',...).",
+  "sections_checked": 56
+ },
+ {
+  "slug": "otto-ideaholy",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-XX+ of the single work 'The Idea of the Holy' (Harvey translation); translator prefaces/notes are editorial front matter.",
+  "sections_checked": 26
+ },
+ {
+  "slug": "owen-apostasy",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one treatise 'The Nature and Causes of Apostasy from the Gospel'.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "owen-churchlove",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one treatise (on love and unity among believers) by Owen.",
+  "sections_checked": 0
+ },
+ {
+  "slug": "owen-communion",
+  "verdict": "CLEAN",
+  "basis": "Parts I-III of 'Of Communion with God' plus Owen's own 'A Vindication of the Preceding Discourse' - one author, one work-line.",
+  "sections_checked": 25
+ },
+ {
+  "slug": "owen-conscience",
+  "verdict": "CLEAN",
+  "basis": "'Cases of Conscience Resolved': 14 discourses of one work by Owen.",
+  "sections_checked": 17
+ },
+ {
+  "slug": "owen-deathofdeath",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Front-matter foreign letters: 'Two attestations touching the ensuing treatise' are by other hands - the second signed 'Thine in Christ Jesus, Richard Byfield', the first likewise by a stranger ('The author of this book I know not so much as by name'). Treatise itself (Books I-IV) is Owen's.",
+  "sections_checked": 2
+ },
+ {
+  "slug": "owen-discourses",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Two div1 type=Work ('Sacramental Discourses', 'Three Discourses Suitable to the Lord's Supper') \u2014 both are Owen's own sacramental discourses from Goold's Works; no foreign hand.",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head description"
+  ]
+ },
+ {
+  "slug": "owen-display",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'A Display of Arminianism'; the 19 div2s are Imprimatur, dedications and chapters of that one treatise.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-eshcol",
+  "verdict": "CLEAN",
+  "basis": "One Work; the 2 div2s are the two rule-chapters of 'Eshcol' (with rule-sections beneath).",
+  "sections_checked": [
+   "ThML TOC",
+   "div structure"
+  ]
+ },
+ {
+  "slug": "owen-evangelicalchurches",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Three div1 Works ('Inquiry into Evangelical Churches', 'Answer to Dr Stillingfleet', 'True Nature of a Gospel Church') \u2014 all Owen treatises from Goold vol; the Stillingfleet piece is Owen's own reply treatise, not Stillingfleet's text.",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head pubHistory"
+  ]
+ },
+ {
+  "slug": "owen-faith",
+  "verdict": "CLEAN",
+  "basis": "One treatise 'Gospel Grounds and Evidences of the Faith of God's Elect'; 'Evidences'/'first-fourth evidence' are its parts; 'To the reader' is front matter.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-glory",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Two div1 Works: 'Meditations and Discourses on the Glory of Christ' (1684) and 'Meditations and Discourses Concerning the Glory of Christ' (posthumous sequel) \u2014 both Owen, conventionally bound as The Glory of Christ.",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head description"
+  ]
+ },
+ {
+  "slug": "owen-justice",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'A Dissertation on Divine Justice'; dedications (incl. to Cromwell) are front matter.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-liturgies",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'A Discourse Concerning Liturgies, and their Imposition'; chapters of one treatise.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-mort",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'Of the Mortification of Sin in Believers'; Chapter I-XIV of one treatise.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-pastorspeople",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'The Duty of Pastors and People Distinguished'; Imprimatur/dedications are front matter.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-perseverance",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-XVII of one treatise 'Of the Perseverance of the Saints'; front matter is dedications/prefaces.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-pneum",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'Pneumatologia'; Book I-V are books of the one discourse.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-schism",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Four div1 Works ('Of Schism', 'A Review of the True Nature of Schism', 'Answer to Mr Cawdrey', 'Brief Vindication of the Nonconformists') \u2014 all Owen (Goold vol 13, first eds 1657/1658/1680).",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head pubHistory"
+  ]
+ },
+ {
+  "slug": "owen-sin-grace",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'A Treatise of the Dominion of Sin and Grace'; chapters of one treatise.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-spirituallyminded",
+  "verdict": "CLEAN",
+  "basis": "Single Work; Part I and Part II of 'The Grace and Duty of being Spiritually Minded'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "owen-vindicevang",
+  "verdict": "CLEAN",
+  "basis": "Single Work 'Vindiciae Evangelicae'; 37 div2s are chapters of one treatise.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "paley-paleysnatural",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-XX of Paley's Natural Theology. 1836 Knight ed. has inline editorial footnotes (advertisement: notes/dissertations by the editors) but the appendix dissertations are NOT in the served text (divs end at Ch. XX); only unsigned footnote apparatus remains.",
+  "sections_checked": [
+   "ThML TOC",
+   "ADVERTISEMENT",
+   "footnote samples",
+   "dissertation references"
+  ]
+ },
+ {
+  "slug": "pascal-provincial",
+  "verdict": "CLEAN",
+  "basis": "Letters I-XIX = the Provincial Letters corpus. One 2.7k-char anonymous apparatus piece, 'Reply of the Provincial to the First Two Letters' (Feb 2, 1656), printed with the Letters since the 1650s editions \u2014 negligible (<0.5%) and anonymous, part of the canonical corpus.",
+  "sections_checked": [
+   "ThML TOC",
+   "Reply div1 full read"
+  ]
+ },
+ {
+  "slug": "penn-quakers",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-VI of one work (Primitive Christianity Revived) plus epistle to reader and book list.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "pink-antichrist",
+  "verdict": "CLEAN",
+  "basis": "Chapter-titled div1s of one book 'The Antichrist' (Intro through 'The Antichrist in Rev 13', types, Babylon chapters).",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "pink-return",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one book 'The Redeemer's Return' plus appendix.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "pink-sovereignty",
+  "verdict": "CLEAN",
+  "basis": "Chapters 1-12 + conclusion + 4 appendices of one book 'The Sovereignty of God'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "pusey-eirenicon",
+  "verdict": "CLEAN",
+  "basis": "One work; Postscript and Notes A-C are Pusey's own end-matter to the Eirenicon letter.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "robertson-at-word",
+  "verdict": "CLEAN",
+  "basis": "'Word Pictures in the New Testament': the 27 div1s are the NT books = volumes/parts of one work.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "robinson-j-words",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Old South Leaflet 'Words of John Robinson' serves ~29% non-Robinson text: five div2 sections are William Bradford's own narrative prose from Of Plymouth Plantation (e.g. ii.ii 'In these times allso were ye great troubls raised by ye Arminians...', ii.xiv 'Yea such was ye mutuall love... that this worthy man had to his flocke') and ii.xiii embeds a full letter signed 'Your assured loving freind, Roger White. Leyden, Aprill 28. Ano: 1625.' Foreign authors: William Bradford, Roger White.",
+  "sections_checked": [
+   "ThML TOC",
+   "div2 ii.ii, ii.vi, ii.vii, ii.xiii, ii.xiv full reads",
+   "char counts per section"
+  ]
+ },
+ {
+  "slug": "ruysbroeck-adornment",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Three treatises \u2014 'The Adornment of the Spiritual Marriage', 'The Sparkling Stone', 'The Book of Supreme Truth' \u2014 all by Ruysbroeck (Wynschenk Dom translation volume); intro is editorial.",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head description"
+  ]
+ },
+ {
+  "slug": "ryle-upper-room",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-XXI of one book 'Upper Room'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "schleiermach-religion",
+  "verdict": "CLEAN",
+  "basis": "'On Religion: Speeches to its Cultured Despisers' \u2014 the Speeches are parts of one work.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "sheldon-ihsteps",
+  "verdict": "CLEAN",
+  "basis": "Chapters One-Thirty-one of the single novel 'In His Steps'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "singh-feet",
+  "verdict": "CLEAN",
+  "basis": "Sections I-VI + prayer of one work 'At the Master's Feet'; 'Notes by the Translators' is apparatus.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "smith-ga-jeremiah",
+  "verdict": "CLEAN",
+  "basis": "Lectures I-VIII + appendices of one work on Jeremiah (George Adam Smith).",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "smith-geo-carey",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-XVI of one biography of William Carey (George Smith).",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "smith-hw-types",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-XXIII of one book on OT typology (H.W. Smith).",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "spurgeon-grace",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one book 'All of Grace'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "spurgeon-till-he-come",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Collection of separate communion addresses/meditations all by Spurgeon ('Till He Come'), incl. his Communion Hymn; Prefactory Note editorial.",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head description"
+  ]
+ },
+ {
+  "slug": "teresa-castle2",
+  "verdict": "CLEAN",
+  "basis": "First-Seventh Mansions = parts of one work, the Interior Castle.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "teresa-life",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Two div1 Works, 'The Life' and 'The Relations', both Teresa's own writings in the David Lewis edition; Annals/chronology is editorial apparatus.",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head description"
+  ]
+ },
+ {
+  "slug": "tischendorf-gospels",
+  "verdict": "CLEAN",
+  "basis": "One work 'When Were Our Gospels Written?'; chapters/sections of a single argument.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "tolstoy-gospel",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one work 'The Gospel in Brief' plus Tolstoy's own preface and summary.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "torrey-pray",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one book 'How to Pray'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "torrey-ttt",
+  "verdict": "CLEAN",
+  "basis": "'Torrey's New Topical Textbook': A-Z topical entries = parts of one reference work.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "torrey-work-holy-spirit",
+  "verdict": "CLEAN",
+  "basis": "Chapters I-XXII of one book 'The Person and Work of the Holy Spirit'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "traherne-centuries",
+  "verdict": "CLEAN",
+  "basis": "First-Fifth Century = the five parts of 'Centuries of Meditations'; Notes and References editorial.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "underhill-life",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one book 'The Life of the Spirit and the Life of Today'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "upham-maxims",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Served under Thomas Upham but the entire body is Fenelon's text: title page reads 'FELON'S MAXIMS OF THE SAINTS (From The Story of Madame Guyon's Life)' and all 45 top-level sections are Fenelon's articles (Article First: 'Of the love of God, there are various kinds...'), the translation Upham embedded in his Guyon biography. Foreign author: Francois de Salignac de La Mothe-Fenelon.",
+  "sections_checked": [
+   "ThML TOC",
+   "Title Page",
+   "Article First full read",
+   "ThML.head description"
+  ]
+ },
+ {
+  "slug": "vandyke-otherwiseman",
+  "verdict": "CLEAN",
+  "basis": "'The Sign in the Sky', 'By the Waters of Babylon', etc. are the chapter headings of the single story 'The Other Wise Man'; verse introduction is van Dyke's own.",
+  "sections_checked": [
+   "ThML TOC",
+   "Introduction read"
+  ]
+ },
+ {
+  "slug": "watson-cordial",
+  "verdict": "CLEAN",
+  "basis": "Chapters of one treatise 'A Divine Cordial' (Thomas Watson).",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "watts-divsongs",
+  "verdict": "CLEAN-SAME-AUTHOR",
+  "basis": "Two song collections \u2014 Divine Songs (1715) and Moral Songs (1720) \u2014 both by Isaac Watts, bound as 'Divine and Moral Songs'.",
+  "sections_checked": [
+   "ThML TOC",
+   "ThML.head description"
+  ]
+ },
+ {
+  "slug": "wesley-journal",
+  "verdict": "CLEAN",
+  "basis": "One work, 'The Journal of John Wesley' (810k of 850k chars). Foreign apparatus limited to publisher front matter of the 1951 Moody ed.: Introduction by Hugh Price Hughes (5.9k), Appreciation by Augustine Birrell (18k), editor's biographical sketch (13k) \u2014 ~4% total.",
+  "sections_checked": [
+   "ThML TOC",
+   "all front-matter div1 heads + char counts"
+  ]
+ },
+ {
+  "slug": "wesley-perfection",
+  "verdict": "CLEAN",
+  "basis": "One work 'A Plain Account of Christian Perfection'; section ranges are pagination chunks.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "westcott-epistlehebrews",
+  "verdict": "CLEAN",
+  "basis": "Sections I-XII of the introduction + commentary chapters I-XIII + notes = one commentary (Westcott on Hebrews).",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "white-prophets",
+  "verdict": "CLEAN",
+  "basis": "Sections of one book 'Prophets and Kings' (Ellen G. White).",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "white-steps",
+  "verdict": "CLEAN",
+  "basis": "Chapters 1-13 of one book 'Steps to Christ'.",
+  "sections_checked": [
+   "ThML TOC"
+  ]
+ },
+ {
+  "slug": "whyte-teresa",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Declared author Alexander Whyte, but 'Some Selected Passages' (62k chars) is larger than Whyte's own 'Appreciation and Introduction' (48k chars) and consists entirely of St. Teresa of Avila's writings: header reads 'SOME SELECTED PASSAGES \u2014 The translations in the following pages are mainly those of Woodhead and Lewis', opening span 'TERESA ON HERSELF: I had a father and a mother who both feared God...' Foreign author: Teresa of Avila (trans. Abraham Woodhead / David Lewis).",
+  "sections_checked": [
+   "ThML TOC",
+   "per-div1 char counts",
+   "Some Selected Passages head + opening read"
+  ]
+ },
+ {
+  "slug": "woolman-journal",
+  "verdict": "TRUE-COMPOSITE",
+  "basis": "Top-level section 'AN APPRECIATION \u2014 BY JOHN G. WHITTIER' (his 1871 essay) spans progress 0.13%-17.66% of the book \u2014 a named foreign-authored essay of ~17% served under Woolman before the Journal proper (Chapters I-XII). Foreign author: John Greenleaf Whittier.",
+  "sections_checked": [
+   "ThML TOC",
+   "AN APPRECIATION head + CCEL footnote + progress spans"
+  ]
+ }
+]
