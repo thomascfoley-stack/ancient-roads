@@ -1,5 +1,29 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-08 — Owner flips the 20 clean works; verified live end-to-end
+
+The owner ran the four-step terminal sequence
+(`docs/pm/orders/2026-09-07-owner-terminal-clean14.md`) — copy, flip, serve,
+and the historians' history_embeddings backfill. Independent verification
+afterward (READ ONLY, prod):
+
+- **20/20 published on prod** (9 register + 11 historians), section counts
+  matching the dev-staged numbers exactly.
+- Register works: every flat embedding row `served=true` (strongs 14,198/14,198,
+  middle-liddell 4,326/4,326, openhymnal 399/399, beza 402/402, carey 83/83,
+  jewel 238/238, newman ×2 735/854, vincent 642/642).
+- Historians: `history_embeddings` backfilled AND served for all 11
+  (tacitus 1,209/1,209, suetonius 1,021/1,021, daubigne ×5, sayce ×2, conder
+  1,079/1,079, stalker 272/272).
+- Retrieval spot-checks through prod data: Strong's G26/ἀγάπη resolves
+  ("love, i.e. affection or benevolence…"); Tacitus XV.44 present
+  ("Christus…suffered the extreme penalty…Pontius Pilatus") — the clean
+  non-Christian corroboration the corpus lacked.
+
+One operator note: multi-line backslash commands mangle when pasted into
+zsh (stray whitespace breaks continuations); single-line forms are the
+paste-safe shape for future sheets.
+
 ## 2026-09-08 — English word → verse index (web/public/words) [Kimi Code session, subagent slice]
 
 Built the KJV word index for the ancient-roads corpus, a near-clone of the concordance build.
