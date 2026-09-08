@@ -107,7 +107,7 @@ Stated by the owner in their own words, and each one is enforced somewhere rathe
 | "if someone searches for ephesus I should be able to see that" | `search_outcomes` (migration 129) logs the query text of every search, owner-readable via `scripts/query-log.mts` |
 | "when someone enters something in their journal that should be blank to me" | `prayers` is RLS-scoped per user and **no code path logs its body** — not the routes, not analytics, not PostHog |
 | "if someone types a sermon out I shouldn't see that" | user documents never enter the ask log (`teach()` keeps `userVoices` out of `result.retrieval`, so `ask_outcomes` stores corpus references only), and no match event carries a title or a character of the text |
-| "if they match sermon content to commentaries I should see those successes and failures and errors" | `match_outcome` on all three matching surfaces — anchor (`documents/[id]/voices`), semantic (`documents/[id]/related`), and draft (`draft-check`) — each logging hit / empty / pending / error |
+| "if they match sermon content to commentaries I should see those successes and failures and errors" | `match_outcome` on all three matching surfaces — anchor (`documents/[id]/voices`), semantic (`documents/[id]/related`), and draft (`draft-check`) — each logging hit / empty / pending / failed / error |
 
 `match_outcome` carries: `kind`, `outcome`, `voices`, an opaque `documentId`, timings, and for the
 draft check the *length* of the paste. It never carries the document's title or text.
