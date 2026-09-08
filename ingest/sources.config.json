@@ -25252,6 +25252,7 @@
       "license_ref": "Public Domain — author died 1678 (work first published 1673); pre-1931 US printing (n.d. [1854]); no translator, no editor. The Board's unsigned Advertisement and the two commendatory epistles (Mayo, Hicks, Veal et al.) are excluded front matter regardless.",
       "acquire": {
         "adapter": "structured",
+        "identifier": "explanationofass00vinc",
         "note": "The edition prints catechism questions AND Vincent's sub-questions in an identical restarting \"Q. N.\" format (why the work was parked 2026-09-07). Real path: src/ingest/adapter-vincent-shorter.ts — catechism-anchored splitter: the Westminster Shorter Catechism's 107 canonical questions (PD 1647; reference en.wikisource.org/wiki/Westminster_Shorter_Catechism) are the invariant backbone; Vincent's exposition between consecutive anchors is the section body. Fail-closed: 107/107 anchors in order required (observed 107/107; bars 0.55 numbered / 0.85 garbled-number, pre-registered against measured wrong-candidate ceiling 0.326 and accepted min 0.600); missing/out-of-order anchor aborts. → src/ingest/reference-register-bridge.ts (100 floor holds: 108 records). 4 unit tests incl. corrupted-order red-proof (test/vincent-shorter-adapter.test.ts)."
       }
     },

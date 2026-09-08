@@ -167,6 +167,29 @@ export function artifactSourcesFor(entry) {
           'Archive by running that adapter with its cache pointed at the archive root, not by URL derivation.',
       };
     }
+    case 'structured': {
+      // The 2026-09-06/07 custom one-off paths (wikisource/TCP/converters). Each entry's note names
+      // the committed converter; the archivable artifact is what that converter FETCHED, and it is
+      // derivable exactly when the entry records the fetch's identity. Gutenberg ids and archive.org
+      // identifiers are stable; a wiki page or a catalog lookup re-resolves — refuse those loudly
+      // until someone records the pinned revision/URL, per the same rule `github` and `thayers`
+      // enforce on branch refs.
+      if (acq.ebook_id != null) {
+        return { ok: true, kind: 'structured', artifacts: [artifact(`pg${acq.ebook_id}.txt`, gutenbergTextUrls(acq.ebook_id))] };
+      }
+      if (acq.identifier) {
+        return { ok: true, kind: 'structured', artifacts: [artifact(`${acq.identifier}_djvu.txt`, archiveDjvuTextUrl(acq.identifier))] };
+      }
+      return {
+        ok: false,
+        kind: 'structured',
+        reason:
+          'structured adapter with neither ebook_id nor identifier. The converter is committed, but ' +
+          'the fetch it made is not pinned in the manifest (a wiki page moves like a branch ref; a ' +
+          'catalog lookup re-resolves). Record the pinned artifact identity — an archive.org ' +
+          '`identifier`, a wikisource oldid, a versioned URL — to make this re-fetchable.',
+      };
+    }
     case 'sword': {
       return {
         ok: false,
