@@ -647,19 +647,6 @@
       "notes": "4 vols."
     },
     {
-      "slug": "vincent-t-shorter-catechism",
-      "title": "The Shorter Catechism Explained; Fire and Brimstone",
-      "author": "Thomas Vincent",
-      "source_type": "theology",
-      "tradition": "puritan",
-      "target_edition": "19th-c. reprints",
-      "target_source": "archive.org; Project Gutenberg",
-      "adapter": "gutenberg",
-      "blocked_on": null,
-      "found_by": "puritan-baptist",
-      "notes": "NOT Marvin R. Vincent (vincent-word-studies, already present) — different person."
-    },
-    {
       "slug": "venning-sinfulness-of-sin",
       "title": "The Sinfulness of Sin; Milk and Honey",
       "author": "Ralph Venning",

@@ -25232,5 +25232,29 @@
       }
     },
     "note": "Extends an existing voice (4 Newman titles present). Scope = the nine Discourses (UNIVERSITY TEACHING.) and the Introductory Letter + ten Lectures (UNIVERSITY SUBJECTS) + Newman's own NOTE ON PAGE 478.; the 1852 Preface and dedications are excluded front matter; Newman's 1858 'Advertisement.' is dropped by the shared GUT_MATTER front-matter heading filter (reported in the scoped filter list, inspected and accepted 2026-09-07 — authorial front matter, not a discourse); each 'Discourse N.'/'Lecture N.' number line is a marker boundary so it can never attach to the previous unit; scope ends at the INDEX. Staged via adapter-loop (register path)."
+  },
+  {
+    "id": "vincent-t-shorter-catechism",
+    "slug": "vincent-t-shorter-catechism",
+    "title": "An Explanation of the Assembly's Shorter Catechism",
+    "author": "Vincent, Thomas",
+    "author_died": 1678,
+    "year_written": 1673,
+    "source_type": "theology",
+    "tradition": "puritan",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://archive.org/details/explanationofass00vinc",
+      "edition": "Philadelphia: Presbyterian Board of Publication, No. 265 Chestnut Street, n.d. [1854] — archive.org scan explanationofass00vinc (NYPL), title page READ 2026-09-08: \"AN EXPLANATION OF THE ASSEMBLY'S SHORTER CATECHISM BY THE REV. THOMAS VINCENT. PHILADELPHIA: PRESBYTERIAN BOARD OF PUBLICATION. NO. 265 CHESTNUT STREET.\" — no date printed on the title page; cataloged 1854 (archive.org metadata: date 1854, publisher \"Philadelphia : Presbyterian Board of Publication\"). NOT Marvin R. Vincent (vincent-word-studies) — different person.",
+      "year": 1854,
+      "license_ref": "Public Domain — author died 1678 (work first published 1673); pre-1931 US printing (n.d. [1854]); no translator, no editor. The Board's unsigned Advertisement and the two commendatory epistles (Mayo, Hicks, Veal et al.) are excluded front matter regardless.",
+      "acquire": {
+        "adapter": "structured",
+        "note": "The edition prints catechism questions AND Vincent's sub-questions in an identical restarting \"Q. N.\" format (why the work was parked 2026-09-07). Real path: src/ingest/adapter-vincent-shorter.ts — catechism-anchored splitter: the Westminster Shorter Catechism's 107 canonical questions (PD 1647; reference en.wikisource.org/wiki/Westminster_Shorter_Catechism) are the invariant backbone; Vincent's exposition between consecutive anchors is the section body. Fail-closed: 107/107 anchors in order required (observed 107/107; bars 0.55 numbered / 0.85 garbled-number, pre-registered against measured wrong-candidate ceiling 0.326 and accepted min 0.600); missing/out-of-order anchor aborts. → src/ingest/reference-register-bridge.ts (100 floor holds: 108 records). 4 unit tests incl. corrupted-order red-proof (test/vincent-shorter-adapter.test.ts)."
+      }
+    },
+    "note": "Parked 2026-09-07 for segmentation; unblocked 2026-09-08 by the catechism-anchored splitter. Scope: the author's dedication (\"TO THE MASTERS AND GOVERNORS OF FAMILIES …\", signed \"T. VINCENT\") + 107 catechism sections (Q. 1 – Q. 107); publisher's Advertisement and the two non-Vincent commendatory epistles excluded; running heads/signature marks stripped and EOL hyphens rejoined (typography only); ends at \"THE END.\" The \"Which is the Nth commandment?\" recital questions carry no sub-questions in this edition — their tiny bodies (107–150 chars) are the edition's true shape, not a parse gap. Staged via the register path."
   }
 ]
