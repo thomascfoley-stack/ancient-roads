@@ -1,10 +1,13 @@
-[
- "strongs-concordance",
- "openhymnal",
- "middle-liddell",
- "beza-christian-faith",
- "carey-enquiry",
- "jewel-apology",
- "newman-grammar-assent",
- "newman-idea-university"
-]
+{
+ "_": "2026-09-07 clean acquisitions. Format is {slugs:[...]} \u2014 corpus-copy.mjs:76, publish-flip.mjs:134 and serve-batched.mjs:85 all read .slugs and reject a bare array. Must be run from the ap-ingest worktree: these slugs exist only in this branch's manifest.",
+ "slugs": [
+  "strongs-concordance",
+  "openhymnal",
+  "middle-liddell",
+  "beza-christian-faith",
+  "carey-enquiry",
+  "jewel-apology",
+  "newman-grammar-assent",
+  "newman-idea-university"
+ ]
+}
