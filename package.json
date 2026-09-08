@@ -26,6 +26,7 @@
     "ingest:embeddings": "tsx src/ingest/ingest-embeddings.ts",
     "ingest:commentary-fts": "tsx src/ingest/ingest-commentary-fts.ts",
     "ingest:concordance": "tsx src/ingest/build-concordance.ts",
+    "ingest:words": "tsx src/ingest/build-word-index.ts",
     "teacher": "tsx src/teacher/run.ts",
     "gate:ingest": "tsx src/ingest/gate-ingest.ts",
     "check:coverage": "tsx src/ingest/check-corpus-coverage.ts",

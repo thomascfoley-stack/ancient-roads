@@ -50,6 +50,8 @@ corpus-quarantine/
 .newadvent-cache/
 web/public/concordance/
 web/public/concordance
+web/public/words/
+web/public/words
 
 .env.prod
 .cutover-checkpoint.json

@@ -1,5 +1,38 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-08 — English word → verse index (web/public/words) [Kimi Code session, subagent slice]
+
+Built the KJV word index for the ancient-roads corpus, a near-clone of the concordance build.
+
+- **Builder** `src/ingest/build-word-index.ts` (`pnpm ingest:words`): walks `web/public/bible/kjv/*.json`
+  (66 books), normalizes (lowercase, fold possessives, strip non-letters; no stemming, no stopwords),
+  emits `web/public/words/` sharded by 2-letter prefix with the concordance's outlier rule (>400 verses
+  gets its own shard). Outlier shards carry a `_` prefix because a 2-letter bucket key is a strict prefix
+  of its words and 28 outliers ("of", "to", "in"…) ARE their bucket key — unprefixed, `_of` would
+  overwrite the `of` bucket.
+- **Real output**: 450 files (238 buckets + 212 outlier shards), 12,457 distinct words, 6.5 MB,
+  9.0 KB avg / 62.4 KB max bucket. Spot checks: charity=24 (1 Cor 13:1,2,3,4,8,13), loved=89
+  (incl. John 3:16), the=24,091.
+- **Fetch layer** `web/src/lib/words.ts` `fetchWordIndex`, mirroring fetchConcordance cache/error
+  semantics. NOT wired to any component — next slice.
+- **Tests**: `test/word-index.test.ts` (hand-verified real-corpus counts, red-proofed with a seeded
+  wrong verseId), `web/test/words-fetch.test.ts` (fetch stubbed, red-proofed with a seeded wrong shard
+  URL). SPEC deviations found by looking at the data: KJV 1 Cor 13 says "charity" not "love"; John 3:16
+  says "loved" — the scoping pass's "love must include 1 Cor 13:4-8 and John 3:16" is wrong for the KJV.
+- **Served-asset bookkeeping, forced early**: `servedAssetDirs()` derives served dirs from web/src
+  fetches, so landing `words.ts` immediately (a) reded `served-assets-count.test.ts`'s exact-dir-set
+  assertion and (b) would REFUSE deploy at predeploy-gate.ts:172 (unbaselined served dir). Added
+  `words: 450` (live count, verified) to `docs/evidence/served-assets-baseline.json` surgically — the
+  script's full re-record also showed `bible 22590 → 26355`, another lane's unrecorded growth, left
+  untouched for its owner. Next slice still owes: client wiring + browser check, full baseline re-record,
+  CDN sync, and adding `words` to the worktree asset-clone recipe (AGENTS.md).
+- **Enrichment (Strong's candidates per word-hit): SKIPPED deliberately.** Gloss↔English matching is
+  heuristic by design and needs the lexicon kjv-usage lists; duplicating that matcher into the builder
+  is the lookalike-code failure mode. Note left in the builder header.
+- **Pre-existing red, NOT this slice**: `test/invariants/source-archive-coverage.test.ts` fails at HEAD
+  (kind "structured", 13 manifest entries from 56479de9, no artifact-URL rule). Root suite otherwise
+  1211/1212 green.
+
 ## 2026-09-07 — "Do it all": the audit remediation program, complete [Kimi Code session]
 
 Owner directive "do it all" on the deep-audit's findings. All seven workstreams done:
