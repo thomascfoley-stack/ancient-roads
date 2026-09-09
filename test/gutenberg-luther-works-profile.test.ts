@@ -243,6 +243,19 @@ INTRODUCTION
 
 The editor weighs the Letter to Leo X against the treatise it accompanies.
 
+LETTER TO POPE LEO X.
+
+JESUS
+
+To Leo the Tenth, Pope at Rome: Martin Luther wishes thee salvation in
+Christ Jesus our Lord. Amen.
+
+The first thing I essayed in my Christian liberty, I laid before your
+Holiness, for I judged that, because of the common reverence we owe to the
+Roman see, I owed it to your Holiness.
+
+Wittenberg, September 6, 1520.
+
 A TREATISE ON CHRISTIAN LIBERTY
 
 [Sidenote: Faith]
@@ -382,13 +395,16 @@ describe('PROFILES[luther-works2]', () => {
       'A TREATISE CONCERNING THE BAN',
       'AN OPEN LETTER TO THE CHRISTIAN NOBILITY OF THE GERMAN NATION CONCERNING THE REFORM OF THE CHRISTIAN ESTATE',
       'THE BABYLONIAN CAPTIVITY OF THE CHURCH',
+      'LETTER TO POPE LEO X.',
       'A TREATISE ON CHRISTIAN LIBERTY',
       "A BRIEF EXPLANATION OF THE TEN COMMANDMENTS, THE CREED, AND THE LORD'S PRAYER",
       'EIGHT SERMONS BY DR. MARTIN LUTHER',
       'THAT WE ARE TO REJECT THE DOCTRINES OF MEN:',
     ]);
     expect(secs[0]!.body).toContain('holy sacrament of the altar');
-    expect(secs[6]!.body).toContain('The challenge of death');
+    expect(secs[4]!.body).toContain('To Leo the Tenth');
+    expect(secs[5]!.body).toContain('Many have thought Christian faith');
+    expect(secs[7]!.body).toContain('The challenge of death');
   });
 
   it('CONTROL — the editor INTRODUCTION between an identical part-title pair is excluded', () => {
@@ -408,7 +424,7 @@ describe('PROFILES[luther-works2]', () => {
 
   it('CONTROL — the indented CONTENTS lines never pre-match', () => {
     const secs = buildSections(VOL2, profile!);
-    expect(secs).toHaveLength(8);
+    expect(secs).toHaveLength(9);
   });
 
   it('CONTROL — back matter at INDEX never rides in', () => {
