@@ -291,6 +291,13 @@ export const PROFILES: Record<string, Profile> = {
         { match: /^A PRELUDE ON THE BABYLONIAN CAPTIVITY OF THE CHURCH$/, marker: true },
         { match: /^THE BABYLONIAN CAPTIVITY OF THE CHURCH$/ },
         { match: /^A TREATISE ON CHRISTIAN LIBERTY WITH A LETTER TO POPE LEO X$/, marker: true },
+        // The Christian-Liberty part-title names TWO pieces — the treatise and
+        // Luther's dedicatory Letter — and this edition prints the Letter
+        // (its own whole-line heading, on its own ~21 KB of translated prose)
+        // BEFORE the treatise heading, inside the marker gap. Declaring it as
+        // its own section closes the gap at the Letter (still discarding only
+        // the Holman editor's INTRODUCTION above it) and serves both pieces.
+        { match: /^LETTER TO POPE LEO X\.$/ },
         { match: /^A TREATISE ON CHRISTIAN LIBERTY$/ },
         { match: /^A BRIEF EXPLANATION \(EINE KURZE FORM\) OF THE TEN COMMANDMENTS, THE$/, marker: true },
         { match: /^A BRIEF EXPLANATION OF THE TEN COMMANDMENTS, THE CREED, AND THE LORD'S$/ },
