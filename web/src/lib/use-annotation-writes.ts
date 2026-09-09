@@ -423,8 +423,30 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         color,
         translation: translationId,
       };
+      // The spans present on the verse BEFORE this write first painted, snapshotted once on the
+      // first paint and read by the replay guard in `attempt` below. A whole-verse highlight
+      // whose POST ultimately fails and settles unregisters itself from `activeHighlights`
+      // (see `onSettled` below), so a later whole-verse write on the same verse can no longer
+      // mark it `superseded` — the banner's `retry` (the `attempt` closure) stays armed and, on
+      // a plain re-paint, re-adds the now-stale colour beside the newer one and re-POSTs it (the
+      // route dedupes only an EXACT colour match, so a second whole-verse row is inserted rather
+      // than a replacement). The replay guard refuses that re-paint when the verse now holds a
+      // span not in this snapshot — the symmetric counterpart of `clearVerse`'s `originalSpans`
+      // guard (d755da03), and — like that guard — scoped to the WHOLE-VERSE (range === null) path:
+      // a whole-verse write REPLACES (a recolour), so a newer span means the reader moved on and
+      // the stale replay must not re-add the old colour. A sub-verse write (range !== null)
+      // APPENDS, so a newer sub-verse span is a sibling the reader still wants; refusing its
+      // retry would silently drop the reader's intended highlight on a "reload to refresh" banner
+      // (the row was never persisted) — the very silent-loss bug this hook exists to close — so
+      // the guard deliberately does NOT engage for sub-verse. Unlike `clearVerse`, this defaults
+      // to `[]` (not `undefined`) when the verse was empty at first paint — `clearVerse` always
+      // has something to clear, but a whole-verse addHighlight routinely starts on a fresh verse,
+      // and leaving the snapshot `undefined` would silently disable the guard precisely on that
+      // (the repro's) path. See test/use-annotation-writes-addhighlight-retry.test.tsx.
+      let originalSpans: StoredSpan[] | undefined;
       const paint = () => {
         setHighlights((prev) => {
+          originalSpans ??= prev.get(verse) ?? [];
           const next = new Map(prev);
           next.set(verse, [...(next.get(verse) ?? []), optimistic]);
           return next;
@@ -484,15 +506,48 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           }),
         });
       };
-      runPersist("Couldn't save your highlight", paint, request, rollback, undefined, () => {
+      // addHighlight builds its own `attempt` (rather than going through `runPersist`, like
+      // saveVerseNote/deleteVerseNote) so it can guard the replay: the original write always
+      // runs, but a replay that finds a newer span on the verse refuses instead of re-adding
+      // the stale one. `id` is minted here, once per logical write, and reused across every
+      // retry of this one write — the same invariant `runPersist` upholds for its callers.
+      const id = ++writeSeq.current;
+      const onSettled = () => {
         // Drop this entry from the registry once the POST has settled — but only if it is still
         // ours, so a superseding whole-verse write's newer entry is never swept out from under it.
+        // (The settled-failure case this USED to leave unprotected is now covered by the replay
+        // guard in `attempt`, which keys off the span snapshot, not the registry — so unregistering
+        // a failed write here can no longer re-open the stale-retry window.)
         if (highlightEntry && activeHighlights.current.get(verse) === highlightEntry) {
           activeHighlights.current.delete(verse);
         }
-      });
+      };
+      const attempt = () => {
+        // Only guard REPLAYS, and only for WHOLE-VERSE writes (range === null): `originalSpans`
+        // is undefined until the first paint captures it, so the original addHighlight always
+        // proceeds, and a sub-verse (range !== null) write never engages the guard at all (see
+        // the `originalSpans` comment for why sub-verse retries must stay free to recover). On a
+        // whole-verse replay, compare the current verse state to the original snapshot (identity,
+        // not value — the inverse of the rollback comparison). Copied to a const so TS keeps the
+        // narrowing — `originalSpans` is reassigned inside the `paint` closure, so its declared
+        // `| undefined` otherwise returns inside this check.
+        const original = originalSpans;
+        if (range === null && original !== undefined) {
+          const now = highlightsRef.current.get(verse) ?? [];
+          if (now.some((s) => !original.includes(s))) {
+            // Refuse the destructive replay. No `retry`: re-running would refuse again, and the
+            // verse has moved on from what this recolour was supposed to add. The reader is told
+            // to reload; the newer whole-verse write is preserved on client and server.
+            setWriteError({ id, message: "Couldn't save your highlight — a newer edit arrived; reload to refresh." });
+            return Promise.resolve();
+          }
+        }
+        paint();
+        return beginPersist(id, "Couldn't save your highlight", request, rollback, attempt, undefined, onSettled);
+      };
+      attempt();
     },
-    [verseId, translationId, runPersist, clearVerse],
+    [verseId, translationId, beginPersist, clearVerse],
   );
 
   const saveVerseNote = useCallback(
