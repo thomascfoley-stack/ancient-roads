@@ -5,7 +5,7 @@ import { requireJsonContentType } from '@/lib/csrf-floor';
 import { apiError } from '@/lib/api-error';
 import { embedChunks } from '@/lib/user-corpus/embed';
 import { keywordSearch, searchMyWorks, verseAnchorScan } from '@/lib/user-corpus/search';
-import { parseRef } from '@bible/ref-parse';
+import { parseRef, type VerseRange } from '@bible/ref-parse';
 import { scheduleSearchOutcome, type SearchParams } from '@/lib/search-outcomes';
 
 export const runtime = 'nodejs';
@@ -59,6 +59,66 @@ export async function POST(req: Request): Promise<Response> {
   const csrfFloor = requireJsonContentType(req);
   if (csrfFloor) return csrfFloor;
 
+  // D42 ("charge only what could spend"), extended to this route's shared corpus-search bucket.
+  // The limiter used to run HERE — immediately after the CSRF floor, before `req.json()` and the
+  // body validation — so a request the body validation then rejected (a malformed JSON body, an
+  // empty `{}`, an over-500-char `q`, or an unparseable `ref`) returned 400 / INVALID_REQUEST
+  // having ALREADY bumped the user's `corpus-search:min` and `corpus-search:day` counters. Because
+  // this route SHARES that bucket with `/api/user-corpus/draft-check`, the burned slot also gated
+  // the sibling: a user's stream of rejected searches could 429 their own draft-check. Every holder
+  // of the `corpus-search:*` bucket now validates the body before charging the limiter — `ask`
+  // does it on its own `ask:*` bucket (e4542c97), and `draft-check` was brought into line by
+  // 358f73b1. This route was the last holder still charging rejected requests: its GET→POST CSRF
+  // conversion (30bbb261) inserted the new `req.json()` / `parseBody()` AFTER the limiter and
+  // inherited the pre-existing "limiter before any validation" ordering. Parse + validate first;
+  // the limiter fires only for a request that could spend (`verseAnchorScan` / `keywordSearch` /
+  // `embedChunks` / `searchMyWorks` or the `scheduleSearchOutcome` audit write), and still BEFORE
+  // any of them — the spend is `embedChunks`, which the reorder keeps below the limiter, exactly as
+  // /api/ask keeps `teach()` below `checkAskRateLimit`.
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    // Malformed JSON falls through to the field validations below, which produce a 400, never a
+    // raw 500 — the same shape as history/search/route.ts.
+    raw = {};
+  }
+  const body = parseBody(raw);
+
+  // ── validation (BEFORE the limiter — a rejected body costs no quota) ──────────────────────
+  // The verse branch validates `ref`; the text branch validates `q`. The parsed result is held in
+  // `plan` so the SPEND-side execution (`verseAnchorScan` / `keywordSearch` / `embedChunks`) runs
+  // only AFTER the limiter, below. A body carrying both { ref, q } answers the verse branch,
+  // matching the prior query-string order (`?ref=` was checked before `?q=`); `q` is therefore
+  // neither length-validated nor required when `ref` takes the request — exactly as before the
+  // reorder (pinned by search-csrf.test.ts: "ref is parsed before q").
+  const ref = body.ref?.trim();
+  let plan:
+    | { kind: 'verse'; ref: string; display: string; range: VerseRange }
+    | { kind: 'text'; q: string; mode: string | undefined };
+  if (ref) {
+    const parsed = parseRef(ref);
+    if (!parsed.ok || parsed.ref.ranges.length === 0) {
+      return NextResponse.json({ error: `Could not read "${ref}" as a passage.` }, { status: 400 });
+    }
+    // The first range is the passage the user typed; a multi-range reference ("Rom 8; Jn 3") is a
+    // Slice 2 concern and answering only the first is better than answering a merged span the user
+    // did not ask for.
+    plan = { kind: 'verse', ref, display: parsed.ref.display, range: parsed.ref.ranges[0]! };
+  } else {
+    // CAPPED. `q` is embedded verbatim by `embedChunks([q])`, so an uncapped query is an uncapped
+    // paid call. 500 matches the corpus /ask route's own question cap — the same shape of input
+    // going to the same provider should not have two different bounds.
+    const MAX_QUERY = 500;
+    const qRaw = body.q?.trim();
+    if (qRaw !== undefined && qRaw.length > MAX_QUERY) {
+      return apiError('INVALID_REQUEST', { message: 'That search is too long. Please shorten it.' });
+    }
+    const q = qRaw;
+    if (!q) return NextResponse.json({ error: 'Provide q or ref.' }, { status: 400 });
+    plan = { kind: 'text', q, mode: body.mode };
+  }
+
   // METERED BEFORE ANY SPEND. This route calls `embedChunks([q])` on the request path — a paid
   // DeepInfra embedding — and had NO limiter until the 2026-08-17 pre-deploy audit. The wallet
   // invariant was green over it only because `routeSpendsMoney` matched `teach()` alone while
@@ -81,16 +141,6 @@ export async function POST(req: Request): Promise<Response> {
           : 'RATE_LIMIT_MINUTE';
     return apiError(code, { retryAfterSec: limit_.retryAfterSec });
   }
-
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
-    // Malformed JSON falls through to the field validations below, which produce a 400, never a
-    // raw 500 — the same shape as history/search/route.ts.
-    raw = {};
-  }
-  const body = parseBody(raw);
 
   const documentId = body.documentId;
   // Query log (migration 129), off the request path, fail-open. This is the user's PRIVATE
@@ -123,27 +173,16 @@ export async function POST(req: Request): Promise<Response> {
   const limit = coerceLimit(body.limit);
   const scope = { documentId, limit };
 
-  // ── verse presence ────────────────────────────────────────────────────────────────────────────
-  // Parsed BEFORE q — a body carrying both { ref, q } answers the verse branch, matching the prior
-  // query-string order (`?ref=` was checked before `?q=`).
-  const ref = body.ref?.trim();
-  if (ref) {
-    const parsed = parseRef(ref);
-    if (!parsed.ok || parsed.ref.ranges.length === 0) {
-      return NextResponse.json({ error: `Could not read "${ref}" as a passage.` }, { status: 400 });
-    }
-    // The first range is the passage the user typed; a multi-range reference ("Rom 8; Jn 3") is a
-    // Slice 2 concern and answering only the first is better than answering a merged span the user
-    // did not ask for.
-    const range = parsed.ref.ranges[0]!;
+  // ── execution (AFTER the limiter — only a validated request can spend) ─────────────────────
+  if (plan.kind === 'verse') {
     // D35: this data-layer call sat OUTSIDE the try below, so a DB fault on the verse path
     // escaped as Next's raw 500 while the fused path degraded gracefully three lines down.
     // UNION 2026-08-24: the 129 query log goes INSIDE the success path — a search that threw is
     // not a search that happened, and logging it before the catch would record a phantom.
     try {
-      const anchors = await verseAnchorScan(user.id, range, scope);
-      logSearch('verse', ref, anchors.length);
-      return NextResponse.json({ mode: 'verse', ref: parsed.ref.display, range, anchors });
+      const anchors = await verseAnchorScan(user.id, plan.range, scope);
+      logSearch('verse', plan.ref, anchors.length);
+      return NextResponse.json({ mode: 'verse', ref: plan.display, range: plan.range, anchors });
     } catch (e) {
       console.error('[user-corpus] verse anchor scan failed:', String((e as Error)?.message ?? e));
       return apiError('INTERNAL');
@@ -151,18 +190,8 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   // ── text search ───────────────────────────────────────────────────────────────────────────────
-  // CAPPED. `q` is embedded verbatim by `embedChunks([q])`, so an uncapped query is an uncapped
-  // paid call. 500 matches the corpus /ask route's own question cap — the same shape of input
-  // going to the same provider should not have two different bounds.
-  const MAX_QUERY = 500;
-  const qRaw = body.q?.trim();
-  if (qRaw !== undefined && qRaw.length > MAX_QUERY) {
-    return apiError('INVALID_REQUEST', { message: 'That search is too long. Please shorten it.' });
-  }
-  const q = qRaw;
-  if (!q) return NextResponse.json({ error: 'Provide q or ref.' }, { status: 400 });
-
-  if (body.mode === 'keyword') {
+  const q = plan.q;
+  if (plan.mode === 'keyword') {
     // D35: likewise unwrapped.
     try {
       const hits = await keywordSearch(user.id, q, scope);
