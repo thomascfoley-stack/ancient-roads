@@ -165,6 +165,72 @@ describe('N3 — the Book Reader can put a work on the reader’s shelf', () => 
     expect(screen.queryByRole('status'), 'a stale failure notice is its own small lie').toBeNull();
   });
 
+  // The notice names the action that FAILED — and an un-save is the opposite direction from a
+  // save. cb508fa3's single `failed` boolean drove one save-only string ("Not saved") for both
+  // directions, so a transient 500 on the DELETE reverted the button to "Saved" truthfully but
+  // blared "Not saved" beside it: a notice reporting the save as the one that failed when it was
+  // the remove. That is the half of the defect the commit's save-direction tests never reached.
+  // SEED: restore the single boolean and the hardcoded "Not saved" and the second assertion below
+  // goes red while every save-direction test above stays green.
+  it('tells the reader the REMOVE failed — not the save — when a DELETE 500s', async () => {
+    serverShelf = 'saved';
+    renderHeader(true);
+    const btn = await waitFor(() => screen.getByRole('button', { name: 'Saved' }));
+
+    // Every non-GET — including the un-save DELETE — now 500s, matching the route's catch-all
+    // (any removeFromLibrary throw becomes a 500 INTERNAL on the un-save path).
+    fetchMock.mockImplementation(async (_u: string, init?: RequestInit) =>
+      (init?.method ?? 'GET') === 'GET'
+        ? new Response(JSON.stringify({ shelf: 'saved' }), { status: 200 })
+        : new Response('nope', { status: 500 }),
+    );
+
+    await act(async () => {
+      btn.click();
+    });
+
+    // The button reverts truthfully: the stored shelf='saved' row never went anywhere.
+    const revertedBtn = await waitFor(() => screen.getByRole('button', { name: 'Saved' }));
+    expect(revertedBtn.getAttribute('aria-pressed')).toBe('true');
+
+    // ...and the notice names the action that actually failed: the remove, not the save.
+    const status = await waitFor(() => screen.getByRole('status'));
+    expect(status.textContent, 'the remove did not happen — name the failed action').toMatch(/failed to remove/i);
+    expect(
+      status.textContent,
+      'a failed un-save must not report the save direction',
+    ).not.toMatch(/not saved/i);
+  });
+
+  // The "always describes the attempt just made" invariant holds in BOTH directions: a remove
+  // that succeeds on retry must clear a stale remove-failure notice, or the surface keeps
+  // reporting a failure that no longer describes anything. Mirrors the save-direction clearing
+  // test above for the un-save leg, which had no coverage before.
+  it('clears the remove-failure message once a later un-save succeeds', async () => {
+    serverShelf = 'saved';
+    renderHeader(true);
+    const btn = await waitFor(() => screen.getByRole('button', { name: 'Saved' }));
+
+    fetchMock.mockImplementation(async (_u: string, init?: RequestInit) =>
+      (init?.method ?? 'GET') === 'GET'
+        ? new Response(JSON.stringify({ shelf: 'saved' }), { status: 200 })
+        : new Response('nope', { status: 500 }),
+    );
+    await act(async () => {
+      btn.click();
+    });
+    await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
+
+    // A retry that succeeds clears the notice — same invariant, remove direction.
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    await act(async () => {
+      screen.getByRole('button', { name: 'Saved' }).click();
+    });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy());
+    expect(screen.queryByRole('status'), 'a stale failure notice is its own small lie').toBeNull();
+  });
+
   // A failed READ must not render a control that claims the work is unsaved when it may not be.
   it('renders no control when the state cannot be read', async () => {
     fetchMock.mockImplementation(async () => new Response('boom', { status: 500 }));

@@ -30,7 +30,11 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
   const [busy, setBusy] = useState(false);
   // A revert nobody is told about reads as a UI glitch: the reader pressed Save, saw "Saved",
   // and watched it flip back on its own. Reverting was right; reverting SILENTLY was the lie.
-  const [failed, setFailed] = useState(false);
+  // `null` = no verdict yet. The notice is below the button beside the very state it reports on,
+  // so it must name the action that FAILED — a un-save that 500s is not a save that 500s, and
+  // "Not saved" beside a "Saved" button reports the wrong direction. The verdict therefore records
+  // which way the attempt was going, not merely that one happened.
+  const [failed, setFailed] = useState<null | 'save' | 'remove'>(null);
   const url = `/api/work/${encodeURIComponent(slug)}/shelf`;
 
   useEffect(() => {
@@ -54,7 +58,7 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
     const previous = shelf;
     const next = shelf ? null : 'saved';
     setBusy(true);
-    setFailed(false); // this attempt's verdict, not the last one's
+    setFailed(null); // this attempt's verdict, not the last one's
     setShelf(next);
     try {
       const res = await (next
@@ -63,7 +67,7 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
       if (!res.ok) throw new Error(String(res.status));
     } catch {
       setShelf(previous);
-      setFailed(true);
+      setFailed(next ? 'save' : 'remove');
     } finally {
       setBusy(false);
     }
@@ -76,9 +80,12 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
       {failed && (
         // `role="status"` (polite), not an alert: the reader is mid-page in a book and the shelf
         // is a one-bit convenience — worth saying, not worth interrupting for. It disappears the
-        // moment the next attempt starts, so it always describes the attempt just made.
+        // moment the next attempt starts, so it always describes the attempt just made — by naming
+        // the action that failed. "Not saved" for a save that 500s; "Failed to remove" for an
+        // un-save that 500s. A single string for both reported the save direction for a remove
+        // failure, contradicting the "Saved" button it sat beside (cb508fa3).
         <span role="status" className="font-sans text-xs text-red-700 dark:text-red-400">
-          Not saved
+          {failed === 'save' ? 'Not saved' : 'Failed to remove'}
         </span>
       )}
       <button
