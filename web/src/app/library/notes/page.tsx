@@ -30,6 +30,7 @@ type DeleteBody =
   | { kind: 'highlight'; id: string }
   | { kind: 'note'; verseId: number }
   | { kind: 'bookmark'; verseId: number };
+type Kind = DeleteBody['kind'];
 
 // The two-step remove, copied from the research-history rows in components/sidebar.tsx: the first
 // tap arms, the second removes. Not window.confirm — a native dialog is heavier than the action
@@ -39,6 +40,7 @@ function RemoveButton({
   noun,
   reference,
   armed,
+  disabled,
   onArm,
   onConfirm,
   onDisarm,
@@ -46,6 +48,7 @@ function RemoveButton({
   noun: string;
   reference: string;
   armed: boolean;
+  disabled?: boolean;
   onArm: () => void;
   onConfirm: () => void;
   onDisarm: () => void;
@@ -53,6 +56,7 @@ function RemoveButton({
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={armed ? onConfirm : onArm}
       // Disarms when focus leaves, so an armed row cannot lie in wait for an unrelated tap.
       onBlur={onDisarm}
@@ -79,6 +83,16 @@ export default function MyLibraryPage() {
   // has to be part of the key.
   const [arming, setArming] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  // In-flight gate, PER KIND and tracked INDEPENDENTLY. The rollback in `removeRow` re-inserts
+  // a failed row at the `index` captured from the confirm-time `rows` snapshot; that index is
+  // only valid if no OTHER same-kind remove shifted the same list while the DELETE was pending
+  // (each kind has its own rows array, so cross-kind removes can't contaminate each other's
+  // index). So the gate only has to serialize removals WITHIN a kind: at confirm time the row's
+  // kind counter ticks up and every same-kind remove button disables; the counter ticks back
+  // down when the DELETE settles, reopening just that kind. The counts are independent, so a
+  // highlight remove in flight never reopens a still-pending note's gate (a single shared flag
+  // would). See web/test/invariants/rollback-order-bug.test.tsx.
+  const [inFlight, setInFlight] = useState<Record<Kind, number>>({ note: 0, highlight: 0, bookmark: 0 });
 
   // OPTIMISTIC WITH ROLLBACK, and the rollback is ANNOUNCED. The row leaves immediately; if the
   // request fails it goes back at the index it left from and the reader is told why. A row that
@@ -96,6 +110,7 @@ export default function MyLibraryPage() {
       const row = rows[index]!;
       setArming(null);
       setRemoveError(null);
+      setInFlight((prev) => ({ ...prev, [body.kind]: prev[body.kind] + 1 }));
       setRows((prev) => prev.filter((r) => r.id !== id));
       try {
         const res = await fetch('/api/annotations', {
@@ -108,6 +123,8 @@ export default function MyLibraryPage() {
       } catch {
         setRows((prev) => [...prev.slice(0, index), row, ...prev.slice(index)]);
         setRemoveError(`Your ${subject} could not be removed. Nothing was changed.`);
+      } finally {
+        setInFlight((prev) => ({ ...prev, [body.kind]: prev[body.kind] - 1 }));
       }
     },
     [],
@@ -230,6 +247,7 @@ export default function MyLibraryPage() {
                         noun="bookmark"
                         reference={ref.label}
                         armed={arming === `bookmark:${b.id}`}
+                        disabled={inFlight.bookmark > 0}
                         onArm={() => setArming(`bookmark:${b.id}`)}
                         onDisarm={() => setArming((cur) => (cur === `bookmark:${b.id}` ? null : cur))}
                         onConfirm={() =>
@@ -270,6 +288,7 @@ export default function MyLibraryPage() {
                           noun="note"
                           reference={ref.label}
                           armed={arming === `note:${n.id}`}
+                          disabled={inFlight.note > 0}
                           onArm={() => setArming(`note:${n.id}`)}
                           onDisarm={() => setArming((cur) => (cur === `note:${n.id}` ? null : cur))}
                           onConfirm={() =>
@@ -320,6 +339,7 @@ export default function MyLibraryPage() {
                         noun="highlight"
                         reference={ref.label}
                         armed={arming === `highlight:${h.id}`}
+                        disabled={inFlight.highlight > 0}
                         onArm={() => setArming(`highlight:${h.id}`)}
                         onDisarm={() => setArming((cur) => (cur === `highlight:${h.id}` ? null : cur))}
                         onConfirm={() =>
