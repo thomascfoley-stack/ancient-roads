@@ -116,6 +116,38 @@ describe('the biggest payload on /home is cacheable', () => {
     expect(cache, '/commentaries/* must not revalidate a multi-megabyte file every visit').toBeTruthy();
     expect(cache!.value).toMatch(/max-age=\d+/);
   });
+
+  it('/commentaries/* headers() is LOCAL-DEV ONLY — the production rewrite makes it inert', async () => {
+    // This test encodes the mechanism behind the stale-commentaries bug (2026-09-07): an
+    // external beforeFiles rewrite (absolute-URL destination) causes Next.js to drop ALL
+    // accumulated headers() rules and proxy the upstream's response headers verbatim
+    // (resolve-routes.js returns resHeaders: null on the external-rewrite branch). So the
+    // Cache-Control rule above never reaches a browser in production; the Blob store's own
+    // Cache-Control (set at upload time by corpus-blob-sync.mjs) is what the client receives.
+    //
+    // Asserting the external-rewrite condition is live when CORPUS_CDN_BASE is set is what
+    // makes the inertness a verified fact — and is WHY production TTL must live in
+    // corpus-blob-sync.mjs CACHE_SECONDS.commentaries (cross-checked in
+    // test/corpus-blob-sync.test.ts), not in this headers() rule.
+    vi.resetModules();
+    process.env.CORPUS_CDN_BASE = 'https://example.public.blob.vercel-storage.com';
+    try {
+      const { default: config } = await import('@/../next.config');
+      const rw = (await config.rewrites!()) as { beforeFiles: { source: string; destination: string }[] };
+      expect(rw.beforeFiles.length).toBeGreaterThan(0);
+      const commentariesRewrite = rw.beforeFiles.find((r) => r.source === '/commentaries/:path*');
+      expect(commentariesRewrite, 'no /commentaries/:path* rewrite when CORPUS_CDN_BASE is set').toBeTruthy();
+      expect(
+        commentariesRewrite!.destination,
+        'the commentaries rewrite must point at an external absolute URL (the Blob store) when ' +
+        'CORPUS_CDN_BASE is set; an external destination is exactly the condition that drops ' +
+        'headers() — so the production Cache-Control CANNOT come from this headers() rule',
+      ).toMatch(/^https?:\/\//);
+    } finally {
+      delete process.env.CORPUS_CDN_BASE;
+      vi.resetModules();
+    }
+  });
 });
 
 describe('the per-day split is lossless and small', () => {
