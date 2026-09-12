@@ -86,7 +86,15 @@ export default async function StudiesPage({
       ? { updatedAt: sp.beforeUpdatedAt, id: sp.beforeId }
       : undefined;
 
-  const firstPage = await listStudies(user.id, { before });
+  // Over-fetch ONE probe row to decide whether a next page exists. `listStudies` clamps at
+  // STUDIES_PAGE_LIMIT + 1 (lib/studies.ts) so this actually fetches 51, not a re-clamped 50.
+  // hasMore is "there is a row past the page" — `rows.length > STUDIES_PAGE_LIMIT` — which is
+  // correct at exact page multiples where the OLD `firstPage.length >= STUDIES_PAGE_LIMIT`
+  // heuristic gated a spurious "Older studies" link on the true last page. The probe row is
+  // sliced off `firstPage` before rendering and the sweep, so neither walks a 51st row.
+  const rows = await listStudies(user.id, { before, limit: STUDIES_PAGE_LIMIT + 1 });
+  const hasMore = rows.length > STUDIES_PAGE_LIMIT;
+  const firstPage = rows.slice(0, STUDIES_PAGE_LIMIT);
 
   // The pinned sweep always starts at the top of the recency ordering. When this is the first
   // page overall, its first sweep page IS `firstPage` — don't fetch it twice.
@@ -104,7 +112,7 @@ export default async function StudiesPage({
   const recents = firstPage.filter((s) => !pinnedIds.has(s.id));
   const lastOfPage = firstPage[firstPage.length - 1];
   const nextHref =
-    firstPage.length >= STUDIES_PAGE_LIMIT && lastOfPage
+    hasMore && lastOfPage
       ? `/studies?beforeUpdatedAt=${encodeURIComponent(lastOfPage.updated_at)}&beforeId=${encodeURIComponent(lastOfPage.id)}`
       : null;
 

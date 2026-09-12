@@ -119,7 +119,7 @@ describe.skipIf(SKIP)('S-7 studies bounds', () => {
 
   it('studies list: row cap holds past the page size, and the cursor paginates with no overlap or gap', async () => {
     const page1 = await listStudies(USER, { limit: 10_000 });
-    expect(page1, 'an over-large limit must be clamped to STUDIES_PAGE_LIMIT').toHaveLength(STUDIES_PAGE_LIMIT);
+    expect(page1, 'an over-large limit must be clamped to STUDIES_PAGE_LIMIT + 1 (the page size plus the has-more probe row)').toHaveLength(STUDIES_PAGE_LIMIT + 1);
 
     const cursor = { updatedAt: page1[page1.length - 1]!.updated_at, id: page1[page1.length - 1]!.id };
     const page2 = await listStudies(USER, { limit: 10_000, before: cursor });
