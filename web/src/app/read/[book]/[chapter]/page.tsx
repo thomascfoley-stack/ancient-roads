@@ -430,8 +430,20 @@ export default function ReaderPage() {
   useEffect(() => {
     // A084 — same as the commentary prefetch above: guarded the book, never the chapter.
     if (!isFetchableChapter(book?.bookNum, chapterNum)) return;
+    // B4 (#118) — same race as the chapter fetch above. Rapid navigation can leave a stale
+    // chapter's original-language fetch in flight; without the cancelled flag the SLOWER
+    // stale fetch resolves last and its bare `.then(setOriginal)` overwrites the chapter the
+    // reader is now on. Unlike the commentary effect above (race-safe by keying its Map
+    // write), `original` is one un-keyed useState slot, so the guard lives here. Mirrors the
+    // chapter fetch's `cancelled` flag and word-study's lexicon load.
+    let cancelled = false;
     setOriginal(null);
-    fetchOriginal(fetchSlug, chapterNum).then(setOriginal);
+    fetchOriginal(fetchSlug, chapterNum).then((d) => {
+      if (!cancelled) setOriginal(d);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [book, fetchSlug, chapterNum]);
 
   // Preload the full dictionary once study/interlinear is engaged so lookups are instant.
