@@ -394,8 +394,13 @@ export function StudyEditor({
     setSelPopover(null);
   };
 
-  const setSave = (key: string, state: SaveState) =>
-    setSaveStates((cur) => ({ ...cur, [key]: state }));
+  const setSave = (key: string, state: SaveState | undefined) =>
+    setSaveStates((cur) => {
+      const next = { ...cur };
+      if (state === undefined) delete next[key];
+      else next[key] = state;
+      return next;
+    });
   const setSaveError = (key: string, message: string | undefined) =>
     setSaveErrors((cur) => {
       const next = { ...cur };
@@ -568,6 +573,9 @@ export function StudyEditor({
       bufs.current.delete(block.id);
       placements.current.delete(block.id);
       setBlocks((cur) => cur.filter((b) => b.id !== block.id));
+      setSave(block.id, undefined);
+      setSaveError(block.id, undefined);
+      setBlockError(block.id, undefined);
     };
     if (isLocal(block.id)) { drop(); return; }
     try {
