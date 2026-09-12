@@ -22,7 +22,7 @@ import { acquireGutenberg } from './adapter-gutenberg.js';
 import { acquireCcel } from './adapter-ccel.js';
 import { assertDevBranch } from './register-writer.js';
 import { SERVED_PROSE_WORKS, SERVED_SONG_VERSE_WORKS } from '../../web/src/lib/teacher/routing.js';
-import { checkBreakers, classifyFailure, KNOWN_FAILURE_CODES, DEFAULT_BREAKERS } from './loop-breakers.js';
+import { checkBreakers, classifyFailure, KNOWN_FAILURE_CODES, DEFAULT_BREAKERS, breakStreak } from './loop-breakers.js';
 import { buildDigest, digestMarkdown, type DigestRow } from './loop-digest.js';
 
 // A work is PUBLISHED (served) only if it is in the served allowlists — the same
@@ -150,10 +150,12 @@ async function main() {
       const reason = 'embed-429: provider rate-limited — deferred, NOT quarantined';
       log({ at: new Date().toISOString(), slug, adapter, result: 'skipped', reason });
       digestRows.push({ slug, adapter, sourceType, result: 'skipped', code, reason });
+      breakStreak(recentCodes);
       return;
     }
     const known = (KNOWN_FAILURE_CODES as readonly string[]).includes(code);
     if (known) { quarantined++; recentCodes.push(code); }
+    else { breakStreak(recentCodes); }
     const result = known ? 'quarantined' as const : 'escalated' as const;
     const reason = `${code}: ${message.slice(0, 180)}`;
     log({ at: new Date().toISOString(), slug, adapter, result, reason });
@@ -178,7 +180,7 @@ async function main() {
       // 2026-07-17: the newline-fusion re-ingest). Safe either way:
       // register-writer deleteWork-then-write fully replaces prior rows.
       const force = process.argv.includes('--force-all') || (process.argv.includes('--force') && only?.includes(slug));
-      if (state === 'done' && !force) { log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'skipped', reason: 'already ingested' }); continue; }
+      if (state === 'done' && !force) { log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'skipped', reason: 'already ingested' }); breakStreak(recentCodes); continue; }
       if (state === 'partial') console.log(`  ↻ ${slug} partially ingested — re-running to complete (ON CONFLICT fills gaps)`);
       if (dry) { console.log(`  would run ${acq.adapter}: ${slug} (${entry.source_type})`); continue; }
 
@@ -187,6 +189,7 @@ async function main() {
       const sourceType = entry.source_type as string;
       const banked = (result: 'published' | 'staged', units: number, anchored: number, embedded: number) => {
         stagedThisRun++;
+        breakStreak(recentCodes);
         log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result, units, anchored, embedded });
         digestRows.push({ slug, adapter: acq.adapter, sourceType, result, units, anchored, embedded });
       };
@@ -199,6 +202,7 @@ async function main() {
           if (r.skipped) failWork(slug, 'ccel', sourceType, r.reason ?? 'adapter skip, no reason');
           else banked(publish ? 'published' : 'staged', r.units, r.anchored, r.embedded);
         } else {
+          breakStreak(recentCodes);
           log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'escalated', reason: `adapter "${acq.adapter}" not run by this loop (sword/helloao/archive/github have separate paths)` });
           digestRows.push({ slug, adapter: acq.adapter, sourceType, result: 'escalated', reason: `adapter "${acq.adapter}" not run by this loop` });
         }
