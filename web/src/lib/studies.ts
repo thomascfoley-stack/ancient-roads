@@ -263,7 +263,14 @@ export async function listStudies(
   userId: string,
   opts: { limit?: number; before?: { updatedAt: string; id: string } } = {},
 ): Promise<Study[]> {
-  const limit = Math.min(Math.max(1, opts.limit ?? STUDIES_PAGE_LIMIT), STUDIES_PAGE_LIMIT);
+  // The upper bound is STUDIES_PAGE_LIMIT + 1 (not STUDIES_PAGE_LIMIT) so the studies page can
+  // over-fetch ONE probe row to disambiguate "full page is the last page" from "full page has a
+  // next page" — the same limit+1 probe the merged /search works group uses (search/page.tsx).
+  // Without the +1 of headroom the page's `limit: STUDIES_PAGE_LIMIT + 1` would be silently
+  // clamped to 50 and `hasMore` would always be false, breaking pagination past page 1. The
+  // rendered page size is still STUDIES_PAGE_LIMIT: the page slices the probe row off before
+  // rendering. An over-large limit is still clamped — to this one-row-wider bound, not to 50.
+  const limit = Math.min(Math.max(1, opts.limit ?? STUDIES_PAGE_LIMIT), STUDIES_PAGE_LIMIT + 1);
   // H1: explicit user_id belt. Cursor is (updated_at, id) — updated_at moves when a study is
   // edited mid-pagination, which can reshuffle a page; accepted, same behaviour as the chats
   // list. idx_studies_user covers the scan.
