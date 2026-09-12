@@ -45,6 +45,21 @@ vi.mock('@/lib/user-corpus/quota', async (importOriginal) => {
   };
 });
 
+// The 429 branch now looks the pathname up via getDocumentByBlobPathname before deleting, so a
+// replay that IS a surviving row's live blob_url is not destroyed. The fresh-orphan 429 test
+// below seeds a pathname no row points at, so the lookup returns null and the delete still fires.
+// Spread the real module so the non-429 paths that reach documents keep the real implementations
+// (they fail against no DB and the route's catch answers 500, which is `not 429` and what those
+// tests assert).
+let liveDocByPathname: { id: string } | null = null;
+vi.mock('@/lib/user-corpus/documents', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('@/lib/user-corpus/documents')>();
+  return {
+    ...orig,
+    getDocumentByBlobPathname: async () => liveDocByPathname,
+  };
+});
+
 // The SEC-1 upload gate: allow the test user through (the real gate checks
 // USER_CORPUS_OWNER_IDS in production).
 vi.mock('@/lib/user-corpus/access', () => ({
@@ -109,6 +124,7 @@ describe('upload-url — pre-flight guards', () => {
     BYTES.clear();
     uploadLimitCalls = 0;
     completeLimitCalls = 0;
+    liveDocByPathname = null;
   });
 
   it('quota refusal returns 403 BEFORE a presign is issued', async () => {
@@ -151,6 +167,7 @@ describe('upload-complete — bucket independence and cleanup', () => {
     BYTES.clear();
     uploadLimitCalls = 0;
     completeLimitCalls = 0;
+    liveDocByPathname = null;
   });
 
   it('corpus-upload:* and corpus-complete:* increment independently', async () => {
@@ -181,6 +198,8 @@ describe('upload-complete — bucket independence and cleanup', () => {
   });
 
   it('a 429 at complete-time leaves no blob behind', async () => {
+    // A FRESH orphan — no surviving row names this pathname — so the 429 path's
+    // getDocumentByBlobPathname lookup returns null and the cleanup delete fires.
     completeLimit = { ok: false, retryAfterSec: 60 };
     const pathname = `user-corpus/${USER.id}/429e4567-e89b-12d3-a456-426614174000`;
     BYTES.set(pathname, new TextEncoder().encode('should be deleted'));
@@ -190,6 +209,24 @@ describe('upload-complete — bucket independence and cleanup', () => {
     expect(res.status).toBe(429);
     // The blob was deleted by the 429 path.
     expect(BYTES.has(pathname)).toBe(false);
+  });
+
+  it('a 429 on a pathname that IS a surviving row\u2019s blob_url does NOT delete the live blob', async () => {
+    // THE REPLAY HAZARD, on the 429 path. A non-UI client re-POSTs a prior {pathname, name}
+    // (no re-presign) AND trips the limiter; the pathname is already a surviving row's live
+    // blob_url. The lookup returns that row, so the 429 branch must SKIP the delete — the
+    // dedupe branch's deleteOrphanUnless guard, applied here because this branch runs first.
+    completeLimit = { ok: false, retryAfterSec: 60 };
+    const pathname = `user-corpus/${USER.id}/429e4567-e89b-12d3-a456-426614174000`;
+    BYTES.set(pathname, new TextEncoder().encode('the surviving row\u2019s live bytes'));
+    liveDocByPathname = { id: 'doc-survives' }; // a surviving row points at this pathname
+
+    const { POST } = await import('@/app/api/user-corpus/upload-complete/route');
+    const res = await POST(completeReq({ pathname, name: 'sermon.pdf' }) as never);
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('60');
+    // THE FIX: the surviving row's live blob is NOT deleted.
+    expect(BYTES.has(pathname), 'live blob survives a 429 on a replayed pathname').toBe(true);
   });
 
   it('a cross-tenant pathname returns 403 — including the traversal a prefix check would admit', async () => {

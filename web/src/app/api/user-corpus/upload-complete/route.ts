@@ -4,7 +4,7 @@ import { guardUser } from '@/lib/user-corpus/route-guard';
 import { checkCorpusCompleteRateLimit } from '@/lib/rate-limit';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { getUserDocument, deleteUserDocument, putUserDocument, blobPathname } from '@/lib/user-corpus/blob';
-import { createDocument, findByChecksum, setBlobPathname, DuplicateDocument, isHealable, healPlan, requeueForRetry } from '@/lib/user-corpus/documents';
+import { createDocument, findByChecksum, getDocumentByBlobPathname, setBlobPathname, DuplicateDocument, isHealable, healPlan, requeueForRetry } from '@/lib/user-corpus/documents';
 import { checksum, sniffType } from '@/lib/user-corpus/sniff';
 import { drain, MAX_ATTEMPTS } from '@/lib/user-corpus/queue';
 import { QuotaExceeded } from '@/lib/user-corpus/quota';
@@ -164,15 +164,27 @@ export async function POST(req: NextRequest) {
   try {
     // METERED — this route spends money (blob read bandwidth + embedding drain). It gets
     // its OWN bucket, not corpus-upload:*: sharing the upload bucket would halve the
-    // documented limit (every upload burns two — one at presign, one at complete) and a
-    // 429 here would orphan the blob it refuses (the check would sit before the cleanup
-    // scope). The presign is the act worth metering; this bucket is the backstop against
-    // a caller completing many pathnames without presigning.
+    // documented limit (every upload burns two — one at presign, one at complete). The
+    // presign is the act worth metering; this bucket is the backstop against a caller
+    // completing many pathnames without presigning.
+    //
+    // A 429 here would orphan the blob it refuses — UNLESS that pathname is already a
+    // surviving row's live `blob_url`. The two-call flow stores the SAME presigned pathname
+    // onto a row (`setBlobPathname`), so a non-UI client that re-POSTs a prior {pathname,
+    // name} WITHOUT re-calling upload-url reaches this branch with `pathname === existing.blobUrl`
+    // BEFORE dedupe. The dedupe branch's `deleteOrphanUnless` guard exists for this hazard;
+    // this branch runs first, so it carries the same discipline: look the pathname up, and
+    // skip the delete when a surviving row claims it. Deleting the live blob here would
+    // leave a `queued` row pointing at dead bytes — the next drain throws
+    // `UploadRefused('corrupt')`, fails the row, and re-uploading does not heal it.
     const limit = await checkCorpusCompleteRateLimit(user.id);
     if (!limit.ok) {
-      await deleteUserDocument(pathname).catch((delErr) => {
-        console.error('[upload-complete] could not delete blob on 429:', (delErr as Error).message);
-      });
+      const live = await getDocumentByBlobPathname(user.id, pathname);
+      if (!live) {
+        await deleteUserDocument(pathname).catch((delErr) => {
+          console.error('[upload-complete] could not delete blob on 429:', (delErr as Error).message);
+        });
+      }
       return NextResponse.json(
         { error: 'Too many uploads. Please wait a moment and try again.', retryAfterSec: limit.retryAfterSec },
         { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec ?? 60) } },

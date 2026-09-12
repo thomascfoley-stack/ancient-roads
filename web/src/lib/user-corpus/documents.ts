@@ -198,6 +198,40 @@ export async function findByChecksum(userId: string, sum: string): Promise<UserD
 }
 
 /**
+ * Find a surviving row whose `blob_url` IS `pathname` — i.e. a row that points at and owns the
+ * Blob object named by this pathname.
+ *
+ * The two-call direct-to-Blob flow stores the SAME presigned `pathname` onto a row as
+ * `blob_url` (see `setBlobPathname`). A client that re-POSTs `upload-complete` with a prior
+ * `{pathname, name}` — without re-calling `upload-url`, so the pathname is NOT a fresh
+ * attempt-unique orphan — re-enters the route with `pathname === some surviving row's
+ * blob_url`. Several branches were tempted to `deleteUserDocument(pathname)` to clean up an
+ * "orphaned" upload; on a replay that delete destroys the surviving row's live bytes, the
+ * next drain reads `getUserDocument(row.blob_url)` and throws `UploadRefused('corrupt')`,
+ * and recovery does not auto-heal (`healPlan` returns `'requeue'`, never re-homing the dead
+ * pointer). The dedupe branch's `deleteOrphanUnless` guard exists for this hazard; the 429
+ * branch reaches the same delete BEFORE dedupe, so it needs the same discipline.
+ *
+ * This lookup is that discipline: the caller deletes the pathname only when NO surviving row
+ * claims it as its live `blob_url`. Keyed on `user_id` (in the predicate AND in `runAsUser`'s
+ * RLS binding, like every statement here) because `blob_url` is user-scoped and a cross-tenant
+ * pathname is rejected by the route's ownership regex before this runs anyway.
+ *
+ * Null-for-not-found, matching `getDocument`/`findByChecksum`, so a nonexistent pathname reads
+ * as "a genuine orphan, safe to delete."
+ */
+export async function getDocumentByBlobPathname(
+  userId: string,
+  pathname: string,
+): Promise<UserDocument | null> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`SELECT * FROM user_documents WHERE user_id = ${userId} AND blob_url = ${pathname} LIMIT 1`,
+  ]);
+  const r = (rows as Row[])[0];
+  return r ? toDocument(r) : null;
+}
+
+/**
  * Create the row in 'queued'. The row exists BEFORE the bytes are parsed and before they are even
  * uploaded to blob storage, on purpose: §8's guarantee is that no document is ever silently
  * dropped, and a document that fails between arriving and being recorded is exactly a silent drop.
