@@ -78,7 +78,7 @@ function romanToInt(s: string): number | null {
 function romaniseEpigraph(text: string): string {
   return text
     .replace(/_/g, '')
-    .replace(/\b([1-3]?\s?[A-Za-z]{3,}\.?)\s+([ivxlc]{1,6})\.\s*(\d{1,3})/g, (m, book, rom, verse) => {
+    .replace(/\b([1-3]?\s?[A-Za-z]{3,}\.?)[\s,]+([ivxlc]{1,6})\.\s*(\d{1,3})/g, (m, book, rom, verse) => {
       const c = romanToInt(rom as string);
       return c ? `${(book as string).replace(/\.$/, '')} ${c}:${verse}` : (m as string);
     });
