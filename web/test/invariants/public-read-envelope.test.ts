@@ -57,10 +57,16 @@ function mockSql(counts: Record<string, number>): SqlArg {
 }
 
 const OVER_CAP = 999_999;
+// Over the vitest-config-lifted PUBLIC_READ_GLOBAL_PER_DAY (1e8) — the way OVER_CAP (999_999) is
+// over the lifted gate legs (1e5) — so the fleet-wide 'search:global:day' pool trips without
+// stubbing the env or resetting the (top-level-imported) module. The gate legs stay at the
+// mockSql default of 1, well under the lifted per-min/per-hour caps, so only the global pool binds.
+const DAY_OVER_CAP = 1_000_000_001;
 const req = () => new Request('https://x.test/api/search/works?q=grace');
 
 afterEach(() => {
   gate.override = null;
+  vi.useRealTimers();
 });
 
 describe('publicReadThrottle — envelope reflects the binding cap', () => {
@@ -77,6 +83,31 @@ describe('publicReadThrottle — envelope reflects the binding cap', () => {
     // The regression guard: the hour message must NOT carry the minute leg's "in a moment"
     // wording — that was the active harm, telling an hour-throttled reader to retry at once.
     expect(body.error.message).not.toMatch(/in a moment/);
+  });
+
+  it('a GLOBAL-day trip is reported as RATE_LIMIT_DAY with the true seconds-to-midnight, not "in a moment"', async () => {
+    // SEED: revert the day leg to flat 3600 + "in a moment" -> RED on three assertions.
+    // The fleet-wide daily ceiling ('search:global:day', lifted to 1e8 here) resets at the next
+    // UTC midnight, not in a moment and not in a flat hour. Freeze the clock at noon UTC so
+    // secondsToUtcMidnight() is exactly 43200; the gate legs (default count 1) clear and only the
+    // global pool is over cap, so which leg binds is decided by the shipped limiter and the day
+    // leg is proven reachable rather than asserted over a stub.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 12, 12, 0, 0, 0)));
+    const res = await publicReadThrottle(req(), 'search-works', mockSql({ 'search:global:day': DAY_OVER_CAP }));
+    expect(res).not.toBeNull();
+    expect(res!.status).toBe(429);
+    // Retry-After must be the TRUE remaining wait to UTC midnight (43200 at noon), not the flat
+    // 3600 that used to understate the wait by up to ~23h.
+    expect(res!.headers.get('Retry-After')).toBe('43200');
+    const body = (await res!.json()) as { error: { code: string; message: string; retryAfterSec: number } };
+    expect(body.error.code).toBe('RATE_LIMIT_DAY');
+    expect(body.error.retryAfterSec).toBe(43200);
+    // The prose must name the midnight-UTC reset and must NOT carry the minute leg's "in a
+    // moment" — that wording contradicts the very `code` that advertises a daily reset, and on
+    // the /search HTML page it is the ONLY backoff signal a reader gets.
+    expect(body.error.message).not.toMatch(/in a moment/);
+    expect(body.error.message).toMatch(/midnight UTC/i);
   });
 
   it('a MINUTE-leg trip is still reported as RATE_LIMIT_MINUTE (positive control)', async () => {
@@ -117,6 +148,20 @@ describe('publicReadPageThrottle — the page surface carries an honest backoff 
     // convey the magnitude. "in a moment" for an hour trip was no signal at all.
     expect(r!.message).not.toMatch(/in a moment/);
     expect(r!.message).toMatch(/hour/i);
+  });
+
+  it('a GLOBAL-day trip reports the midnight-UTC reset (not "in a moment") with seconds-to-midnight', async () => {
+    // SEED: revert the page day leg to "in a moment" + flat 3600 -> RED. The page surface
+    // renders only `message` and has NO Retry-After header, so the prose is the ONLY backoff
+    // signal a reader receives — it must name the true reset window for a cap that clears at
+    // next UTC midnight. Freeze at noon UTC so secondsToUtcMidnight() is exactly 43200.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 12, 12, 0, 0, 0)));
+    const r = await publicReadPageThrottle('search-page', mockSql({ 'search:global:day': DAY_OVER_CAP }));
+    expect(r).not.toBeNull();
+    expect(r!.retryAfterSec).toBe(43200);
+    expect(r!.message).not.toMatch(/in a moment/);
+    expect(r!.message).toMatch(/midnight UTC/i);
   });
 
   it('a MINUTE-leg trip keeps the "in a moment" wording (positive control)', async () => {

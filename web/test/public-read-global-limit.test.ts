@@ -45,6 +45,7 @@ const logged: string[] = [];
 vi.spyOn(console, 'log').mockImplementation((line: unknown) => void logged.push(String(line)));
 
 afterEach(() => {
+  vi.useRealTimers();
   logged.length = 0;
   vi.unstubAllEnvs();
   vi.resetModules();
@@ -58,6 +59,11 @@ describe('publicReadThrottle — global daily ceiling', () => {
 
   it('DENIES with a 429 once the configured global cap trips, and logs cap: global', async () => {
     // SEED: delete the search:global:day bump/check in publicReadThrottle -> RED.
+    // Freeze the clock at noon UTC so retryAfterSec is deterministic: the day cap's true backoff
+    // is secondsToUtcMidnight() (the real remaining wait to midnight, not a flat 3600), which is
+    // exactly 43200 at noon.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 12, 12, 0, 0, 0)));
     vi.stubEnv('PUBLIC_READ_GLOBAL_PER_DAY', '100');
     vi.resetModules();
     const fresh = await import('@/lib/public-read-limit');
@@ -65,14 +71,19 @@ describe('publicReadThrottle — global daily ceiling', () => {
     const res = await fresh.publicReadThrottle(req(), 'search-works', sql);
     expect(res).not.toBeNull();
     expect(res!.status).toBe(429);
-    expect(res!.headers.get('Retry-After')).toBe('3600');
+    expect(res!.headers.get('Retry-After')).toBe('43200');
     // A DAILY ceiling trips here, and the error code must say so: the ask route maps its own
     // global cap to RATE_LIMIT_DAY (web/src/app/api/ask/route.ts), and clients branching on
     // `code` must see the same semantics for the same window. RATE_LIMIT_MINUTE would tell the
     // reader to retry in a moment against a cap that resets at midnight UTC.
     // SEED: return apiError('RATE_LIMIT_MINUTE', ...) for the global trip -> RED.
-    const body = (await res!.json()) as { error: { code: string } };
+    const body = (await res!.json()) as { error: { code: string; message: string } };
     expect(body.error.code).toBe('RATE_LIMIT_DAY');
+    // The message must name the midnight-UTC reset and must NOT carry the minute leg's
+    // "in a moment" wording — the cap is fleet-wide (the reader is collateral from aggregate
+    // load, not a personal quota) and "in a moment" is mechanically false for a fixed-window
+    // midnight reset. SEED: revert to "in a moment" -> RED.
+    expect(body.error.message).toBe('The library is under heavy use right now. Please try again after midnight UTC.');
     // The owner alerts on this field shape — the same line the ask global cap logs.
     const hit = logged.find((l) => l.includes('"rate_limit_hit"'));
     expect(hit, 'the global cap trip was not logged').toBeDefined();
@@ -125,14 +136,22 @@ describe('publicReadPageThrottle — same global daily ceiling as the request-le
     expect(globalRow![0], 'the global bucket must not be keyed per-IP').toBe('__global__');
   });
 
-  it('DENIES in the page denial shape (retryAfterSec 3600) once the cap trips, and logs cap: global', async () => {
+  it('DENIES in the page denial shape (retryAfterSec = seconds to UTC midnight) once the cap trips, and logs cap: global', async () => {
+    // Freeze the clock at noon UTC: the day cap's true backoff is secondsToUtcMidnight() (the
+    // real remaining wait to midnight, not a flat 3600), which is exactly 43200 at noon.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 12, 12, 0, 0, 0)));
     vi.stubEnv('PUBLIC_READ_GLOBAL_PER_DAY', '100');
     vi.resetModules();
     const { sql } = mockSql({ 'search:global:day': 101 });
     const res = await pageThrottle(sql);
     expect(res).not.toBeNull();
-    expect(res!.retryAfterSec).toBe(3600);
-    expect(res!.message).toBe('Too many searches. Please slow down and try again in a moment.');
+    expect(res!.retryAfterSec).toBe(43200);
+    // The SSR page renders only `message` (no Retry-After header), so it is the SOLE backoff
+    // signal a /search reader gets. It must name the midnight-UTC reset and must NOT carry the
+    // minute leg's "in a moment" — that wording is mechanically false for a cap that won't clear
+    // until next UTC midnight, sending the reader into immediate futile retries.
+    expect(res!.message).toBe('The library is under heavy use right now. Please try again after midnight UTC.');
     const hit = logged.find((l) => l.includes('"rate_limit_hit"'));
     expect(hit, 'the global cap trip was not logged').toBeDefined();
     expect(hit).toContain('"cap":"global"');

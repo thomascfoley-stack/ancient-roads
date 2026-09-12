@@ -43,6 +43,16 @@ function throttleKey(ip: string | null, bucket: string): string {
   return `read:${bucket}:${ip ?? 'no-trusted-ip'}`;
 }
 
+// True backoff for the fleet-wide daily ceiling: the 'search:global:day' window keys on UTC
+// midnight (see globalDayCapTripped's dayStart), so the remaining wait is until next UTC
+// midnight — not a flat 3600, which understates by up to ~23h. The day leg names that reset in
+// the prose AND in Retry-After, the magnitude-honesty principle the hour leg already follows.
+function secondsToUtcMidnight(): number {
+  const now = new Date();
+  const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  return Math.ceil((tomorrow.getTime() - now.getTime()) / 1000);
+}
+
 // Global ceiling check, shared by the request-level and page-level throttles (it was the SAME
 // code twice: the page variant shipped without it, so SSR search-page loads escaped the
 // fleet-wide ceiling). Bumps the ONE 'search:global:day' pool keyed on the __global__ constant
@@ -97,10 +107,13 @@ export async function publicReadThrottle(req: Request, bucket: string, sql: Sql 
   if (await globalDayCapTripped(sql, key)) {
     // RATE_LIMIT_DAY, not MINUTE: this is a DAILY ceiling (resets midnight UTC), and the ask
     // route maps its own global cap to RATE_LIMIT_DAY — clients branching on `code` see the
-    // same semantics for the same window. Still 429 either way.
+    // same semantics for the same window. The cap is fleet-wide, so the reader is collateral
+    // from aggregate load, not a personal quota: the message names the midnight-UTC reset (not
+    // the minute leg's "in a moment", which is mechanically false for a fixed-window reset)
+    // and Retry-After is the true remaining wait. Still 429 either way.
     return apiError('RATE_LIMIT_DAY', {
-      message: 'Too many requests. Please slow down and try again in a moment.',
-      retryAfterSec: 3600,
+      message: 'The library is under heavy use right now. Please try again after midnight UTC.',
+      retryAfterSec: secondsToUtcMidnight(),
     });
   }
   return null;
@@ -136,10 +149,12 @@ export async function publicReadPageThrottle(bucket: string, sql: Sql = getDb())
   }
   // Same fleet-wide ceiling as the request-level throttle — an SSR page load runs the same
   // searches against the same database, so it counts against (and is bound by) the same pool.
+  // The page renders only `message` (no Retry-After header), so the prose must carry the
+  // midnight-UTC magnitude on its own — the same shape as the hour leg on this surface.
   if (await globalDayCapTripped(sql, key)) {
     return {
-      message: 'Too many searches. Please slow down and try again in a moment.',
-      retryAfterSec: 3600,
+      message: 'The library is under heavy use right now. Please try again after midnight UTC.',
+      retryAfterSec: secondsToUtcMidnight(),
     };
   }
   return null;
