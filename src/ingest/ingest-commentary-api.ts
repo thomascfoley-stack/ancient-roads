@@ -35,7 +35,7 @@ const SLUG_TO_API_ID: Record<string, string> = {
   '1jn': '1JN', '2jn': '2JN', '3jn': '3JN', jud: 'JUD', rev: 'REV',
 };
 
-interface CommentarySource {
+export interface CommentarySource {
   id: string;
   author: string;
   year: number;
@@ -145,23 +145,77 @@ export function buildChapterEntries(
   return entries;
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
+function sleep(ms: number): Promise<void> {
+  return new Promise<void>((r) => setTimeout(r, ms));
 }
 
-async function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+// Discriminated fetch result so the loop can tell a legitimately-absent chapter
+// (404 — this commentary simply doesn't cover this chapter) from a real fetch
+// error (network/5xx/bad body). Mirrors adapter-helloao.ts on the SAME HelloAO
+// chapter endpoint: a 404 is "absent" and must be skipped without retry or error
+// accounting, while other failures are transient and should retry + trip the
+// fail-loud gate. Treating 404 as a thrown error made the default invocation
+// exit 1 forever (358 permanent gaps in matthew-henry + adam-clarke) and waste
+// ~18 min of dead retries per resume — re-running can never fill a coverage gap.
+export type ChapterFetchResult =
+  | { status: 'ok'; data: { chapter: { content: ApiVerse[] } } }
+  | { status: 'absent' }
+  | { status: 'error'; message: string };
+
+export async function fetchChapterResult(url: string): Promise<ChapterFetchResult> {
+  try {
+    const res = await fetch(url);
+    if (res.status === 404) return { status: 'absent' }; // this commentary doesn't cover this chapter
+    if (!res.ok) return { status: 'error', message: `${res.status}` };
+    return { status: 'ok', data: (await res.json()) as { chapter: { content: ApiVerse[] } } };
+  } catch (err) {
+    return { status: 'error', message: err instanceof Error ? err.message : String(err) };
+  }
 }
 
-async function ingestSource(source: CommentarySource) {
+// Retry real (transient) errors up to 3× with 0/1/2s backoff, but return `absent`
+// and `ok` immediately — a permanent 404 can never succeed on retry. `sleepFn`
+// is injectable so tests can exercise the retry policy without real timers.
+export async function fetchChapterWithRetry(
+  url: string,
+  sleepFn: (ms: number) => Promise<void> = sleep,
+): Promise<ChapterFetchResult> {
+  for (let attempt = 0; ; attempt++) {
+    if (attempt > 0) await sleepFn(1000 * attempt);
+    const r = await fetchChapterResult(url);
+    if (r.status === 'ok' || r.status === 'absent') return r;
+    if (attempt === 2) return r; // exhausted retries — return the last error
+  }
+}
+
+export interface SourceResult {
+  source: string;
+  totalEntries: number;
+  totalChapters: number;
+  errors: number;
+  absent: number;
+}
+
+// The D44 fail-loud gate sums this across sources and exits 1 on any non-zero
+// count. `absent` (permanent coverage gaps) is deliberately excluded — re-
+// running can never fill a 404, so it must not trip a gate whose own message
+// ("Re-run to fill the gaps") assumes the gaps are transient.
+export function countFailedChapters(results: SourceResult[]): number {
+  return results.reduce((n, r) => n + (r.errors ?? 0), 0);
+}
+
+export async function ingestSource(
+  source: CommentarySource,
+  opts: { sleepFn?: (ms: number) => Promise<void> } = {},
+): Promise<SourceResult> {
+  const sleepFn = opts.sleepFn ?? sleep;
   console.log(`\n=== ${source.author} (${source.tradition}, ${source.year}) ===`);
 
   const outDir = join(root, 'data', 'commentaries-api', source.id);
   let totalEntries = 0;
   let totalChapters = 0;
   let errors = 0;
+  let absent = 0;
 
   for (const book of BOOKS) {
     const apiBookId = SLUG_TO_API_ID[book.slug];
@@ -178,37 +232,31 @@ async function ingestSource(source: CommentarySource) {
       }
 
       const url = `${API_BASE}/${source.id}/${apiBookId}/${ch}.json`;
-      let fetched = false;
+      const r = await fetchChapterWithRetry(url, sleepFn);
+      if (r.status === 'absent') {
+        // Permanent coverage gap — don't write, don't count as fetched, don't
+        // count as an error: re-running can never fill it, so it must not trip
+        // the fail-loud gate.
+        absent++;
+      } else if (r.status === 'error') {
+        console.warn(`  Error: ${book.name} ${ch}: ${r.message}`);
+        errors++;
+      } else {
+        const entries = buildChapterEntries(r.data.chapter.content, source);
+        totalEntries += entries.length;
 
-      for (let attempt = 0; attempt < 3 && !fetched; attempt++) {
-        try {
-          if (attempt > 0) await sleep(1000 * attempt);
-          const data = await fetchJson(url) as {
-            chapter: { content: ApiVerse[] };
-          };
+        const payload = {
+          book: book.bookNum,
+          chapter: ch,
+          source: source.id,
+          entries,
+        };
 
-          const entries = buildChapterEntries(data.chapter.content, source);
-          totalEntries += entries.length;
-
-          const payload = {
-            book: book.bookNum,
-            chapter: ch,
-            source: source.id,
-            entries,
-          };
-
-          writeFileSync(outPath, JSON.stringify(payload));
-          totalChapters++;
-          fetched = true;
-        } catch (err) {
-          if (attempt === 2) {
-            console.warn(`  Error: ${book.name} ${ch}: ${err instanceof Error ? err.message : err}`);
-            errors++;
-          }
-        }
+        writeFileSync(outPath, JSON.stringify(payload));
+        totalChapters++;
       }
 
-      if (ch % 20 === 0) await sleep(100);
+      if (ch % 20 === 0) await sleepFn(100);
     }
 
     process.stdout.write(`  ${book.name} ✓\n`);
@@ -216,7 +264,8 @@ async function ingestSource(source: CommentarySource) {
 
   console.log(`  ${totalEntries} entries, ${totalChapters} chapters`);
   if (errors > 0) console.warn(`  ${errors} errors`);
-  return { source: source.id, totalEntries, totalChapters, errors };
+  if (absent > 0) console.log(`  ${absent} chapters absent (permanent coverage gaps)`);
+  return { source: source.id, totalEntries, totalChapters, errors, absent };
 }
 
 // --- Main ---
@@ -235,20 +284,25 @@ if (process.argv[1] && /ingest-commentary-api/.test(process.argv[1])) {
 
   console.log(`Pulling ${sourceIds.length} commentary source(s) from ${API_BASE}`);
 
-  const results: { source: string; totalEntries: number; totalChapters: number; errors: number }[] = [];
+  const results: SourceResult[] = [];
   for (const id of sourceIds) {
     results.push(await ingestSource(SOURCES[id]!));
   }
 
   console.log('\n=== Summary ===');
   for (const r of results) {
-    console.log(`  ${r.source}: ${r.totalEntries} entries, ${r.totalChapters} chapters${r.errors ? `, ${r.errors} errors` : ''}`);
+    console.log(
+      `  ${r.source}: ${r.totalEntries} entries, ${r.totalChapters} chapters` +
+      `${r.errors ? `, ${r.errors} errors` : ''}` +
+      `${r.absent ? `, ${r.absent} absent (coverage gaps)` : ''}`,
+    );
   }
   // D44 (DEEP_SWEEP): errors were counted, printed, and then thrown away — the run ended
   // "Done." with exit code 0 while chapters were missing. The repo's standard is fail loud, and
   // a script that reports green on an incomplete corpus is the shape a gate exists to prevent.
-  // Resume-by-existsSync makes the fix free: re-running fills the gaps.
-  const failed = results.reduce((n, r) => n + (r.errors ?? 0), 0);
+  // The gate fires on real (transient) errors only: permanent coverage-gap 404s are counted as
+  // `absent`, not `errors`, so a source that simply doesn't cover some chapters exits 0.
+  const failed = countFailedChapters(results);
   if (failed > 0) {
     console.error(`\nFAILED: ${failed} chapter(s) could not be fetched after 3 attempts. Re-run to fill the gaps.`);
     process.exit(1);
