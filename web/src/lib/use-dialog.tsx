@@ -107,6 +107,14 @@ export function useDialog(onClose: () => void, label: string) {
       const last = items[items.length - 1]!;
       const active = document.activeElement;
       const inside = panel.contains(active);
+      // Focus can rest on the `tabIndex: -1` host itself (a click on its own background lands
+      // there). It is `inside` yet never in `items` (FOCUSABLE excludes [tabindex="-1"]), so the
+      // first/last branches below would not fire and Tab would escape the trap for one keystroke.
+      if (inside && !items.includes(active as HTMLElement)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+        return;
+      }
       if (e.shiftKey && (active === first || !inside)) {
         e.preventDefault();
         last.focus();
