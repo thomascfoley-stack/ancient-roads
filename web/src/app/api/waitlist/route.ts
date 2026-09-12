@@ -45,7 +45,15 @@ export async function POST(req: NextRequest) {
   // A public write with no trusted origin: throttle it on one shared bucket rather than
   // refusing, because a legitimate visitor behind an unusual proxy should still be able to
   // leave an email — but they share a cap rather than each getting a free one.
-  const limit = await checkGateRateLimit(clientIp(req) ?? 'no-trusted-ip');
+  //
+  // NAMESPACED KEY (`waitlist:<ip>`): `checkGateRateLimit` hardcodes the `gate:<ip>` row key,
+  // which is the site gate's OWN brute-force bucket — the only barrier on the pre-launch site.
+  // Pre-prefixing keeps this route's counters on `gate:waitlist:<ip>`, distinct from the gate's
+  // `gate:<ip>`, so waitlist signups cannot spend the gate's per-IP budget and lock password-holders
+  // behind the same shared IP (carrier NAT, office/conference wifi) out of the site. Same
+  // namespacing the public-read throttle (`read:<bucket>:<ip>`) uses to avoid the same collision.
+  const ip = clientIp(req) ?? 'no-trusted-ip';
+  const limit = await checkGateRateLimit(`waitlist:${ip}`);
   if (!limit.ok) {
     return NextResponse.json(
       { message: 'Too many requests. Please try again shortly.' },
