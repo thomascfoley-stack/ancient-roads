@@ -165,7 +165,7 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
     // return without asserting. A genuine failure (400/401, or a wrong vector) re-throws and stays RED.
     const probe = await probeProvider(() => embedQuery(samples[0]!.body));
     if (announceSkip(
-      '§B0 class 2 — section/vector pairing',
+      '§B0 class 2 — every section body matches its own stored vector',
       [{ name: `DeepInfra embeddings (unavailable after ${probe.attempts} attempts: ${probe.error ?? ''})`, present: probe.present, kind: 'provider' }],
       'every published section body matching its own stored vector, and discriminating against a neighbour',
     )) { ctx.skip(); return; }
@@ -178,7 +178,7 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
       } catch (err) {
         if (isProviderUnavailable(err)) {
           announceSkip(
-            '§B0 class 2 — section/vector pairing (provider failed mid-run)',
+            '§B0 class 2 — every section body matches its own stored vector (provider failed mid-run)',
             [{ name: `DeepInfra embeddings (${err instanceof Error ? err.message : String(err)})`, present: false, kind: 'provider' }],
             'the remaining published sections in this run',
           );
