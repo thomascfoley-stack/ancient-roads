@@ -420,6 +420,11 @@ on existing deps. All fixed by bump/override, verified `deps-audit` green + full
 
 These are FIXES (real version moves), distinct from the ignored SEC-1 GHSAs above which remain unfixable until the auth move-off.
 
+### Resolved framework/tooling CVEs (2026-09-12) — FIXED, not ignored
+Two CRITICAL and one HIGH advisory on CVE-disclosure drift, newly published against existing dep versions. Fixed by bump:
+- **next 16.2.12 → 16.3.5** (`web/package.json`): clears GHSA-p293-qw3h-jr36 (RCE on Windows servers) and GHSA-2xp9-vwfh-vxw4 (RCE via AVIF in Image Optimization API). Both critical, fixed in >=16.3.3.
+- **sharp → 0.35.4** (root `pnpm.overrides`): clears GHSA-rgj7-g3m4-5g8c (vulnerabilities in libheif). High, fixed in >=0.35.4.
+
 ### Pending evidence from Neon (drafted question sent 2026-07-08)
 Two-pronged written question to Neon (below in the PR/thread). Paste the written answer
 here as SEC-1 evidence. A "yes" to either prong closes the *active* hole short-term; it
