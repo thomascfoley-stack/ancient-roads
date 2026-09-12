@@ -136,5 +136,24 @@ if (key) {
     // filtered by the sanitiser below, because an exception message can quote user input.
     capture_exceptions: true,
     sanitize_properties: stripProductText,
+    // Disable the feature-flags subsystem entirely. posthog-js auto-fires POST /flags/?v=2 on
+    // init, on every periodic refresh, and on identify(), and the body carries
+    // person_properties.$initial_current_url — location.href frozen on the reader's FIRST
+    // persistence-fresh page. That request runs on a code path sanitize_properties never
+    // touches (it is invoked only in the /e/ capture pipeline, in posthog-core.js), so a
+    // question-bearing first page (/ask?q=…, or the /gate?next=%2Fask%3Fq=… redirect every
+    // unauthenticated deep-linker lands on) ships the reader's question to PostHog verbatim
+    // (or percent-encoded, for /gate) along a vector no sanitizer sees. Closing that means
+    // stopping /flags at the source: advanced_disable_feature_flags maps to `featureFlagsDisabled`,
+    // and both reloadFeatureFlags and _callFlagsEndpoint early-return when it is true, so no
+    // /flags request fires on init, refresh, or identify. No product code reads a flag (a grep
+    // for getFeatureFlag/isFeatureEnabled/onFeatureFlags/reloadFeatureFlags across web/src
+    // returns nothing) and the owner ruling above — "after-the-fact analytics only, never
+    // embedded in the product" — means nothing depends on the surveys/web-experiments
+    // extensions /flags feeds either, so this costs the product nothing. This is the SAME
+    // defect #3 the header above records as closed: the reader's question leaving via a URL
+    // property. The capture-path closure (sanitize_properties) held; this closes the
+    // flags-path reopening of it.
+    advanced_disable_feature_flags: true,
   });
 }
