@@ -21,7 +21,7 @@ import { runAsUser } from '@/lib/db';
 import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './claim-constants';
 export { CLAIMED_STATUSES, STALE_CLAIM_MINUTES };
 import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
-import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
+import { BibleIndexUnavailable, detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
@@ -167,8 +167,8 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
     // hardcoded 1.0. Throws BibleIndexUnavailable if an index is missing, rather than anchoring
     // nothing: an empty index would lose the channel carrying 90% of the recall and still
     // report success.
-    const detection = detectDocumentTranslation(parsed.text);
-    const index = getAnchorIndexFor(detection.translation);
+    const detection = await detectDocumentTranslation(parsed.text);
+    const index = await getAnchorIndexFor(detection.translation);
     const anchored = chunks.map((chunk) => ({
       chunk,
       anchors: anchorChunk(chunk.text, {
@@ -215,13 +215,25 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
       await setDocStatus(userId, row.id, status, e.message);
       return status;
     }
+    const message = String((e as Error)?.message ?? e);
+    // The anchor index is a DEPLOYMENT ASSET, not a per-document input. `BibleIndexUnavailable`
+    // means the bible could not be loaded at all — `CORPUS_CDN_BASE` unset/misconfigured, the
+    // Blob store returning 5xx, or the local `public/bible/` missing — and no document in this
+    // deployment can succeed until the deploy is fixed. Retrying re-parses and re-fails
+    // identically (the index build is memoised per warm instance), so fail now with the reason
+    // rather than spending MAX_ATTEMPTS on every document and retiring it with a cryptic "Gave
+    // up after 3 attempts. The last error was: ENOENT: …". This is the guard the detection path
+    // lacked before the fs→HTTP fix converted its raw ENOENT into a typed error.
+    if (e instanceof BibleIndexUnavailable) {
+      await setDocStatus(userId, row.id, 'failed', message);
+      return 'failed';
+    }
     // A permanent error can never succeed on retry. Parking it back at 'queued' would retry a
     // hopeless document to MAX_ATTEMPTS while it sat indistinguishable from "waiting its turn"
     // and queueStats reported a healthy-looking depth — a deployment missing DEEPINFRA_API_KEY
     // parks EVERY upload that way. Fail it now, with the reason shown. Only errors that declare
     // themselves permanent take this branch: a provider 429/5xx is transient and stays on the
     // retry path below, which is what the loop exists for.
-    const message = String((e as Error)?.message ?? e);
     if (e instanceof EmbeddingUnavailable && e.permanent) {
       await setDocStatus(userId, row.id, 'failed', message);
       return 'failed';
