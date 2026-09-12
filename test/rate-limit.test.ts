@@ -3,7 +3,7 @@
 // logic and the deliberate FAIL-OPEN path are tested hermetically (no DB). A
 // real-DB atomic-upsert check is run separately (seed-and-confirm rail).
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { checkAskRateLimit, checkGateRateLimit, envInt } from '../web/src/lib/rate-limit';
 
 type SqlArg = NonNullable<Parameters<typeof checkAskRateLimit>[1]>;
@@ -144,6 +144,124 @@ describe('checkGateRateLimit', () => {
   it('FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller', async () => {
     const throwing = { query: async () => { throw new Error('db down'); } } as unknown as SqlArg;
     expect(await checkGateRateLimit('1.2.3.4', throwing)).toEqual({ ok: true });
+  });
+});
+
+// CROSS-CALLER NAMESPACE — the waitlist↔gate row collision (2026-09-12).
+//
+// `checkGateRateLimit` hardcodes `gate:<ip>` as its row key, so any two callers passing it the SAME
+// `ip` string bump the SAME `(user_id, bucket, window_start)` row. The waitlist signup route used to
+// pass the raw client IP, colliding with the site gate's OWN brute-force bucket — and the gate is the
+// ONLY barrier on the pre-launch site (SEC-1). The fix: the waitlist pre-prefixes its IP with
+// `waitlist:`, landing its counters on `gate:waitlist:<ip>` while the gate stays on `gate:<ip>`.
+//
+// The mock fakes above key only on the BUCKET (`params[1] === 'gate:min'`), NOT the user_id, so a
+// second caller writing under a different user_id to the same bucket is invisible to them — which is
+// exactly why this collision had no test that could catch it. The fake below keys on the FULL primary
+// key `(user_id, bucket, window_start)` (migration 008's unique key), running the REAL limiter through
+// the exact arguments each route passes: the gate calls `checkGateRateLimit(ip)` and the waitlist
+// calls `checkGateRateLimit(\`waitlist:${ip}\`)`. That integration is where the collision lived.
+//
+// Fake timers pin the window: a minute-boundary rollover mid-loop would otherwise split the waitlist
+// burst across two `gate:min` windows and silently false-pass the SEED. The limiter only reads
+// `Date.now()` (no setTimeout), so fake timers do not interfere with its async resolution.
+describe('checkGateRateLimit — cross-caller namespace (gate vs waitlist)', () => {
+  // A stateful in-memory api_rate_limit keyed on the table's real primary key, doing the upsert
+  // the migration prescribes: insert-else-increment, returning the post-bump count.
+  function statefulSql(): SqlArg {
+    const rows = new Map<string, number>();
+    return {
+      query: async (_text: string, params: unknown[]) => {
+        const [userId, bucket, windowStart] = params as [string, string, string];
+        const pk = `${userId}|${bucket}|${windowStart}`;
+        const next = (rows.get(pk) ?? 0) + 1;
+        rows.set(pk, next);
+        return [{ count: next }];
+      },
+    } as unknown as SqlArg;
+  }
+
+  beforeAll(() => {
+    // A fixed time inside a minute that is not on a boundary, so every call in the block shares one
+    // minute window and one hour window.
+    vi.useFakeTimers({ now: new Date('2026-09-12T10:30:07.000Z') });
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
+  // 11 same-IP waitlist signups within a minute is the report's realistic trigger: many distinct
+  // people on one shared IP (carrier NAT, office / conference wifi) each signing up once. The
+  // gate's default per-minute cap is 10, blocked on the 11th bump.
+  const WAITLIST_BURST = 11;
+
+  it('waitlist signups do NOT spend the gate budget — the gate still passes after a waitlist burst', async () => {
+    const sql = statefulSql();
+    const ip = '203.0.113.7';
+    for (let i = 0; i < WAITLIST_BURST; i++) {
+      await checkGateRateLimit(`waitlist:${ip}`, sql);
+    }
+    const gate = await checkGateRateLimit(ip, sql);
+    expect(gate).toEqual({ ok: true });
+  });
+
+  it('SEED: a raw-IP waitlist collides with the gate — the gate is 429-locked after the burst', async () => {
+    // Restore the waitlist route to `checkGateRateLimit(ip)` (drop the `waitlist:` prefix) and
+    // change this loop to pass the raw `ip` too -> the gate's `gate:<ip>`/`gate:min` count reaches
+    // WAITLIST_BURST before the gate's own call, and the gate's bump makes it WAITLIST_BURST+1 > 10
+    // -> { ok: false, limited: 'min' } -> RED (the test above goes RED; this one is the proof shape).
+    const sql = statefulSql();
+    const ip = '203.0.113.7';
+    for (let i = 0; i < WAITLIST_BURST; i++) {
+      await checkGateRateLimit(ip, sql); // BUG SHAPE: raw IP, identical key to the gate's
+    }
+    const gate = await checkGateRateLimit(ip, sql);
+    expect(gate.ok).toBe(false);
+    expect(gate.limited).toBe('min');
+  });
+
+  it('the waitlist KEEPS its own throttle — its namespaced bucket still caps a re-signup burst', async () => {
+    // The fix removes the COLLISION, not the waitlist's own cap: its `gate:waitlist:<ip>` counters
+    // must still bind. A burst past the cap is denied, on the minute leg.
+    // SEED: have the waitlist call bypass the limiter entirely (e.g. namespace = constant '') ->
+    // this stays green falsely; the meaningful seed is the test below, which proves isolation.
+    const sql = statefulSql();
+    const ip = '203.0.113.7';
+    for (let i = 0; i < 10; i++) {
+      const r = await checkGateRateLimit(`waitlist:${ip}`, sql);
+      expect(r.ok, `call ${i + 1} should pass`).toBe(true);
+    }
+    const over = await checkGateRateLimit(`waitlist:${ip}`, sql); // 11th
+    expect(over).toEqual({ ok: false, limited: 'min', retryAfterSec: 60 });
+  });
+
+  it('the gate and waitlist hold SEPARATE hour budgets — a long waitlist drip does not 429 the gate', async () => {
+    // The hour cap (default 60) is the other leg the collision burned. Isolate it by lifting the
+    // per-minute leg (so only the hour leg can bind), then drive the waitlist past 60/hour on its
+    // own namespaced row and show the gate's hour count is still 1.
+    const sql = statefulSql();
+    const ip = '203.0.113.7';
+    const MIN_UP = 100_000;
+    for (let i = 0; i < 61; i++) {
+      await checkGateRateLimit(`waitlist:${ip}`, sql, MIN_UP);
+    }
+    // With the bug (raw IP), the waitlist would have driven `gate:<ip>`/`gate:hour` to 61 and the
+    // gate's own 62nd bump would trip limited:'hour'. Namespaced, the gate sees count 1.
+    const gate = await checkGateRateLimit(ip, sql, MIN_UP);
+    expect(gate).toEqual({ ok: true });
+  });
+
+  it('the no-trusted-origin fallback is namespaced too — the shared waitlist bucket is not the gate\'s', async () => {
+    // The route's `?? 'no-trusted-ip'` fallback is meant to share ONE bucket across unknown origins.
+    // Post-fix they share `gate:waitlist:no-trusted-ip`, leaving the gate's `gate:no-trusted-ip`
+    // row distinct. (The gate route returns GATE_LOCKED for a null IP before the limiter; this
+    // exercises the limiter directly to show the rows are independent.)
+    const sql = statefulSql();
+    for (let i = 0; i < WAITLIST_BURST; i++) {
+      await checkGateRateLimit('waitlist:no-trusted-ip', sql);
+    }
+    const gate = await checkGateRateLimit('no-trusted-ip', sql);
+    expect(gate).toEqual({ ok: true });
   });
 });
 
