@@ -419,7 +419,8 @@ function formatDisplay(book: Book, segments: Segment[]): string {
       prevChapter = seg.endChapter ?? seg.chapter;
     } else {
       const cv = single ? '' : `${seg.chapter}:`;
-      const showChapter = first || seg.chapter !== prevChapter;
+      const isCrossChapter = seg.endChapter !== undefined && seg.endChapter !== seg.chapter;
+      const showChapter = first || seg.chapter !== prevChapter || isCrossChapter;
       p = showChapter ? `${cv}${seg.verseStart}` : `${seg.verseStart}`;
       if (seg.toChapterEnd) p += 'ff';
       else if (seg.endChapter !== undefined && seg.endChapter !== seg.chapter) {
