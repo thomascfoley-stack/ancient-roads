@@ -12,7 +12,7 @@
 import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
 import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { chunkProse } from './chunk';
-import { verseAnchorScan, type VersePresence } from './search';
+import { verseDocScan, MAX_LIMIT } from './search';
 import { traditionGapForRanges, type CorpusPredicate, type TraditionGapResult } from './tradition-gap';
 import type { Detection } from './translation-detect';
 
@@ -20,6 +20,13 @@ import type { Detection } from './translation-detect';
 export const DRAFT_MAX_CHARS = 120_000;
 /** Ranges carried into the presence scans and the gap join — the tradition-gap bound. */
 export const DRAFT_MAX_RANGES = 60;
+/**
+ * Cap on the documents returned per overlap range. The hazard (below) is a LIMIT on RAW ANCHOR
+ * ROWS before the per-document collapse; this cap is applied AFTER the collapse, so it counts
+ * DOCUMENTS. Mirrors `MAX_VOICES` in tradition-gap.ts — the "Worst case equals one document's
+ * existing voices panel" line in the design doc.
+ */
+export const DRAFT_MAX_OVERLAP_DOCS = 50;
 
 export interface DraftRange {
   start: number;
@@ -31,6 +38,14 @@ export interface DraftOverlap {
   range: DraftRange;
   /** The user's own documents anchored on this range — collapsed per document, strongest first. */
   documents: { documentId: string; title: string; channel: string; matchCount: number | null }[];
+  /**
+   * True when more matching documents exist than `documents` carries. The cap is applied AFTER the
+   * per-document collapse (so the LIMIT counts documents, not anchor rows — tradition-gap.ts's
+   * MULTIPLICATION HAZARD), and a truncated list is signalled rather than presented as the whole
+   * answer — the same honesty the route's own DRAFT_MAX_CHARS refusal applies to the input, here
+   * applied to the output.
+   */
+  truncated: boolean;
 }
 
 export interface DraftCheckResult {
@@ -64,27 +79,27 @@ export async function draftCheck(
   userId: string,
   text: string,
   predicate: CorpusPredicate,
+  opts: { maxOverlapDocs?: number } = {},
 ): Promise<DraftCheckResult> {
   const { detection, ranges } = anchorDraft(text);
+  // The cap is applied AFTER the per-document collapse, so it counts DOCUMENTS, never anchor rows.
+  // `clampLimit` (search.ts) caps any limit at MAX_LIMIT=100 and floors at 1; the cap here stays at
+  // most MAX_LIMIT-1 so the over-fetch-by-one truncation probe (cap+1) never exceeds MAX_LIMIT and
+  // is itself clamped away — which would silently disable the `truncated` flag.
+  const maxOverlapDocs = Math.min(
+    MAX_LIMIT - 1,
+    Math.max(1, Math.trunc(opts.maxOverlapDocs ?? DRAFT_MAX_OVERLAP_DOCS)),
+  );
 
-  // The presence fast path per range, collapsed to one row per document (strongest match kept),
-  // so the UI answers "you preached this in X and Y" rather than listing anchor rows.
+  // One row per document per range (strongest match kept, in SQL — see verseDocScan's hazard note),
+  // so the UI answers "you preached this in X and Y" rather than listing anchor rows, and a range
+  // that overlaps many anchors never silently drops a document whose first row sorts past a cap.
   const overlaps: DraftOverlap[] = [];
   for (const range of ranges) {
-    const hits: VersePresence[] = await verseAnchorScan(userId, range, { limit: 50 });
-    const byDoc = new Map<string, DraftOverlap['documents'][number]>();
-    for (const h of hits) {
-      const prev = byDoc.get(h.documentId);
-      if (!prev || (h.matchCount ?? 0) > (prev.matchCount ?? 0)) {
-        byDoc.set(h.documentId, {
-          documentId: h.documentId,
-          title: h.title,
-          channel: h.channel,
-          matchCount: h.matchCount,
-        });
-      }
-    }
-    if (byDoc.size > 0) overlaps.push({ range, documents: [...byDoc.values()] });
+    const docs = await verseDocScan(userId, range, { limit: maxOverlapDocs + 1 });
+    const truncated = docs.length > maxOverlapDocs;
+    const documents = truncated ? docs.slice(0, maxOverlapDocs) : docs;
+    if (documents.length > 0) overlaps.push({ range, documents, truncated });
   }
 
   const gaps = await traditionGapForRanges(userId, ranges, predicate);

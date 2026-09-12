@@ -36,7 +36,7 @@ interface VoicesState { loading: boolean; error?: string; data?: { voices: Voice
 interface DraftCheckResponse {
   detection: { translation: string; confidence: number; totalHits: number };
   ranges: { start: number; end: number; channel: string }[];
-  overlaps: { range: { start: number; end: number }; documents: { documentId: string; title: string; channel: string; matchCount: number | null }[] }[];
+  overlaps: { range: { start: number; end: number }; documents: { documentId: string; title: string; channel: string; matchCount: number | null }[]; truncated: boolean }[];
   gaps: { voices: { author: string; work: string; tradition: string; verseId: number; rangesHit: number }[]; authorCount: number; rangesConsidered: number };
 }
 
@@ -931,6 +931,11 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                           <span className="ml-2 font-serif text-[14px] text-stone-600 dark:text-stone-300">
                             {o.documents.map((d) => d.title).join(' · ')}
                           </span>
+                          {o.truncated && (
+                            <span className="ml-2 font-serif text-[13px] text-stone-400 dark:text-stone-500">
+                              and more
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ul>

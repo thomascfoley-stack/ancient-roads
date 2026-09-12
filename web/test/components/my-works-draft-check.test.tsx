@@ -38,13 +38,31 @@ describe('My Works — the draft check', () => {
     stub(async () => Response.json({
       detection: { translation: 'kjv', confidence: 0.9, totalHits: 40 },
       ranges: [{ start: 45008028, end: 45008028, channel: 'uncited' }],
-      overlaps: [{ range: { start: 45008028, end: 45008028 }, documents: [{ documentId: 'doc-1', title: 'My sermon on John 10', channel: 'uncited', matchCount: 5 }] }],
+      overlaps: [{ range: { start: 45008028, end: 45008028 }, documents: [{ documentId: 'doc-1', title: 'My sermon on John 10', channel: 'uncited', matchCount: 5 }], truncated: false }],
       gaps: { voices: [{ author: 'John Gill', work: 'Exposition', tradition: 'Baptist', verseId: 45008028, rangesHit: 1 }], authorCount: 1, rangesConsidered: 1 },
     }));
     await openAndCheck();
     await screen.findByText('Where you have preached this ground');
     expect(screen.getAllByText(/My sermon on John 10/).length).toBeGreaterThan(1);
     await screen.findByText(/John Gill/);
+    // A complete (non-truncated) overlap list must NOT show the "and more" affordance — that would
+    // present a whole answer as partial.
+    expect(screen.queryByText(/and more/)).toBeNull();
+  });
+
+  it('surfaces a truncated overlap list with an "and more" affordance, not as the whole answer', async () => {
+    // The bug presented a partial document list as the complete answer to "you preached this in X".
+    // When more documents match a range than the cap carries, the UI says so rather than hiding the
+    // cut behind a definitive-looking list.
+    stub(async () => Response.json({
+      detection: { translation: 'kjv', confidence: 0.9, totalHits: 40 },
+      ranges: [{ start: 45008028, end: 45008028, channel: 'uncited' }],
+      overlaps: [{ range: { start: 45008028, end: 45008028 }, documents: [{ documentId: 'doc-1', title: 'My sermon on John 10', channel: 'uncited', matchCount: 5 }], truncated: true }],
+      gaps: { voices: [], authorCount: 0, rangesConsidered: 1 },
+    }));
+    await openAndCheck();
+    await screen.findByText('Where you have preached this ground');
+    await screen.findByText(/and more/);
   });
 
   it('a draft with no Scripture gets the honest empty state', async () => {
