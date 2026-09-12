@@ -49,6 +49,16 @@ function resolveLanding(slug: string) {
   return { ordinal: saved?.ordinal ?? null, scrollPct: saved?.scrollPct ?? 0, deepLinked: false };
 }
 
+/** The Continue chip target: the saved position a DEEP LINK landed away from (null for a resume
+ *  or a deep link that lands on the saved section). Mirrors the `landing` rule — a shared link
+ *  wins, but it also offers the jump back to where the reader left off. */
+function resolveContinueTarget(slug: string): WorkProgress | null {
+  const initial = resolveLanding(slug);
+  if (!initial.deepLinked) return null;
+  const saved = loadWorkProgress(slug);
+  return saved && saved.ordinal !== initial.ordinal ? saved : null;
+}
+
 export default function WorkPage() {
   const { slug } = useParams<{ slug: string }>();
   const [work, setWork] = useState<{ source: WorkSource; toc: WorkTocUnit[] } | null>(null);
@@ -69,12 +79,7 @@ export default function WorkPage() {
   // The frozen "where you left off" snapshot for the Continue chip — only meaningful when a
   // deep-link took the reader somewhere else (after an auto-restore there is nothing to
   // continue TO; the live record keeps updating as they read).
-  const [continueTarget, setContinueTarget] = useState<WorkProgress | null>(() => {
-    const initial = resolveLanding(slug);
-    if (!initial.deepLinked) return null;
-    const saved = loadWorkProgress(slug);
-    return saved && saved.ordinal !== initial.ordinal ? saved : null;
-  });
+  const [continueTarget, setContinueTarget] = useState<WorkProgress | null>(() => resolveContinueTarget(slug));
 
   // F24 — THE DEEP LINK THAT ARRIVES LATE (F-088/F-155).
   //
@@ -284,6 +289,34 @@ export default function WorkPage() {
       flush();
     };
   }, [pushPosition]);
+
+  // A same-route, param-only soft navigation (a future "related works"/next-work link inside
+  // the reader subtree) changes `slug` WITHOUT a remount: the /work/[slug] layout STAYS
+  // MOUNTED across /work/a -> /work/b (history-context-bar.tsx documents this), and there is no
+  // `key={slug}` or `template.tsx` to force one. The `useState` initializers above resolved
+  // `landing`/`continueTarget` exactly once, on FIRST mount; the `honourHash` re-resolve below
+  // acts ONLY on a `#s{ordinal}` deep link (it early-returns when the hash is empty). So a plain
+  // cross-work navigation left `landing.ordinal` frozen at the OLD work's value, which was
+  // passed straight through to WorkReader as `initialOrdinal` — opening the new work at the
+  // wrong section (or blank) and never reading the new work's own saved resume position. (This
+  // regression was introduced in d6e85f3, which narrowed the prior any-slug-change re-resolve
+  // to the deep-link-only `honourHash`.) Re-resolve `landing` from the new slug and clear every
+  // per-work state/ref so the new work starts as if freshly mounted; the fetch effect re-fires
+  // on `[slug]` and refetches via /api/work/<new-slug>, and `positionRef` is recomputed by the
+  // account-sync effect once `progress` clears.
+  useEffect(() => {
+    setLanding(resolveLanding(slug));
+    setProgress(null);
+    setContinueTarget(resolveContinueTarget(slug));
+    setNotFound(false);
+    setWork(null);
+    setSeek(null);
+    landedRef.current = false;
+    lateArrivalRef.current = false;
+    ownHashRef.current = null;
+    syncedRef.current = null;
+    clearTrailingSave(persist.current);
+  }, [slug]);
 
   if (notFound) {
     return (
