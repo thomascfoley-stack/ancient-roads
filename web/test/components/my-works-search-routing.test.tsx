@@ -95,6 +95,11 @@ describe('My Works search routing — the looksLikeRef ∧ parseRef AND-gate', (
     ['John 3:16', 'ref', 'John 3:16'],
     ['Romans 8', 'ref', 'Romans 8'],
     ['romans 8 28', 'ref', 'Romans 8:28'],
+    // SEED: with the formatDisplay cross-chapter elision bug (3e1eee08), this row goes RED — the
+    //   component sends `{ ref: 'John 5:1–6:2, 3–7:4' }` (the buggy display) instead of the
+    //   canonical form, because looksLikeRef ∧ parseRef.ok both hold so the payload is exactly
+    //   `parsed.ref.display`. The route would then re-parse that orphan-tail string and 400.
+    ['John 5:1-6:2, 6:3-7:4', 'ref', 'John 5:1–6:2, 6:3–7:4'],
     // C — no reference shape → fused.
     ['the gospel', 'q', null],
     ['what did I say about grace', 'q', null],
