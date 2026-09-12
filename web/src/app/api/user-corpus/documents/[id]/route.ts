@@ -21,23 +21,39 @@ interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-/** One document's status, for polling after an upload. */
-export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
+/**
+ * One document's status, for polling after an upload.
+ *
+ * Returns `Response`, not `NextResponse`: the app-wide error envelope (`apiError`,
+ * lib/api-error.ts / docs/API_ERRORS.md) is framework-free and returns the global Web `Response`.
+ * NextResponse extends Response, so every JSON return below still satisfies this — same shape as
+ * the sibling `voices`/`related` routes (4b1f4630) and the `search` route (D35, e4542c97).
+ */
+export async function GET(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
   const { id } = await ctx.params;
-  const doc = await getDocument(user.id, id);
-  // 404 rather than 403 for another user's id. RLS already makes it invisible, and distinguishing
-  // "not yours" from "does not exist" would confirm that a given id exists to someone who cannot
-  // read it.
-  if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  // `?sections=1` is opt-in: the list view wants status and nothing else, and shipping a whole
-  // sermon's text to render one row would be the unbounded-payload version of the same mistake
-  // the LIMITs guard against. The reading view asks for it explicitly.
-  const wantSections = new URL(_req.url).searchParams.get('sections') === '1';
-  const sections = wantSections ? await getDocumentSections(user.id, id) : undefined;
-  return NextResponse.json({ document: doc, ...(sections ? { sections } : {}) });
+  try {
+    const doc = await getDocument(user.id, id);
+    // 404 rather than 403 for another user's id. RLS already makes it invisible, and distinguishing
+    // "not yours" from "does not exist" would confirm that a given id exists to someone who cannot
+    // read it.
+    if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    // `?sections=1` is opt-in: the list view wants status and nothing else, and shipping a whole
+    // sermon's text to render one row would be the unbounded-payload version of the same mistake
+    // the LIMITs guard against. The reading view asks for it explicitly.
+    const wantSections = new URL(_req.url).searchParams.get('sections') === '1';
+    const sections = wantSections ? await getDocumentSections(user.id, id) : undefined;
+    return NextResponse.json({ document: doc, ...(sections ? { sections } : {}) });
+  } catch (e) {
+    // A DB fault on either lookup — `getDocument` or (only with `?sections=1`) `getDocumentSections`
+    // — must return the stable error envelope, never escape as Next's raw 500. The siblings
+    // `voices`/`related` (4b1f4630) wrap the same `getDocument` call this way; GET's two lookups
+    // were the unaddressed instance of the D35 sweep (e4542c97).
+    console.error('[user-corpus] GET document failed:', String((e as Error)?.message ?? e));
+    return apiError('INTERNAL');
+  }
 }
 
 /**
@@ -51,7 +67,7 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
  * file, not transient errors, and re-running the same parse over the same bytes cannot reach a
  * different answer. Offering retry there would be an invitation to click forever.
  */
-export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
+export async function POST(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
@@ -72,51 +88,65 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
     );
   }
 
+  // The 429 carve-out above is before the try by design: the limiter fails closed (returns
+  // {ok:false}), it never throws, and the paid-endpoint Retry-After body is a documented carve-out
+  // from the envelope (H6). Everything below touches the data layer and must therefore be wrapped,
+  // so a Neon hiccup or a requeueForRetry CAS fault returns the envelope rather than escaping.
   const { id } = await ctx.params;
-  const doc = await getDocument(user.id, id);
-  if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  if (doc.status === 'empty') {
-    return NextResponse.json(
-      { error: 'That file contains no readable text, so retrying cannot change the result.' },
-      { status: 409 },
-    );
-  }
-  if (!doc.blobUrl) {
-    return NextResponse.json(
-      { error: 'The original file was not stored, so it cannot be re-parsed. Please upload it again.' },
-      { status: 409 },
-    );
-  }
-
-  // D9 (DEEP_SWEEP): this was setDocStatus + resetAttempts as TWO transactions on a row a worker
-  // might be actively holding, followed by a drain kick — so the same document went to a second
-  // worker: double parse, double PAID embedding, and two storeSections DELETE+INSERT pairs that
-  // are not mutually exclusive under READ COMMITTED. The UI invites it, offering Retry on any doc
-  // stuck >5 min, which is also STALE_CLAIM_MINUTES — and a live worker on a large PDF is
-  // legitimately past 5 minutes with a fresh claim. One atomic CAS now, refusing a fresh claim.
-  if (!(await requeueForRetry(user.id, id))) {
-    return NextResponse.json(
-      { error: 'That document is being processed right now. Give it a moment and try again.' },
-      { status: 409 },
-    );
-  }
-  // Best-effort, for the same reason as the upload route: the retry has already reset the row, so
-  // a scheduling failure must not report the retry as failed.
   try {
-    after(async () => {
-      try {
-        await drain(user.id);
-      } catch (e) {
-        console.error('[user-corpus] drain failed after retry:', String((e as Error)?.message ?? e));
-      }
-    });
-  } catch (e) {
-    console.error('[user-corpus] could not schedule the drain after retry:', String((e as Error)?.message ?? e));
-  }
+    const doc = await getDocument(user.id, id);
+    if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const updated = await getDocument(user.id, id);
-  return NextResponse.json({ document: updated });
+    if (doc.status === 'empty') {
+      return NextResponse.json(
+        { error: 'That file contains no readable text, so retrying cannot change the result.' },
+        { status: 409 },
+      );
+    }
+    if (!doc.blobUrl) {
+      return NextResponse.json(
+        { error: 'The original file was not stored, so it cannot be re-parsed. Please upload it again.' },
+        { status: 409 },
+      );
+    }
+
+    // D9 (DEEP_SWEEP): this was setDocStatus + resetAttempts as TWO transactions on a row a worker
+    // might be actively holding, followed by a drain kick — so the same document went to a second
+    // worker: double parse, double PAID embedding, and two storeSections DELETE+INSERT pairs that
+    // are not mutually exclusive under READ COMMITTED. The UI invites it, offering Retry on any doc
+    // stuck >5 min, which is also STALE_CLAIM_MINUTES — and a live worker on a large PDF is
+    // legitimately past 5 minutes with a fresh claim. One atomic CAS now, refusing a fresh claim.
+    if (!(await requeueForRetry(user.id, id))) {
+      return NextResponse.json(
+        { error: 'That document is being processed right now. Give it a moment and try again.' },
+        { status: 409 },
+      );
+    }
+    // Best-effort, for the same reason as the upload route: the retry has already reset the row, so
+    // a scheduling failure must not report the retry as failed. The inner try stays NESTED under
+    // the outer catch: a scheduling or drain failure is best-effort and must not change this
+    // response, and must not be re-mapped to the envelope by the outer catch.
+    try {
+      after(async () => {
+        try {
+          await drain(user.id);
+        } catch (e) {
+          console.error('[user-corpus] drain failed after retry:', String((e as Error)?.message ?? e));
+        }
+      });
+    } catch (e) {
+      console.error('[user-corpus] could not schedule the drain after retry:', String((e as Error)?.message ?? e));
+    }
+
+    const updated = await getDocument(user.id, id);
+    return NextResponse.json({ document: updated });
+  } catch (e) {
+    // A DB fault on either `getDocument` lookup or `requeueForRetry`'s CAS must return the stable
+    // error envelope, never escape as Next's raw 500. Same wrap as `voices`/`related` (4b1f4630);
+    // POST's three data calls were unaddressed instances of the D35 sweep (e4542c97).
+    console.error('[user-corpus] POST retry failed:', String((e as Error)?.message ?? e));
+    return apiError('INTERNAL');
+  }
 }
 
 /**
@@ -160,20 +190,39 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
   }
 
   const { id } = await ctx.params;
-  const updated = await renameDocument(user.id, id, verdict.title);
-  // 404, and byte-identical to the answer for an id that never existed — distinguishing them
-  // would confirm that a given id exists to someone who cannot read it (see GET above).
-  if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ document: updated });
+  try {
+    const updated = await renameDocument(user.id, id, verdict.title);
+    // 404, and byte-identical to the answer for an id that never existed — distinguishing them
+    // would confirm that a given id exists to someone who cannot read it (see GET above).
+    if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ document: updated });
+  } catch (e) {
+    // The client-error paths above use apiError('INVALID_REQUEST'); this is the matching server-fault
+    // wrap. A DB fault on `renameDocument` must return the stable envelope, never escape as Next's
+    // raw 500 — same wrap as `voices`/`related` (4b1f4630). Until this, PATCH wrapped its caller-error
+    // paths but left this one bare, so a rename-time DB fault escaped as a raw 500.
+    console.error('[user-corpus] PATCH rename failed:', String((e as Error)?.message ?? e));
+    return apiError('INTERNAL');
+  }
 }
 
-export async function DELETE(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
+export async function DELETE(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
   const { id } = await ctx.params;
-  const deleted = await deleteDocument(user.id, id);
-  if (!deleted) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ deleted: true });
+  try {
+    const deleted = await deleteDocument(user.id, id);
+    if (!deleted) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ deleted: true });
+  } catch (e) {
+    // `deleteDocument` awaits a blob delete (`deleteUserDocument`) before the row delete — the
+    // data layer throws on a blob outage by design, so the row survives and the user can retry. The
+    // throw still happens; this catch only TRANSLATES it at the route boundary into the stable
+    // envelope, never a raw 500 — same wrap as `voices`/`related` (4b1f4630). The row-survival
+    // behaviour is preserved because the catch is here, not in the data layer.
+    console.error('[user-corpus] DELETE document failed:', String((e as Error)?.message ?? e));
+    return apiError('INTERNAL');
+  }
 }
 
