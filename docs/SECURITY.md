@@ -418,6 +418,11 @@ on existing deps. All fixed by bump/override, verified `deps-audit` green + full
 - **fast-uri → 3.1.4** (root `pnpm.overrides`): transitive via ajv. GHSA-v2hh-gcrm-f6hx (host confusion).
 - **sharp → 0.35.3** (root `pnpm.overrides`): transitive via next/image optionalDeps, one minor above next's `^0.34.3`. GHSA-f88m-g3jw-g9cj (libvips). Runtime-verified: native binary + libvips 8.18.3 load; webp/png encode (the next/image path) works.
 
+### Resolved framework/tooling CVEs (2026-09-12) — FIXED, not ignored
+Three HIGH/CRITICAL advisories on `next` and `sharp` cleared by version bumps:
+- **next 16.2.12 → 16.3.5** (`web/package.json`): clears GHSA-p293-qw3h-jr36 (Unauthenticated RCE on windows-hosted servers, critical) and GHSA-2xp9-vwfh-vxw4 (Unauthenticated RCE in Image Optimization API via AVIF, critical). Both fixed in >=16.3.3.
+- **sharp → 0.35.4** (root `pnpm.overrides`): clears GHSA-rgj7-g3m4-5g8c (libheif vulnerabilities GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545, high). Fixed in >=0.35.4.
+
 These are FIXES (real version moves), distinct from the ignored SEC-1 GHSAs above which remain unfixable until the auth move-off.
 
 ### Pending evidence from Neon (drafted question sent 2026-07-08)

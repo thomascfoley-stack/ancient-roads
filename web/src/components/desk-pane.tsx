@@ -355,11 +355,18 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
   const frame = useRef(0);
   // Prepend anchor: keeps the viewport glued to the same section across a loadPrev prepend.
   const prependAnchor = useRef<{ ordinal: number; top: number } | null>(null);
+  // Guards updateActive for one commit after a prepend so the window we just set is not
+  // recomputed from the pre-prepend scroll position (which has not settled yet).
+  const justPrepended = useRef(false);
 
   // The active section = the first rendered section extending below the pane's reading line
   // (the top of its own scroll container). Drives the render window and the prefetch.
   // rAF-throttled from scroll.
   const updateActive = useCallback(() => {
+    if (justPrepended.current) {
+      justPrepended.current = false;
+      return;
+    }
     const list = sectionsRef.current;
     if (list.length === 0) return;
     const line = (scrollRef.current?.getBoundingClientRect().top ?? 0) + 4;
@@ -470,10 +477,21 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
     const idx = sections.findIndex((s) => s.ordinal === anchor.ordinal);
     if (idx === -1) return;
     prependAnchor.current = null;
-    setWin((w) => ({ start: idx, end: Math.min(sections.length, idx + (w.end - w.start)) }));
+    justPrepended.current = true;
+    const w = { start: idx, end: Math.min(sections.length, idx + (winRef.current.end - winRef.current.start)) };
+    winRef.current = w;
+    setWin(w);
     const el = sectionEls.current.get(anchor.ordinal);
     if (el && scrollRef.current) {
       scrollRef.current.scrollTop += el.getBoundingClientRect().top - anchor.top;
+    } else if (scrollRef.current) {
+      // A full backward page (prepend > render-window size) unmounts the anchor in this commit
+      // before the effect runs, so the element lookup above misses. Restore scrollTop from the
+      // measured height of the newly prepended content (a content-coordinate delta), which is the
+      // same shift the line above would have computed had the element survived.
+      let prependHeight = 0;
+      for (let i = 0; i < idx; i++) prependHeight += heights.current.get(sections[i]!.ordinal) ?? avgHeight.current;
+      scrollRef.current.scrollTop += prependHeight;
     }
   }, [sections]);
 
