@@ -288,6 +288,9 @@ const HEB_VERB_TENSE: Record<string, string> = {
   p: 'perfect', i: 'imperfect', w: 'waw-consecutive', h: 'cohortative', j: 'jussive',
   v: 'imperative', a: 'infinitive absolute', c: 'infinitive construct', r: 'participle', s: 'passive participle',
 };
+// Hebrew finite-verb person digit sits between tense and gender (e.g. HVqp3ms → 3rd person).
+// Disjoint from every other HEB_* key space, so it can only match a person digit.
+const HEB_PERSON: Record<string, string> = { '1': '1st person', '2': '2nd person', '3': '3rd person' };
 
 function decodeGreek(code: string): string {
   // code like "N- ----NSF-" or "V- 3IAI-S--"
@@ -323,9 +326,17 @@ function decodeHebrewMorpheme(seg: string): string {
   } else if (pos === 'V') {
     if (HEB_STEM[rest[0]!]) feats.push(HEB_STEM[rest[0]!]!);
     if (HEB_VERB_TENSE[rest[1]!]) feats.push(HEB_VERB_TENSE[rest[1]!]!);
+    // rest[2..] = person? (finite verbs) then gender, number, and — for participles — state.
+    // `c` is both gender 'common' and state 'construct'; `d` is both number 'dual' and state
+    // 'determined'. Track gender/number so a trailing state char resolves to HEB_STATE only
+    // after those slots are consumed, matching the OSHM column order (person·gender·number·state).
+    let genderTaken = false;
+    let numberTaken = false;
     for (const ch of rest.slice(2)) {
-      if (HEB_GENDER[ch]) feats.push(HEB_GENDER[ch]!);
-      else if (HEB_NUMBER[ch]) feats.push(HEB_NUMBER[ch]!);
+      if (HEB_PERSON[ch]) feats.push(HEB_PERSON[ch]!);
+      else if (!genderTaken && HEB_GENDER[ch]) { feats.push(HEB_GENDER[ch]!); genderTaken = true; }
+      else if (!numberTaken && HEB_NUMBER[ch]) { feats.push(HEB_NUMBER[ch]!); numberTaken = true; }
+      else if (HEB_STATE[ch]) feats.push(HEB_STATE[ch]!);
     }
   }
   return [posName, feats.join(' ')].filter(Boolean).join(' ');
