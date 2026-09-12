@@ -67,4 +67,14 @@ describe('resolveIntent ambiguous-book-word corroboration gate', () => {
     expect(hasStart(adversarial.inject, vid(59, 2))).toBe(true);
     expect(adversarial.floor).toEqual([]); // the floor cannot hijack a topical query
   });
+  it('gates the expanded common-noun book words behind corroboration', () => {
+    // Idiomatic use of a newly-gated ordinary-noun book alias: soft-boost but no floor,
+    // so it cannot hijack a topical query. (judges was absent from the original 6-word set.)
+    const idiom = resolveIntent('the panel of judges 5 of them voted yes');
+    expect(hasStart(idiom.inject, vid(7, 5))).toBe(true);
+    expect(idiom.floor).toEqual([]);
+    // A genuine citation of the same book, with a surviving lexicon token, still floors.
+    const genuine = resolveIntent('Judges 5 the song of Deborah and Barak');
+    expect(hasStart(genuine.floor, vid(7, 5))).toBe(true);
+  });
 });
