@@ -280,6 +280,13 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   const highlightsRef = useRef(highlights);
   useEffect(() => { highlightsRef.current = highlights; }, [highlights]);
 
+  // Mirror of `notes` state so saveVerseNote/deleteVerseNote can guard a replay (a stale retry
+  // fired after a NEWER note save on the same verse has already landed) without adding `notes` to
+  // their own dependency arrays and re-creating the callback on every paint. Same shape as
+  // `highlightsRef`.
+  const notesRef = useRef(notes);
+  useEffect(() => { notesRef.current = notes; }, [notes]);
+
   // Clear every span on a verse (the whole-verse "clear" affordance in the study panel).
   const clearVerse = useCallback(
     (verse: number) => {
@@ -498,9 +505,27 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   const saveVerseNote = useCallback(
     (verse: number, body: string, onSuccess?: () => void) => {
       let previous: string | undefined;
+      // The verse's note as it was BEFORE this write, snapshotted once on the first paint. A save
+      // whose POST fails arms a banner whose `retry` (the `attempt` closure below) stays live even
+      // after a NEWER save on the same verse succeeds — note2's success branch only clears a
+      // banner whose `id` matches, so note1's older banner (and its retry) persists. When that
+      // stale retry later fires (a manual Retry tap, or the `online` event), re-running `paint`
+      // with the captured `body` would re-paint and re-POST the stale note over the newer one —
+      // and `upsertNote` is a blind overwrite, so the loss is irrecoverable. On a replay, any
+      // note on the verse that differs from this snapshot is a newer write that arrived in the
+      // retry window; refusing the replay preserves it. Mirrors clearVerse's replay guard. A
+      // boolean sentinel (not `??=`) is used because the snapshot is legitimately `undefined`
+      // when saving a note on an empty verse, and `??=` would leave the snapshot `undefined`
+      // forever, never arming the guard — the exact case this bug hits in production.
+      let snapshot: string | undefined;
+      let snapshotTaken = false;
       const paint = () => {
         setNotes((prev) => {
           previous = prev.get(verse);
+          if (!snapshotTaken) {
+            snapshot = previous;
+            snapshotTaken = true;
+          }
           return new Map(prev).set(verse, body);
         });
       };
@@ -522,17 +547,56 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ kind: 'note', verseId: verseId(verse), body }),
         });
-      runPersist("Couldn't save your note", paint, request, rollback, undefined, undefined, onSuccess);
+      // saveVerseNote builds its own `attempt` (rather than going through `runPersist`) so it can
+      // guard the replay: the original save always runs, but a replay that finds a newer note on
+      // the verse refuses instead of clobbering it. `id` is minted here, once per logical save,
+      // and reused across every retry of this one save — the same invariant `runPersist` upholds
+      // for its callers.
+      const id = ++writeSeq.current;
+      const attempt = () => {
+        // Only guard REPLAYS: `snapshotTaken` is false until the first paint captures the
+        // verse's pre-write state, so the original save always proceeds. On a replay, compare the
+        // current note to the pre-write snapshot: after THIS write's own rollback the verse holds
+        // exactly the snapshot (so a legitimate retry still proceeds), and only a NEWER write
+        // makes them differ. Refuse the destructive replay; the banner is replaced with a
+        // no-retry reload hint so the stale write cannot be re-fired.
+        if (snapshotTaken && notesRef.current.get(verse) !== snapshot) {
+          setWriteError({ id, message: "Couldn't save your note — a newer edit arrived; reload to refresh." });
+          return Promise.resolve();
+        }
+        paint();
+        return beginPersist(id, "Couldn't save your note", request, rollback, attempt, undefined, undefined, onSuccess);
+      };
+      // Don't return the promise: like clearVerse (which assigns the result to `entry.settled`
+      // rather than returning it), this hook must return `undefined` so `act(() => saveVerseNote())`
+      // stays a synchronous act. Returning a thenable makes React 19's `act` defer its flush until
+      // the promise resolves (which here awaits a fake timer), so the optimistic paint would not
+      // commit before the caller inspects state. The persist/rollback/banner chain self-runs via
+      // `beginPersist`'s own `.then`; no caller awaits this return value.
+      attempt();
     },
-    [verseId, runPersist],
+    [verseId, beginPersist],
   );
 
   const deleteVerseNote = useCallback(
     (verse: number) => {
       let previous: string | undefined;
+      // Symmetric to saveVerseNote's replay guard. A failed delete arms a banner whose `retry`
+      // stays live even after a NEWER note is re-saved on the same verse (note2's success clears
+      // only its own banner, not the older delete's). When that stale delete-retry later fires,
+      // re-running `paint` (re-deleting the verse) and re-issuing the `DELETE` would soft-delete
+      // the newer note's row server-side via `removeNote`. On a replay, any note on the verse
+      // that differs from this write's pre-delete snapshot is a newer write that arrived in the
+      // retry window; refusing the replay preserves it.
+      let snapshot: string | undefined;
+      let snapshotTaken = false;
       const paint = () => {
         setNotes((prev) => {
           previous = prev.get(verse);
+          if (!snapshotTaken) {
+            snapshot = previous;
+            snapshotTaken = true;
+          }
           const next = new Map(prev);
           next.delete(verse);
           return next;
@@ -554,9 +618,24 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ kind: 'note', verseId: verseId(verse) }),
         });
-      runPersist("Couldn't delete your note", paint, request, rollback);
+      const id = ++writeSeq.current;
+      const attempt = () => {
+        // Only guard REPLAYS: `snapshotTaken` is false until the first paint captures the verse's
+        // pre-delete state, so the original delete always proceeds. On a replay, a current note
+        // that differs from the pre-delete snapshot means a newer note arrived; refuse instead of
+        // re-issuing the destructive DELETE.
+        if (snapshotTaken && notesRef.current.get(verse) !== snapshot) {
+          setWriteError({ id, message: "Couldn't delete your note — a newer edit arrived; reload to refresh." });
+          return Promise.resolve();
+        }
+        paint();
+        return beginPersist(id, "Couldn't delete your note", request, rollback, attempt);
+      };
+      // See saveVerseNote: do not return the promise, or `act(() => deleteVerseNote())` defers
+      // its flush and the optimistic delete does not commit before the caller inspects state.
+      attempt();
     },
-    [verseId, runPersist],
+    [verseId, beginPersist],
   );
 
   /**
