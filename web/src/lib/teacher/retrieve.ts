@@ -158,11 +158,12 @@ export const retrieveHistorianLane = (queryVec: number[], ranges: readonly Verse
 export async function retrieveCommentary(
   queryVec: number[],
   limit = 6,
-  opts?: { query?: string },
+  opts?: { query?: string; signal?: AbortSignal },
 ): Promise<RetrievedChunk[]> {
   const sql = getDb();
   const vecStr = `[${queryVec.join(',')}]`;
   const queryText = opts?.query ?? '';
+  const signal = opts?.signal;
 
   // Base pool: pure-vector over the legal corpus, via the partial legal HNSW index with
   // hnsw.ef_search owned inside legalBasePool (shared with the eval — routing.ts).
@@ -191,7 +192,7 @@ export async function retrieveCommentary(
   // (only for the high-confidence `floor` ranges) before taking `limit`.
   try {
     const docs = candidates.map((c) => c.content.slice(0, RERANK_DOC_CHARS));
-    const ranked = await rerank(queryText || 'commentary', docs);
+    const ranked = await rerank(queryText || 'commentary', docs, undefined, signal);
     let ordered = ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevance_score }));
     if (intent.floor.length > 0) ordered = floorOnRange(ordered, intent.floor, (c) => c.metadata.verseId);
     // On-passage backfill (Phase A item 2): fetch the 2nd+ distinct voices on the
@@ -212,7 +213,8 @@ export async function retrieveCommentary(
     // collapsing coverage; on-reference (floored) voices are exempt (HIT@1 preserved).
     const onRef = (c: RetrievedChunk) => intent.floor.some((r) => c.metadata.verseId >= r.start && c.metadata.verseId <= r.end);
     return selectDiverse(ordered, limit, chapterKey, onRef);
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
     // Reranker failure: fall back to the legal-corpus vector ordering
     return candidates.slice(0, limit);
   }
