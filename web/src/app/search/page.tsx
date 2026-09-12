@@ -34,6 +34,7 @@ import { searchNotes, searchPrayers, searchStudies } from '@/lib/search-personal
 import { keywordSearch, type UserHit } from '@/lib/user-corpus/search';
 import { uploadDenial } from '@/lib/user-corpus/access';
 import { publicReadPageThrottle } from '@/lib/public-read-limit';
+import { searchJumpHref } from '@/lib/search-ref-jump';
 import { parseRef } from '@bible/ref-parse';
 import {
   buildSearchHref,
@@ -179,20 +180,13 @@ export default async function SearchPage({
 
   // F15 — a typed reference is navigation, never search (NAVIGATION_AND_SEARCH.md decision #1).
   // Parse the query as a reference; when it resolves, offer the jump above the text results so
-  // the reader who meant "John 3:16" is not left reading 935 commentary matches.
+  // the reader who meant "John 3:16" is not left reading 935 commentary matches. The href is
+  // built by `searchJumpHref` (lib/search-ref-jump.ts): it carries a `#v<verse>` anchor when the
+  // first segment is verse-granular (including verse-led sequences like `John 3:16, 17`), and
+  // targets the chapter root for chapter-led kinds so the reader's F-144 saved-position restore
+  // still runs (the reader honors a hash as an explicit destination over the saved position).
   const ref = q ? parseRef(q) : null;
-  const refHref =
-    ref?.ok && ref.ref.ranges.length > 0
-      ? (() => {
-          const first = ref.ref.ranges[0]!;
-          const book = ref.ref.book;
-          const chapter = Math.floor((first.start % 1000000) / 1000);
-          const verse = first.start % 1000;
-          return ref.ref.kind === 'verse' || ref.ref.kind === 'verse_range'
-            ? `/read/${book.slug}/${chapter}#v${verse}`
-            : `/read/${book.slug}/${chapter}`;
-        })()
-      : null;
+  const refHref = ref?.ok ? searchJumpHref(ref.ref) : null;
 
   // F-168: /search runs up to six full-text queries per request and answers signed-out;
   // apply the same per-IP public-read throttle the other unauthenticated read routes use.
