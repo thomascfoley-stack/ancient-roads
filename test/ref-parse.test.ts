@@ -5,6 +5,7 @@ import {
   resolveBookSlug,
   typeahead,
   scanReferences,
+  scanReferenceSpans,
   CHAPTER_END_SENTINEL,
   type VerseCountProvider,
 } from '../src/bible/ref-parse';
@@ -586,5 +587,139 @@ describe('scanReferences — space-separated verses in prose (M3 verse precision
     // floor are what stop a stray anchor mattering, same as the M3 colon-form limit recorded in
     // web/test/user-corpus/anchor.test.ts "has a known limit".
     expect(scan('see john 3 16 people came')).toEqual(['John 3:16']);
+  });
+});
+
+describe('scanReferences — ff and [a-d] verse suffixes in prose (the SCAN_RE \\b bug)', () => {
+  // Every scan regex's numeric tail ended with an unconditional \b. When a verse digit
+  // was immediately followed by `ff` or a print-letter suffix [a-d] (all word chars),
+  // there was no word boundary after the digit, so the engine backtracked to a shorter
+  // tail: "Romans 8:28ff" → "Romans 8" (whole chapter); "John 3:16-18ff" → "John 3:16"
+  // (range tail dropped). parseRef's parseSegment already strips ff/[a-d] BEFORE its
+  // grammar runs, so the two paths diverged, violating the header contract that they
+  // emit the same canonical verse IDs. The fix admits `(?:ff|[a-d])?` before the
+  // trailing \b in every scan pass; parseRef still normalises it. Origin: commit
+  // 88b22fe (the SCAN_RE origin); the three later scan regexes inherited the bug.
+  const scan = (t: string) => scanReferences(t).map((r) => r.display);
+
+  // ── the measured drops: each suffix form resolves to the verse(range), not the chapter
+  it('ff verse suffix scans to the verse-to-chapter-end span, not the chapter', () => {
+    expect(scan('as Paul writes in Romans 8:28ff, all things work')).toEqual(['Romans 8:28ff']);
+  });
+  it('single-letter verse suffix scans to the verse, not the chapter', () => {
+    expect(scan('Romans 8:28a says all things work')).toEqual(['Romans 8:28']);
+  });
+  it('ff suffix on a range tail keeps the range (tail no longer dropped)', () => {
+    expect(scan('in John 3:16-18ff we read')).toEqual(['John 3:16–18']);
+  });
+  it('letter suffix on a same-chapter range tail keeps the range', () => {
+    expect(scan('Romans 8:28-30a we read')).toEqual(['Romans 8:28–30']);
+  });
+  it('letter suffix on a cross-chapter range tail keeps the range', () => {
+    expect(scan('see 1 Cor 13:4-8a love')).toEqual(['1 Corinthians 13:4–8']);
+  });
+
+  // ── ranges: the prose path agrees with parseRef exactly (the violated contract) ─────
+  it('Romans 8:28ff ranges match parseRef and the /ask routing value from the report', () => {
+    const got = scanReferences('as Paul writes in Romans 8:28ff, all things work')[0]!.ranges;
+    expect(got).toEqual([{ start: 45008028, end: 45008999 }]);
+    expect(got).toEqual(ranges('Romans 8:28ff'));
+  });
+  it('Romans 8:28a ranges are verse-precise, matching parseRef', () => {
+    const got = scanReferences('Romans 8:28a says all things work')[0]!.ranges;
+    expect(got).toEqual([{ start: 45008028, end: 45008028 }]);
+    expect(got).toEqual(ranges('Romans 8:28a'));
+  });
+  it('the headline /ask query scans to the verse-to-chapter-end floor, not the chapter', () => {
+    const r = scanReferences('what does romans 8:28ff say about assurance')[0]!;
+    expect(r.ranges).toEqual([{ start: 45008028, end: 45008999 }]);
+    expect(r.display).toBe('Romans 8:28ff');
+  });
+  it('1 Cor 13:4-8a scans to the full verse range, not the lead verse alone', () => {
+    const r = scanReferences('see 1 Cor 13:4-8a love')[0]!;
+    expect(r.ranges).toEqual([{ start: 46013004, end: 46013008 }]);
+    expect(r.display).toBe('1 Corinthians 13:4–8');
+    expect(r.ranges).toEqual(ranges('1 Cor 13:4-8a'));
+  });
+  it('a chapter-level suffix also agrees with parseRef (both strip the letter)', () => {
+    // parseRef strips a trailing [a-d] even off a bare chapter number ("James 2a" →
+    // James 2). The scan path now matches "James 2a" and feeds parseRef, so both paths
+    // land on James chapter 2 — the same contract, exercised at the chapter level.
+    const got = scanReferences('see James 2a about faith')[0]!.ranges;
+    expect(got).toEqual(ranges('James 2a'));
+    expect(ranges('James 2a')).toEqual(ranges('James 2'));
+  });
+
+  // ── the source span actually covers the suffix characters (the \b backtrack) ─────────
+  it('the matched source span INCLUDES the suffix text, not just the chapter', () => {
+    const s = 'see Romans 8:28ff here';
+    const span = scanReferenceSpans(s)[0]!;
+    expect(s.slice(span.start, span.end)).toBe('Romans 8:28ff');
+    expect(span.bookWord).toBe('romans');
+  });
+  it('a range-tail suffix extends the span to the end of the range', () => {
+    const s = 'see John 3:16-18ff here';
+    const span = scanReferenceSpans(s)[0]!;
+    expect(s.slice(span.start, span.end)).toBe('John 3:16-18ff');
+  });
+
+  // ── the suffix lands on every scan pass that had the bug ─────────────────────────────
+  it('ORDINAL_BOOK pass: 1 Cor. 13:4ff scans to the ff form', () => {
+    expect(scan('1 Cor. 13:4ff')).toEqual(['1 Corinthians 13:4ff']);
+    expect(scan('First Corinthians 13:4-8a')).toEqual(['1 Corinthians 13:4–8']);
+  });
+  it('DIGIT_ATTACHED pass: 1Cor 13:4ff scans to the ff form', () => {
+    expect(scan('1Cor 13:4ff')).toEqual(['1 Corinthians 13:4ff']);
+    expect(scan('2tim 3:16a keeps the verse')).toEqual(['2 Timothy 3:16']);
+    expect(scan('1Cor 13:4-8a')).toEqual(['1 Corinthians 13:4–8']);
+  });
+  it('SPACE_VERSE pass: space-separated suffix scans to the verse(range)', () => {
+    expect(scan('romans 8 28ff teach us')).toEqual(['Romans 8:28ff']);
+    expect(scan('john 3 16a we read')).toEqual(['John 3:16']);
+    expect(scan('john 3 16-18ff we read')).toEqual(['John 3:16–18']);
+    expect(scan('1 cor 13 4-8a love')).toEqual(['1 Corinthians 13:4–8']);
+  });
+  it('MULTIWORD pass: Song of Solomon/Songs carry the suffix through', () => {
+    expect(scan('Song of Songs 8:7a, love is strong as death')).toEqual(['Song of Songs 8:7']);
+    expect(scan('Song of Solomon 8:7ff, the chief song')).toEqual(['Song of Songs 8:7ff']);
+    expect(scan('Song of Songs 8:7-8a')).toEqual(['Song of Songs 8:7–8']);
+  });
+
+  // ── regression controls: every pre-existing behaviour that must NOT change ──────────
+  it('control: no suffix still resolves the way it did', () => {
+    expect(scan('As Paul writes in Romans 8:28, all things work')).toEqual(['Romans 8:28']);
+    expect(scan('1 Corinthians 13:4-7')).toEqual(['1 Corinthians 13:4–7']);
+    expect(scan('John 3:16-18')).toEqual(['John 3:16–18']);
+  });
+  it('control: parseRef ff behaviour is unchanged by the scanner fix', () => {
+    expect(ranges('rom 8:28ff')).toEqual([{ start: 45008028, end: 45008000 + CHAPTER_END_SENTINEL }]);
+    expect(display('rom 8:28ff')).toBe('Romans 8:28ff');
+    expect(ranges('1 cor 13:4-8a')).toEqual([{ start: 46013004, end: 46013008 }]);
+  });
+  it('control: ff with a verse-count provider clamps to the real chapter end, on both paths', () => {
+    expect(ranges('john 3:16ff', { verseCounts: provider })).toEqual([{ start: 43003016, end: 43003036 }]);
+    expect(scanReferences('what does john 3:16ff say', { verseCounts: provider })[0]!.ranges).toEqual([
+      { start: 43003016, end: 43003036 },
+    ]);
+  });
+
+  // ── precision guards: the suffix does not broaden matching into adversarial prose ───
+  it('precision: an unknown book word beside a digit+suffix still rejects', () => {
+    expect(scan('the value 12a means nothing')).toEqual([]);
+    expect(scan('a chapter 8:2a of the manual')).toEqual([]);
+    expect(scan('the top 3a rating means nothing')).toEqual([]);
+  });
+  it('precision: the suffix alphabet stays ff and [a-d]; broader forms are a known residual', () => {
+    // A bare "f", an out-of-alphabet "e", or a multi-letter "ab" all leave the verse tail
+    // unable to terminate (no \b after the digits), so the scanner backtracks to the
+    // chapter — the same behaviour as before the fix. parseRef rejects the standalone
+    // malformed forms. Pinned so a future widening of the suffix alphabet is a conscious
+    // decision, not a silent side effect.
+    expect(scan('Romans 8:28f we read')).toEqual(['Romans 8']);
+    expect(scan('Romans 8:28e we read')).toEqual(['Romans 8']);
+    expect(scan('Romans 8:28ab we read')).toEqual(['Romans 8']);
+    expect(parseRef('Romans 8:28f').ok).toBe(false);
+    expect(parseRef('Romans 8:28e').ok).toBe(false);
+    expect(parseRef('Romans 8:28ab').ok).toBe(false);
   });
 });

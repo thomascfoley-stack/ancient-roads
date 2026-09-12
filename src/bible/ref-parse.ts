@@ -457,7 +457,7 @@ export function typeahead(input: string, opts: ParseOptions = {}): TypeaheadResu
 // word, then numbers. Deliberately conservative — each candidate is validated by
 // parseRef, so a non-book word ("chapter 3", "top 6") yields nothing.
 const SCAN_RE =
-  /\b((?:[1-3]|i{1,3}|first|second|third)\s+)?([a-z]{2,})\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+  /\b((?:[1-3]|i{1,3}|first|second|third)\s+)?([a-z]{2,})\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?(?:ff|[a-d])?)\b/gi;
 
 // SCAN_RE's book group is a SINGLE word (after an optional numeric ordinal), so a
 // multi-word name with no ordinal is invisible to prose scanning. Book 22 is the only
@@ -473,7 +473,7 @@ const MULTIWORD_ALIASES = [...new Set(ALIAS_ENTRIES.map((e) => e.alias))]
 const MULTIWORD_SCAN_RE =
   MULTIWORD_ALIASES.length > 0
     ? new RegExp(
-        `\\b(${MULTIWORD_ALIASES.map((a) => a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s+(\\d{1,3}(?::\\d{1,3})?(?:\\s*[-–]\\s*\\d{1,3}(?::\\d{1,3})?)?)\\b`,
+        `\\b(${MULTIWORD_ALIASES.map((a) => a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s+(\\d{1,3}(?::\\d{1,3})?(?:\\s*[-–]\\s*\\d{1,3}(?::\\d{1,3})?)?(?:ff|[a-d])?)\\b`,
         'gi',
       )
     : null;
@@ -494,7 +494,7 @@ const MULTIWORD_SCAN_RE =
 // which has no isExplicitCitation gate. The unnumbered period form ("Rom. 8:28") therefore stays
 // unscanned — a known residual, recorded with M3, not silently.
 const ORDINAL_BOOK_SCAN_RE =
-  /\b([1-3]|i{1,3}|first|second|third)\s+([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+  /\b([1-3]|i{1,3}|first|second|third)\s+([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?(?:ff|[a-d])?)\b/gi;
 
 // Digit-ATTACHED ordinals — "1Cor 13", "2tim 3:16" — are invisible to both passes above:
 // SCAN_RE's optional ordinal requires `\s+` after it, and its book group `[a-z]{2,}` cannot
@@ -508,7 +508,7 @@ const ORDINAL_BOOK_SCAN_RE =
 // yields the candidate "3 rd 4", which dies on the unknown book; "21cor 13" never matches at
 // all — there is no word boundary between the "2" and the "1" for `\b([1-3])` to start at.
 const DIGIT_ATTACHED_SCAN_RE =
-  /\b([1-3])([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+  /\b([1-3])([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?(?:ff|[a-d])?)\b/gi;
 
 // SPACE-SEPARATED VERSES in prose — "john 3 16", "romans 8 28", "1 cor 13 4" — are invisible
 // to every pass above: each numeric tail is `(?::\d{1,3})?`, which REQUIRES a colon before a
@@ -529,7 +529,7 @@ const DIGIT_ATTACHED_SCAN_RE =
 // "Numbers 6:24-26") does not match the required `\d\s+\d` shape at all, so those chapter and
 // colon-verse forms keep their SCAN_RE behaviour untouched.
 const SPACE_VERSE_SCAN_RE =
-  /\b((?:[1-3]|i{1,3}|first|second|third)\s+)?([a-z]{2,})\s+(\d{1,3}\s+\d{1,3}(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+  /\b((?:[1-3]|i{1,3}|first|second|third)\s+)?([a-z]{2,})\s+(\d{1,3}\s+\d{1,3}(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?(?:ff|[a-d])?)\b/gi;
 
 // Find scripture references embedded in prose — "1 Corinthians 13 the greatest
 // of these…", "Isaiah 53", "John 3:16" — and return the resolved refs. Unlike
