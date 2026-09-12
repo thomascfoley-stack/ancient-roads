@@ -56,8 +56,9 @@ const CHUNK = {
   },
 };
 
+const retrieveCommentary = vi.fn();
 vi.mock('@/lib/teacher/retrieve', () => ({
-  retrieveCommentary: vi.fn(async () => [CHUNK]),
+  retrieveCommentary: (...args: unknown[]) => retrieveCommentary(...args),
   retrieveSongVerse: vi.fn(async () => []),
   retrieveSermonLane: vi.fn(async () => []),
   retrieveTheologyLane: vi.fn(async () => []),
@@ -150,6 +151,8 @@ describe('Stop on /ask stops spending', () => {
     embedQuery.mockResolvedValue(new Array(1024).fill(0.1));
     compose.mockResolvedValue('not json — forces a retry so a second attempt is observable');
     teachMock.mockReset();
+    retrieveCommentary.mockReset();
+    retrieveCommentary.mockResolvedValue([CHUNK]);
   });
 
   it('P1a: an already-aborted signal stops teach() before the embedder is ever called', async () => {
@@ -179,6 +182,44 @@ describe('Stop on /ask stops spending', () => {
       realTeach('What does John 1:1 mean?', { signal: controller.signal }),
     ).rejects.toThrow();
     expect(compose, 'exactly one compose was in flight when Stop was pressed').toHaveBeenCalledTimes(1);
+  });
+
+  // The retrieval window used to be uncovered: the suite mocked retrieveCommentary to resolve
+  // instantly, and teach() passed it no signal — so a Stop arriving during the paid rerank fetch
+  // could not abort it. This leg models the real rerank abort: retrieveCommentary stays pending
+  // until the reader stops, then rejects with AbortError (the fix re-throws rather than falling
+  // back to candidates). SEED: drop the `signal` from teach()'s retrieveCommentary call and both
+  // the AbortError assertion and the signal-instanceof assertion go red.
+  it('P1c: aborting during retrieval stops teach() before any compose (the rerank leg is a paid call)', async () => {
+    const { teach: realTeach } = await vi.importActual<typeof import('@/lib/teacher/teach')>(
+      '@/lib/teacher/teach',
+    );
+    const controller = new AbortController();
+    retrieveCommentary.mockImplementation(
+      async (_vec: unknown, _limit: unknown, opts?: { signal?: AbortSignal }) => {
+        const signal = opts?.signal;
+        if (!signal) throw new Error('retrieveCommentary received no signal');
+        return new Promise((_, reject) => {
+          const err = new DOMException('The ask was stopped.', 'AbortError');
+          if (signal.aborted) return reject(err);
+          signal.addEventListener('abort', () => reject(err), { once: true });
+        });
+      },
+    );
+    embedQuery.mockResolvedValue(new Array(1024).fill(0.1));
+    // Abort a tick into retrieval — after embed resolves and while retrieveCommentary is in flight.
+    setTimeout(() => controller.abort(), 10);
+
+    await expect(
+      realTeach('What does John 1:1 mean?', { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    const retrieveOpts = retrieveCommentary.mock.calls[0]?.[2] as { signal?: AbortSignal } | undefined;
+    expect(
+      retrieveOpts?.signal,
+      'teach must thread the reader signal into retrieveCommentary so Stop reaches the rerank fetch',
+    ).toBeInstanceOf(AbortSignal);
+    expect(compose, 'no composition is paid for a run stopped during retrieval').not.toHaveBeenCalled();
   });
 
   it('P2: the route hands teach() the request signal', async () => {

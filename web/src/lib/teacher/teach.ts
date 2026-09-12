@@ -213,7 +213,7 @@ export async function teach(
   // lane is inert there and eval reproducibility is unchanged. Fail-soft inside the lane.
   const userVoicesPromise = opts.userId ? retrieveUserVoices(opts.userId, queryVec) : Promise.resolve([] as UserVoice[]);
   stageStart = Date.now();
-  const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
+  const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query, signal });
   stageMs.retrieve = Date.now() - stageStart;
   // Reader deep-link ordinals for the result cards. Started the moment retrieval resolves and
   // awaited only where the rows cross the response boundary (the two `finish` calls that carry

@@ -28,11 +28,13 @@ export async function rerank(
   query: string,
   documents: string[],
   topN: number = documents.length,
+  signal?: AbortSignal,
 ): Promise<RerankResult[]> {
   if (documents.length <= 1) {
     return documents.map((_, i) => ({ index: i, relevance_score: 1 }));
   }
 
+  // Compose the reader's Stop with the 30s budget, as deepinfra.ts withCallerSignal does for embed/compose.
   const res = await fetch(BASE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey()}` },
@@ -40,7 +42,7 @@ export async function rerank(
       queries: [query],
       documents,
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: signal ? AbortSignal.any([AbortSignal.timeout(30_000), signal]) : AbortSignal.timeout(30_000),
   });
 
   if (!res.ok) {
