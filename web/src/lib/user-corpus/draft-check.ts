@@ -41,9 +41,9 @@ export interface DraftCheckResult {
 }
 
 /** Anchor a pasted draft in-process — pure except for the memoised index loads. */
-export function anchorDraft(text: string): { detection: Detection; ranges: DraftRange[] } {
-  const detection = detectDocumentTranslation(text);
-  const index = getAnchorIndexFor(detection.translation);
+export async function anchorDraft(text: string): Promise<{ detection: Detection; ranges: DraftRange[] }> {
+  const detection = await detectDocumentTranslation(text);
+  const index = await getAnchorIndexFor(detection.translation);
   const seen = new Map<string, DraftRange>();
   for (const chunk of chunkProse(text)) {
     for (const a of anchorChunk(chunk.text, {
@@ -65,7 +65,7 @@ export async function draftCheck(
   text: string,
   predicate: CorpusPredicate,
 ): Promise<DraftCheckResult> {
-  const { detection, ranges } = anchorDraft(text);
+  const { detection, ranges } = await anchorDraft(text);
 
   // The presence fast path per range, collapsed to one row per document (strongest match kept),
   // so the UI answers "you preached this in X and Y" rather than listing anchor rows.

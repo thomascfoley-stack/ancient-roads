@@ -7,7 +7,7 @@
 //
 // Needs web/public/bible (gitignored): skips visibly without it, like the anchor suites.
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -73,7 +73,7 @@ describe('detectTranslation — mechanism, no fs', () => {
 });
 
 describe.skipIf(!HAVE_BIBLE)('detection over the real shipped indexes', () => {
-  it('BAR 3 (pre-registered): 10 synthetic BSB sermons detect bsb, each with confidence > 0.6', () => {
+  it('BAR 3 (pre-registered): 10 synthetic BSB sermons detect bsb, each with confidence > 0.6', async () => {
     const bsb = versesOf('bsb');
     // Ten disjoint windows of 16 verses each — enough quotation to clear the floor, embedded in
     // prose so the detector sees a document, not a verse list.
@@ -81,24 +81,24 @@ describe.skipIf(!HAVE_BIBLE)('detection over the real shipped indexes', () => {
     const results: string[] = [];
     for (let i = 0; i < 10; i++) {
       const texts = bsb.slice(i * 16, i * 16 + 16).map((v) => v.text);
-      const d = detectDocumentTranslation(syntheticSermon(texts));
+      const d = await detectDocumentTranslation(syntheticSermon(texts));
       results.push(`${i}: ${d.translation} conf=${d.confidence.toFixed(2)} hits=${d.totalHits}`);
       if (d.translation === 'bsb' && d.confidence > 0.6) detectedBsb++;
     }
     expect(detectedBsb, results.join(' | ')).toBe(10);
   });
 
-  it('a KJV-quoting document detects into the KJV family', () => {
+  it('a KJV-quoting document detects into the KJV family', async () => {
     const kjv = versesOf('kjv');
-    const d = detectDocumentTranslation(syntheticSermon(kjv.slice(40, 56).map((v) => v.text)));
+    const d = await detectDocumentTranslation(syntheticSermon(kjv.slice(40, 56).map((v) => v.text)));
     expect(KJV_FAMILY as readonly string[]).toContain(d.translation);
     expect(d.confidence).toBeGreaterThan(0.5);
   });
 
-  it('confidence 1.0 is unreachable below the floor — the floor binds', () => {
+  it('confidence 1.0 is unreachable below the floor — the floor binds', async () => {
     const kjv = versesOf('kjv');
     // Two verses: real quotation but far under DETECT_MIN_HITS total hits.
-    const d = detectDocumentTranslation(syntheticSermon(kjv.slice(0, 2).map((v) => v.text)));
+    const d = await detectDocumentTranslation(syntheticSermon(kjv.slice(0, 2).map((v) => v.text)));
     if (d.totalHits < DETECT_MIN_HITS) {
       expect(d.confidence).toBe(FALLBACK_CONFIDENCE);
     } else {
@@ -108,8 +108,8 @@ describe.skipIf(!HAVE_BIBLE)('detection over the real shipped indexes', () => {
     }
   });
 
-  it('availableTranslations derives the shipped set from disk and includes the known members', () => {
-    const t = availableTranslations();
+  it('availableTranslations derives the shipped set from disk and includes the known members', async () => {
+    const t = await availableTranslations();
     expect(t).toContain('kjv');
     expect(t).toContain('bsb');
     expect(t.length).toBeGreaterThanOrEqual(15);

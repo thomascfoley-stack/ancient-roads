@@ -48,8 +48,8 @@ afterAll(async () => {
 });
 
 describe.skipIf(!enabled)('draft check', () => {
-  it('anchors a draft in-process — detection live, no rows written, no spend', () => {
-    const { detection, ranges } = anchorDraft(DRAFT);
+  it('anchors a draft in-process — detection live, no rows written, no spend', async () => {
+    const { detection, ranges } = await anchorDraft(DRAFT);
     expect(ranges.some((r) => r.start <= 45008028 && r.end >= 45008028), JSON.stringify(ranges)).toBe(true);
     expect(detection.translation).toBeTruthy();
     expect(ranges.length).toBeLessThanOrEqual(DRAFT_MAX_RANGES);
