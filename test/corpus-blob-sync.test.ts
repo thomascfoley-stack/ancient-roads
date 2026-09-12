@@ -1,6 +1,7 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { planSync, walkDisk, CACHE_SECONDS, DEFAULT_ROOTS } from '../scripts/corpus-blob-sync.mjs';
 
@@ -68,9 +69,29 @@ describe('walkDisk + policy constants', () => {
     expect(walkDisk(dir, ['bible']).get('bible/kjv/gen.json')!.sha256).toBe(meta.sha256);
   });
 
-  it('commentaries carry the SHORT ttl — the quarantine backstop is policy, not accident', () => {
-    expect(CACHE_SECONDS.commentaries).toBeLessThanOrEqual(3_600);
+  it('commentaries carry the 5-minute ttl — the Blob metadata is the production Cache-Control', () => {
+    expect(CACHE_SECONDS.commentaries, 'commentaries must be 300 (5 min), matching web/next.config.ts')
+      .toBe(300);
     expect(CACHE_SECONDS.bible).toBeGreaterThan(CACHE_SECONDS.commentaries);
     expect(DEFAULT_ROOTS).toEqual(['bible', 'commentaries', 'original']);
+  });
+
+  it('commentaries TTL matches the next.config.ts headers() max-age — the two are a coherent pair', () => {
+    // External beforeFiles rewrites (absolute-URL destinations) cause Next.js to drop ALL
+    // accumulated headers() rules and proxy the upstream's response headers verbatim
+    // (resolve-routes.js returns resHeaders: null on the external-rewrite branch). So the
+    // /commentaries Cache-Control in next.config.ts is local-dev only; production serves
+    // CACHE_SECONDS.commentaries (set at Blob upload time). The two 300s MUST not drift.
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const nextConfig = readFileSync(path.join(here, '..', 'web', 'next.config.ts'), 'utf8');
+    const match = nextConfig.match(/source:\s*'\/commentaries\/:path\*'[\s\S]*?max-age=(\d+)/);
+    expect(match, 'no /commentaries/:path* Cache-Control with max-age found in next.config.ts')
+      .toBeTruthy();
+    const configMaxAge = Number(match![1]);
+    expect(configMaxAge,
+      `next.config.ts sets max-age=${configMaxAge} but CACHE_SECONDS.commentaries=${CACHE_SECONDS.commentaries}. ` +
+      'The two must match: the next.config rule is local-dev-only (external beforeFiles rewrites ' +
+      'drop headers()), so production serves CACHE_SECONDS.commentaries. They must not drift.')
+      .toBe(CACHE_SECONDS.commentaries);
   });
 });

@@ -16,7 +16,13 @@
 //     (scripts/corpus-cdn-parity.mjs), the hash-skip baseline, and the deploy-freshness input.
 //     A partial run keeps the old manifest — the next run simply re-uploads the difference.
 //   - Cache TTLs are a LICENSING decision (design §4.1): bible/original are stable PD text
-//     (30 days); commentaries can be quarantined (1 hour — the backstop if a sync is missed).
+//     (30 days); commentaries can be quarantined (5 minutes — the backstop if a sync is missed).
+//     The commentaries TTL is the only Cache-Control that reaches the browser in production:
+//     when CORPUS_CDN_BASE is set, web/next.config.ts rewrites /commentaries/:path* to this
+//     Blob store via a beforeFiles rewrite, and Next.js drops ALL headers() rules on external
+//     (absolute-URL) rewrite destinations, proxying the upstream's response headers verbatim.
+//     So the five-minute value here is the production-effective policy; the next.config rule
+//     is local-dev only (its max-age must match this constant — they are a coherent pair).
 //
 // USAGE (token via env, never printed):
 //   BLOB_READ_WRITE_TOKEN=… node scripts/corpus-blob-sync.mjs                  # dry-run, all roots
@@ -37,8 +43,14 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
 
 export const DEFAULT_ROOTS = ['bible', 'commentaries', 'original'];
-/** Per-root cache TTL, seconds. Commentaries stay SHORT: quarantine's backstop (design §4.1). */
-export const CACHE_SECONDS = { bible: 2_592_000, original: 2_592_000, commentaries: 3_600 };
+/**
+ * Per-root cache TTL, seconds. Commentaries stay SHORT: 5 minutes, so a re-synced (or
+ * quarantined) chapter is visible to readers before anyone files it as a defect. This is the
+ * production-effective Cache-Control for /commentaries/* — external beforeFiles rewrites in
+ * web/next.config.ts drop their headers() rules, so the Blob's upload-time metadata is what
+ * the browser actually receives. The next.config rule's max-age MUST equal this value.
+ */
+export const CACHE_SECONDS = { bible: 2_592_000, original: 2_592_000, commentaries: 300 };
 
 /** Pure planning core, unit-tested: disk state + previous manifest → the exact action set. */
 export function planSync(diskFiles, manifestFiles, prefix = '') {

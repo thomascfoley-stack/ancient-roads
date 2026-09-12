@@ -142,17 +142,22 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // THE SAME ARGUMENT, ON THE BIGGER FILE — with a SHORTER window. The commentary chapter
-        // /home fetches beside the devotionals is larger (p50 0.99 MB, p90 3.08 MB, 9.15 MB on the
-        // five Psalm-119 days) and carried no Cache-Control of its own in local dev. Two things
-        // the first draft got wrong (deep audit, 2026-09-07): in production these paths are
-        // REWRITTEN to the Blob store (`beforeFiles` below, when CORPUS_CDN_BASE is set), so
-        // "no Cache-Control at all" was a local measurement stated as a production fact — and the
-        // URLs are not content-hashed while the corpus is re-synced by script WITHOUT a deploy,
-        // so a day of freshness plus a week of stale-while-revalidate would hide a repaired
-        // chapter for eight days (the 2026-08-18 CDN-freshness deploy was this exact class). Five
-        // minutes fresh, an hour stale: enough to stop the per-visit revalidation, short enough
-        // that a re-sync is visible before anyone files it as a defect.
+        // LOCAL-DEV ONLY. The commentary chapter /home fetches beside the devotionals is larger
+        // (p50 0.99 MB, p90 3.08 MB, 9.15 MB on the five Psalm-119 days) and carried no
+        // Cache-Control of its own in local dev. This rule fixes that — but in production
+        // CORPUS_CDN_BASE triggers the beforeFiles rewrite below, and an external (absolute-URL)
+        // rewrite destination causes Next.js to drop ALL accumulated headers() rules and proxy the
+        // upstream's response headers verbatim (Next 16: resolve-routes.js returns resHeaders:
+        // null on the external-rewrite branch). So this Cache-Control only reaches a browser
+        // when the rewrite is OFF (local dev, served from web/public/commentaries/). The
+        // production commentaries TTL lives in scripts/corpus-blob-sync.mjs CACHE_SECONDS — the
+        // only Cache-Control the Blob store emits, set at upload time. @vercel/blob's put()
+        // supports only a numeric cacheControlMaxAge (not a raw Cache-Control string), so
+        // stale-while-revalidate below is local-dev-only too. The max-age here (300) MUST equal
+        // CACHE_SECONDS.commentaries — they are a coherent pair. The corpus is re-synced by
+        // script WITHOUT a deploy and the URLs are not content-hashed, so a long freshness would
+        // hide a repaired chapter for days. Five minutes fresh is short enough that a re-sync is
+        // visible before anyone files it as a defect.
         source: '/commentaries/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=300, stale-while-revalidate=3600' },
