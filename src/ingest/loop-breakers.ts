@@ -58,11 +58,24 @@ export interface LoopBreakerState {
   attempted: number;
   quarantined: number;
   stagedThisRun: number;
-  /** failure codes of quarantined works, in order — escalations never enter */
+  /** the current consecutive quarantine streak — escalations never enter, and
+   *  a non-quarantine outcome clears it (see `breakStreak`) */
   recentCodes: string[];
   elapsedMs: number;
   /** a work hit an exhausted provider rate limit this run (budget/rate breaker) */
   rateLimited?: boolean;
+}
+
+/**
+ * Clear the consecutive-failure streak. Call on every NON-quarantine outcome
+ * (success, an already-ingested skip, an embed-429 deferral, an unknown-code
+ * escalation, an adapter this loop doesn't run) so `recentCodes` reflects the
+ * current streak, not the run's quarantine history — otherwise scattered
+ * same-code quarantines read as "in a row" and `checkBreakers` HALTs a healthy
+ * sweep. Pure + synchronous so it can be watched in a test. (INGESTION_LOOP.md §4.)
+ */
+export function breakStreak(recentCodes: string[]): void {
+  recentCodes.length = 0;
 }
 
 /**
