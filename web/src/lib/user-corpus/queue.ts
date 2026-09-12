@@ -127,8 +127,43 @@ export async function reapExhausted(userId: string): Promise<number> {
  */
 async function processOne(userId: string, row: Row): Promise<DocStatus> {
   if (!row.blob_url) {
-    await setDocStatus(userId, row.id, 'failed', 'The uploaded file was not stored, so it cannot be parsed. Please upload it again.');
-    return 'failed';
+    // D11 race (DEEP_SWEEP): the claim's snapshot has blob_url NULL because the original upload's
+    // `setBlobPathname` threw, so the row exists with no bytes. BUT the heal path's
+    // `setBlobPathname` (documents.ts) is UNGUARDED — a concurrent re-upload CAN land `blob_url`
+    // on this very claimed row in the ~1-RTT gap between `claimNext` committing and this write.
+    // Failing on the stale snapshot leaves `status='failed'` + `parse_error='…was not stored…'` on
+    // a row whose bytes ARE now stored (and `blob_url` IS set) — a misleading amber message the
+    // user clears only by clicking "Try again", exactly the cosmetic this slice refuses.
+    //
+    // GUARD THE FAIL WITH `AND blob_url IS NULL RETURNING id`. It lands only when the row is
+    // genuinely still broken, so the normal (no race) case is unchanged. When a heal already set
+    // `blob_url`, the guard matches zero rows — that is the race detected — and instead of
+    // failing we DIRECTLY requeue: `requeueForRetry`'s CAS refuses a fresh claim (it saw A as the
+    // holder), which is exactly wrong here — A IS the holder and is relinquishing on purpose, so
+    // this UPDATE bypasses the CAS and drops back to 'queued'. The drain's own next `claimNext`
+    // re-selects this row (`status='queued'`, `claimed_at NULLS FIRST`) and re-processes it with
+    // the blob present, in the same loop. `attempts - 1` undoes `claimNext`'s `attempts + 1` so the
+    // race does not burn the document's budget on an attempt that never read the bytes.
+    const [updated] = await runAsUser(userId, (sql) => [
+      sql`UPDATE user_documents
+             SET status = 'failed',
+                 parse_error = 'The uploaded file was not stored, so it cannot be parsed. Please upload it again.',
+                 updated_at = now()
+           WHERE user_id = ${userId} AND id = ${row.id}
+             AND blob_url IS NULL
+           RETURNING id`,
+    ]);
+    if ((updated as unknown[]).length > 0) return 'failed';
+
+    await runAsUser(userId, (sql) => [
+      sql`UPDATE user_documents
+             SET status = 'queued', parse_error = NULL,
+                 claimed_at = NULL, attempts = attempts - 1,
+                 updated_at = now()
+           WHERE user_id = ${userId} AND id = ${row.id}
+             AND blob_url IS NOT NULL`,
+    ]);
+    return 'queued';
   }
 
   try {
