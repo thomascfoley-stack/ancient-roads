@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { requireUser, authFailureResponse } from '@/lib/session';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { checkHistorySearchRateLimit } from '@/lib/rate-limit';
+import { apiError } from '@/lib/api-error';
 import { searchHistory } from '@/lib/history-search-db';
 import { createHistoryThread } from '@/lib/history-threads';
 import { scheduleSearchOutcome } from '@/lib/search-outcomes';
@@ -48,10 +49,16 @@ export async function POST(req: Request): Promise<Response> {
 
   const rl = await checkHistorySearchRateLimit(userId);
   if (!rl.ok) {
-    return NextResponse.json(
-      { error: 'rate_limited', retryAfterSec: rl.retryAfterSec },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
-    );
+    // 'unavailable' = the limiter DB itself failed (fail-closed in rate-limit.ts) — surface it as
+    // 503 UPSTREAM_UNAVAILABLE, not 429, so a limiter outage isn't misclassified as a user quota
+    // hit by callers that branch on the status code. Same three-way split as /api/ask.
+    const code =
+      rl.limited === 'unavailable'
+        ? 'UPSTREAM_UNAVAILABLE'
+        : rl.limited === 'day'
+          ? 'RATE_LIMIT_DAY'
+          : 'RATE_LIMIT_MINUTE';
+    return apiError(code, { retryAfterSec: rl.retryAfterSec });
   }
 
   try {
