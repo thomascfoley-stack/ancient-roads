@@ -12,7 +12,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { announceSkip } from '../helpers/loud-skip';
 import { runAsUser } from '../../src/lib/db';
 import { createDocument, deleteDocument } from '../../src/lib/user-corpus/documents';
-import { anchorDraft, draftCheck, DRAFT_MAX_RANGES } from '../../src/lib/user-corpus/draft-check';
+import { anchorDraft, draftCheck, DRAFT_MAX_RANGES, DRAFT_MAX_OVERLAP_DOCS } from '../../src/lib/user-corpus/draft-check';
 import { corpusPredicate } from '../../src/lib/user-corpus/tradition-gap';
 import { LEGAL_CORPUS_FILTER } from '../../src/lib/teacher/routing';
 import { runtimeDbUrl } from '../helpers/env';
@@ -100,5 +100,120 @@ describe.skipIf(!enabled)('draft check', () => {
     for (const f of ['draft-check.ts', 'tradition-gap.ts', 'search.ts', 'bible-index.ts', 'anchor.ts', 'chunk.ts']) {
       expect(embedImporters, `${f} must not import the embedder`).not.toContain(f);
     }
+  });
+
+  it('every matching document surfaces when a passage is matched by several documents', async () => {
+    // The bug dropped documents past a raw-anchor-row cap. Two past sermons on the same verse both
+    // appear here — a regression guard that the per-document collapse includes EVERY matching
+    // document, not the ones whose first anchor row sorted under the cap.
+    for (const n of [1, 2]) {
+      const doc = await createDocument(USER, {
+        title: `Multi Sermon ${n}`, filename: `m${n}.txt`, byteSize: 1,
+        checksum: `${USER}-multi-${n}`, mimeType: 'txt',
+      });
+      created.push(doc.id);
+      await runAsUser(USER, (sql) => [
+        sql`INSERT INTO user_sections (document_id, user_id, ordinal, body)
+            VALUES (${doc.id}, ${USER}, 0, ${ROM828}) RETURNING id`,
+      ]).then(async ([rows]) => {
+        const sid = (rows as { id: string }[])[0]!.id;
+        await runAsUser(USER, (sql) => [
+          sql`INSERT INTO user_section_anchors (section_id, user_id, verse_id_start, verse_id_end, channel, match_count, confidence)
+              VALUES (${sid}, ${USER}, 45008028, 45008028, 'uncited', 5, 1.0)`,
+        ]);
+      });
+    }
+
+    const result = await draftCheck(USER, DRAFT, corpusPredicate(LEGAL_CORPUS_FILTER));
+    const overlap = result.overlaps.find((o) => o.range.start <= 45008028 && o.range.end >= 45008028);
+    expect(overlap, 'the overlap for the draft\'s own passage must surface').toBeTruthy();
+    const titles = overlap!.documents.map((d) => d.title);
+    expect(titles, 'both past sermons must appear — no document dropped').toContain('Multi Sermon 1');
+    expect(titles).toContain('Multi Sermon 2');
+    // The collapse emits one row per document — no anchor-row multiplication leaking through.
+    expect(new Set(overlap!.documents.map((d) => d.documentId)).size).toBe(overlap!.documents.length);
+    expect(overlap!.truncated, 'fewer docs than the cap is not truncated').toBe(false);
+  });
+
+  it('a range matching more documents than the cap is signalled as truncated, not silently cut', async () => {
+    // Three PAST sermons on the same verse, with the cap lowered to two. The third document is cut
+    // AFTER the per-document collapse — not before it — so the cut counts documents, and the
+    // response carries `truncated: true` rather than presenting two as the whole answer (the very
+    // honesty the route's DRAFT_MAX_CHARS refusal applies to the input, here on the output side).
+    for (const n of [1, 2, 3]) {
+      const doc = await createDocument(USER, {
+        title: `Trunc Sermon ${n}`, filename: `t${n}.txt`, byteSize: 1,
+        checksum: `${USER}-trunc-${n}`, mimeType: 'txt',
+      });
+      created.push(doc.id);
+      await runAsUser(USER, (sql) => [
+        sql`INSERT INTO user_sections (document_id, user_id, ordinal, body)
+            VALUES (${doc.id}, ${USER}, 0, ${ROM828}) RETURNING id`,
+      ]).then(async ([rows]) => {
+        const sid = (rows as { id: string }[])[0]!.id;
+        await runAsUser(USER, (sql) => [
+          sql`INSERT INTO user_section_anchors (section_id, user_id, verse_id_start, verse_id_end, channel, match_count, confidence)
+              VALUES (${sid}, ${USER}, 45008028, 45008028, 'uncited', 5, 1.0)`,
+        ]);
+      });
+    }
+
+    const result = await draftCheck(USER, DRAFT, corpusPredicate(LEGAL_CORPUS_FILTER), { maxOverlapDocs: 2 });
+    const overlap = result.overlaps.find((o) => o.range.start <= 45008028 && o.range.end >= 45008028);
+    expect(overlap, 'the overlap must surface even at the lowered cap').toBeTruthy();
+    expect(overlap!.documents.length, 'the cap is applied after the collapse').toBe(2);
+    expect(overlap!.truncated, 'three docs against a cap of two is truncated').toBe(true);
+  });
+
+  it('the default document cap is fifty — the voices-panel bound, on documents not anchor rows', () => {
+    // Guards the named constant against an accidental drift to a per-row count or an unbounded 0.
+    expect(DRAFT_MAX_OVERLAP_DOCS).toBe(50);
+  });
+});
+
+/**
+ * THE COLLAPSE-BEFORE-LIMIT SHAPE, CHECKED WHERE NO CREDENTIAL IS NEEDED.
+ *
+ * A2's behavioural proof (the >50-anchor-row drop) needs APP_DATABASE_URL + the bible asset, so it
+ * skips in CI — and until the 2026-09-07 false-confidence audit a skip there was reported as a pass.
+ * This is the cheap half, in the tradition-gap "the corpus fence is in the shipped statement" shape:
+ * it reads the source the query is built from and fails loudly if the collapse-before-limit shape is
+ * removed. It cannot prove the SQL WORKS — only the db-invariants run can — but it catches a review
+ * that reverts `verseDocScan` to raw rows + post-hoc collapse (the antipattern the hazard comment
+ * warns against) with no database anywhere.
+ */
+describe('the overlap LIMIT counts documents, not anchor rows (shipped shape)', () => {
+  function stripComments(s: string): string {
+    return s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  }
+
+  it('verseDocScan collapses to one row per document BEFORE the LIMIT', () => {
+    const src = stripComments(readFileSync(path.resolve(__dirname, '../../src/lib/user-corpus/search.ts'), 'utf8'));
+    const fnStart = src.indexOf('verseDocScan');
+    expect(fnStart, 'verseDocScan must exist in search.ts').toBeGreaterThanOrEqual(0);
+    // Slice the function up to the next top-level `export ` — robust against `${...}` braces in the
+    // SQL template, which a brace-matcher would have to special-case.
+    const nextExport = src.indexOf('\nexport ', fnStart);
+    const fn = nextExport === -1 ? src.slice(fnStart) : src.slice(fnStart, nextExport);
+
+    // SEED: revert verseDocScan to raw rows + a post-hoc JS collapse -> the DISTINCT ON is gone and
+    // this fails, because LIMIT goes back to counting anchors.
+    expect(fn, 'the collapse uses DISTINCT ON (s.document_id)').toMatch(/DISTINCT ON \(s\.document_id\)/);
+    const distinctIdx = fn.indexOf('DISTINCT ON (s.document_id)');
+    const limitIdx = fn.indexOf('LIMIT');
+    expect(distinctIdx, 'DISTINCT ON must be present').toBeGreaterThan(-1);
+    expect(limitIdx, 'LIMIT must be present').toBeGreaterThan(-1);
+    expect(distinctIdx, 'the collapse (DISTINCT ON) must precede the LIMIT — the hazard guard').toBeLessThan(limitIdx);
+    // DISTINCT ON requires the ORDER BY to lead with the same expression; this also proves the cut
+    // is not ordered primarily by verse position (the bug's bias).
+    expect(fn, 'ORDER BY must lead with s.document_id (DISTINCT ON requirement)').toMatch(/ORDER BY s\.document_id/);
+  });
+
+  it('draftCheck applies the cap AFTER the collapse and carries a truncation signal', () => {
+    const src = stripComments(readFileSync(path.resolve(__dirname, '../../src/lib/user-corpus/draft-check.ts'), 'utf8'));
+    expect(src, 'the overlap leg calls the per-document collapse').toMatch(/verseDocScan/);
+    expect(src, 'the old raw-anchor-row scan must no longer be the overlap leg').not.toMatch(/verseAnchorScan/);
+    expect(src, 'the leg over-fetches by one to detect truncation without a second round trip').toMatch(/maxOverlapDocs \+ 1/);
+    expect(src, 'DraftOverlap surfaces truncation rather than presenting a partial list as complete').toMatch(/truncated/);
   });
 });

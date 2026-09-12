@@ -156,6 +156,20 @@ export interface VersePresence {
 }
 
 /**
+ * One row per DOCUMENT — the collapse `verseAnchorScan` deliberately does NOT do, because the
+ * verse-presence surface renders anchor rows individually (channel + match_count per anchor, so
+ * "quoted at length" stays separable from "mentioned once"). The draft check answers a different
+ * question — "which of MY documents touch this passage" — so it collapses to documents here, in
+ * SQL, BEFORE any LIMIT.
+ */
+export interface VerseDocPresence {
+  documentId: string;
+  title: string;
+  channel: string;
+  matchCount: number | null;
+}
+
+/**
  * "Have I written on Romans 8?" — the presence fast path.
  *
  * AN INDEX LOOKUP, NEVER A VECTOR SCAN (§3). It answers a different question from the other two:
@@ -204,6 +218,60 @@ export async function verseAnchorScan(
     channel: r.channel,
     matchCount: r.match_count,
     confidence: Number(r.confidence),
+  }));
+}
+
+/**
+ * "Which of MY documents touch this passage?" — the presence fast path collapsed to ONE ROW PER
+ * DOCUMENT, strongest match kept, in SQL, BEFORE the LIMIT.
+ *
+ * ── THE MULTIPLICATION HAZARD (tradition-gap.ts's named one) ─────────────────────────────────────
+ * A section carries several anchor rows, so a plain join returns one row per ANCHOR and a LIMIT
+ * silently starts counting anchors instead of documents. `draftCheck` used to call
+ * `verseAnchorScan` with `{ limit: 50 }` and then collapse the survivors to documents in JS — so
+ * once a range produced more than 50 anchor rows, any document whose first anchor row sorted past
+ * the cut (ORDER BY a.verse_id_start, so sermons anchored later in a cited chapter were
+ * preferentially dropped) vanished from the answer with no error and no `truncated` flag.
+ *
+ * `DISTINCT ON (s.document_id)` collapses to one row per document inside the SQL, so the LIMIT
+ * counts DOCUMENTS — the same shape `tradition-gap.ts`'s `GROUP BY (author, work)` before `LIMIT`
+ * uses. `ORDER BY` must lead with the `DISTINCT ON` expression; the tiebreakers pick the row kept
+ * per document — strongest match first (`COALESCE(a.match_count, 0)`, so an explicit citation's
+ * NULL is treated as 0, exactly as `byDoc`'s `(h.matchCount ?? 0)` did), then lowest verse_id_start
+ * and ordinal to break ties the way the JS pass did (first in verse-position order wins).
+ */
+export async function verseDocScan(
+  userId: string,
+  range: VerseRange,
+  scope: SearchScope & { minMatchCount?: number } = {},
+): Promise<VerseDocPresence[]> {
+  const limit = clampLimit(scope.limit);
+  const doc = scope.documentId ?? null;
+  // NULL means "no floor": an explicit citation carries match_count NULL by design (migration 103),
+  // and a floor must not silently exclude every citation.
+  const minCount = scope.minMatchCount ?? null;
+
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`SELECT DISTINCT ON (s.document_id)
+               s.document_id, d.title, a.channel, a.match_count
+          FROM user_section_anchors a
+          JOIN user_sections  s ON s.id = a.section_id
+          JOIN user_documents d ON d.id = s.document_id
+         WHERE a.user_id = ${userId}
+           AND a.verse_id_start <= ${range.end}
+           AND a.verse_id_end   >= ${range.start}
+           AND (${doc}::text IS NULL OR s.document_id = ${doc}::text)
+           AND (${minCount}::int IS NULL OR a.match_count IS NULL OR a.match_count >= ${minCount}::int)
+         ORDER BY s.document_id, COALESCE(a.match_count, 0) DESC, a.verse_id_start, s.ordinal
+         LIMIT ${limit}`,
+  ]);
+  return (rows as {
+    document_id: string; title: string; channel: string; match_count: number | null;
+  }[]).map((r) => ({
+    documentId: r.document_id,
+    title: r.title,
+    channel: r.channel,
+    matchCount: r.match_count,
   }));
 }
 
