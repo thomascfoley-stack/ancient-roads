@@ -7,10 +7,13 @@
 // slots, so it displaces a correct voice rather than merely adding a wrong one — the
 // ADR-015 hijack class surviving in the un-corroborated numeric path.
 //
-// The dataset is the pre-registered n=36 adversarial set + n=31 genuine-citation controls
-// (evals/cases/reference_floors.yaml, frozen before the fix was written). The two known
-// residuals are named individually below rather than subtracted from a total, so a NEW
-// failure cannot hide inside a passing count.
+// The dataset is the n=43 adversarial set + n=38 genuine-citation controls
+// (evals/cases/reference_floors.yaml; the n=36 + n=31 base was frozen before the
+// fix was written; scanre-nc-037..043 + scanre-gc-032..038 extend the gate to the
+// common-noun aliases the original 6-word set omitted — false-floor suppression
+// AND genuine-citation recall). The two known residuals are named individually
+// below rather than subtracted from a total, so a NEW failure cannot hide inside
+// a passing count.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -31,8 +34,8 @@ const RULED_RESIDUAL = new Set(['scanre-nc-001', 'scanre-nc-007']);
 
 describe('SCAN_RE false-floor corroboration gate', () => {
   it('the frozen dataset is present and the expected size', () => {
-    expect(cases.filter((c) => c.expect.includes('floor_empty')).length).toBe(36);
-    expect(cases.filter((c) => c.expect.includes('floor_fires')).length).toBe(31);
+    expect(cases.filter((c) => c.expect.includes('floor_empty')).length).toBe(43);
+    expect(cases.filter((c) => c.expect.includes('floor_fires')).length).toBe(38);
   });
 
   for (const c of cases) {

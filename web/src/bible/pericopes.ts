@@ -142,17 +142,25 @@ function pericopesCorroborated(norm: string, matched: Array<{ alias: string }>):
 // non-citations floored on shipped code, and a false floor RESERVES the top two answer slots,
 // so it displaces a correct voice rather than merely adding a wrong one. These words therefore
 // follow the pericope rule instead: always inject, floor only when corroborated.
-// NOT tuned to the eval set — it is the intersection of the book aliases with common English
-// nouns, and every member is a book whose name is an everyday word.
+//
+// NOT an exhaustive intersection of book aliases with common nouns — it is the subset that
+// gates at zero frozen-eval cost (verified 65/67, same two known residuals nc-001/nc-007).
+// Deliberately excluded common nouns each need a design ruling, because gating breaks a bare
+// genuine-citation control: psalm (gc-021 "Psalm 23"), hebrews (gc-024 "Hebrews 11"), romans
+// (gc-019 "Romans 8 nothing can separate us"). genesis and revelation(s) are a joint-broken
+// pair: each is zero-cost alone (the other stays confident and corroborates), but gating BOTH
+// strips every confident span from gc-025 ("Genesis 1:1-3 and Revelation 22:20"). We gate
+// genesis; revelation(s) stay un-gated as a known residual (or vice-versa at equal zero cost).
 const AMBIGUOUS_BOOK_WORDS: ReadonlySet<string> = new Set([
   'mark', 'james', 'job', 'acts', 'numbers', 'kings',
+  'judges', 'song', 'proverbs', 'exodus', 'lamentations', 'psalms', 'genesis',
 ]);
 
 // Does the query carry biblical context BEYOND the ambiguous numeric matches themselves?
 // Mirrors pericopesCorroborated: a confident (non-ambiguous) reference corroborates, otherwise
 // a lexicon token must survive once the matched spans are cut out of the source text. A SECOND
-// ambiguous ref does NOT corroborate — these book words (mark/james/job/acts/numbers/kings) are
-// ordinary English nouns, so "mark 5 and james 2 insurance company" carries no biblical intent.
+// ambiguous ref does NOT corroborate — these book words are ordinary English nouns, so
+// "mark 5 and james 2 insurance company" carries no biblical intent.
 function numericsCorroborated(
   query: string,
   ambiguous: Array<{ start: number; end: number }>,

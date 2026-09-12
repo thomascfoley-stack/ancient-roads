@@ -171,6 +171,41 @@
   prompt: "2 kings 5 a side played on the common"
   expect: [floor_empty]
 
+# --- adversarial NON-citations: expanded common-noun book words (zero-cost additions) ---
+# judges/song/proverbs/exodus/lamentations/psalms/genesis are ordinary-English-noun book
+# aliases that were absent from the original 6-word gate and floored unconditionally.
+# Each prompt follows the same non-citation rule: the gated book word + digits in an
+# idiom, with NO biblical-lexicon token and NO pericope alias elsewhere. genesis and
+# revelation(s) are mutually exclusive to gate (joint-broken on gc-025); we gate genesis.
+- id: scanre-nc-037
+  suite: reference_floors
+  prompt: "the panel of judges 5 of them voted yes"
+  expect: [floor_empty]
+- id: scanre-nc-038
+  suite: reference_floors
+  prompt: "my favorite song 5 on the album is great"
+  expect: [floor_empty]
+- id: scanre-nc-039
+  suite: reference_floors
+  prompt: "the proverbs 5 of them were about wisdom"
+  expect: [floor_empty]
+- id: scanre-nc-040
+  suite: reference_floors
+  prompt: "the exodus 5 of them fled the city overnight"
+  expect: [floor_empty]
+- id: scanre-nc-041
+  suite: reference_floors
+  prompt: "her lamentations 5 days into the mourning period"
+  expect: [floor_empty]
+- id: scanre-nc-042
+  suite: reference_floors
+  prompt: "the psalms 5 of them were sung at the funeral"
+  expect: [floor_empty]
+- id: scanre-nc-043
+  suite: reference_floors
+  prompt: "the genesis 5 of the events that shaped the year"
+  expect: [floor_empty]
+
 # --- genuine citations: gated book word WITH biblical corroboration (must KEEP flooring) ---
 - id: scanre-gc-001
   suite: reference_floors
@@ -297,4 +332,40 @@
 - id: scanre-gc-031
   suite: reference_floors
   prompt: "Nehemiah 8 the reading of the law"
+  expect: [floor_fires]
+
+# --- genuine citations: EXPANDED common-noun gate words WITH biblical corroboration ---
+# Recall controls for the 7 newly gated aliases (judges/song/proverbs/exodus/
+# lamentations/psalms/genesis). Each gates behind corroboration now, so the prompt
+# carries a surviving BIBLICAL_LEXICON token OUTSIDE the matched numeric span that
+# must still earn the floor: deborah, solomon, lord, moses, jerusalem, god. Verifies
+# the gate suppresses idiomatic false floors (nc-037..nc-043) WITHOUT losing genuine
+# citation recall.
+- id: scanre-gc-032
+  suite: reference_floors
+  prompt: "Judges 5 the song of Deborah and Barak"
+  expect: [floor_fires]
+- id: scanre-gc-033
+  suite: reference_floors
+  prompt: "Song 1 Solomon wrote about love"
+  expect: [floor_fires]
+- id: scanre-gc-034
+  suite: reference_floors
+  prompt: "Proverbs 1 the fear of the Lord is the beginning of knowledge"
+  expect: [floor_fires]
+- id: scanre-gc-035
+  suite: reference_floors
+  prompt: "Exodus 14 Moses crosses the sea"
+  expect: [floor_fires]
+- id: scanre-gc-036
+  suite: reference_floors
+  prompt: "Lamentations 1 Jeremiah mourns for Jerusalem"
+  expect: [floor_fires]
+- id: scanre-gc-037
+  suite: reference_floors
+  prompt: "Psalms 23 the Lord is my shepherd"
+  expect: [floor_fires]
+- id: scanre-gc-038
+  suite: reference_floors
+  prompt: "Genesis 1 God created the heavens and the earth"
   expect: [floor_fires]
