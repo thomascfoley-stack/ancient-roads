@@ -1,15 +1,15 @@
 #!/usr/bin/env tsx
-// CLI: parse WEB USFM files → static verse-counts module + verse JSON for the reader.
+// CLI: parse WEB USFM files → static verse-counts module.
 //
 // Usage:  pnpm ingest:web
 //         tsx src/ingest/ingest-web.ts [usfm-dir]
 //
 // Defaults to data/raw/web-usfm/ in the repo root.
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseUsfmDir, computeVerseCounts, type ParsedVerse } from './usfm';
+import { parseUsfmDir, computeVerseCounts } from './usfm';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..', '..');
@@ -47,37 +47,7 @@ export { COUNTS as RAW_VERSE_COUNTS };
 writeFileSync(countsPath, countsModule);
 console.log(`  Wrote ${countsPath}`);
 
-// 2. Verse JSON grouped by book/chapter for the reader.
-// Structure: data/web/{bookSlug}/{chapter}.json = { verses: [{verse, text}] }
 import { BOOKS } from '../bible/books';
-
-const slugByNum = new Map(BOOKS.map((b) => [b.bookNum, b.slug]));
-const webDataDir = join(root, 'data', 'web');
-
-const byBookChapter = new Map<string, ParsedVerse[]>();
-for (const v of verses) {
-  const key = `${v.book}:${v.chapter}`;
-  const arr = byBookChapter.get(key);
-  if (arr) arr.push(v);
-  else byBookChapter.set(key, [v]);
-}
-
-let fileCount = 0;
-for (const [key, chVerses] of byBookChapter) {
-  const [bookStr, chapStr] = key.split(':');
-  const slug = slugByNum.get(Number(bookStr));
-  if (!slug) continue;
-  const dir = join(webDataDir, slug);
-  mkdirSync(dir, { recursive: true });
-  const payload = {
-    book: Number(bookStr),
-    chapter: Number(chapStr),
-    verses: chVerses.map((v) => ({ verse: v.verse, text: v.text })),
-  };
-  writeFileSync(join(dir, `${chapStr}.json`), JSON.stringify(payload));
-  fileCount++;
-}
-console.log(`  Wrote ${fileCount} chapter JSON files to ${webDataDir}`);
 
 // 3. Validate: every book in BOOKS has data, every chapter is covered
 let missingBooks = 0;
