@@ -1,4 +1,4 @@
-import { getAuth } from './auth/neon-auth';
+import { getSessionAuth } from './auth/neon-auth';
 import { markActiveDay } from './active-day';
 import { AuthServiceUnavailableError, isAuthServiceUnavailable, authFailureResponse } from './auth-failure';
 export { AuthServiceUnavailableError, isAuthServiceUnavailable, authFailureResponse };
@@ -11,17 +11,18 @@ export { AuthServiceUnavailableError, isAuthServiceUnavailable, authFailureRespo
 async function session() {
   // NOT `.api.getSession({ headers })` -- that was Better Auth's shape. Neon Auth's `getSession()`
   // reads the request cookie itself (via next/headers under the hood) and returns `{ data }`,
-  // not the session directly.
+  // not the session directly. getSessionAuth(), not getAuth(): this runs inside page renders,
+  // and getAuth()'s cookie writes throw there (see neon-auth.ts).
   // D43: an errored call is NOT an absent session. Two shapes have to be caught, and the first
   // version of this fix only caught one:
   //   * `{ data: null, error }` — the SDK's normalised upstream failure;
-  //   * a THROW — getAuth() itself raises on misconfiguration ("NEON_AUTH_BASE_URL is not set"),
+  //   * a THROW — getSessionAuth() itself raises on misconfiguration ("NEON_AUTH_BASE_URL is not set"),
   //     which is not a session state at all. Observed in the browser leg for this branch: with
   //     that variable unset every route answered 401, i.e. told the reader they were signed out
   //     because the SERVER was misconfigured. Exactly the conflation D43 exists to end.
   let data: unknown;
   try {
-    const res = (await getAuth().getSession()) as { data: unknown; error?: unknown };
+    const res = (await getSessionAuth().getSession()) as { data: unknown; error?: unknown };
     if (res.error) throw new AuthServiceUnavailableError(res.error);
     data = res.data;
   } catch (e) {

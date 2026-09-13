@@ -8,15 +8,19 @@ import Link from 'next/link';
 // whole app with Next's stock error screen on failure: no shell, no navigation, no way
 // back. This keeps the reader inside the app and gives them a retry.
 //
-// The message is deliberately not the exception text. `reset()` re-runs the failed render,
-// which is the right first move for a transient DB or network fault.
+// The message is deliberately not the exception text.
+//
+// `retry()`, not `reset()`. `reset()` only clears the boundary and re-renders what the client
+// already holds; when the failure came from the server (almost always, here) that is the same
+// failed payload, so the error page came straight back and "Try again" looked dead (production,
+// 2026-09-13). `retry()` re-fetches the segment from the server first.
 
 export default function AppError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   useEffect(() => {
     // Server-side causes are already logged where they happened; this catches the client
@@ -37,7 +41,7 @@ export default function AppError({
             hairline that fills on hover; secondary steps down to ink-wash. */}
         <button
           type="button"
-          onClick={reset}
+          onClick={retry}
           className="inline-flex min-h-[44px] items-center border border-stone-900 bg-transparent px-6 text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-900"
         >
           Try again
