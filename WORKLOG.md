@@ -1,5 +1,83 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-13 — LIVE `3dc76f2`: next 16.3.5 + 17 Detail fixes (`dpl_DZ8TL4PYZcmjNh4L8TSHjW6ugTAc`)
+
+**Why.** Three advisories published against the shipped versions turned `deps` red on `main` and
+on every PR: GHSA-p293-qw3h-jr36 and GHSA-2xp9-vwfh-vxw4 (next, critical, fixed ≥16.3.3),
+GHSA-rgj7-g3m4-5g8c (sharp, high, ≥0.35.4). On 2026-09-12 Detail opened 28 PRs (#287–#314) and
+pushed its own copy of the bump into each: 83 CI runs, 68 red — the advisory, then stale web
+lockfiles, then db-invariants timeouts from 28 concurrent runs. None was a code regression.
+
+**What shipped.**
+- **#317**: next / eslint-config-next 16.3.5, sharp 0.35.4. Production had been on **16.3.2**, not
+  16.2.12: `web/package-lock.json` (what Vercel installs) had drifted ahead of the pnpm tree.
+- **#318**: the fix commits only (dep commits dropped) of 17 Detail PRs — #244 #245 #251 #252 #253
+  #288 #290 #292 #294 #295 #296 #300 #301 #302 #307 #309 #312. Each reviewed by an agent that
+  did not write it: bug confirmed on `main`, the PR's tests red on `main` and green with the fix.
+  Per-PR counts are in #318's body.
+- **`3dc76f2`**: `web/next-env.d.ts` gains the `root-params.d.ts` import that 16.3.5's build writes.
+  The first attempt to deploy `f8c2b544` was refused by deploy.sh's second clean-tree check for
+  exactly that file; nothing was uploaded.
+
+**Evidence.**
+```
+docs/evidence/deploys/deploy-3dc76f2-2026-09-13T17-40-37Z.txt
+sha:             3dc76f2031a7442df2ecab226c3ae96d28c4fad6
+deployment_id:   dpl_DZ8TL4PYZcmjNh4L8TSHjW6ugTAc
+alias_serves:    dpl_DZ8TL4PYZcmjNh4L8TSHjW6ugTAc
+state:           live
+vercel build:    ▲ Next.js 16.3.5 (Turbopack)
+```
+Shipped bytes: the JS chunks named by `/gate` (public per the middleware matcher), grepped for
+#301's setting `advanced_disable_feature_flags:!0`:
+```
+BEFORE  dpl_2S3qFezZaS32CuWScxsiKcr3mwYc (6dcd674f): 0 chunks
+AFTER   dpl_DZ8TL4PYZcmjNh4L8TSHjW6ugTAc (3dc76f2):  1 chunk — …ions:!0,sanitize_properties:a,advanced_disable_feature_flags:!0})…
+```
+CI: #317 audit ✓; db-invariants ✗ on attempt 1 (`licensing.test.ts` 30 s timeout — never ran) and ✓
+on attempt 2 (executed, 16.7 s; 1,295 passed). #318 both jobs ✓ first run. Local `scripts/audit.sh`
+on the batch: root 1,142 / web 2,131 / qa 35 passed. `next build` 16.3.5 vs 16.3.2: same routes,
+same three warnings. Prod corpus untouched (read-only, 2026-09-13: 672 published / 182 staged /
+4 quarantined; 671 of 672 serving; 0 embedding rows written 2026-09-12).
+
+**Detail backlog still open, with the review verdict** (six independent reviewers, 2026-09-13):
+
+| PR | Verdict | Needs |
+|---|---|---|
+| #243 | partial | reword per route: voices logs a failed doc as `pending`; draft logs hit/empty/error only |
+| #254 | correct | a visible disabled style on the gated × buttons |
+| #255 | partial | offline recolour: the retry is refused as "a newer edit arrived" when none did; the new colour is never saved |
+| #287 | owner call, close | stops floors for "Genesis 1:1", "Proverbs 3:5-6", "Exodus 20"; edits the frozen `reference_floors.yaml`; W-SCANRE already shipped (290b2492) |
+| #289 | correct | drop `e0b81fdd` (CI skip-name change; conflicts with #303) |
+| #291 | owner call | see NOT DONE; if real, make CDN 5xx/network errors retryable before merging |
+| #293 | not a bug | Next remounts the page on a segment change; close |
+| #297 | correct | browser check; `work-reader.tsx` has the same shape and is untouched |
+| #298 | owner call, close for now | the 1 h Blob TTL is the documented quarantine bound (CORPUS_CDN_DESIGN §4.1/§4.4); read prod `Cache-Control` first |
+| #299 | partial | order by match strength before the LIMIT |
+| #303 | partial | nouns carry the same state/gender bug; split out `bd390e24`'s CI label change |
+| #304 | partial | `signal?.throwIfAborted()`: Next aborts with `ResponseAborted`, not `AbortError` |
+| #305 | partial | `ff` ranges (end 999) lose their `#v` anchor; add an `ff` test |
+| #306 | not a bug | close |
+| #308 | partial | a save that fails after its block is removed re-lights "Save failed" |
+| #310 | correct, weak tests | a behaviour test that three real consecutive quarantines still HALT |
+| #311 | partial | suffix accepted after a bare chapter: "my seat is 12b" floors Isaiah 12 |
+| #313 | partial | the generic catch (`upload-complete/route.ts:233`) still deletes the live blob |
+| #314 | partial | a floor for zero chapters written / a missing book, as `adapter-helloao` has |
+
+#315 and #316 (opened 2026-09-13) are not reviewed.
+
+**NOT DONE / UNVERIFIED**
+- Browser check (390px + desktop) of the three shipped UI fixes #251, #300, #309 — component-tested only.
+- **#291: uploads may fail in production since the 2026-08-15 corpus-CDN move.** The drain reads
+  `public/bible` from disk and `web/.vercelignore` excludes it. Contradicted by this file's
+  2026-08-24 probe upload reaching `ready`. Prod holds no `user_documents` after 2026-08-06 other
+  than that deleted probe, so nothing has exercised it since. Settled by one owner upload.
+- Found in review, no PR: Hebrew noun state decoded as gender ("common" for construct, ~57k
+  morphemes); `voices/route` reports failed docs as still indexing; `ask/stream/route.ts:191` logs
+  every Stop as a teacher error; ref-parse elides the chapter after a whole-chapter segment
+  ("Romans 8, 8:28-39" → "Romans 8, 28–39").
+- MASTER.md's W-SCANRE line still reads "in progress"; it shipped in 290b2492.
+
 ## 2026-09-07 — rail row marks: one rule, and the custom sections hidden (ADR-124)
 
 **The owner's first signed-in look at Sidebar C**, which no agent can take (sign-in is owner-only),
