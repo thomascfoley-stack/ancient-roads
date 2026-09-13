@@ -27,6 +27,7 @@ vi.mock('@/lib/active-day', () => ({ markActiveDay: vi.fn() }));
 import { currentUser, AuthServiceUnavailableError } from '@/lib/session';
 
 const TOKEN = '__Secure-neon-auth.session_token';
+const SESSION_DATA = '__Secure-neon-auth.local.session_data';
 const ENV_KEYS = ['NEON_AUTH_BASE_URL', 'NEON_AUTH_COOKIE_SECRET'] as const;
 let saved: Record<string, string | undefined>;
 
@@ -43,9 +44,12 @@ function upstream(body: unknown, setCookie: string) {
 }
 
 const USER = { id: 'u-1', email: 'reader@example.com' };
+// Complete enough for the SDK's parseSessionData, so a refresh also takes the second write path
+// (minting the session_data cache cookie), not just the session_token one.
+const NOW = '2026-09-13T00:00:00.000Z';
 const REFRESHED = {
-  session: { id: 's-1', userId: USER.id, token: 'fresh', expiresAt: '2099-01-01T00:00:00.000Z' },
-  user: USER,
+  session: { id: 's-1', userId: USER.id, token: 'fresh', expiresAt: '2099-01-01T00:00:00.000Z', createdAt: NOW, updatedAt: NOW },
+  user: { ...USER, createdAt: NOW, updatedAt: NOW },
 };
 
 beforeEach(() => {
@@ -77,26 +81,34 @@ describe('session check during a page render', () => {
   });
 
   it('any other cookie-write failure still surfaces', async () => {
-    request.cookies = { set: () => { throw new Error('disk on fire'); } };
+    const boom = new Error('disk on fire');
+    request.cookies = { set: () => { throw boom; } };
     vi.stubGlobal('fetch', upstream(REFRESHED, `${TOKEN}=fresh; Path=/`));
-    await expect(currentUser()).rejects.toBeInstanceOf(AuthServiceUnavailableError);
+    const err = await currentUser().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(AuthServiceUnavailableError);
+    expect((err as Error).cause).toBe(boom);
   });
 
+  // A guard, not a red-proof of this fix: it passes on the old instance too. It pins that the new
+  // instance still turns an unreachable auth server into D43's outage error rather than null.
   it('an unreachable auth server is still an outage, not a signed-out reader (D43)', async () => {
     request.cookies = pageRenderCookies();
     vi.stubGlobal('fetch', vi.fn(async () => {
       throw new TypeError('fetch failed', { cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }) });
     }));
-    await expect(currentUser()).rejects.toBeInstanceOf(AuthServiceUnavailableError);
+    const err = await currentUser().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(AuthServiceUnavailableError);
+    expect((err as Error).cause).toMatchObject({ status: 502 });
   });
 });
 
 describe('session check in a route handler', () => {
-  it('still writes the refreshed cookie', async () => {
+  it('still writes the refreshed cookie and the session_data cache cookie', async () => {
     const jar = new ResponseCookies(new Headers());
     request.cookies = jar;
     vi.stubGlobal('fetch', upstream(REFRESHED, `${TOKEN}=fresh; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax`));
     await expect(currentUser()).resolves.toEqual(USER);
     expect(jar.get(TOKEN)?.value).toBe('fresh');
+    expect(jar.get(SESSION_DATA)?.value).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/); // a signed JWT
   });
 });
