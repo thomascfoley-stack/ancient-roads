@@ -234,6 +234,66 @@ describe('ranges and sequences', () => {
   });
 });
 
+describe('formatDisplay — cross-chapter sequence regression (3e1eee08)', () => {
+  // `formatDisplay` carries chapter context across comma-separated segments via
+  // `prevChapter = seg.endChapter ?? seg.chapter` and elides a later segment's
+  // start chapter when it equals the carried chapter. That elision is right for
+  // same-chapter continuations ("5:1-6:2, 6:3-6:4" → "5:1–6:2, 3–4"), but a
+  // segment that is ITSELF a cross-chapter range (C:V–C2:V2) whose start chapter
+  // equals prevChapter was elided too, emitting `${verseStart}–${endChapter}:${verseEnd}`
+  // — a half-abbreviated, non-canonical string whose end chapter has no home.
+  //
+  // This is not cosmetic: the my-works search box POSTs `parsed.ref.display` to
+  // /api/user-corpus/search, which re-parses it server-side (route.ts:131). The
+  // buggy "John 5:1–6:2, 3–7:4" is rejected there (the orphan "3–7:4" tail matches
+  // no grammar arm — it lacks the leading `C:` of `C:V-C2:V2`), surfacing as a 400
+  // "Could not read … as a passage." The fix: a cross-chapter segment always
+  // shows its start chapter, so same-chapter elision survives only where valid.
+
+  it('shows the start chapter on a later cross-chapter range segment', () => {
+    // SEED: revert to `showChapter = first || seg.chapter !== prevChapter` (drop the
+    //   `|| isCrossChapter` arm) -> these go RED: 'John 5:1–6:2, 3–7:4' and '…, 3–5:1'.
+    expect(display('John 5:1-6:2, 6:3-7:4')).toBe('John 5:1–6:2, 6:3–7:4');
+    expect(display('John 3:16-4:2, 4:3-5:1')).toBe('John 3:16–4:2, 4:3–5:1');
+  });
+
+  it('preserves same-chapter elision for genuine same-chapter continuations', () => {
+    // The fix must not over-show chapters: a following segment within the carried
+    // chapter still drops its chapter number. This is the control that proves the
+    // elision logic the bug mis-applied is still intact where it is correct.
+    expect(display('John 5:1-6:2, 6:3-6:4')).toBe('John 5:1–6:2, 3–4');
+    expect(display('john 3:16, 18-20, 4:2')).toBe('John 3:16, 18–20, 4:2');
+  });
+
+  it('edge: a same-chapter segment then a cross-chapter range starting at that chapter', () => {
+    // The trigger is the carried chapter state, not a chained cross-chapter range:
+    // a plain verse segment followed by a cross-chapter range whose start chapter
+    // equals it elided before the fix too.
+    expect(display('john 5:3, 5:1-6:2')).toBe('John 5:3, 5:1–6:2');
+  });
+
+  it('three chained cross-chapter segments each show their start chapter', () => {
+    expect(display('John 3:16-4:2, 4:3-5:1, 5:2-6:1')).toBe(
+      'John 3:16–4:2, 4:3–5:1, 5:2–6:1',
+    );
+  });
+
+  it('first-segment cross-chapter ranges are unchanged (the first flag forces the chapter)', () => {
+    // Already-pinned canonical form; the fix never touches a first segment, where
+    // `first === true` already forces showChapter. Asserted here as a same-block
+    // guard that the carried-chapter logic only changes later segments.
+    expect(display('jn 3:16-4:2')).toBe('John 3:16–4:2');
+  });
+
+  it('round-trips: the buggy display is rejected, the fixed display parses', () => {
+    // Why the bug was a functional 400, not just a wrong label: the my-works route
+    // re-parses the display it is sent. The buggy "3–7:4" tail matches no grammar
+    // arm (it lacks a leading C:), so parseRef rejects it; the canonical form parses.
+    expect(parseRef('John 5:1–6:2, 3–7:4').ok).toBe(false);
+    expect(parseRef('John 5:1–6:2, 6:3–7:4').ok).toBe(true);
+  });
+});
+
 describe('rejects, never guesses', () => {
   it('unknown book', () => {
     expect(reject('foo 3:16').reason).toContain('Unknown book');

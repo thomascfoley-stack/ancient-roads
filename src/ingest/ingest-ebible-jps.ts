@@ -33,6 +33,68 @@ const SRC = arg('--src') ?? '/tmp/ap-bibles/jps-usfm';
 const ID = 'jps';
 const OUT = `web/public/bible/${ID}`;
 
+// ── CANON-EXACT PROOF (extracted for direct testing) ──
+//
+// The whole premise of using this pre-mapped source. A pre-mapped claim is a
+// hypothesis until the counts agree (THE_LOOP rule 4); this is the ingest-time
+// gate that PROVES the result is canon-exact before anything is written.
+//
+// The accumulator is a per-chapter ROW COUNT plus the SET of seen verse numbers,
+// not a max verse number. Math.max(verseNums) only equals the count when every
+// integer 1..N appears exactly once — an assumption the original proof made
+// silently and never verified. That blind spot passed chapters with an interior
+// gap (e.g. 1..4,6..8) or a duplicated verse number (e.g. two \v 4 rows) because
+// max is insensitive to both. Counting rows catches any net mismatch; the
+// seen-set contiguity check catches the offset case where a gap and a duplicate
+// in the same chapter cancel out (count == canon but a number in 1..canon is
+// missing). Exported so the proof can be exercised against known-bad fixtures
+// without standing up a USFM tree or the gitignored KJV corpus.
+export interface CanonOtBook { book: number; slug: string; verses: number[] }
+
+export function canonExactDiffs(
+  verses: { book: number; chapter: number; verse: number }[],
+  canonOt: CanonOtBook[],
+): string[] {
+  const diffs: string[] = [];
+  const byBook = new Map<number, Map<number, { count: number; seen: Set<number> }>>();
+  for (const v of verses) {
+    const chs = byBook.get(v.book) ?? new Map<number, { count: number; seen: Set<number> }>();
+    const cur = chs.get(v.chapter) ?? { count: 0, seen: new Set<number>() };
+    cur.count++;
+    cur.seen.add(v.verse);
+    chs.set(v.chapter, cur);
+    byBook.set(v.book, chs);
+  }
+  for (const cb of canonOt) {
+    const got = byBook.get(cb.book);
+    if (!got) { diffs.push(`${cb.slug}: book absent from source`); continue; }
+    if (got.size !== cb.verses.length) {
+      diffs.push(`${cb.slug}: ${got.size} chapters vs canon ${cb.verses.length}`);
+      continue;
+    }
+    for (let ch = 1; ch <= cb.verses.length; ch++) {
+      const want = cb.verses[ch - 1]!;
+      const g = got.get(ch);
+      if (!g || g.count !== want) {
+        diffs.push(`${cb.slug} ${ch}: ${g?.count ?? 0} verse rows vs canon ${want}`);
+        continue;
+      }
+      // Counts agree — still reject a verse missing from 1..want: a gap and an
+      // exactly-offsetting duplicate in the same chapter cancel out (count ==
+      // want but a number is absent). max() would pass this; the seen-set does not.
+      for (let n = 1; n <= want; n++) {
+        if (!g.seen.has(n)) {
+          diffs.push(`${cb.slug} ${ch}: missing verse ${n}`);
+          break;
+        }
+      }
+    }
+  }
+  const ntBooks = verses.filter((v) => v.book >= 40);
+  if (ntBooks.length > 0) diffs.push(`source unexpectedly contains NT verses (${ntBooks.length}) — wrong artifact?`);
+  return diffs;
+}
+
 function main() {
   if (!existsSync(SRC)) {
     throw new Error(`source dir ${SRC} absent — fetch https://ebible.org/Scriptures/engjps_usfm.zip and unzip it there first`);
@@ -50,27 +112,7 @@ function main() {
   // ── CANON-EXACT PROOF — the whole premise of using this source. ──
   const canon = loadKjvCanon();
   const canonOt = canon.filter((b) => b.book <= 39);
-  const diffs: string[] = [];
-  const byBook = new Map<number, Map<number, number>>(); // book -> ch -> verse count
-  for (const v of verses) {
-    const chs = byBook.get(v.book) ?? new Map<number, number>();
-    chs.set(v.chapter, Math.max(chs.get(v.chapter) ?? 0, v.verse));
-    byBook.set(v.book, chs);
-  }
-  for (const cb of canonOt) {
-    const got = byBook.get(cb.book);
-    if (!got) { diffs.push(`${cb.slug}: book absent from source`); continue; }
-    if (got.size !== cb.verses.length) {
-      diffs.push(`${cb.slug}: ${got.size} chapters vs canon ${cb.verses.length}`);
-      continue;
-    }
-    for (let ch = 1; ch <= cb.verses.length; ch++) {
-      const g = got.get(ch) ?? 0;
-      if (g !== cb.verses[ch - 1]) diffs.push(`${cb.slug} ${ch}: ${g} verses vs canon ${cb.verses[ch - 1]}`);
-    }
-  }
-  const ntBooks = verses.filter((v) => v.book >= 40);
-  if (ntBooks.length > 0) diffs.push(`source unexpectedly contains NT verses (${ntBooks.length}) — wrong artifact?`);
+  const diffs = canonExactDiffs(verses, canonOt);
   if (diffs.length > 0) {
     throw new Error(`CANON MISMATCH — NOT canon-exact, refusing to write:\n  ${diffs.slice(0, 20).join('\n  ')}`);
   }
@@ -105,4 +147,6 @@ function main() {
   }
 }
 
-main();
+if (process.argv[1] && /ingest-ebible-jps/.test(process.argv[1])) {
+  main();
+}

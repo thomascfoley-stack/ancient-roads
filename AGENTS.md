@@ -101,9 +101,14 @@ rediscovering them. Do not duplicate their content here - go read them.
   Pushing many PR branches at once puts that many runs in flight and the provider refuses:
   `You have exceeded the limit of concurrently active endpoints`. The runs go red for a reason
   that has nothing to do with the code, which is the worst kind of red — it looks exactly like a
-  test failure. Re-run in small batches (3 at a time held the cap on 2026-09-07). MASTER's Lane F
-  row F3 carries this as an open unknown, "Neon branch cap NOT READ"; this is what reading it
-  looks like.
+  test failure. Re-run in small batches (3 at a time held the Neon provider cap on
+  2026-09-07), but a separate DB-contention bottleneck hits the heavy suites
+  (tradition-gap, register-end-to-end, licensing, section-vector-pairing): they time out
+  under any concurrency and only pass when their run is the only one in the account. For a
+  backlog too large to clear one at a time, building the exact resulting tree and running
+  the full gate on it uncontended was the cheaper path. MASTER's Lane F row F3 carries
+  this as an open unknown, "Neon branch cap NOT READ"; this is what reading it looks
+  like.
 - One agent per working tree for anything that deploys or writes a database. Concurrent
   sessions have shipped each other's half-finished work here before (2026-07-12) and clobbered
   cutover checkpoints (2026-07-27). The guards exist, but do not lean on them.

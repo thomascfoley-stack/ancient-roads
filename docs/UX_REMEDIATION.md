@@ -3013,9 +3013,11 @@ error on the cover costs more credibility than it should.
   open of `/ask/[id]`; iterate newest-first or chunk past `LOCATE_SECTIONS_MAX`.
 - `web/test/work-locate-sections-db.test.ts` sits outside the `db-invariants` CI globs
   (`test/invariants/`, `test/user-corpus/`), so the SQL executes only on a developer machine.
-- `test/publish-flip-toolchain.test.ts` runs `scripts/publish-flip.mjs` without `--evidence`, which
+- ~~`test/publish-flip-toolchain.test.ts` runs `scripts/publish-flip.mjs` without `--evidence`, which
   writes `flip-run-*.log` residue into the TRACKED `docs/evidence/work-order-v2-stage2/` on every
-  `npm run audit` — and `deploy.sh` then refuses the dirty tree. Point the test at a temp dir.
+  `npm run audit` — and `deploy.sh` then refuses the dirty tree. Point the test at a temp dir.~~
+  **CLOSED 2026-09-07** (`25ec4479`, `redesign/ask`): the test passes `--evidence=<tmp>` into the
+  harness's own temp dir; the comment at the callsite records both the §9 filing and the fix.
 - Dead `small-caps` class (never defined) still on `app/studies/page.tsx` and `plans-client.tsx`.
 - `SLOW_ANSWER_NOTICE_MS = 90_000` still derives from the n=3 dev-local series; two production
   series now exist (owner's call).

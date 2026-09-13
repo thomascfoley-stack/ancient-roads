@@ -55,8 +55,15 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
         return;
       }
       if (res.status === 429) {
-        const b = (await res.json()) as { retryAfterSec?: number };
-        setState({ kind: 'limited', retryAfterSec: b.retryAfterSec ?? 60 });
+        // The route now answers via apiError(), so retryAfterSec lives under `error.retryAfterSec`
+        // (api-error.ts:55), not the top level. Read both the envelope and the legacy top-level
+        // shape, then fall back to the Retry-After header, then the 60s cap. A bare
+        // `Number(res.headers.get('Retry-After')) ?? 60` would silently drop to 0 on an absent
+        // header — `Number(null) === 0`, and `0 ?? 60 === 0` — so the header is gated on > 0.
+        const b = (await res.json()) as { error?: { retryAfterSec?: number }; retryAfterSec?: number };
+        const headerSec = Number(res.headers.get('Retry-After'));
+        const retryAfterSec = b.error?.retryAfterSec ?? b.retryAfterSec ?? (Number.isFinite(headerSec) && headerSec > 0 ? headerSec : 60);
+        setState({ kind: 'limited', retryAfterSec });
         return;
       }
       if (!res.ok) { setState({ kind: 'error', message: 'History search is unavailable right now.' }); return; }

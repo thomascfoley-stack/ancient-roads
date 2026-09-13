@@ -66,6 +66,35 @@ describe('posthog wiring — analytics must not be embedded in the product', () 
     expect(CLIENT, 'replay records rendered page text, not just inputs').toMatch(/disable_session_recording:\s*true/);
   });
 
+  it('the client disables feature flags — the /flags path the sanitizer never touches', () => {
+    // sanitize_properties runs ONLY on the /e/ capture pipeline (posthog-core.js). posthog-js
+    // auto-fires POST /flags/?v=2 on init (and on reset()/identify()/the periodic refresh), and
+    // the body carries person_properties.$initial_current_url — location.href frozen on the
+    // reader's FIRST persistence-fresh page — on a code path no sanitizer touches. A
+    // question-bearing first page (/ask?q=…, or the /gate?next=%2Fask%3Fq=… redirect every
+    // unauthenticated deep-linker lands on) therefore ships the reader's question to PostHog,
+    // reopening the audit's defect #3 along a vector the sanitizer cannot see. The closure is to
+    // disable flags at the source: advanced_disable_feature_flags maps to `featureFlagsDisabled`,
+    // and reloadFeatureFlags + _callFlagsEndpoint early-return when it is true, so /flags never
+    // fires. No product code reads a flag and the owner ruling "after-the-fact analytics only"
+    // means nothing depends on the surveys/web-experiments extensions /flags feeds, so this costs
+    // nothing. Absence is not safety here either — the explicit `true` is the mechanism, pinned
+    // red by posthog-flags-disabled.test.ts and posthog-flags-disabled-gate.test.ts (removing it
+    // fires /flags carrying the question in $initial_current_url).
+    //
+    // COMMENTS STRIPPED FIRST, the same rule the identify test above uses: this file's own comment
+    // block names `advanced_disable_feature_flags`, so a raw match would assert against prose (and
+    // against a future commented-out line) instead of the code. Stripped, it matches the live
+    // assignment only.
+    const code = CLIENT
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n')
+      .map((line) => { const i = line.indexOf('//'); return i === -1 ? line : line.slice(0, i); })
+      .join('\n');
+    expect(code, 'feature flags must be disabled — /flags auto-fires and the sanitizer never sees it')
+      .toMatch(/advanced_disable_feature_flags:\s*true/);
+  });
+
   // THE PAGEVIEW ASSERTION WAS RETIRED HERE, 2026-08-24, and it is worth stating why rather than
   // just deleting a line. This file used to require `capture_pageview: false`, and its stated
   // reason was "$current_url carries /ask?q=<the reader's question>". The owner then asked for

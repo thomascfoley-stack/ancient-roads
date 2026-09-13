@@ -389,9 +389,14 @@ export async function teach(
 
   // Strip before this crosses the response boundary: same bounds as recordRejection, minus
   // `span` entirely. meta.rejections keeps its own bounded copy for the server-only log.
+  // `llm_error`'s message is infrastructure text (provider HTTP status + 5xx body), not a
+  // verifier diagnostic — the route's throw path already sends a generic string for the same
+  // failure (route.ts). Verifier checks' messages are bounded diagnostics kept verbatim.
   const clientViolations = lastViolations.slice(0, MAX_VIOLATIONS_PER_ATTEMPT).map((v) => ({
     check: v.check,
-    message: v.message.slice(0, MAX_VIOLATION_FIELD_CHARS),
+    message: v.check === 'llm_error'
+      ? 'The composing model failed to respond.'
+      : v.message.slice(0, MAX_VIOLATION_FIELD_CHARS),
   }));
   await ordinalsPromise; // as above — the fallback ships the same rows
   return finish(withRegister({ kind: 'fallback', retrieval, violations: clientViolations }), metaBase);
