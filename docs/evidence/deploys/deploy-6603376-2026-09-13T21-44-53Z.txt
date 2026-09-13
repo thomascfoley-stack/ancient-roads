@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-09-13T21:50:20Z
+sha:             6603376dcfa0cea27f4a31feb9e06635a14ddf17
+branch:          fix/auth-rsc-cookie-write
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-o65tbynd8-home-network-hardening.vercel.app
+deployment_id:   dpl_BjxmqhLjmcRNmJFoZ5roTmbDryWv
+alias:           ancientpaths.app
+alias_serves:    dpl_BjxmqhLjmcRNmJFoZ5roTmbDryWv
+state:           live

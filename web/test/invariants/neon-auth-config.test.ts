@@ -24,27 +24,30 @@ afterEach(() => {
   }
 });
 
-describe('neon-auth.ts fails closed on missing env', () => {
+// Both constructors: getAuth() (the /api/auth proxy) and getSessionAuth() (session.ts).
+const FACTORIES = ['getAuth', 'getSessionAuth'] as const;
+
+describe.each(FACTORIES)('neon-auth.ts %s fails closed on missing env', (name) => {
   it('throws when NEON_AUTH_BASE_URL is missing', async () => {
     delete process.env.NEON_AUTH_BASE_URL;
     process.env.NEON_AUTH_COOKIE_SECRET = 'x'.repeat(32);
-    const { getAuth } = await import('@/lib/auth/neon-auth');
-    expect(() => getAuth()).toThrow(/NEON_AUTH_BASE_URL/);
+    const factory = (await import('@/lib/auth/neon-auth'))[name];
+    expect(() => factory()).toThrow(/NEON_AUTH_BASE_URL/);
   });
 
   it('throws when NEON_AUTH_COOKIE_SECRET is missing', async () => {
     process.env.NEON_AUTH_BASE_URL = 'https://example.neonauth.invalid';
     delete process.env.NEON_AUTH_COOKIE_SECRET;
-    const { getAuth } = await import('@/lib/auth/neon-auth');
-    expect(() => getAuth()).toThrow(/NEON_AUTH_COOKIE_SECRET/);
+    const factory = (await import('@/lib/auth/neon-auth'))[name];
+    expect(() => factory()).toThrow(/NEON_AUTH_COOKIE_SECRET/);
   });
 });
 
-describe('neon-auth.ts memoizes the auth instance', () => {
+describe.each(FACTORIES)('neon-auth.ts %s memoizes its instance', (name) => {
   it('returns the same object on repeated calls (one construction per lambda instance)', async () => {
     process.env.NEON_AUTH_BASE_URL = 'https://example.neonauth.invalid';
     process.env.NEON_AUTH_COOKIE_SECRET = 'x'.repeat(32);
-    const { getAuth } = await import('@/lib/auth/neon-auth');
-    expect(getAuth()).toBe(getAuth());
+    const factory = (await import('@/lib/auth/neon-auth'))[name];
+    expect(factory()).toBe(factory());
   });
 });

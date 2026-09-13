@@ -1,5 +1,77 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-13 — LIVE `6603376`: "Log in" no longer shows the error page; "Try again" re-fetches (`dpl_BjxmqhLjmcRNmJFoZ5roTmbDryWv`)
+
+**Why.** Owner report: pressing Log in showed "Something went wrong" (reference 2518938149), and
+Try again did nothing. Vercel runtime log for that digest, 21:10:48Z, `/auth/[path].rsc` on
+`dpl_DZ8TL4PYZcmjNh4L8TSHjW6ugTAc` (error group first seen 2026-08-25):
+```
+Error [AuthServiceUnavailableError]: auth service unavailable
+    digest: '2518938149',
+    [cause]: Error: Cookies can only be modified in a Server Action or Route Handler. …
+        at Object.setCookie (.next/server/chunks/ssr/_1-o6jtb._.js:21:84037)
+```
+
+**Cause.** `/auth/sign-in` calls `currentUser()` to send a signed-in reader to /home. When Neon Auth's
+get-session answer carries a Set-Cookie (a stale token being deleted, or a session refresh),
+`createNeonAuth` writes it through `cookies().set()`. Next refuses that inside a Server Component,
+`session()` wrapped the refusal as AuthServiceUnavailableError (D43), and the page failed. Every
+server page that asks who the reader is had the same fault. Try again called `reset()`, which
+re-renders the failed payload without asking the server again.
+
+**What shipped** (PR #321: `fdad9bf7` + `6603376d`, branch `fix/auth-rsc-cookie-write`):
+- `web/src/lib/auth/neon-auth.ts`: `getSessionAuth()`, a `createAuthServer` instance using the SDK's
+  Next.js request context, except that a write refused during a page render is skipped. It has the
+  same secret and cookie settings as `getAuth()` (both read one `SessionCookieConfig`). `session.ts`
+  reads through it; `/api/auth` still uses `getAuth().handler()`.
+- `web/src/app/error.tsx`: Try again calls `retry()` (Next 16.3: `router.refresh()`, then reset).
+
+**Evidence.**
+- `web/test/session-server-component-cookie-write.test.ts` uses Next's real sealed cookie store. Red
+  on `c6652f80` with the production error chain, green on the fix. The guard cases were checked by
+  seeding four bugs (swallow every write error, never write, incomplete fixture, rewrapped error);
+  each turned the intended case red.
+- `web/test/app-error-try-again.test.tsx`: red on the old error.tsx ("expected spy to be called 1
+  times, but got 0 times"), green on the fix.
+- Browser check: dev server plus a local stand-in for the auth server that answers get-session with
+  `null` and a Set-Cookie deleting the token (the shape production's stack shows). Old session code:
+  error page. Fixed: sign-in form at 390px (scrollWidth 390) and 1440px. Try again fired a new RSC
+  request (`?_rsc=U4NxPrOgU4MG3bdC`) and, with the fix restored, brought the form back in place.
+- `scripts/audit.sh` on `fdad9bf7`: every leg green except qa, which went red once on four
+  post-teardown `window is not defined` errors from `library/catalog-desk-ordinal.test.tsx` (that file
+  passes 3/3 alone) and was green on re-run (2,396 + 35 passed). CI on `6603376d`: audit ✓,
+  db-invariants ✓.
+- Independent review (a fresh agent that did not write the change): SHIP. Its four findings: a comment
+  overclaimed about refreshes (fixed in `6603376d`); one extra get-session call per refresh
+  (documented in the code); cookie settings could drift between the two instances (fixed); weak test
+  assertions (fixed).
+- Receipt `docs/evidence/deploys/deploy-6603376-2026-09-13T21-44-53Z.txt`: alias_serves
+  `dpl_BjxmqhLjmcRNmJFoZ5roTmbDryWv`, state live. No error or warning logs on it in its first minutes.
+- Shipped bytes: the error-page chunk loaded by `/gate` (public per the middleware matcher):
+```
+BEFORE  dpl_DZ8TL4PYZcmjNh4L8TSHjW6ugTAc  3fgoqhsu8yv18.js  {error:e,reset:r}
+AFTER   dpl_BjxmqhLjmcRNmJFoZ5roTmbDryWv  21afc4blg55-3.js  {error:e,retry:r}
+```
+
+**Found while answering the owner's /ask question** ("why does it say a grounded answer couldn't be
+composed?"). The production log for the 21:11:44Z ask: `kind: fallback`, 3 attempts. Attempt 0:
+schema ×12. Attempt 1: anchor_offbase ×2 plus diversity_traditions. Attempt 2: schema ×12. No quote
+failed the word-for-word check, but the fallback copy (`web/src/components/ask-answer.tsx`, the
+`Fallback` block) says that is what failed. Compose asks for `response_format: json_object`
+(`web/src/lib/teacher/deepinfra.ts:80`), i.e. any valid JSON, not the contract's shape. The same
+ask spent 50.7 s in retrieve (cold start, 64.7 s total).
+
+**NOT DONE / UNVERIFIED.**
+- Not exercised on production with a real stale session: this session cannot sign in as the owner.
+  The server-side half is not visible from outside; the receipt ties it to the sha. The production
+  proof is the owner pressing Log in.
+- A session refresh that lands on a page render is still dropped, so the browser cookie keeps its
+  old expiry. Not a regression (that case crashed before). Filed as a separate task: refresh
+  somewhere that can write cookies.
+- Fallback copy that names the wrong check, a schema-constrained compose, and the 50.7 s cold
+  retrieve: reported to the owner, not acted on.
+- Until PR #321 merges, live sits on `fix/auth-rsc-cookie-write`, which contains `origin/main`.
+
 ## 2026-09-13 — LIVE `3dc76f2`: next 16.3.5 + 17 Detail fixes (`dpl_DZ8TL4PYZcmjNh4L8TSHjW6ugTAc`)
 
 **Why.** Three advisories published against the shipped versions turned `deps` red on `main` and
