@@ -420,6 +420,18 @@ on existing deps. All fixed by bump/override, verified `deps-audit` green + full
 
 These are FIXES (real version moves), distinct from the ignored SEC-1 GHSAs above which remain unfixable until the auth move-off.
 
+### Resolved framework/tooling CVEs (2026-09-13) — FIXED, not ignored
+Two CRITICAL and one HIGH advisory, newly published against existing versions, turned `deps-audit`
+red on `main` and on every PR branched from it. Fixed by bump, verified `deps-audit` green + full
+audit green + `next build` clean (same routes and same warnings as before the bump):
+- **next → 16.3.5** (`web/package.json`, `eslint-config-next` to match): clears GHSA-p293-qw3h-jr36
+  (RCE, Windows-hosted servers only) and GHSA-2xp9-vwfh-vxw4 (RCE in the Image Optimization API
+  when AVIF files are used), both fixed in >=16.3.3. Note the two lockfiles had drifted: the pnpm
+  tree CI gates on was at 16.2.12, but `web/package-lock.json` — what the Vercel builder installs —
+  was already at 16.3.2, so production was on 16.3.2, still inside the vulnerable range.
+- **sharp → 0.35.4** (root `pnpm.overrides`; next 16.3.5 itself requires `^0.35.4`): clears
+  GHSA-rgj7-g3m4-5g8c (libheif).
+
 ### Pending evidence from Neon (drafted question sent 2026-07-08)
 Two-pronged written question to Neon (below in the PR/thread). Paste the written answer
 here as SEC-1 evidence. A "yes" to either prong closes the *active* hole short-term; it
