@@ -171,13 +171,14 @@ Full row histories incl. F4: `MASTER_HISTORY.md §lane-f`.
 | F4 | Name what remains red, and who owns each | `history-scope-db` **CLOSED 2026-08-23** — W-HISTSCOPE merged into the closeout candidate, Wave-7 verified live (both directions green on dev, 27s real execution); the 50-entity out-of-scope population stays filed as a historians-lane finding (packet A9). `licensing`/`plan-tenancy`/`register-wall-surfaces` still UNCONFIRMED on the repointed parent |
 | F5 | ⚑ First green run | **ACHIEVED 2026-08-22** — run `32562471249` @ `2012e03`, BOTH jobs SUCCESS: the first green `db-invariants` in repo history, every suite truthfully accounted (ADR-119 criterion) |
 
-## Queued — the `SCAN_RE` false-floor class (filed 2026-08-21, owner: not beta-blocking)
+## Shipped — the `SCAN_RE` false-floor class (filed 2026-08-21, owner: not beta-blocking)
 
 `SCAN_RE`'s bare numeric path floors non-citations where an ordinary noun is also a book alias
 (`1 mark 5`, n=2/10 measured) — a precision leak on idiomatic phrasing, not a wrong-book defect on
 genuine citations. Candidate direction: extend ADR-015's corroboration gate to numerics whose book
-word is a common English noun. **In progress under W-SCANRE** (closeout swarm, pre-registered bar,
-merge-only-if-clear). Full analysis: `MASTER_HISTORY.md §scanre`.
+word is a common English noun. **Shipped under W-SCANRE** (`290b2492`, 2026-08-23) — closeout swarm,
+pre-registered bar not met; owner ruled SHIP over the residual 2/36. Full analysis:
+`MASTER_HISTORY.md §scanre`.
 
 ## Failure-mode watchlist
 
