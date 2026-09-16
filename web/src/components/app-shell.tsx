@@ -10,7 +10,7 @@ import { AnalyticsIdentity } from './analytics-identity';
 // tier. The marketing landing (/) and the password gate (/gate) render full-bleed and
 // chrome-free — a stranger must not see the app's navigation, and the gate must not leak the
 // app's structure to someone who hasn't entered the password yet.
-const CHROME_FREE = new Set(['/', '/about', '/features', '/why', '/gate']);
+const CHROME_FREE = new Set(['/', '/about', '/features', '/why', '/gate', '/privacy', '/terms']);
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -159,7 +159,9 @@ describe('marketing surfaces clear 44px', () => {
   it('every footer link is a 44px target', () => {
     const { container } = render(<MarketingFooter />);
     const links = [...container.querySelectorAll<HTMLElement>('a[href]')];
-    expect(links.length).toBe(6);
+    // 8 since 2026-09-16: the Legal column (Privacy, Terms) joined Product and More. The count is
+    // pinned on purpose — a link added without a 44px target should fail here, not ship.
+    expect(links.length).toBe(8);
     for (const l of links) expectMeetsFloor(l, `the footer link "${l.textContent?.trim()}"`);
   });
 

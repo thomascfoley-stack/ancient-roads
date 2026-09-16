@@ -75,13 +75,26 @@ describe('H5a — checkCorpusUploadRateLimit', () => {
 
   it('uses its OWN buckets — an upload must not spend the ask or search quota, or vice versa', async () => {
     const buckets: string[] = [];
+    const keys: string[] = [];
     const spy = {
       query: async (_t: string, params: unknown[]) => {
+        keys.push(params[0] as string);
         buckets.push(params[1] as string);
         return [{ count: 1 }];
       },
     } as unknown as SqlArg;
     expect((await checkCorpusUploadRateLimit('u1', spy)).ok).toBe(true);
-    expect(buckets).toEqual(['corpus-upload:min', 'corpus-upload:day']);
+    // The PER-USER legs stay upload-only: that is the cross-charging this case exists to catch,
+    // and it is still asserted exactly. The third bucket is the shared fleet-wide day pool added
+    // 2026-09-16 — the same shape checkAskRateLimit has always had — and it is SUPPOSED to be
+    // shared, so it is asserted by name and by key instead of being forbidden. Widened, not
+    // loosened: a future 'ask:day' or 'corpus-search:day' appearing here still fails.
+    expect(buckets.filter((b) => !b.startsWith('corpus:global'))).toEqual([
+      'corpus-upload:min',
+      'corpus-upload:day',
+    ]);
+    expect(buckets).toContain('corpus:global:day');
+    const globalKey = keys[buckets.indexOf('corpus:global:day')];
+    expect(globalKey, 'the fleet pool must not be keyed per-user').toBe('__global__');
   });
 });

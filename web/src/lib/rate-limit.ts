@@ -64,6 +64,43 @@ const LIMIT_GLOBAL_PER_DAY = envInt('ASK_LIMIT_GLOBAL_PER_DAY', 5_000);
  *  global bucket (`search:global:day`). */
 export const GLOBAL_BUCKET_USER = '__global__';
 
+// THE FLEET-WIDE CEILING FOR THE USER-CORPUS FAMILY (2026-09-16, pre-launch review).
+//
+// THE DEFECT. `checkAskRateLimit` has three legs — minute, day, and a GLOBAL day pool — but the
+// four limiters below had only the first two. Per-user caps bound what ONE account spends; with
+// open registration they bound the bill only if accounts are scarce. The worst multiplier is the
+// retry route (`documents/[id]` POST), which re-embeds the WHOLE document while zeroing
+// `attempts`, so MAX_ATTEMPTS bounds consecutive failures and never spend: measured at the caps
+// in this file, roughly 6.25M tokens per re-embed x 100/day ~= \$6/day/account in embeddings
+// alone, times as many accounts as sign up.
+//
+// ONE POOL for all four, not one each: the thing being bounded is the day's total spend on the
+// user-corpus feature, and a per-limiter ceiling would let four separate ceilings add up to four
+// times the number anyone reasoned about.
+//
+// Sized for early access rather than scale — 2,000 paid corpus operations a day across ALL users
+// is generous for a private beta (one account's own caps sum to 1,600) and hostile to a runaway.
+// Raise it deliberately, in the environment, when real usage says to: a ceiling nobody ever hits
+// teaches you nothing, and one that trips is the cheapest possible incident.
+const CORPUS_GLOBAL_PER_DAY = envInt('CORPUS_LIMIT_GLOBAL_PER_DAY', 2_000);
+
+/**
+ * Bump the shared user-corpus day pool and say whether it has tripped.
+ *
+ * Called LAST by each corpus limiter, after the per-user legs, so one account's burst is
+ * attributed to that account before it counts against everyone — the ordering `checkAskRateLimit`
+ * established. Deliberately does NOT catch: each caller already wraps its whole body in a
+ * fail-CLOSED try, and a limiter fault on a paid path must deny, not wave through.
+ */
+async function corpusGlobalDayTripped(sql: Sql, userId: string, dayStart: string): Promise<boolean> {
+  const globalCount = await bump(sql, GLOBAL_BUCKET_USER, 'corpus:global:day', dayStart);
+  if (globalCount > CORPUS_GLOBAL_PER_DAY) {
+    logEvent('rate_limit_hit', { userId, cap: 'global', count: globalCount, limit: CORPUS_GLOBAL_PER_DAY });
+    return true;
+  }
+  return false;
+}
+
 // Site-gate brute-force throttle, per client IP. The gate password is the ONLY barrier on
 // the pre-launch site (SEC-1 open), and the check had no throttle — a wordlist could pick it
 // with no signal. Tight caps: a human types the password once or twice, so 10/min + 60/hour
@@ -231,6 +268,9 @@ export async function checkCorpusSearchRateLimit(userId: string, sql: Sql = getD
       logEvent('rate_limit_hit', { userId, cap: 'corpus-search:day', count: dayCount, limit: CORPUS_SEARCH_PER_DAY });
       return { ok: false, limited: 'day', retryAfterSec: 3600 };
     }
+    if (await corpusGlobalDayTripped(sql, userId, dayStart)) {
+      return { ok: false, limited: 'global', retryAfterSec: 3600 };
+    }
     await maybeSweep(sql);
     return { ok: true };
   } catch (e) {
@@ -273,6 +313,9 @@ export async function checkCorpusUploadRateLimit(userId: string, sql: Sql = getD
       logEvent('rate_limit_hit', { userId, cap: 'corpus-upload:day', count: dayCount, limit: CORPUS_UPLOAD_PER_DAY });
       return { ok: false, limited: 'day', retryAfterSec: 3600 };
     }
+    if (await corpusGlobalDayTripped(sql, userId, dayStart)) {
+      return { ok: false, limited: 'global', retryAfterSec: 3600 };
+    }
     await maybeSweep(sql);
     return { ok: true };
   } catch (e) {
@@ -306,6 +349,9 @@ export async function checkCorpusCompleteRateLimit(userId: string, sql: Sql = ge
       logEvent('rate_limit_hit', { userId, cap: 'corpus-complete:day', count: dayCount, limit: CORPUS_COMPLETE_PER_DAY });
       return { ok: false, limited: 'day', retryAfterSec: 3600 };
     }
+    if (await corpusGlobalDayTripped(sql, userId, dayStart)) {
+      return { ok: false, limited: 'global', retryAfterSec: 3600 };
+    }
     await maybeSweep(sql);
     return { ok: true };
   } catch (e) {
@@ -336,6 +382,9 @@ export async function checkHistorySearchRateLimit(userId: string, sql: Sql = get
     if (dayCount > HISTORY_SEARCH_PER_DAY) {
       logEvent('rate_limit_hit', { userId, cap: 'history-search:day', count: dayCount, limit: HISTORY_SEARCH_PER_DAY });
       return { ok: false, limited: 'day', retryAfterSec: 3600 };
+    }
+    if (await corpusGlobalDayTripped(sql, userId, dayStart)) {
+      return { ok: false, limited: 'global', retryAfterSec: 3600 };
     }
     await maybeSweep(sql);
     return { ok: true };
