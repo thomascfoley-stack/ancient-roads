@@ -1,0 +1,7 @@
+{
+  "_": "Three works serving on production whose text rests on a post-1928 edition or a renewed US copyright. Measured read-only 2026-09-16 (scripts/check-license-exposures.mjs + a direct census): robertson-at-word 4526 served rows, emmerich-lifemary 667, more-comfort 544. Quarantine is the reversible remedy and shrinks the served set; it never admits anything. Restore by flipping the status back if a renewal search clears them.",
+  "robertson-at-word": "A.T. Robertson, Word Pictures in the NT (Broadman 1932-33). Renewal registrations R1960-01-18 (vol 5) and R1960-02-02 (vol 6) recorded in docs/evidence/publish-2026-09-14/licence-holds.json (branch research/author-supply-2026-09-13). Protected to roughly 2028-29.",
+  "emmerich-lifemary": "The Life of the Blessed Virgin Mary, Templegate 1954 - a modern translation of a German original, and a translation is a new copyrightable work.",
+  "more-comfort": "Thomas More, Dialogue of Comfort, Sheed & Ward 1951 edition - same class: a post-1928 edited/modernised text.",
+  "slugs": ["robertson-at-word", "emmerich-lifemary", "more-comfort"]
+}

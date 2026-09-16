@@ -1,9 +1,10 @@
 import Link from 'next/link';
 
-// Marketing footer, shared by the public tier. The mockup's LEGAL column (Privacy,
-// Terms) is deliberately absent: those pages are owner-authored content that does not
-// exist yet (UX_REMEDIATION.md S1 page skeletons, owner-blocked), and shipping dead
-// `#` links would be worse than shipping no column. Add the column when the routes exist.
+// Marketing footer, shared by the public tier. The LEGAL column landed 2026-09-16, when the two
+// routes it names became real pages (app/privacy, app/terms) and were added to gate.ts
+// PUBLIC_PATHS. It was deliberately absent before that, and the rule that kept it absent still
+// holds: a link here must resolve OUTSIDE the password wall, or it is a dead link for everyone
+// who has not been let in yet.
 export function MarketingFooter() {
   return (
     <footer className="relative z-10 border-t border-stone-200/40 bg-stone-50/70 px-5 py-16 backdrop-blur-xl sm:px-8 sm:py-24">
@@ -18,7 +19,7 @@ export function MarketingFooter() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-10">
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
             <div className="space-y-5">
               <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Product</h4>
               <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-500">
@@ -41,6 +42,17 @@ export function MarketingFooter() {
                 </li>
                 <li>
                   <Link href="/auth/sign-in" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">Log in</Link>
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-5">
+              <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Legal</h4>
+              <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-500">
+                <li>
+                  <Link href="/privacy" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">Privacy</Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="inline-flex min-h-[44px] items-center transition-colors ease-gentle hover:text-stone-900">Terms</Link>
                 </li>
               </ul>
             </div>

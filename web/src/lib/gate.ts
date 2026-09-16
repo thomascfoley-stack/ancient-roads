@@ -16,6 +16,11 @@ const PUBLIC_PATHS = new Set([
   '/features',
   '/why',
   '/api/waitlist',
+  // Legal pages (2026-09-16). They must sit OUTSIDE the wall: the landing page collects email
+  // addresses and loads analytics, so the policy governing that collection has to be readable by
+  // the person being asked to consent — a privacy policy behind a password is not a policy.
+  '/privacy',
+  '/terms',
   // The marketing hero image. Static assets the PUBLIC pages render must be listed here
   // too: dev runs gate-free so a missing entry only breaks in production (the photo 307'd
   // to /gate on the live site, 2026-07-16). Corpus data (/bible, /commentaries) stays gated.

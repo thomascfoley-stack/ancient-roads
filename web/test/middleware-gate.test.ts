@@ -36,6 +36,11 @@ describe('middleware allowlist — the marketing flip gate', () => {
     // from the allowlist only breaks in PROD (it 307'd to /gate on the live site, 2026-07-16).
     for (const p of [
       '/', '/about', '/features', '/why', '/api/waitlist', '/hero-road.jpg',
+      // The legal pages (2026-09-16). A privacy policy is a promise made to somebody who has not
+      // signed up yet; served behind the password it is unreadable by exactly the person the
+      // landing page is asking for an email address. Same for the terms, which carry the
+      // copyright-takedown route a rights holder needs and who will never have a password.
+      '/privacy', '/terms',
       // L-1's Open Graph card. A link unfurl is fetched by an UNAUTHENTICATED crawler that has no
       // gate cookie and never will, so an og:image behind the wall renders as an empty card — the
       // 2026-07-16 lesson again, in the one place where the failure is invisible from inside the
