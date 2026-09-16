@@ -1,5 +1,61 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-16 — LIVE `94d8053`: Privacy + Terms, and a fleet ceiling on the paid corpus paths
+
+Two blockers from the pre-launch readiness review (PR #328), deployed the same day.
+
+**Legal pages.** `/privacy` and `/terms` did not exist while the landing page collected email
+addresses into `waitlist` and loaded PostHog. Both written FROM THE CODE — the waitlist row's
+actual columns, the five processors, the three cookies — and both placed OUTSIDE the SITE_PASSWORD
+wall and outside the app chrome, with a Legal column in the marketing footer. Owner-supplied:
+`hello@ancientpaths.app` (forwarding NOT yet wired — see NOT DONE) and California law. The Terms
+carry a published copyright-takedown route, which this corpus needs by its own history.
+
+**Spend ceiling.** The four paid user-corpus limiters had per-user caps only; with open
+registration that bounds the bill per account, not in total. All four now charge one shared
+`corpus:global:day` pool (2,000/day), bumped last, inside each caller's fail-closed try.
+
+**Evidence.**
+```
+docs/evidence/deploys/deploy-94d8053-2026-09-16T18-35-48Z.txt
+deployment_id:   dpl_CQdgHi1AivRTkjRX5BUrn7CxEXib
+alias_serves:    dpl_CQdgHi1AivRTkjRX5BUrn7CxEXib
+state:           live
+```
+Live check, unauthenticated: `/privacy` 200, `/terms` 200 (both 307 before this deploy). Browser
+at 1440 and 375: no horizontal overflow, marketing nav + footer, NO app chrome, footer Legal
+links present, California named, contact rendering as a mail link. Every request the pages
+themselves make is 200/304.
+
+Red-proofs watched before the code went in: `rate-limit-corpus-global-cap` 9 of 14 fail without
+the ceiling; removing `/privacy` from PUBLIC_PATHS makes `middleware-gate` fail with "/privacy
+must be public". Two existing guards were widened deliberately and both still bite — the footer
+tap-target count (6 → 8) and the upload limiter's bucket-isolation case, whose per-user assertion
+is unchanged and exact.
+
+CI: audit ✓ first run; db-invariants ✗ then ✓ on re-run — `licensing.test.ts` timed out at 30s
+without running, the THIRD recorded instance of that flake (LAUNCH_BLOCKERS §13), then executed in
+15.3s on the re-run. A flaky gate on the one irreversible property deserves a real fix.
+
+**NOT DONE / UNVERIFIED**
+- `hello@ancientpaths.app` has no forwarding yet. It appears 4× on each page as the route for
+  privacy questions, deletion requests and copyright takedowns. Owner is wiring it.
+- ~~The three licensing quarantines are NOT applied.~~ **DONE — owner-executed 2026-09-16
+  18:46Z**, after this entry was first written. `robertson-at-word` (renewals R1960-01-18 /
+  R1960-02-02), `emmerich-lifemary` (1954 translation) and `more-comfort` (1951 edition):
+  `published -> quarantined`, **5,737 embedding rows -> served=false**
+  (`quarantine-run-2026-09-16T18-25-53-442Z.log`, snapshot written before COMMIT).
+  **Verified independently, read-only, not from the script's own log:** published 672 -> 669,
+  quarantined 4 -> 7, served rows 953,974 -> 948,237 — a difference of exactly 5,737 — and
+  `check-license-exposures.mjs` now reports "no HIGH-severity exposure is live."
+  Still serving and unresolved: the four LOW-severity reprints (owen x3, torrey), which the
+  research rated as modern printings of public-domain text and therefore no new copyright.
+- Broader screen unrun: 64 works serving today declare "Public Domain" over an author who died
+  after 1928. A death date is a screening signal, not a verdict, but nothing screens on it — the
+  edition guard only checks the field is non-empty.
+- Deletion-on-request is a promise kept by hand; there is no account-delete endpoint.
+
+
 ## 2026-09-13 — LIVE `6603376`: "Log in" no longer shows the error page; "Try again" re-fetches (`dpl_BjxmqhLjmcRNmJFoZ5roTmbDryWv`)
 
 **Why.** Owner report: pressing Log in showed "Something went wrong" (reference 2518938149), and
