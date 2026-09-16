@@ -40,11 +40,16 @@ without running, the THIRD recorded instance of that flake (LAUNCH_BLOCKERS §13
 **NOT DONE / UNVERIFIED**
 - `hello@ancientpaths.app` has no forwarding yet. It appears 4× on each page as the route for
   privacy questions, deletion requests and copyright takedowns. Owner is wiring it.
-- **The three licensing quarantines are NOT applied.** `robertson-at-word` (4,526 served rows,
-  renewals R1960-01-18 / R1960-02-02), `emmerich-lifemary` (667, 1954 translation) and
-  `more-comfort` (544, 1951 edition) are still serving on production. The slug file is committed
-  at `docs/evidence/register-cleanup/licensing-quarantine-2026-09-16.json`; the flip is
-  owner-terminal and was handed over as a single command.
+- ~~The three licensing quarantines are NOT applied.~~ **DONE — owner-executed 2026-09-16
+  18:46Z**, after this entry was first written. `robertson-at-word` (renewals R1960-01-18 /
+  R1960-02-02), `emmerich-lifemary` (1954 translation) and `more-comfort` (1951 edition):
+  `published -> quarantined`, **5,737 embedding rows -> served=false**
+  (`quarantine-run-2026-09-16T18-25-53-442Z.log`, snapshot written before COMMIT).
+  **Verified independently, read-only, not from the script's own log:** published 672 -> 669,
+  quarantined 4 -> 7, served rows 953,974 -> 948,237 — a difference of exactly 5,737 — and
+  `check-license-exposures.mjs` now reports "no HIGH-severity exposure is live."
+  Still serving and unresolved: the four LOW-severity reprints (owen x3, torrey), which the
+  research rated as modern printings of public-domain text and therefore no new copyright.
 - Broader screen unrun: 64 works serving today declare "Public Domain" over an author who died
   after 1928. A death date is a screening signal, not a verdict, but nothing screens on it — the
   edition guard only checks the field is non-empty.

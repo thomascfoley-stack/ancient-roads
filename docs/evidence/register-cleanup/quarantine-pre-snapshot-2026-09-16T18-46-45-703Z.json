@@ -1,0 +1,38 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "direction": "published->quarantined",
+  "slugFile": "docs/evidence/register-cleanup/licensing-quarantine-2026-09-16.json",
+  "slugs": [
+    "robertson-at-word",
+    "emmerich-lifemary",
+    "more-comfort"
+  ],
+  "servedBefore": {
+    "robertson-at-word": {
+      "rows": 4526,
+      "served": 4526
+    },
+    "emmerich-lifemary": {
+      "rows": 667,
+      "served": 667
+    },
+    "more-comfort": {
+      "rows": 544,
+      "served": 544
+    }
+  },
+  "sources": [
+    {
+      "slug": "emmerich-lifemary",
+      "status": "published"
+    },
+    {
+      "slug": "more-comfort",
+      "status": "published"
+    },
+    {
+      "slug": "robertson-at-word",
+      "status": "published"
+    }
+  ]
+}
