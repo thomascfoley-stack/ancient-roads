@@ -280,12 +280,24 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   const highlightsRef = useRef(highlights);
   useEffect(() => { highlightsRef.current = highlights; }, [highlights]);
 
-  // Mirror of `notes` state so saveVerseNote/deleteVerseNote can guard a replay (a stale retry
-  // fired after a NEWER note save on the same verse has already landed) without adding `notes` to
-  // their own dependency arrays and re-creating the callback on every paint. Same shape as
-  // `highlightsRef`.
-  const notesRef = useRef(notes);
-  useEffect(() => { notesRef.current = notes; }, [notes]);
+  // Per-verse monotonic generation counter for the note replay guards in saveVerseNote /
+  // deleteVerseNote below. Bumped ONLY on a successfully settled note write/delete (via the
+  // `onSuccess` hook, which `beginPersist` invokes solely in its success branch) — never on a
+  // final failure or an aborted settle. A failed write captures the generation at its first
+  // paint; on a later stale retry, an advanced generation means a newer note write committed on
+  // the verse during the retry window, and the guard refuses the destructive replay.
+  //
+  // Why a counter and not the note body: notes are primitive strings, so a value comparison
+  // (`notesRef.current.get(verse) !== snapshot`) cannot tell "this write's own rollback restored
+  // the snapshot" apart from "a newer write committed and just happened to produce the snapshot's
+  // value again" — the corner the prior guard missed (a stale retry then re-issued the network
+  // call and clobbered the newer note server-side). `clearVerse`'s guard compares by object
+  // identity on highlight spans and is immune; notes have no identity to exploit, so the counter
+  // is the equivalent that survives the equal-value corner. A legitimate retry of THIS write
+  // sees an unchanged generation (a failure does not bump) and still proceeds. A ref (not state)
+  // so the guards can read it without adding `notes` to their own dependency arrays and
+  // re-creating the callback on every paint — same shape as `highlightsRef`.
+  const notesGen = useRef<Map<number, number>>(new Map());
 
   // Clear every span on a verse (the whole-verse "clear" affordance in the study panel).
   const clearVerse = useCallback(
@@ -505,26 +517,30 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   const saveVerseNote = useCallback(
     (verse: number, body: string, onSuccess?: () => void) => {
       let previous: string | undefined;
-      // The verse's note as it was BEFORE this write, snapshotted once on the first paint. A save
-      // whose POST fails arms a banner whose `retry` (the `attempt` closure below) stays live even
-      // after a NEWER save on the same verse succeeds — note2's success branch only clears a
-      // banner whose `id` matches, so note1's older banner (and its retry) persists. When that
-      // stale retry later fires (a manual Retry tap, or the `online` event), re-running `paint`
-      // with the captured `body` would re-paint and re-POST the stale note over the newer one —
-      // and `upsertNote` is a blind overwrite, so the loss is irrecoverable. On a replay, any
-      // note on the verse that differs from this snapshot is a newer write that arrived in the
-      // retry window; refusing the replay preserves it. Mirrors clearVerse's replay guard. A
-      // boolean sentinel (not `??=`) is used because the snapshot is legitimately `undefined`
-      // when saving a note on an empty verse, and `??=` would leave the snapshot `undefined`
-      // forever, never arming the guard — the exact case this bug hits in production.
-      let snapshot: string | undefined;
-      let snapshotTaken = false;
+      // The verse's note generation as it was BEFORE this write, captured once on the first
+      // paint. A save whose POST fails arms a banner whose `retry` (the `attempt` closure below)
+      // stays live even after a NEWER save on the same verse succeeds — note2's success branch
+      // only clears a banner whose `id` matches, so note1's older banner (and its retry)
+      // persists. When that stale retry later fires (a manual Retry tap, or the `online` event),
+      // re-running `paint` with the captured `body` would re-paint and re-POST the stale note
+      // over the newer one — and `upsertNote` is a blind overwrite, so the loss is irrecoverable.
+      // On a replay, a generation that has advanced past the one captured here means a newer
+      // note write committed on this verse in the retry window; refusing the replay preserves
+      // it. Mirrors clearVerse's replay guard, but notes are primitive strings with no identity
+      // to compare (a newer write that lands on the snapshot's value is indistinguishable from a
+      // rolled-back state by value alone — the corner this counter closes), so the guard reads
+      // the per-verse generation counter `notesGen` instead of the note body. A boolean sentinel
+      // (not `??=`) is used so the pre-write generation is captured exactly once — `gen` is
+      // legitimately `0` for a verse that has never had a successful note write, and `??=` would
+      // leave it `undefined` forever, never arming the guard.
+      let gen: number | undefined;
+      let genCaptured = false;
       const paint = () => {
         setNotes((prev) => {
           previous = prev.get(verse);
-          if (!snapshotTaken) {
-            snapshot = previous;
-            snapshotTaken = true;
+          if (!genCaptured) {
+            gen = notesGen.current.get(verse) ?? 0;
+            genCaptured = true;
           }
           return new Map(prev).set(verse, body);
         });
@@ -554,18 +570,31 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
       // for its callers.
       const id = ++writeSeq.current;
       const attempt = () => {
-        // Only guard REPLAYS: `snapshotTaken` is false until the first paint captures the
-        // verse's pre-write state, so the original save always proceeds. On a replay, compare the
-        // current note to the pre-write snapshot: after THIS write's own rollback the verse holds
-        // exactly the snapshot (so a legitimate retry still proceeds), and only a NEWER write
-        // makes them differ. Refuse the destructive replay; the banner is replaced with a
-        // no-retry reload hint so the stale write cannot be re-fired.
-        if (snapshotTaken && notesRef.current.get(verse) !== snapshot) {
+        // Only guard REPLAYS: `genCaptured` is false until the first paint captures the verse's
+        // pre-write generation, so the original save always proceeds. On a replay, a generation
+        // that differs from the one captured at first paint means a newer note write committed
+        // on this verse in the retry window — EVEN IF that newer write produced the same body as
+        // this write's pre-write value (the case value comparison cannot detect, since notes are
+        // strings). After THIS write's own rollback the generation is unchanged (a failure does
+        // not bump `notesGen` — only a successful settle bumps it, via the `onSuccess` hook
+        // below), so a legitimate retry still proceeds. Refuse the destructive replay; the banner
+        // is replaced with a no-retry reload hint so the stale write cannot be re-fired.
+        if (genCaptured && (notesGen.current.get(verse) ?? 0) !== gen) {
           setWriteError({ id, message: "Couldn't save your note — a newer edit arrived; reload to refresh." });
           return Promise.resolve();
         }
         paint();
-        return beginPersist(id, "Couldn't save your note", request, rollback, attempt, undefined, undefined, onSuccess);
+        // Bump `notesGen` ONLY on a successful settle: `beginPersist` invokes `onSuccess` solely
+        // in its success branch, never on a final failure or an aborted settle. Bumping in
+        // `onSettled` instead would bump on THIS write's own failure too, making a later
+        // legitimate manual retry see an advanced generation and be refused — regressing the path
+        // the existing legitimate-retry regression test guards. The caller-supplied `onSuccess`
+        // (e.g. closeStudy) is preserved alongside the bump.
+        const bumpGen = () => {
+          notesGen.current.set(verse, (notesGen.current.get(verse) ?? 0) + 1);
+        };
+        const mergedOnSuccess = () => { bumpGen(); onSuccess?.(); };
+        return beginPersist(id, "Couldn't save your note", request, rollback, attempt, undefined, undefined, mergedOnSuccess);
       };
       // Don't return the promise: like clearVerse (which assigns the result to `entry.settled`
       // rather than returning it), this hook must return `undefined` so `act(() => saveVerseNote())`
@@ -581,21 +610,24 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   const deleteVerseNote = useCallback(
     (verse: number) => {
       let previous: string | undefined;
-      // Symmetric to saveVerseNote's replay guard. A failed delete arms a banner whose `retry`
-      // stays live even after a NEWER note is re-saved on the same verse (note2's success clears
-      // only its own banner, not the older delete's). When that stale delete-retry later fires,
-      // re-running `paint` (re-deleting the verse) and re-issuing the `DELETE` would soft-delete
-      // the newer note's row server-side via `removeNote`. On a replay, any note on the verse
-      // that differs from this write's pre-delete snapshot is a newer write that arrived in the
-      // retry window; refusing the replay preserves it.
-      let snapshot: string | undefined;
-      let snapshotTaken = false;
+      // Symmetric to saveVerseNote's replay guard, and the same generation-counter mechanism.
+      // A failed delete arms a banner whose `retry` stays live even after a NEWER note is
+      // re-saved on the same verse (note2's success clears only its own banner, not the older
+      // delete's). When that stale delete-retry later fires, re-running `paint` (re-deleting the
+      // verse) and re-issuing the `DELETE` would soft-delete the newer note's row server-side via
+      // `removeNote`. On a replay, a generation that has advanced past the one captured here
+      // means a newer note write committed on this verse in the retry window — including the
+      // equal-value corner a value comparison cannot detect, since notes are strings with no
+      // identity; refusing the replay preserves the newer note. A boolean sentinel (not `??=`)
+      // captures the pre-delete generation exactly once.
+      let gen: number | undefined;
+      let genCaptured = false;
       const paint = () => {
         setNotes((prev) => {
           previous = prev.get(verse);
-          if (!snapshotTaken) {
-            snapshot = previous;
-            snapshotTaken = true;
+          if (!genCaptured) {
+            gen = notesGen.current.get(verse) ?? 0;
+            genCaptured = true;
           }
           const next = new Map(prev);
           next.delete(verse);
@@ -620,16 +652,26 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         });
       const id = ++writeSeq.current;
       const attempt = () => {
-        // Only guard REPLAYS: `snapshotTaken` is false until the first paint captures the verse's
-        // pre-delete state, so the original delete always proceeds. On a replay, a current note
-        // that differs from the pre-delete snapshot means a newer note arrived; refuse instead of
-        // re-issuing the destructive DELETE.
-        if (snapshotTaken && notesRef.current.get(verse) !== snapshot) {
+        // Only guard REPLAYS: `genCaptured` is false until the first paint captures the verse's
+        // pre-delete generation, so the original delete always proceeds. On a replay, a
+        // generation that differs from the one captured at first paint means a newer note write
+        // committed on this verse in the retry window — including the equal-value corner a value
+        // comparison cannot detect. After THIS write's own rollback the generation is unchanged
+        // (a failure does not bump `notesGen`), so a legitimate retry still proceeds. Refuse
+        // instead of re-issuing the destructive DELETE.
+        if (genCaptured && (notesGen.current.get(verse) ?? 0) !== gen) {
           setWriteError({ id, message: "Couldn't delete your note — a newer edit arrived; reload to refresh." });
           return Promise.resolve();
         }
         paint();
-        return beginPersist(id, "Couldn't delete your note", request, rollback, attempt);
+        // `deleteVerseNote` has no caller-supplied `onSuccess`, so the bump is passed directly as
+        // `onSuccess` — fired solely from `beginPersist`'s success branch, never on a failure (a
+        // failed delete must not advance the generation, or a later legitimate manual retry would
+        // see an advanced generation and be refused).
+        const bumpGen = () => {
+          notesGen.current.set(verse, (notesGen.current.get(verse) ?? 0) + 1);
+        };
+        return beginPersist(id, "Couldn't delete your note", request, rollback, attempt, undefined, undefined, bumpGen);
       };
       // See saveVerseNote: do not return the promise, or `act(() => deleteVerseNote())` defers
       // its flush and the optimistic delete does not commit before the caller inspects state.
