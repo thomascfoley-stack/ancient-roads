@@ -24,7 +24,7 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
     // "nothing matched" over a corpus that did match (deep-audit client finding 2). The entrance
     // makes back-to-back searches the normal path, so this is a live bug, not a corner.
     | { kind: 'results'; seq: number; query: string; data: HistoryPayload; threadId: string | null }
-    | { kind: 'error'; message: string; signIn?: boolean }
+    | { kind: 'error'; message: string; signIn?: boolean; retryAfterSec?: number; retryAt?: number }
     | { kind: 'limited'; retryAfterSec: number }
   >({ kind: 'empty' });
   const searchNo = useRef(0);
@@ -40,6 +40,22 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
     return () => clearTimeout(t);
   }, [busy]);
 
+  // A 503 UPSTREAM_UNAVAILABLE carries `retryAfterSec` down two outage paths: a limiter-DB outage
+  // (where `bump()` throws before the minute counter can increment, so the `429` path that would
+  // pace the reader is unreachable) and an auth-service outage (where `requireUser()` fails before
+  // the limiter is consulted at all). Both used to land in the generic `!res.ok` handler, which
+  // discarded `retryAfterSec` and rendered an ungated Retry — the same component that honours the
+  // signal on 429 dropped it on 503. Pace the 503's Retry the way `ask-client.tsx` paces its turns:
+  // one timer, armed only while a wait is pending, releasing at the wall-clock moment `retryAt`.
+  const [now, setNow] = useState(() => Date.now());
+  const retryAt = state.kind === 'error' ? state.retryAt : undefined;
+  useEffect(() => {
+    if (retryAt === undefined || retryAt <= now) return;
+    const t = setTimeout(() => setNow(Date.now()), Math.max(0, retryAt - Date.now()));
+    return () => clearTimeout(t);
+  }, [retryAt, now]);
+  const waiting = retryAt !== undefined && now < retryAt;
+
   const run = async (raw: string): Promise<void> => {
     const q = raw.trim();
     if (!q || busy) return;
@@ -54,16 +70,36 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
         setState({ kind: 'error', message: 'Please sign in to study history.', signIn: true });
         return;
       }
-      if (res.status === 429) {
-        // The route now answers via apiError(), so retryAfterSec lives under `error.retryAfterSec`
+      if (res.status === 429 || res.status === 503) {
+        // The route answers via apiError(), so retryAfterSec lives under `error.retryAfterSec`
         // (api-error.ts:55), not the top level. Read both the envelope and the legacy top-level
-        // shape, then fall back to the Retry-After header, then the 60s cap. A bare
+        // shape, then fall back to the Retry-After header. A bare
         // `Number(res.headers.get('Retry-After')) ?? 60` would silently drop to 0 on an absent
         // header — `Number(null) === 0`, and `0 ?? 60 === 0` — so the header is gated on > 0.
+        // The 503 was added by e5a62893 (UPSTREAM_UNAVAILABLE for a limiter-DB or auth-service
+        // outage) but only at the route; the client dropped it into the generic !res.ok handler,
+        // discarding this signal and rendering an ungated Retry. Read it here for both statuses,
+        // then gate the 503's Retry the way the 429's `limited` state already paces the reader.
         const b = (await res.json()) as { error?: { retryAfterSec?: number }; retryAfterSec?: number };
         const headerSec = Number(res.headers.get('Retry-After'));
-        const retryAfterSec = b.error?.retryAfterSec ?? b.retryAfterSec ?? (Number.isFinite(headerSec) && headerSec > 0 ? headerSec : 60);
-        setState({ kind: 'limited', retryAfterSec });
+        const retryAfterSec = b.error?.retryAfterSec ?? b.retryAfterSec ?? (Number.isFinite(headerSec) && headerSec > 0 ? headerSec : undefined);
+        if (res.status === 429) {
+          // A genuine quota hit: pace with the `limited` state (no Retry button) and the 60s
+          // fallback that contract implies.
+          setState({ kind: 'limited', retryAfterSec: retryAfterSec ?? 60 });
+          return;
+        }
+        // 503 UPSTREAM_UNAVAILABLE: outage wording, but read the signal and pace the Retry so a
+        // sustained outage does not drive a click-paced re-fetch against the unhealthy upstream
+        // (the limiter minute cap can't bound it — `bump()` throws before it can increment). When
+        // no signal came (e.g. an intermediary's 503 with no envelope), `retryAt` stays undefined
+        // and the Retry stays ungated — pacing on a value that wasn't sent would be a made-up wait.
+        setState({
+          kind: 'error',
+          message: 'History search is unavailable right now.',
+          retryAfterSec,
+          retryAt: retryAfterSec !== undefined ? Date.now() + retryAfterSec * 1000 : undefined,
+        });
         return;
       }
       if (!res.ok) { setState({ kind: 'error', message: 'History search is unavailable right now.' }); return; }
@@ -166,12 +202,15 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
       )}
       {state.kind === 'error' && !busy && (
         <div role="alert" className="mt-8 border edge p-4 text-sm text-stone-700 dark:text-stone-300">
-          {state.message}{' '}
+          {state.message}
+          {state.retryAfterSec !== undefined && (
+            <> Please try again in about {state.retryAfterSec} second{state.retryAfterSec === 1 ? '' : 's'}.</>
+          )}{' '}
           {state.signIn ? (
             // Q1 (the whole point of this branch): tell them how, don't dead-end. A real link.
             <Link href="/auth/sign-in" className="underline hover:text-accent-700 dark:hover:text-accent-300">Sign in</Link>
           ) : (
-            <button type="button" className="underline hover:text-accent-700 dark:hover:text-accent-300" onClick={() => void run(query)}>Retry</button>
+            <button type="button" className="underline hover:text-accent-700 dark:hover:text-accent-300 disabled:cursor-not-allowed disabled:opacity-40" disabled={waiting} onClick={() => void run(query)}>Retry</button>
           )}
         </div>
       )}
