@@ -1680,7 +1680,10 @@ What survives from S1's intent, because it was about honesty rather than layout:
   flagged for owner review.
 
 **Status:** RULED (owner, in session). Implementation on `feat/marketing-site`; deploy remains
-owner-gated per bylaw 7 / A-lane ⚑.
+owner-gated per bylaw 7 / A-lane ⚑. **Amended 2026-09-16:** the privacy/terms-footer-links-absent
+bullet above no longer holds — `/privacy` + `/terms` shipped (written from the code) with a
+footer Legal column (WORKLOG 2026-09-16), superseding the owner-authored-content / dead-links
+stance for those two routes.
 
 ## ADR-112 — GK Chesterton: works published before 1931 may be used; 1931-or-later may not (2026-08-18)
 
