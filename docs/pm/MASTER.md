@@ -98,7 +98,7 @@ Spec `docs/UX_REMEDIATION.md`; sequencing `docs/pm/UX_REMEDIATION_ROADMAP.md`. F
 | C3 | ⚑ `L2` — the plan-write outage | **STEP 1 DONE AND LIVE 2026-08-07** — migration 106 grants, owner-applied, verified live. Step 2 (optimistic toggle): the C4 row claimed it shipped — **disproven 2026-08-22**; implemented on `swarm/W-L2TOGGLE-plan-toggle`, deploy pending |
 | C4 | ⚑ Deploy — ships `L1`'s retry, `L2` step 2, UX-5 | **DEPLOYED** — `2611e1f` live 2026-08-09. The .docx ReDoS CRITICAL is CLOSED and LIVE (`1ab40de`, guarded). Carried open (NOT re-verified 2026-08-10): `db-invariants` red on `main`; DEPLOY_PREFLIGHT rollback bundle predates 044/045 |
 | C5 | ⚑ Neon Auth cutover | **LIVE 2026-08-08** — email/password AND Google verified. Three leftovers filed (GHSA-g38m precondition assembled; 12-char minimum + reset-revokes unenforceable; branded sender lost). **RLS under Neon's user-id format is UNPROVEN** |
-| C6 | Waves 1–4 closed | **OPEN.** `T1`/`T2` wait on an auth migration that does not exist; `T4` on an owner schema call; `T3` is `DEVICE`-only (code complete per `UX_REMEDIATION.md`; device leg NOT RUN); `S1` needs owner-supplied content |
+| C6 | Waves 1–4 closed | **OPEN.** `T1`/`T2` wait on an auth migration that does not exist; `T4` on an owner schema call; `T3` is `DEVICE`-only (code complete per `UX_REMEDIATION.md`; device leg NOT RUN). `S1` is no longer owner-blocked — `/privacy`, `/terms`, and the contact email shipped |
 
 ## Lane D — corpus CDN + /ask latency (opened 2026-08-13, [plan](orders/2026-08-13-cdn-and-ask-latency-plan.md))
 
