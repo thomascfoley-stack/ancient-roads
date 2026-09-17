@@ -113,8 +113,8 @@ hand-typed — and carries a HELD registry for heterogeneous routes (1 at enumer
 still derive as candidates, so the registry cannot silently rot. Green log + three red-proofs
 (route unguarded / guard no-op / derived-glob) committed beside the RED.
 
-**Also carried from the same deferred entry, NOT scheduled:** no global daily ceiling on the
-history limiter. It is recorded here so it is not lost; remedy is a later slice.
+**Also carried from the same deferred entry — FIXED 2026-09-16:** the history limiter now
+charges the shared `corpus:global:day` pool (`web/src/lib/rate-limit.ts`); the gap is closed.
 
 ## GHSA-g38m — RULED 2026-08-08: closed by verification, both sign-in methods kept
 
