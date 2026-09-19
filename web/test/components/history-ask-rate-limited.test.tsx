@@ -12,7 +12,7 @@
 //   * A 503 UPSTREAM_UNAVAILABLE outage FALLS THROUGH the 429 branch and renders the unavailable
 //     message — the core of the bug, which used to surface as a misclassified 429 "Too many
 //     searches … about 30 seconds."
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HistoryAsk } from '@/components/history-ask';
@@ -83,13 +83,77 @@ describe('HistoryAsk — limiter outcome rendering', () => {
   });
 
   it('renders "History search is unavailable right now." on a 503 limiter outage, not a quota hit', async () => {
-    // The fix's point: an outage is 503 UPSTREAM_UNAVAILABLE, which falls through the 429 branch
-    // to the generic !res.ok handler. Before the fix this rendered "Too many searches … 30 seconds".
+    // An outage is 503 UPSTREAM_UNAVAILABLE. Before the reclassification it surfaced as a
+    // misclassified 429 "Too many searches … 30 seconds"; now the outage wording is what the reader
+    // sees. (The 503 branch now also reads/paces retryAfterSec — pinned by the tests below this.)
     respond = () => envelope(503, 'UPSTREAM_UNAVAILABLE', 'We couldn’t reach the study service just now. Please try again in a moment.', 30);
     render(<HistoryAsk initialQuery="Herod" />);
 
     expect(await screen.findByText(/History search is unavailable right now/i)).toBeTruthy();
     // No quota message escapes the outage path — the misclassified 429 wording must not appear.
     expect(screen.queryByText(/Too many searches/i)).toBeNull();
+  });
+
+  it('reads retryAfterSec on a 503 (does not drop it) and renders the wait in the alert', async () => {
+    // Defect A: the 429 branch parses retryAfterSec; the 503 branch used to discard it by landing in
+    // the generic !res.ok handler. The signal must reach the DOM — not just the wording swap above.
+    // This is the assertion the wording-scoped test above left open.
+    respond = () => envelope(503, 'UPSTREAM_UNAVAILABLE', 'We couldn’t reach the study service just now. Please try again in a moment.', 30);
+    render(<HistoryAsk initialQuery="Herod" />);
+
+    expect(await screen.findByText(/History search is unavailable right now/i)).toBeTruthy();
+    expect(screen.getByText(/Please try again in about 30 seconds/i)).toBeTruthy();
+    // The misclassified quota wording still must not escape the outage path.
+    expect(screen.queryByText(/Too many searches/i)).toBeNull();
+  });
+
+  it('disables the Retry button on a 503 — paced, not ungated (Defect B)', async () => {
+    // Each Retry click during a sustained outage re-fetches against an unhealthy upstream; the
+    // limiter minute cap can't bound it (bump() throws before it can increment). The 429 path
+    // paces via the limited state; the 503 path must pace the same, not render an instant retry.
+    respond = () => envelope(503, 'UPSTREAM_UNAVAILABLE', 'We couldn’t reach the study service just now. Please try again in a moment.', 30);
+    render(<HistoryAsk initialQuery="Herod" />);
+
+    expect(await screen.findByText(/History search is unavailable right now/i)).toBeTruthy();
+    const retry = screen.getByRole('button', { name: 'Retry' }) as HTMLButtonElement;
+    expect(retry.disabled, 'an instant retry against a sustained outage is the defect').toBe(true);
+  });
+
+  it('re-enables the Retry button once retryAfterSec elapses', async () => {
+    // The pacing is a wait, not a wall: once the signal's window closes the reader can retry. Real
+    // timers + a 1s window mirrors ask-rate-limited.test.tsx's re-enable assertion verbatim.
+    respond = () => envelope(503, 'UPSTREAM_UNAVAILABLE', 'We couldn’t reach the study service just now. Please try again in a moment.', 1);
+    render(<HistoryAsk initialQuery="Herod" />);
+
+    const retry = await screen.findByRole('button', { name: 'Retry' }) as HTMLButtonElement;
+    expect(retry.disabled).toBe(true);
+    expect(screen.getByText(/Please try again in about 1 second/i)).toBeTruthy();
+    await waitFor(() => expect(retry.disabled).toBe(false), { timeout: 3000 });
+  });
+
+  it('reads retryAfterSec from the Retry-After header when the 503 body carries none', async () => {
+    // The 429 branch falls back to the header; the 503 branch must too, not just the body. A
+    // proxy/WAF 503 may carry the Retry-After header without the apiError envelope.
+    respond = () => new Response(
+      JSON.stringify({ error: { code: 'UPSTREAM_UNAVAILABLE', message: 'We couldn’t reach the study service just now.' } }),
+      { status: 503, headers: { 'content-type': 'application/json', 'Retry-After': '45' } },
+    );
+    render(<HistoryAsk initialQuery="Herod" />);
+
+    expect(await screen.findByText(/Please try again in about 45 seconds/i)).toBeTruthy();
+    const retry = screen.getByRole('button', { name: 'Retry' }) as HTMLButtonElement;
+    expect(retry.disabled).toBe(true);
+  });
+
+  it('keeps the Retry ungated when a 503 carries no retryAfterSec (no made-up wait)', async () => {
+    // Pacing on a value that wasn't sent would be a fabricated wait. An intermediary 503 with no
+    // envelope and no Retry-After header stays ungated — the reader chooses when to try again.
+    respond = () => new Response(JSON.stringify({}), { status: 503, headers: { 'content-type': 'application/json' } });
+    render(<HistoryAsk initialQuery="Herod" />);
+
+    expect(await screen.findByText(/History search is unavailable right now/i)).toBeTruthy();
+    expect(screen.queryByText(/Please try again/i)).toBeNull();
+    const retry = screen.getByRole('button', { name: 'Retry' }) as HTMLButtonElement;
+    expect(retry.disabled).toBe(false);
   });
 });
