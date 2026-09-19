@@ -55,7 +55,7 @@ export async function POST(req: Request): Promise<Response> {
     const code =
       rl.limited === 'unavailable'
         ? 'UPSTREAM_UNAVAILABLE'
-        : rl.limited === 'day'
+        : rl.limited === 'day' || rl.limited === 'global'
           ? 'RATE_LIMIT_DAY'
           : 'RATE_LIMIT_MINUTE';
     return apiError(code, { retryAfterSec: rl.retryAfterSec });
