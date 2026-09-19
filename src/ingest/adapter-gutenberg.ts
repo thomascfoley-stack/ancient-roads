@@ -198,11 +198,17 @@ export const PROFILES: Record<string, Profile> = {
     // title-page/preface mention and swept Hesperides in. Scope: the whole
     // line " HIS NOBLE NUMBERS:" (the part-title where the poems begin) to
     // the appendix "POEMS / NOT INCLUDED IN _HESPERIDES_." Units are the
-    // edition's own numbered poems 1-271; 268 is skipped in Pollard's
-    // numeration (the number is absent from the book, not a dropped poem).
+    // edition's own numbered poems 1-271 — the COMPLETE sequence, no gaps:
+    // poem 268 ("This crosstree here…") IS present, printed with a bare
+    // numeral heading "268." and no descriptive title (the only such poem
+    // in the volume). The pattern admits that empty-title shape and the
+    // slicer folds 268's first verse line into its display heading
+    // (mirroring the _Holy Sonnets._ children build). The earlier
+    // expectMissing:[268] / "268 absent from the book" claim was a false
+    // premise that hid 268 inside poem 267's body.
     sections: {
       scope: { start: /^ HIS NOBLE NUMBERS:$/, end: /^POEMS$/, endNext: /^NOT INCLUDED IN _HESPERIDES_\.$/ },
-      numbered: { pattern: /^(\d{1,3})\. (.+)$/, first: 1, last: 271, expectMissing: [268] },
+      numbered: { pattern: /^(\d{1,3})\.\s*(.*)$/, first: 1, last: 271 },
     },
     register: 'poetry',
   },
@@ -528,7 +534,20 @@ export function scopedSections(body: string, spec: ScopedSpec): ScopedResult {
     }
     for (let u = 0; u < units.length; u++) {
       const kLines = scopeLines.slice(units[u]!.line + 1, u + 1 < units.length ? units[u + 1]!.line : scopeLines.length);
-      finish(`${units[u]!.num}. ${cleanHeading(units[u]!.title)}`, kLines, sections);
+      const title = cleanHeading(units[u]!.title);
+      if (title) {
+        finish(`${units[u]!.num}. ${title}`, kLines, sections);
+      } else {
+        // Bare-numeral heading (Noble Numbers poem 268: Pollard prints "268."
+        // with no descriptive title — the only such poem in the volume). Fold
+        // the first verse line into the display heading and start the body
+        // after it, mirroring the _Holy Sonnets._ children build above
+        // (heading\nbody composes the whole poem; a duplicated first line was
+        // the A6 defect).
+        const firstIdx = kLines.findIndex((l) => l.trim());
+        const firstLine = cleanHeading(firstIdx >= 0 ? kLines[firstIdx]! : '');
+        finish(`${units[u]!.num}. ${firstLine}`, kLines.filter((_, i) => i !== firstIdx), sections);
+      }
     }
   } else {
     throw new Error('FAIL CLOSED: scoped spec declares neither contents nor numbered units');

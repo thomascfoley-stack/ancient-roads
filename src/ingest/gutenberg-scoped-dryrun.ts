@@ -193,10 +193,12 @@ if (slug === 'donne-divine-poems') {
   console.log('  This edition prints no Noble Numbers table of contents (verified: no');
   console.log('  CONTENTS section for the Noble Numbers part of PG #22421), so the');
   console.log('  contents proof is the edition\'s own poem numeration, enforced by the');
-  console.log('  profile itself: numbers 1..271, Pollard skips 268 (absent from the');
-  console.log('  book — a numeration gap, not a dropped poem). The engine ABORTS on');
-  console.log('  any other gap, dupe, or out-of-range number; it did not abort.');
-  console.log(`  ✓ ${result.sections.length} numbered poems kept, sequence 1..271 minus [268] verified`);
+  console.log('  profile itself: the COMPLETE sequence 1..271, no gaps — poem 268');
+  console.log('  ("This crosstree here…") is present, printed with a bare-numeral');
+  console.log('  heading "268." and no descriptive title (the only such poem in the');
+  console.log('  volume). The engine ABORTS on any gap, dupe, or out-of-range');
+  console.log('  number; it did not abort.');
+  console.log(`  ✓ ${result.sections.length} numbered poems kept, sequence 1..271 (no gaps) verified`);
 }
 console.log(`\n${failures === 0 ? '✓ ALL CHECKS PASSED' : `✗ ${failures} CHECK(S) FAILED`} — ${slug}`);
 if (failures) process.exitCode = 1;
