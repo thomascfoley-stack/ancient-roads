@@ -17,7 +17,7 @@ export const metadata = {
     'What Ancient Paths collects, who processes it, and how to have it deleted. Written from the code, in plain English.',
 };
 
-const UPDATED = '16 September 2026';
+const UPDATED = '19 September 2026';
 
 export default function PrivacyPage() {
   return (
@@ -105,9 +105,8 @@ export default function PrivacyPage() {
           </p>
           <ul className="mb-8 space-y-3 pl-6">
             <li className="list-disc"><strong className="font-sans text-base font-semibold text-stone-900">Vercel</strong> &mdash; hosting, and private file storage for uploads.</li>
-            <li className="list-disc"><strong className="font-sans text-base font-semibold text-stone-900">Neon</strong> &mdash; the database, and the accounts service behind sign-in.</li>
+            <li className="list-disc"><strong className="font-sans text-base font-semibold text-stone-900">Neon</strong> &mdash; the database, the accounts service behind sign-in, and the email that verifies your address.</li>
             <li className="list-disc"><strong className="font-sans text-base font-semibold text-stone-900">DeepInfra</strong> &mdash; turns text into search vectors, and writes the short framing sentence around quoted answers.</li>
-            <li className="list-disc"><strong className="font-sans text-base font-semibold text-stone-900">Resend</strong> &mdash; sends account email, such as sign-in verification.</li>
             <li className="list-disc"><strong className="font-sans text-base font-semibold text-stone-900">PostHog</strong> &mdash; product analytics.</li>
           </ul>
 
