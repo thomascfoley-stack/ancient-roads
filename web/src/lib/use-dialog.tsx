@@ -17,8 +17,13 @@ import { useEffect, useRef } from 'react';
 // anchored popover) and wrapping them all would mean rewriting layout that already works.
 // This adds behaviour and leaves the markup alone.
 //
-// Escape is bound in the CAPTURE phase so a sheet opened over another surface closes
-// itself first, and `stopPropagation` keeps one Escape from closing two things.
+// Escape is bound in the CAPTURE phase. Every stacked useDialog overlay registers its
+// listener on the SAME `document` node, so `stopPropagation` alone cannot keep one Escape
+// from closing two things — it does not stop other listeners on the same node (DOM Standard
+// §2.7; only `stopImmediatePropagation` does). A module-level open-dialog stack gates Escape
+// so only the topmost (last-mounted) dialog consumes it, and the topmost additionally calls
+// `stopImmediatePropagation` to block any later same-node listeners.
+const OPEN_STACK: { close: () => void }[] = [];
 
 const FOCUSABLE = [
   'a[href]',
@@ -53,6 +58,12 @@ export function useDialog(onClose: () => void, label: string) {
 
   useEffect(() => {
     const node = ref.current;
+    // Register on the open-dialog stack so Escape closes only the topmost overlay when two or
+    // more are open at once. The cleanup splices us back out, so the stack mirrors the open set
+    // exactly — invariant under React StrictMode's mount→cleanup→mount double-invoke, which
+    // removes the first `self` before a second is pushed.
+    const self = { close: () => onCloseRef.current() };
+    OPEN_STACK.push(self);
     // Captured BEFORE focus moves, so it is the trigger rather than the sheet — and captured ONCE.
     //
     // It used to be a plain `const previouslyFocused = document.activeElement` read on every run of
@@ -83,8 +94,14 @@ export function useDialog(onClose: () => void, label: string) {
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
+        // Only the topmost overlay consumes an Escape. Same-node capture listeners fire in
+        // registration order (outer first), so an outer dialog's handler reaches this branch
+        // BEFORE the topmost and must do nothing — otherwise one Escape closes every stacked
+        // overlay. `stopImmediatePropagation` then blocks any later same-node listeners.
+        if (OPEN_STACK[OPEN_STACK.length - 1] !== self) return;
         e.stopPropagation();
-        onCloseRef.current();
+        e.stopImmediatePropagation();
+        self.close();
         return;
       }
       // D15 (DEEP_SWEEP, P2): this used the `node` captured when the effect ran. BookPicker
@@ -127,6 +144,8 @@ export function useDialog(onClose: () => void, label: string) {
     document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.removeEventListener('keydown', onKeyDown, true);
+      const stackIndex = OPEN_STACK.indexOf(self);
+      if (stackIndex !== -1) OPEN_STACK.splice(stackIndex, 1);
       // Only restore if focus is still inside the sheet (or nowhere). If the reader has
       // already clicked something else, stealing it back would be worse than not restoring.
       const active = document.activeElement;
