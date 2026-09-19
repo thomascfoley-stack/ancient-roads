@@ -74,4 +74,20 @@ describe('search route — limiter → apiError mapping', () => {
     expect(res.headers.get('Retry-After')).toBe('3600');
     expect((await res.json()).error.code).toBe('RATE_LIMIT_DAY');
   });
+
+  // Commit 6daff0e7 (2026-09-16) added the fleet-wide `corpus:global:day` ceiling, making
+  // `checkCorpusSearchRateLimit` newly able to return `limited: 'global'` (retryAfterSec: 3600).
+  // The route's ternary only branched on 'unavailable' and 'day', so 'global' fell through to the
+  // `RATE_LIMIT_MINUTE` branch — reporting a fleet-wide daily cap as a per-minute cap. /api/ask
+  // has carried `rl.limited === 'day' || rl.limited === 'global'` since 10023675; this pins the
+  // same arm here so the misclassification cannot recur silently.
+  it('maps a fleet-wide global trip (global) to 429 RATE_LIMIT_DAY, not RATE_LIMIT_MINUTE', async () => {
+    searchLimit = { ok: false, limited: 'global', retryAfterSec: 3600 };
+    const res = await call('q=grace');
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('3600');
+    const body = await res.json();
+    expect(body.error.code).toBe('RATE_LIMIT_DAY');
+    expect(body.error.retryAfterSec).toBe(3600);
+  });
 });

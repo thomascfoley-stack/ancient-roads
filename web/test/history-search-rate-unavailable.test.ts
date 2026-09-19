@@ -81,4 +81,26 @@ describe('POST /api/history/search — limiter → apiError mapping', () => {
     expect(body.error.retryAfterSec).toBe(3600);
     expect(searchHistory).not.toHaveBeenCalled();
   });
+
+  // Commit 6daff0e7 (2026-09-16) added the fleet-wide `corpus:global:day` ceiling across the
+  // corpus/history limiters, making `checkHistorySearchRateLimit` newly able to return
+  // `limited: 'global'` (retryAfterSec: 3600). The route's ternary only branched on 'unavailable'
+  // and 'day', so 'global' fell through to the `RATE_LIMIT_MINUTE` branch — reporting a fleet-wide
+  // daily cap as a per-minute cap, and emitting an internally inconsistent 429 (code/message say
+  // sub-minute while `Retry-After: 3600`). /api/ask has carried `rl.limited === 'day' ||
+  // rl.limited === 'global'` since 10023675; this pins the same arm here. The sole client
+  // (history-ask.tsx) reads `retryAfterSec` and ignores `code`/`message`, so this is a
+  // wire-consistency guard as much as a user-facing one — but the 3600s window it reads is still
+  // asserted below.
+  it('maps a fleet-wide global trip (global) to 429 RATE_LIMIT_DAY, not RATE_LIMIT_MINUTE', async () => {
+    vi.mocked(checkHistorySearchRateLimit).mockResolvedValue({ ok: false, limited: 'global', retryAfterSec: 3600 } as never);
+    const res = await post({ query: 'ephesus' });
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('3600');
+    const body = await res.json();
+    expect(body.error.code).toBe('RATE_LIMIT_DAY');
+    expect(body.error.retryAfterSec).toBe(3600);
+    // The fail-closed SPEND invariant: a denied search never reaches retrieval.
+    expect(searchHistory).not.toHaveBeenCalled();
+  });
 });
