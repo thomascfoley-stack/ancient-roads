@@ -33,9 +33,47 @@ const SRC = arg('--src') ?? '/tmp/ap-bibles/jps-usfm';
 const ID = 'jps';
 const OUT = `web/public/bible/${ID}`;
 
+// ── VERSE-TEXT CLEANUP (extracted for direct testing) ──
+//
+// eBible's engjps source carries two kinds of inline editorial metadata on the
+// \v line that are NOT Scripture text and must be stripped before writing:
+//   1. Parenthetical original-reference markers "(22-1) … (22-2) …" — eBible
+//      pre-mapped the MT versification to English (KJV) numbering and kept the
+//      ORIGINAL refs as inline parenthetical markers. Whole-string, anywhere,
+//      possibly multiple per verse.
+//   2. Psalms-book section banners "BOOK I" … "BOOK V" — eBible inlined the
+//      traditional Jewish five-fold division of Psalms (Pss 1–41 / 42–72 /
+//      73–89 / 90–106 / 107–150) at the START of \v 1 of Psalms 1, 42, 73, 90,
+//      and 107. In the printed JPS 1917 these are section headings ABOVE the
+//      psalm, not part of the verse text; eBible stranded them inside \v 1 and
+//      `parseUsfmFile` (usfm.ts) captured them as verse text. The ingester
+//      must remove them. Anchored with `^` because the banner always sits at
+//      position 0 of the verse text and never recurs later in the same verse,
+//      and a non-anchored strip would risk removing a legitimate `BOOK V`
+//      appearing mid-verse.
+//
+// ORDER: the (N-M) strip runs FIRST so the BOOK anchor still sees position 0
+// on the Ps 42:1 line, where the banner precedes a (42-1) marker
+// (`\v 1 BOOK II (42-1) For the Leader…`). Stripping the markers first leaves
+// `BOOK II For the Leader…`, which the anchored BOOK strip then removes. The
+// `\s+` → ` ` normalization and `trim()` run last.
+//
+// Exported so the cleanup can be exercised against known-bad fixtures
+// without standing up a USFM tree or the gitignored KJV corpus (same reason
+// `canonExactDiffs` below is exported). The banner strip was MISSING from
+// the original ingester (commit 9b4cb087 added only the (N-M) strip) and is
+// the fix for the latent `BOOK I..V` leak on Pss 1/42/73/90/107.
+export function cleanJpsVerseText(text: string): string {
+  return text
+    .replace(/\(\d+-\d+\)\s*/g, '')
+    .replace(/^BOOK [IVX]+\s+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ── CANON-EXACT PROOF (extracted for direct testing) ──
 //
-// The whole premise of using this pre-mapped source. A pre-mapped claim is a
+// The whole premise of using this source. A pre-mapped claim is a
 // hypothesis until the counts agree (THE_LOOP rule 4); this is the ingest-time
 // gate that PROVES the result is canon-exact before anything is written.
 //
@@ -105,8 +143,10 @@ function main() {
 
   const verses = parseUsfmDir(SRC).map((v) => ({
     ...v,
-    // eBible's original-reference markers: "(3-1)", "(22-2)" — metadata, not text.
-    text: v.text.replace(/\(\d+-\d+\)\s*/g, '').replace(/\s+/g, ' ').trim(),
+    // Strip eBible's two kinds of inline \v-line editorial metadata before
+    // writing: the "(N-M)" original-ref markers and the "BOOK I..V" Psalms-book
+    // section banners on Pss 1/42/73/90/107. See `cleanJpsVerseText` above.
+    text: cleanJpsVerseText(v.text),
   }));
 
   // ── CANON-EXACT PROOF — the whole premise of using this source. ──
