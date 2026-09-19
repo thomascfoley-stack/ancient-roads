@@ -1,5 +1,53 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-09-19 — My Works search: degraded banner no longer blames semantic search when the FTS arm failed
+
+The fused path in `/api/user-corpus/search` (`web/src/app/api/user-corpus/search/route.ts`) used
+one `catch` for every failure inside its `try` and always returned the same user-facing banner —
+`degraded: 'semantic search is unavailable; showing keyword matches only'` — regardless of which
+of three structurally distinct sources threw. The `try` runs `embedChunks` (the embedder) and then
+`searchMyWorks`, which fires a vector scan and a `websearch_to_tsquery` Postgres FTS query
+concurrently via `Promise.all` over two independent pooled connections. `Promise.all` is
+first-rejection-wins: if the keyword (FTS) arm rejected while the cosine arm was still in flight,
+the catch fired with the embedder provably up (it already produced the query vector) and semantic
+search never observed to fail — yet the banner told the user "semantic search is unavailable".
+The route's own comment ("The embedder is the only external dependency here") codified the wrong
+assumption; `searchMyWorks` is a Postgres dependency over a pooled connection that can reject.
+
+**Fix.** Branch on whether the embedder actually failed. Type-narrow in the catch:
+`const embedderDown = e instanceof EmbeddingUnavailable;` (imported from `@/lib/user-corpus/embed`).
+Only an `EmbeddingUnavailable` from `embedChunks` justifies the word "semantic"; anything else is
+a `searchMyWorks` rejection of unknown arm, so the banner is the generic
+`'search is degraded; showing keyword matches only'`. The audit outcome tag `keyword-degraded`
+is unchanged — the bug report establishes it is honest-as-outcome (it distinguishes a degraded
+run from ordinary keyword usage in the query log) and only misleading-as-cause; the user banner
+is the cause attribution the fix corrects. The actual error message is still on stderr via the
+existing `console.error('[user-corpus] search fell back to keyword:', …)` line, so operator triage
+that cross-references the audit log against the application log still sees the real cause.
+
+**Evidence.** New hermetic regression test
+`web/test/user-corpus/search-degraded-mislabel.test.ts` (10 tests) drives the catch — the first
+test to do so; every prior `search-*.test.ts` mocked `searchMyWorks` to resolve, so the catch had
+never run in CI. The embed module's mock factory returns a faithful `EmbeddingUnavailable` class
+so the route's `instanceof` narrowing and the test's throws bind to the same class object. RED-PROOF
+watched before the fix went in (THE_LOOP rule 4): revert the route to the original → exactly 3 of 10
+tests FAIL (`expected 'semantic search is unavailable; showi…' to be 'search is degraded; showing
+keyword m…'`) — the mislabel cases — while 7 PASS (embedder-down regression guard, fallback-also-
+fails INTERNAL, happy fused, non-fused modes). Restore the fix → 10/10 pass.
+
+**NOT DONE / UNVERIFIED**
+- The DB-gated `web/test/user-corpus/search.test.ts` was NOT RUN in this environment (no
+  `APP_DATABASE_URL`, no `DEEPINFRA_API_KEY`, no `web/public/bible/kjv`); it loud-skipped via
+  `announceSkip` (17/17 skipped). It exercises the lib functions, not the route, so it would not
+  have covered the mislabel fix directly in any case.
+- Browser UI verification (CLAUDE.md Definition of Done for any UI/client change) was NOT RUN:
+  `next dev` started on :3939 but `curl POST /api/user-corpus/search` returned **HTTP 401
+  `{"error":"Unauthorized"}`** at `guardUser()` — no authenticated session, no `APP_DATABASE_URL`
+  for the auth DB. No browser automation is installed (no playwright/cypress/puppeteer), no
+  `DISPLAY`. The fix only changes the string `my-works.tsx:655` renders via
+  `setSearchNote(d.degraded)`; the test pins the exact string for both banner branches.
+
+
 ## 2026-09-16 — LIVE `94d8053`: Privacy + Terms, and a fleet ceiling on the paid corpus paths
 
 Two blockers from the pre-launch readiness review (PR #328), deployed the same day.
