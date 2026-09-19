@@ -3,7 +3,7 @@ import { guardUser } from '@/lib/user-corpus/route-guard';
 import { checkCorpusSearchRateLimit } from '@/lib/rate-limit';
 import { requireJsonContentType } from '@/lib/csrf-floor';
 import { apiError } from '@/lib/api-error';
-import { embedChunks } from '@/lib/user-corpus/embed';
+import { embedChunks, EmbeddingUnavailable } from '@/lib/user-corpus/embed';
 import { keywordSearch, searchMyWorks, verseAnchorScan } from '@/lib/user-corpus/search';
 import { parseRef, type VerseRange } from '@bible/ref-parse';
 import { scheduleSearchOutcome, type SearchParams } from '@/lib/search-outcomes';
@@ -210,20 +210,32 @@ export async function POST(req: Request): Promise<Response> {
     logSearch('fused', q, hits.length);
     return NextResponse.json({ mode: 'fused', q, hits });
   } catch (e) {
-    // The embedder is the only external dependency here. Degrade to FTS rather than returning
-    // nothing: a keyword answer is a worse answer, and no answer looks like an empty corpus.
+    // The embedder is the ONE external dependency whose failure justifies the word "semantic".
+    // `searchMyWorks` is NOT — it fires a vector scan AND a `websearch_to_tsquery` Postgres FTS
+    // query concurrently via `Promise.all` over two independent pooled connections, and
+    // first-rejection-wins discards whichever arm succeeded. A keyword (FTS) arm transient
+    // rejecting inside that `Promise.all` reaches this catch with the embedder provably up (it
+    // already produced the query vector above) and semantic search never observed to fail — so
+    // blaming "semantic search is unavailable" in that case is the mislabel this branch fixes.
+    // Only an `EmbeddingUnavailable` from `embedChunks` (or the embedder-side guard below) proves
+    // the embedder was the failure; anything else is a `searchMyWorks` rejection of unknown arm.
     console.error('[user-corpus] search fell back to keyword:', String((e as Error)?.message ?? e));
+    const embedderDown = e instanceof EmbeddingUnavailable;
     // D35: the FALLBACK itself was unwrapped — if FTS is what is down, the degrade path threw
     // straight out of the handler, turning a graceful degradation into a raw 500.
-    // UNION 2026-08-24: the 129 log records the DEGRADED mode distinctly, so "semantic search was
-    // down" is visible in the query log rather than looking like ordinary keyword usage.
+    // UNION 2026-08-24: the 129 log records the DEGRADED mode distinctly (the OUTCOME "fell back
+    // to keyword"), so a degraded run is visible in the query log rather than looking like
+    // ordinary keyword usage. The OUTCOME tag is honest-as-outcome; the user banner below is the
+    // CAUSE attribution, and must not claim semantic was down when the embedder succeeded.
     try {
       const hits = await keywordSearch(user.id, q, scope);
       logSearch('keyword-degraded', q, hits.length);
       return NextResponse.json({
         mode: 'keyword',
         q,
-        degraded: 'semantic search is unavailable; showing keyword matches only',
+        degraded: embedderDown
+          ? 'semantic search is unavailable; showing keyword matches only'
+          : 'search is degraded; showing keyword matches only',
         hits,
       });
     } catch (e2) {
