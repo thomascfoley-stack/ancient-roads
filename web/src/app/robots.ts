@@ -32,7 +32,13 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         // Order matters to crawlers only as specificity; stating the deny first is for the reader.
         disallow: '/',
-        allow: [...PUBLIC_MARKETING_ROUTES],
+        // `PUBLIC_MARKETING_ROUTES` carries "/" (benign for `sitemap.ts`, which special-cases it
+        // to the exact URL `https://ancientpaths.app`). Here entries are path-PREFIX patterns, so
+        // a bare `Allow: /` would tie `Disallow: /` and — per RFC 9309 §2.2.2 — win, exposing every
+        // path including the licensed corpus. End-anchor the root to `/$` so it matches only the
+        // homepage. Do NOT "simplify" this map back to a bare spread: that is the bug 60a43f14
+        // introduced and test/robots-allowlist.test.ts pins red.
+        allow: [...PUBLIC_MARKETING_ROUTES].map((p) => (p === '/' ? '/$' : p)),
       },
     ],
     sitemap: 'https://ancientpaths.app/sitemap.xml',
