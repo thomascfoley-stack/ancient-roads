@@ -47,6 +47,7 @@ function makeDoc(over: Partial<UserDocument> = {}): UserDocument {
     readingsDoneAt: null,
     suggestedReference: null,
     suggestedDate: null,
+    refusalCode: null,
     ...over,
   };
 }

@@ -6,7 +6,7 @@ import { runAsUser } from '@/lib/db';
 import { CLAIMED_STATUSES, STALE_CLAIM_MINUTES } from './claim-constants';
 import { deleteUserDocument } from './blob';
 import { MAX_BYTES_PER_USER, MAX_DOCUMENTS_PER_USER, QuotaExceeded, quotaVerdict } from './quota';
-import type { DocStatus, DocType, UserDocument } from './types';
+import type { DocStatus, DocType, RefusalCode, UserDocument } from './types';
 
 interface Row {
   id: string;
@@ -35,6 +35,8 @@ interface Row {
   readings_done_at: string | null;
   suggested_reference: string | null;
   suggested_date: string | null;
+  // Migration 131 — refusal discriminator for the four non-'empty' parse refusals.
+  refusal_code: string | null;
 }
 
 function toDocument(r: Row): UserDocument {
@@ -65,6 +67,9 @@ function toDocument(r: Row): UserDocument {
     readingsDoneAt: r.readings_done_at ?? null,
     suggestedReference: r.suggested_reference ?? null,
     suggestedDate: r.suggested_date ?? null,
+    // Migration 131: the column is TEXT; narrow to the closed RefusalCode set. NULL (transient
+    // failure, 'empty', or a row refused before this column shipped) reads as null — retryable.
+    refusalCode: (r.refusal_code as RefusalCode | null) ?? null,
   };
 }
 
@@ -291,7 +296,10 @@ export async function setBlobPathname(userId: string, id: string, pathname: stri
 
 /**
  * Move a document to a new state. `error` is cleared on every non-failure transition so a retry
- * that succeeds does not leave last time's message sitting under a green status.
+ * that succeeds does not leave last time's message sitting under a green status. `refusalCode`
+ * (migration 131) is the same shape: a refusal catch writes its verdict's code so the retry route
+ * and UI can tell a verdict from a transient failure, and every other transition writes NULL so a
+ * stale code can never outlive the verdict it recorded.
  */
 /**
  * D9 (DEEP_SWEEP): requeue a document for retry, atomically, and only if no worker is holding it.
@@ -369,12 +377,19 @@ export async function requeueForRetry(
   // K1: default TRUE, so the explicit Retry button keeps its fresh budget — pressing Retry is a
   // deliberate act on one document. The re-upload path passes false, because re-sending identical
   // bytes is not new information and must not refill the ceiling.
+  //
+  // The SAME UPDATE clears `refusal_code` (migration 131): a requeue hands the row another chance
+  // by definition — the retry button only reaches here for transient-exhausted rows (refusals
+  // 409 in the route above), and the heal path requeues precisely to re-try. Leaving a prior
+  // verdict's code on a freshly-queued row would make the route 409 a document the queue was
+  // about to re-process, so the column is cleared in lockstep with `parse_error`.
   const resetAttempts = opts.resetAttempts ?? true;
   const claimed: string[] = [...CLAIMED_STATUSES];
   const [rows] = await runAsUser(userId, (sql) => [
     sql`UPDATE user_documents
            SET status = 'queued', parse_error = NULL,
                attempts = CASE WHEN ${resetAttempts} THEN 0 ELSE attempts END,
+               refusal_code = NULL,
                claimed_at = NULL, updated_at = now()
          WHERE user_id = ${userId} AND id = ${id}
            AND NOT (status = ANY(${claimed})
@@ -390,10 +405,19 @@ export async function setDocStatus(
   id: string,
   status: DocStatus,
   error?: string | null,
+  refusalCode?: RefusalCode | null,
 ): Promise<void> {
+  // Refusal-code handling: the column is ALWAYS written here, never left to drift. A refusal
+  // catch passes its `e.code` (for the four non-'empty' refusals) so the retry route and UI can
+  // tell a verdict from a transient-exhausted 'failed' row; every other caller leaves
+  // `refusalCode` undefined, which writes NULL — clearing any stale code from a prior verdict
+  // the moment the row moves to any other status. `e.code === 'empty'` does NOT set it: 'empty'
+  // has its own status value and the route 409s on that already.
   await runAsUser(userId, (sql) => [
     sql`UPDATE user_documents
-        SET status = ${status}, parse_error = ${error ?? null}, updated_at = now()
+        SET status = ${status}, parse_error = ${error ?? null},
+            refusal_code = ${refusalCode ?? null},
+            updated_at = now()
         WHERE user_id = ${userId} AND id = ${id}`,
   ]);
 }

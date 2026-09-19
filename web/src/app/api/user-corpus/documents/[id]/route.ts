@@ -65,17 +65,26 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<Response> {
  *
  * Refusals are NOT retryable. A scan without a text layer and an empty file are verdicts about the
  * file, not transient errors, and re-running the same parse over the same bytes cannot reach a
- * different answer. Offering retry there would be an invitation to click forever.
+ * different answer. Offering retry there would be an invitation to click forever. 'empty' has its
+ * own status value and is 409'd first; the four remaining refusals (needs_ocr, corrupt,
+ * too_large_decompressed, the UTF-8-decode unsupported_type) collapse to status='failed' just like
+ * a transient-exhaustion row, so they are told apart by the `refusalCode` the worker's catch writes
+ * at the same UPDATE (migration 131) — when that code is present the row is a verdict and retry
+ * cannot help, so it is 409'd before `requeueForRetry` ever runs. `requeueForRetry` still defaults
+ * to `resetAttempts: true` for the rows that DO reach it: the Retry button is a deliberate act on
+ * a TRANSIENT failure, and a fresh budget is the point (the claim predicate otherwise ignores the
+ * row, and the button would appear to succeed and then never be picked up).
  */
 export async function POST(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
 
-  // METERED LIKE AN UPLOAD (H5a): a retry re-embeds the WHOLE document through the same drain,
-  // and the attempts reset below means MAX_ATTEMPTS bounds consecutive failures, never spend —
-  // without this, holding the retry button was an unmetered embedding loop. Same bucket as
-  // upload, deliberately: both actions buy the same thing.
+  // METERED LIKE AN UPLOAD (H5a): a retry re-drains the document and the attempts reset in
+  // requeueForRetry means MAX_ATTEMPTS bounds consecutive failures, never spend on a single row —
+  // without this, holding the retry button was an unmetered parse/embed loop. Same bucket as
+  // upload, deliberately: both actions buy the same thing. (Refusals never reach here — they 409
+  // at the refusal-code gate below — so this meter is spent only on rows a retry can help.)
   const limit_ = await checkCorpusUploadRateLimit(user.id);
   if (!limit_.ok) {
     return NextResponse.json(
@@ -109,9 +118,24 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<Response> {
         { status: 409 },
       );
     }
+    // A refusal (needs_ocr / corrupt / too_large_decompressed / the UTF-8-decode unsupported_type)
+    // is a VERDICT about the file, not a transient error — re-running the same parse over the same
+    // bytes cannot change the answer. Every non-'empty' refusal collapses to status='failed', so it
+    // is told from a transient-exhausted 'failed' row by the `refusalCode` the worker's catch wrote
+    // alongside the status (migration 131). When that code is present the row is a verdict and a
+    // retry would just re-refuse on the next parse, so 409 BEFORE `requeueForRetry` — otherwise the
+    // route would re-queue a verdict, the catch would re-write the same verdict, and the
+    // `resetAttempts: true` default would zero `attempts` each click, end-running the queue's
+    // MAX_ATTEMPTS ceiling exactly as the docstring above disavows.
+    if (doc.refusalCode) {
+      return NextResponse.json(
+        { error: 'That file was refused at parse time, so retrying cannot change the result.' },
+        { status: 409 },
+      );
+    }
 
-    // D9 (DEEP_SWEEP): this was setDocStatus + resetAttempts as TWO transactions on a row a worker
-    // might be actively holding, followed by a drain kick — so the same document went to a second
+    // D9 (DEEP_SWEEP): this was setDocStatus + resetAttempts as TWO transactions on a row a
+    // worker might be actively holding, followed by a drain kick — so the same document went to a second
     // worker: double parse, double PAID embedding, and two storeSections DELETE+INSERT pairs that
     // are not mutually exclusive under READ COMMITTED. The UI invites it, offering Retry on any doc
     // stuck >5 min, which is also STALE_CLAIM_MINUTES — and a live worker on a large PDF is

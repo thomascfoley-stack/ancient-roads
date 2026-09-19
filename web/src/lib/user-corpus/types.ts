@@ -66,6 +66,19 @@ export interface UserDocument {
   /** Display-only chips, extracted from the manuscript head (migration 124). */
   suggestedReference: string | null;
   suggestedDate: string | null;
+  /**
+   * The RefusalCode a parse refusal verdicted this row with (migration 131), or null.
+   *
+   * Every non-'empty' UploadRefused (needs_ocr / corrupt / too_large_decompressed / the UTF-8-decode
+   * unsupported_type) is written at status='failed' alongside this code, so the retry route and the
+   * UI can tell a refusal — re-running the same parse over the same bytes cannot change the answer —
+   * from a transient-exhausted 'failed' row that a retry CAN help. 'empty' keeps its own status value
+   * and does NOT set this column (the route 409s on status === 'empty' already). NULL for transient
+   * failures, for 'empty', and for rows refused before this column shipped. Cleared on every
+   * requeue (requeueForRetry) and every non-refusal setDocStatus transition, so a stale code can
+   * never outlive the verdict it recorded.
+   */
+  refusalCode: RefusalCode | null;
 }
 
 /**

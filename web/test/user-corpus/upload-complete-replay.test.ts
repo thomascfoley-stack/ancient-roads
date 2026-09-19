@@ -69,6 +69,7 @@ function makeDoc(partial: Partial<UserDocument> & { id: string }): UserDocument 
     readingsDoneAt: null,
     suggestedReference: null,
     suggestedDate: null,
+    refusalCode: null,
     ...partial,
   };
 }
