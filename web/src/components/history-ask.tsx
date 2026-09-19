@@ -28,6 +28,12 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
     | { kind: 'limited'; retryAfterSec: number }
   >({ kind: 'empty' });
   const searchNo = useRef(0);
+  // Generation guard so an in-flight search that resolves AFTER a "New study" reset cannot write
+  // its results back over the emptied state. The reset fires on the click itself (see `reset`
+  // below), which can land while a second search from the results screen is still in flight; the
+  // router reconciles — not remounts — the /ask segment on a searchParam change, so the reset has
+  // to be the click, and the click must invalidate anything already racing it.
+  const runToken = useRef(0);
 
   // The wait says so ONCE, at five seconds, and then stops — a ticking counter would turn a slow
   // search into a stopwatch the reader watches. Deliberately NOT "the first search of a session is
@@ -43,6 +49,7 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
   const run = async (raw: string): Promise<void> => {
     const q = raw.trim();
     if (!q || busy) return;
+    const token = ++runToken.current;
     setBusy(true);
     try {
       const res = await fetch('/api/history/search', {
@@ -51,7 +58,7 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
         body: JSON.stringify({ query: q }),
       });
       if (res.status === 401) {
-        setState({ kind: 'error', message: 'Please sign in to study history.', signIn: true });
+        if (token === runToken.current) setState({ kind: 'error', message: 'Please sign in to study history.', signIn: true });
         return;
       }
       if (res.status === 429) {
@@ -63,17 +70,18 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
         const b = (await res.json()) as { error?: { retryAfterSec?: number }; retryAfterSec?: number };
         const headerSec = Number(res.headers.get('Retry-After'));
         const retryAfterSec = b.error?.retryAfterSec ?? b.retryAfterSec ?? (Number.isFinite(headerSec) && headerSec > 0 ? headerSec : 60);
-        setState({ kind: 'limited', retryAfterSec });
+        if (token === runToken.current) setState({ kind: 'limited', retryAfterSec });
         return;
       }
-      if (!res.ok) { setState({ kind: 'error', message: 'History search is unavailable right now.' }); return; }
+      if (!res.ok) { if (token === runToken.current) setState({ kind: 'error', message: 'History search is unavailable right now.' }); return; }
       const body = (await res.json()) as HistoryPayload & { threadId: string | null };
+      if (token !== runToken.current) return;
       setState({ kind: 'results', seq: ++searchNo.current, query: q, data: body, threadId: body.threadId });
       // Persisted thread gets the URL so reload and back both land here (UX-4 parity).
       if (body.threadId) window.history.pushState(null, '', `/ask/${body.threadId}?mode=history`);
     } catch {
-      setState({ kind: 'error', message: 'History search is unavailable right now.' });
-    } finally { setBusy(false); }
+      if (token === runToken.current) setState({ kind: 'error', message: 'History search is unavailable right now.' });
+    } finally { if (token === runToken.current) setBusy(false); }
   };
 
   // The carried query, keyed on its VALUE, not a boolean. App Router reconciles the same /ask
@@ -88,6 +96,21 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
     void run(initialQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
+
+  // "New study" (history-results.tsx) promises one-click recovery to the empty invitation. App
+  // Router reconciles — does not remount — the /ask segment on a searchParam change, so navigating
+  // from /ask/<threadId>?mode=history (or /ask?mode=history&q=…) back to /ask?mode=history drops
+  // `q` to undefined, the carried-query effect above early-returns on null, and the same
+  // HistoryAsk instance keeps its results state — the URL moved and the screen did not. Resetting
+  // on the CLICK itself sidesteps the router: it fires before the navigation, regardless of
+  // whether the segment is reconciled, remounted, or no-ops.
+  const reset = (): void => {
+    runToken.current++;            // an in-flight search that resolves after the click is now stale
+    ranInitialFor.current = null;  // a later carried ?q= — even the same value — must run, not dedupe
+    setQuery('');
+    setState({ kind: 'empty' });
+    setBusy(false);
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
@@ -176,7 +199,7 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
         </div>
       )}
       {state.kind === 'results' && (
-        <HistoryResults key={state.seq} data={state.data} query={state.query} threadId={state.threadId} />
+        <HistoryResults key={state.seq} data={state.data} query={state.query} threadId={state.threadId} onReset={reset} />
       )}
     </div>
   );

@@ -52,8 +52,8 @@ const CHIP = 'inline-flex min-h-[30px] items-center border px-2.5 text-xs transi
 const CHIP_ON = 'border-accent-400 bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200';
 const CHIP_OFF = 'edge text-stone-600 hover:bg-accent-50/50 dark:text-stone-400 dark:hover:bg-accent-950/20';
 
-export function HistoryResults({ data, query, threadId }: {
-  data: HistoryPayload; query: string; threadId: string | null;
+export function HistoryResults({ data, query, threadId, onReset }: {
+  data: HistoryPayload; query: string; threadId: string | null; onReset?: () => void;
 }): React.ReactElement {
   const [offEntities, setOffEntities] = useState<Set<string>>(new Set());
   const [bucket, setBucket] = useState<number | null>(null);
@@ -117,7 +117,7 @@ export function HistoryResults({ data, query, threadId }: {
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
       <div className="flex items-baseline justify-between gap-4">
         <h1 className="min-w-0 break-words font-display text-2xl font-medium tracking-tight text-stone-900 dark:text-stone-100">&ldquo;{query}&rdquo;</h1>
-        <Link href="/ask?mode=history" className="shrink-0 text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300">New study</Link>
+        <Link href="/ask?mode=history" onClick={() => onReset?.()} className="shrink-0 text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300">New study</Link>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
