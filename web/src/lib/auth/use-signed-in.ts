@@ -34,3 +34,24 @@ export function useSignedIn(): boolean {
   useEffect(() => setMounted(true), []);
   return mounted && !!session?.user;
 }
+
+/**
+ * The signed-in reader's IDENTITY, for client effects keyed on the account (not merely on whether
+ * someone is signed in). The companion to `useSignedIn`: when the signed-in account changes across
+ * a cross-tab sign-out / sign-in on a shared device, the work page's `SaveToShelf` must reset and
+ * refetch its shelf state — the same transition `useRailGroups` in the sidebar already guards
+ * against. The boolean `signedIn` cannot detect that transition, because on the realistic path it
+ * never goes through `false`: the session atom moves A -> B directly via a fresh `/get-session`
+ * refetch driven by the `storage` broadcast, so both ends carry a `user`. Keying the effect on
+ * `userId` is what makes the transition re-run it.
+ *
+ * Intentionally NOT gated on `mounted`, exactly like the sidebar's own `userId = session?.user?.id`
+ * (sidebar.tsx): the only consumers feed this into an effect dependency, they never render
+ * signed-in chrome from it directly, so an id that resolves a render earlier than `signedIn`
+ * flips true drives an effect that immediately re-checks `signedIn` — it cannot paint a
+ * signed-in surface the server did not.
+ */
+export function useUserId(): string | undefined {
+  const { data: session } = authClient.useSession();
+  return session?.user?.id;
+}

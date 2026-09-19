@@ -58,6 +58,7 @@ export function WorkReader({
   initialScrollPct,
   seek,
   signedIn,
+  userId,
   onOpenToc,
   onProgress,
   landingOrdinal = null,
@@ -70,6 +71,10 @@ export function WorkReader({
   initialScrollPct: number;
   seek: WorkReaderSeek | null;
   signedIn: boolean;
+  /** The signed-in reader's id, forwarded to `SaveToShelf` so a change of account (which the boolean
+   *  `signedIn` cannot detect — its atom transitions A -> B directly on a cross-tab sign-out/in)
+   *  resets and refetches the shelf. `undefined` while signed out or unmounted. */
+  userId?: string;
   onOpenToc: () => void;
   onProgress: (ordinal: number, scrollPct: number) => void;
   /** The section a DEEP LINK landed on — gets the gold landing marker (WorkSection `landed`).
@@ -396,7 +401,7 @@ export function WorkReader({
 
   return (
     <div ref={rootRef}>
-      <WorkHeader ref={headerRef} source={source} slug={slug} signedIn={signedIn} onOpenToc={onOpenToc} />
+      <WorkHeader ref={headerRef} source={source} slug={slug} signedIn={signedIn} userId={userId} onOpenToc={onOpenToc} />
 
  {/* The reading column sits directly on the parchment page — PRD §3: hairlines and
             whitespace carry separation, so the bordered "page card" (edge + shadow) is gone.

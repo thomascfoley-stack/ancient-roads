@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const SLUG = 'qa-landing-sync-work';
 const DEEP_ORDINAL = 171;
 
-vi.mock('@/lib/auth/use-signed-in', () => ({ useSignedIn: () => true }));
+vi.mock('@/lib/auth/use-signed-in', () => ({ useSignedIn: () => true, useUserId: () => undefined }));
 vi.mock('next/navigation', () => ({
   useParams: () => ({ slug: SLUG }),
   usePathname: () => `/work/${SLUG}`,
