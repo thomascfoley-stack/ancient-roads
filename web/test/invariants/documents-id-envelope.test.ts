@@ -59,10 +59,15 @@ vi.mock('@/lib/csrf-floor', () => ({
 
 const DB_FAULT = new Error('remaining connection slots are reserved');
 const params = <T,>(v: T) => ({ params: Promise.resolve(v) });
-const READY = { id: 'd1', status: 'ready' as const };
-// A document POST will retry: not 'empty' (passes the 409-empty branch) and with a blobUrl
-// (passes the 409-no-blob branch), so the route reaches `requeueForRetry`.
-const RETRYABLE = { id: 'd1', status: 'failed' as const, blobUrl: 'blob://d1' };
+const READY = { id: 'd1', status: 'ready' as const, refusalCode: null };
+// A document POST will retry: not 'empty' (passes the 409-empty branch), with a blobUrl
+// (passes the 409-no-blob branch), and NO refusalCode (passes the 409-refusal branch) — a
+// transient-exhausted row, the only kind the route should re-queue.
+const RETRYABLE = { id: 'd1', status: 'failed' as const, blobUrl: 'blob://d1', refusalCode: null };
+// A refusal verdict (e.g. needs_ocr) lands at status='failed' just like RETRYABLE, but carries
+// the RefusalCode the worker's catch wrote alongside the status. The route must 409 on this, not
+// re-queue — re-running the same parse over the same bytes cannot change the answer.
+const REFUSED = { id: 'd1', status: 'failed' as const, blobUrl: 'blob://d1', refusalCode: 'needs_ocr' as const };
 
 /** The contract: a 500 JSON body carrying error.code === 'INTERNAL', and NO leaked internal. */
 async function expectEnvelope(res: Response) {
@@ -193,6 +198,40 @@ describe('documents/[id] — a DB fault returns the envelope, never a raw 500', 
       const res = await call();
       expect(res.status).toBe(409);
       expect(typeof ((await res.json()) as { error: unknown }).error).toBe('string');
+    });
+
+    it('a refusal-derived failure (needs_ocr / corrupt / too_large_decompressed / unsupported_type) returns 409 and never reaches requeueForRetry', async () => {
+      // These four refusals collapse to status='failed' just like a transient-exhaustion row; the
+      // ONLY way the route can tell a verdict from a retryable failure is the `refusalCode` the
+      // worker's catch wrote alongside the status (migration 131). Without that gate the route
+      // re-queues a verdict, the catch re-writes the same verdict, and requeueForRetry's default
+      // resetAttempts clears `attempts` each click — the "click forever" loop the docstring
+      // disavows. Pin each of the four non-'empty' codes per the closed set in types.ts.
+      const codes = ['needs_ocr', 'corrupt', 'too_large_decompressed', 'unsupported_type'] as const;
+      for (const code of codes) {
+        // mockClear resets call history but KEEPS the beforeEach implementations (guardUser,
+        // checkCorpusUploadRateLimit). clearAllMocks would wipe guardUser and break the route.
+        getDocument.mockClear();
+        requeueForRetry.mockClear();
+        getDocument.mockResolvedValue({ ...REFUSED, refusalCode: code });
+        const res = await call();
+        expect(res.status, code).toBe(409);
+        const body = (await res.json()) as { error: unknown };
+        expect(typeof body.error, code).toBe('string'); // H6: the client renders `error` as a string
+        expect(requeueForRetry, `${code} must NOT be re-queued — it would just re-refuse`).not.toHaveBeenCalled();
+      }
+    });
+
+    it('a transient-exhausted failure (no refusalCode) still reaches requeueForRetry and can retry', async () => {
+      // The other side of the refusal gate: a 'failed' row WITHOUT a code is a transient
+      // exhaustion, and the Retry button is a deliberate act that still gets its fresh budget.
+      // The heal-attempts-ceiling.test.ts suite pins that the route keeps requeueForRetry(user.id, id)
+      // with its default reset — this asserts the corresponding behaviour end-to-end.
+      getDocument.mockResolvedValue(RETRYABLE);
+      requeueForRetry.mockResolvedValue(true);
+      const res = await call();
+      expect(res.status).toBe(200);
+      expect(requeueForRetry).toHaveBeenCalledWith('u1', 'd1');
     });
 
     it('a rate-limited retry returns 429 with the Retry-After header, before any data call', async () => {

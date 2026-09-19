@@ -1,0 +1,28 @@
+-- 131: refusal_code on user_documents (the §8 retry docstring; W-REFUSALCODE).
+--
+-- The ingest worker's catch (queue.ts) maps every UploadRefused verdict except 'empty' onto
+-- status='failed' — the SAME value a transient-exhaustion row lands at. The four such refusals
+-- (needs_ocr, corrupt, too_large_decompressed, and the UTF-8-decode unsupported_type) are
+-- VERDICTS ABOUT THE FILE: re-running the same parse over the same bytes cannot reach a
+-- different answer, and the per-document "Try again" route's own docstring says refusals are
+-- NOT retryable. With no column to tell a refusal-derived 'failed' row from a transient one,
+-- the route could not honour that — it 409'd only on status='empty' and a missing blobUrl, and
+-- re-queued refusals on every click (requeueForRetry's default resetAttempts:true then zeroed
+-- `attempts`, defeating the queue's MAX_ATTEMPTS ceiling).
+--
+-- refusal_code records the RefusalCode (types.ts: the closed set) at setDocStatus('failed', …)
+-- time so the retry route and the My Works UI can refuse on the FIRST click, not the third.
+-- 'empty' keeps its own status value (the route 409s on status === 'empty' already) and does
+-- NOT set this column — the column is the discriminator for the four refusals that collapse to
+-- 'failed'. NULL for transient failures and for 'empty'; one of the non-empty RefusalCodes
+-- otherwise.
+--
+-- NULLable by design: rows refused before this column shipped carry NULL, which reads as "no
+-- refusal verdict recorded" — i.e. the row is treated as retryable, exactly the behaviour it
+-- had before. Backfilling those rows would fabricate a verdict the catch never wrote.
+--
+-- Dev + lane-b applied by the swarm; PROD APPLICATION IS OWNER-GATED (same as 128). The column
+-- is additive (nullable, no default, no constraint), so it is non-breaking and the code that
+-- reads it (toDocument) treats NULL as null without special-casing.
+-- Rollback: ALTER TABLE user_documents DROP COLUMN refusal_code;
+ALTER TABLE user_documents ADD COLUMN IF NOT EXISTS refusal_code TEXT;

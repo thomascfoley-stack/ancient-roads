@@ -32,7 +32,7 @@ import { EmbeddingUnavailable, embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
 import { extractSermonMetadata } from './metadata-extract';
 import { storeSections } from './sections';
-import { UploadRefused, type DocStatus, type UserDocument } from './types';
+import { UploadRefused, type DocStatus, type RefusalCode, type UserDocument } from './types';
 
 /** After this many attempts a document is retired rather than retried forever. */
 export const MAX_ATTEMPTS = 3;
@@ -106,6 +106,7 @@ export async function reapExhausted(userId: string): Promise<number> {
     sql`UPDATE user_documents
         SET status = 'failed',
             parse_error = 'Gave up after ' || attempts || ' attempts. The last error was: ' || COALESCE(parse_error, 'unknown'),
+            refusal_code = NULL,
             updated_at = now()
         WHERE user_id = ${userId}
           AND status = ANY(${CLAIMED_SQL}::text[])
@@ -148,6 +149,7 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
       sql`UPDATE user_documents
              SET status = 'failed',
                  parse_error = 'The uploaded file was not stored, so it cannot be parsed. Please upload it again.',
+                 refusal_code = NULL,
                  updated_at = now()
            WHERE user_id = ${userId} AND id = ${row.id}
              AND blob_url IS NULL
@@ -158,6 +160,7 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
     await runAsUser(userId, (sql) => [
       sql`UPDATE user_documents
              SET status = 'queued', parse_error = NULL,
+                 refusal_code = NULL,
                  claimed_at = NULL, attempts = attempts - 1,
                  updated_at = now()
            WHERE user_id = ${userId} AND id = ${row.id}
@@ -247,7 +250,12 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
       // 'empty' has its own status because the remedy differs -- a scan needs OCR, a blank file
       // needs a different file, and telling someone to OCR an empty .txt is worse than useless.
       const status: DocStatus = e.code === 'empty' ? 'empty' : 'failed';
-      await setDocStatus(userId, row.id, status, e.message);
+      // Record the code for the four non-'empty' refusals so the retry route and the My Works UI
+      // can tell a verdict (re-running the same parse over the same bytes cannot change the
+      // answer) from a transient-exhausted 'failed' row that a retry CAN help. 'empty' keeps its
+      // own status value and does NOT set this — the route 409s on status === 'empty' already.
+      const refusalCode: RefusalCode | null = e.code === 'empty' ? null : e.code;
+      await setDocStatus(userId, row.id, status, e.message, refusalCode);
       return status;
     }
     // A permanent error can never succeed on retry. Parking it back at 'queued' would retry a

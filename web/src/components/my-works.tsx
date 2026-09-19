@@ -8,6 +8,7 @@ import { DISPLAY_LOCALE } from '@/lib/locale';
 // and strings, no server-only imports), so the client bundle can carry the real number and the
 // two ends cannot disagree (D15).
 import { MAX_UPLOAD_BYTES } from '@/lib/user-corpus/sniff';
+import type { RefusalCode } from '@/lib/user-corpus/types';
 import { formatVerseId } from '@bible/verse-id';
 import { parseRef } from '@bible/ref-parse';
 
@@ -26,6 +27,13 @@ interface Doc {
   /** Display-only chips extracted from the manuscript head (migration 124). */
   suggestedReference?: string | null;
   suggestedDate?: string | null;
+  /**
+   * The RefusalCode a parse refusal verdicted this row with (migration 131), or null/absent. Set
+   * for the four non-'empty' refusals (needs_ocr / corrupt / too_large_decompressed /
+   * unsupported_type), all of which collapse to status='failed'. "Try again" is hidden when this
+   * is present, because re-running the same parse over the same bytes cannot change the answer.
+   */
+  refusalCode?: RefusalCode | null;
 }
 // `createdAt` has been on the wire the whole time (UserHit, lib/user-corpus/search.ts) — the
 // client type simply omitted it, so §7's "doc + date" labelling had nothing to render (D17).
@@ -1083,8 +1091,12 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                     {/* Retry is offered only where it can change the answer. A scan with no text
                         layer and an empty file are verdicts about the file, not transient errors —
                         re-running the same parse over the same bytes cannot reach a different one,
-                        and a button that promises otherwise is a button that lies. */}
-                    {d.status === 'failed' && (
+                        and a button that promises otherwise is a button that lies. 'empty' carries
+                        its own status and is already hidden; the four remaining refusals collapse
+                        to status='failed' and are told by `refusalCode` (migration 131), so the
+                        button hides for them too. A transient-exhausted 'failed' row has no code
+                        and the retry can help. */}
+                    {d.status === 'failed' && !d.refusalCode && (
                       <button
                         type="button"
                         onClick={() => void retry(d.id)}
