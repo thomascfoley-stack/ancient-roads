@@ -38,6 +38,19 @@ import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 // bump; tombstone cascade) are static arrays; anchor reads for position computation happen in
 // a PRIOR transaction, and the unique index turns any lost race into a retry, not a corruption.
 //
+// THE BUMP GATES ON ITS SIBLING, NOT JUST ITS STUDY (2026-09-19, the failed-op no-op bump). A
+// trailing `UPDATE studies SET updated_at = now()` keyed only on the study row fires whether
+// or not the leading block mutation in the same transaction matched any rows — so a 404/409
+// block op (block gone, already-tombstoned, wrong kind, not servable) still bumped `studies`
+// and could reshuffle the recency list under a "nothing happened" response. The fix is in SQL,
+// not JS: `runAsUser` builds the array before the transaction runs, so the JS cannot read the
+// sibling's row count to gate the bump. Every block op now merges its block mutation and bump
+// in ONE data-modifying CTE whose `bump` leg carries `AND EXISTS (SELECT 1 FROM <sibling-CTE>)`
+// — same transaction (§6.2 intact), bump fires iff the sibling matched. `insertTextBlock` is
+// the one op that was always safe (its INSERT and bump share the same `EXISTS(studies …)` gate,
+// so 0 inserts ⇒ 0 bump); it is untouched, the control that proves the pattern is fixable in
+// SQL. Pinned by test/invariants/studies-failed-op-bump.test.ts.
+//
 // Reads are bounded (row caps below, cursor pagination past them). The byte ceiling is stated
 // rather than enforced per-page: a block's quote is at most one reading unit, so a page is
 // bounded by rows × the corpus's own unit sizes (worst measured unit ≈ tens of KB; typical
@@ -512,12 +525,16 @@ export async function updateTextBlock(
         SELECT id, user_id, body FROM study_blocks
         WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId}
           AND kind = 'text' AND deleted_at IS NULL`,
-    sql`UPDATE study_blocks SET body = ${body}, updated_at = now()
-        WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId}
-          AND kind = 'text' AND deleted_at IS NULL
+    sql`WITH edited AS (
+          UPDATE study_blocks SET body = ${body}, updated_at = now()
+          WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId}
+            AND kind = 'text' AND deleted_at IS NULL
+          RETURNING id
+        )
+        UPDATE studies SET updated_at = now()
+        WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+          AND EXISTS (SELECT 1 FROM edited)
         RETURNING id`,
-    sql`UPDATE studies SET updated_at = now()
-        WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
   ]);
   return (updatedRows as unknown[]).length > 0;
 }
@@ -534,11 +551,15 @@ export async function moveBlock(
     const position = positionForAttempt(anchors.a, anchors.b, attempt);
     try {
       const [moved] = await runAsUser(userId, (sql) => [
-        sql`UPDATE study_blocks SET position = ${position}, updated_at = now()
-            WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+        sql`WITH moved AS (
+              UPDATE study_blocks SET position = ${position}, updated_at = now()
+              WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+              RETURNING id
+            )
+            UPDATE studies SET updated_at = now()
+            WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+              AND EXISTS (SELECT 1 FROM moved)
             RETURNING id`,
-        sql`UPDATE studies SET updated_at = now()
-            WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
       ]);
       if ((moved as unknown[]).length === 0) return { ok: false, reason: 'study_not_found' };
       return { ok: true, position };
@@ -563,29 +584,51 @@ export async function trimBlock(
 ): Promise<boolean> {
   const start = trim?.start ?? null;
   const end = trim?.end ?? null;
+  // The updated_at bump rides the trim UPDATE's RETURNING via a data-modifying CTE (see
+  // softDeleteBlock for the pattern): a 0-row trim (not a clipping, no quote, tombstoned,
+  // never-existed, or an out-of-bounds range) leaves the parent study's updated_at alone.
   const [rows] = await runAsUser(userId, (sql) => [
-    sql`UPDATE study_blocks SET
-          trim_start = ${start}::int,
-          trim_end = ${end}::int,
-          updated_at = now()
-        WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId}
-          AND kind = 'clipping' AND deleted_at IS NULL AND quote IS NOT NULL
-          AND (${trim === null}::boolean
-               OR (${start ?? 0}::int >= 0 AND ${end ?? 0}::int <= length(quote) AND ${end ?? 0}::int > ${start ?? 0}::int))
+    sql`WITH trimmed AS (
+          UPDATE study_blocks SET
+                trim_start = ${start}::int,
+                trim_end = ${end}::int,
+                updated_at = now()
+          WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId}
+            AND kind = 'clipping' AND deleted_at IS NULL AND quote IS NOT NULL
+            AND (${trim === null}::boolean
+                 OR (${start ?? 0}::int >= 0 AND ${end ?? 0}::int <= length(quote) AND ${end ?? 0}::int > ${start ?? 0}::int))
+          RETURNING id
+        )
+        UPDATE studies SET updated_at = now()
+        WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+          AND EXISTS (SELECT 1 FROM trimmed)
         RETURNING id`,
-    sql`UPDATE studies SET updated_at = now()
-        WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
   ]);
   return (rows as unknown[]).length > 0;
 }
 
 export async function softDeleteBlock(userId: string, studyId: string, blockId: string): Promise<boolean> {
+  // The updated_at bump GATES on the block tombstone having matched — same transaction, same
+  // statement (design §6.2), so a 0-row block UPDATE (no such block, already-tombstoned, other
+  // tenant's block) cannot bump the parent study. A trailing-statement bump is structurally
+  // unconditional inside runAsUser's static array (db.ts:111-121 builds the array before the
+  // transaction runs, so the JS cannot read the first statement's row count to gate the second);
+  // only a same-statement gate in SQL can. Both legs reference the same `deleted` CTE — the bump
+  // reads the CTE's materialized RETURNING set, not the block rows, so the data-modifying CTE
+  // here sees only ITS OWN write to study_blocks and the EXISTING rows of studies (no two CTEs
+  // touch the same table). Returning the bumped study row (present iff the block was tombstoned
+  // AND the study is live) preserves the "did the delete land" return the trailing bump used to
+  // signal by way of the block's own RETURNING id.
   const [rows] = await runAsUser(userId, (sql) => [
-    sql`UPDATE study_blocks SET deleted_at = now()
-        WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+    sql`WITH deleted AS (
+          UPDATE study_blocks SET deleted_at = now()
+          WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+          RETURNING id
+        )
+        UPDATE studies SET updated_at = now()
+        WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+          AND EXISTS (SELECT 1 FROM deleted)
         RETURNING id`,
-    sql`UPDATE studies SET updated_at = now()
-        WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
   ]);
   return (rows as unknown[]).length > 0;
 }
@@ -610,34 +653,52 @@ export async function insertClippingFromSection(
     if (anchors === 'anchor_not_found') return { ok: false, reason: 'anchor_not_found' };
     const position = positionForAttempt(anchors.a, anchors.b, attempt);
     try {
+      // The bump rides the INSERT's RETURNING via a data-modifying CTE (design §6.2 — the bump
+      // stays in the SAME transaction, AND a 0-row INSERT can no longer bump the parent study).
+      // The `ins` CTE writes study_blocks and returns its inserted row(s); the `bump` CTE writes
+      // studies, gated on EXISTS(ins), and returns the bumped study id; the outer SELECT re-uses
+      // `ins`'s materialized RETURNING set — never re-reading study_blocks under the bump — so the
+      // two data-modifying CTEs never touch the same table. When the INSERT matched 0 rows (study
+      // gone, section retracted, forbidden provenance, MUST_NOT_SERVE veto) `ins` is empty, the
+      // bump's WHERE is false, and the outer SELECT yields zero rows — exactly the failed-op no-op.
       const [rows] = await runAsUser(userId, (sql) => [
-        sql`INSERT INTO study_blocks (study_id, user_id, position, kind,
-                                      section_id, work_slug, ordinal, quote, attribution)
-            SELECT ${studyId}, ${userId}, ${position}, 'clipping',
-                   s.id, src.slug, s.ordinal, s.body,
-                   jsonb_strip_nulls(jsonb_build_object(
-                     'author', src.author, 'work_title', src.title,
-                     'reference', COALESCE(${clip.reference ?? null}::text, s.heading)))
-            FROM sections s JOIN sources src ON src.id = s.source_id
-            WHERE s.id = ${clip.sectionId}
-              AND src.status = 'published'
-              -- MUST_NOT_SERVE veto (2026-08-18, audit H7). Without it a clipping of a vetoed
-              -- author could be CREATED here, and servability.ts would keep rendering it.
-              AND NOT (
-                  src.author = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
-                  OR split_part(src.author, ' of ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
-                  OR split_part(src.author, ' the ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
-                  OR EXISTS (SELECT 1 FROM unnest(${MUST_NOT_SERVE_AUTHORS}::text[]) n
-                             WHERE src.author LIKE n || ' %')
-                  OR src.author LIKE 'Jerome''s%')
-              AND (s.source_url IS NULL OR NOT EXISTS (
-                     SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
-                     WHERE lower(s.source_url) LIKE '%' || d || '%'))
-              AND EXISTS (SELECT 1 FROM studies st WHERE st.id = ${studyId} AND st.user_id = ${userId} AND st.deleted_at IS NULL)
-            RETURNING id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                      quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at`,
-        sql`UPDATE studies SET updated_at = now()
-            WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
+        sql`WITH ins AS (
+              INSERT INTO study_blocks (study_id, user_id, position, kind,
+                                        section_id, work_slug, ordinal, quote, attribution)
+              SELECT ${studyId}, ${userId}, ${position}, 'clipping',
+                     s.id, src.slug, s.ordinal, s.body,
+                     jsonb_strip_nulls(jsonb_build_object(
+                       'author', src.author, 'work_title', src.title,
+                       'reference', COALESCE(${clip.reference ?? null}::text, s.heading)))
+              FROM sections s JOIN sources src ON src.id = s.source_id
+              WHERE s.id = ${clip.sectionId}
+                AND src.status = 'published'
+                -- MUST_NOT_SERVE veto (2026-08-18, audit H7). Without it a clipping of a vetoed
+                -- author could be CREATED here, and servability.ts would keep rendering it.
+                AND NOT (
+                    src.author = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                    OR split_part(src.author, ' of ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                    OR split_part(src.author, ' the ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                    OR EXISTS (SELECT 1 FROM unnest(${MUST_NOT_SERVE_AUTHORS}::text[]) n
+                               WHERE src.author LIKE n || ' %')
+                    OR src.author LIKE 'Jerome''s%')
+                AND (s.source_url IS NULL OR NOT EXISTS (
+                       SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
+                       WHERE lower(s.source_url) LIKE '%' || d || '%'))
+                AND EXISTS (SELECT 1 FROM studies st WHERE st.id = ${studyId} AND st.user_id = ${userId} AND st.deleted_at IS NULL)
+              RETURNING id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
+                        quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
+            ),
+            bump AS (
+              UPDATE studies SET updated_at = now()
+              WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+                AND EXISTS (SELECT 1 FROM ins)
+              RETURNING id
+            )
+            SELECT id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
+                   quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
+            FROM ins
+            WHERE EXISTS (SELECT 1 FROM bump)`,
       ]);
       const block = (rows as StudyBlock[])[0];
       if (block) {
@@ -690,34 +751,48 @@ export async function insertClippingFromEmbedding(
     if (anchors === 'anchor_not_found') return { ok: false, reason: 'anchor_not_found' };
     const position = positionForAttempt(anchors.a, anchors.b, attempt);
     try {
+      // Same 3-CTE shape as insertClippingFromSection — the bump rides the INSERT's RETURNING,
+      // so a 0-row INSERT (embedding gone unserved, lost author, forbidden provenance, source
+      // not found, study missing) cannot bump the parent study. One statement, one transaction
+      // (design §6.2).
       const [rows] = await runAsUser(userId, (sql) => [
-        sql`INSERT INTO study_blocks (study_id, user_id, position, kind,
-                                      source_id, work_slug, quote, attribution, ask_outcome_id)
-            SELECT ${studyId}, ${userId}, ${position}, 'clipping',
-                   e.source_id, e.metadata->>'work', e.content,
-                   jsonb_strip_nulls(jsonb_build_object(
-                     'author', e.metadata->>'author', 'work_title', e.metadata->>'sourceTitle',
-                     'reference', ${clip.reference ?? null}::text)),
-                   -- 125: the ask this voice was kept from. No FK — ask_outcomes fails open (116),
-                   -- so the row may legitimately not exist and a constraint would break the user's
-                   -- save over a lost telemetry write.
-                   ${clip.askOutcomeId ?? null}::uuid
-            FROM embeddings e
-            WHERE e.source_type = split_part(${clip.sourceId}, ':', 1)
-              AND e.source_id = ${clip.sourceId}
-              AND (${clip.chunkIndex ?? null}::int IS NULL OR e.chunk_index = ${clip.chunkIndex ?? null}::int)
-              AND e.user_id IS NULL AND e.served
-              AND e.metadata->>'author' IS NOT NULL
-              AND (e.metadata->>'sourceUrl' IS NULL OR NOT EXISTS (
-                     SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
-                     WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d || '%'))
-              AND EXISTS (SELECT 1 FROM studies st WHERE st.id = ${studyId} AND st.user_id = ${userId} AND st.deleted_at IS NULL)
-            ORDER BY e.chunk_index
-            LIMIT 1
-            RETURNING id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                      quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at`,
-        sql`UPDATE studies SET updated_at = now()
-            WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
+        sql`WITH ins AS (
+              INSERT INTO study_blocks (study_id, user_id, position, kind,
+                                        source_id, work_slug, quote, attribution, ask_outcome_id)
+              SELECT ${studyId}, ${userId}, ${position}, 'clipping',
+                     e.source_id, e.metadata->>'work', e.content,
+                     jsonb_strip_nulls(jsonb_build_object(
+                       'author', e.metadata->>'author', 'work_title', e.metadata->>'sourceTitle',
+                       'reference', ${clip.reference ?? null}::text)),
+                     -- 125: the ask this voice was kept from. No FK — ask_outcomes fails open (116),
+                     -- so the row may legitimately not exist and a constraint would break the user's
+                     -- save over a lost telemetry write.
+                     ${clip.askOutcomeId ?? null}::uuid
+              FROM embeddings e
+              WHERE e.source_type = split_part(${clip.sourceId}, ':', 1)
+                AND e.source_id = ${clip.sourceId}
+                AND (${clip.chunkIndex ?? null}::int IS NULL OR e.chunk_index = ${clip.chunkIndex ?? null}::int)
+                AND e.user_id IS NULL AND e.served
+                AND e.metadata->>'author' IS NOT NULL
+                AND (e.metadata->>'sourceUrl' IS NULL OR NOT EXISTS (
+                       SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
+                       WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d || '%'))
+                AND EXISTS (SELECT 1 FROM studies st WHERE st.id = ${studyId} AND st.user_id = ${userId} AND st.deleted_at IS NULL)
+              ORDER BY e.chunk_index
+              LIMIT 1
+              RETURNING id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
+                        quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
+            ),
+            bump AS (
+              UPDATE studies SET updated_at = now()
+              WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+                AND EXISTS (SELECT 1 FROM ins)
+              RETURNING id
+            )
+            SELECT id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
+                   quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
+            FROM ins
+            WHERE EXISTS (SELECT 1 FROM bump)`,
       ]);
       const block = (rows as StudyBlock[])[0];
       if (block) return { ok: true, block };
@@ -792,31 +867,42 @@ export async function insertClippingsForWork(
     const positions = positionsAfterForAttempt(anchors.a, unitKeys.length, attempt);
     const placed = unitKeys.map((k, i) => ({ k, p: positions[i]! }));
     try {
+      // 3-CTE bulk-append variant: the bump rides the bulk INSERT's RETURNING ids, so a 0-row
+      // append (work retracted between the count pre-read and the write — fail closed) cannot
+      // bump the parent study. Return the inserted ids (present iff the bump fired) so `inserted`
+      // is honest, including for the bulk case.
       const [rows] = await runAsUser(userId, (sql) => [
-        sql`INSERT INTO study_blocks (study_id, user_id, position, kind,
-                                      section_id, work_slug, ordinal, quote, attribution)
-            SELECT ${studyId}, ${userId}, v.pos, 'clipping',
-                   (array_agg(s.id ORDER BY s.ordinal))[1],
-                   max(src.slug),
-                   min(s.ordinal),
-                   string_agg(s.body, E'\n\n' ORDER BY s.ordinal),
-                   jsonb_strip_nulls(jsonb_build_object(
-                     'author', max(src.author), 'work_title', max(src.title),
-                     'reference', (array_agg(s.heading ORDER BY s.ordinal))[1]))
-            FROM sections s
-            JOIN sources src ON src.id = s.source_id
-            JOIN (SELECT (e->>'k')::int AS unit_key, e->>'p' AS pos
-                  FROM jsonb_array_elements(${JSON.stringify(placed)}::jsonb) e) v
-              ON v.unit_key = COALESCE(s.unit_ordinal, -s.ordinal)
-            WHERE src.slug = ${slug} AND src.status = 'published'
-              AND (s.source_url IS NULL OR NOT EXISTS (
-                     SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
-                     WHERE lower(s.source_url) LIKE '%' || d || '%'))
-              AND EXISTS (SELECT 1 FROM studies st WHERE st.id = ${studyId} AND st.user_id = ${userId} AND st.deleted_at IS NULL)
-            GROUP BY v.unit_key, v.pos
-            RETURNING id`,
-        sql`UPDATE studies SET updated_at = now()
-            WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
+        sql`WITH ins AS (
+              INSERT INTO study_blocks (study_id, user_id, position, kind,
+                                        section_id, work_slug, ordinal, quote, attribution)
+              SELECT ${studyId}, ${userId}, v.pos, 'clipping',
+                     (array_agg(s.id ORDER BY s.ordinal))[1],
+                     max(src.slug),
+                     min(s.ordinal),
+                     string_agg(s.body, E'\n\n' ORDER BY s.ordinal),
+                     jsonb_strip_nulls(jsonb_build_object(
+                       'author', max(src.author), 'work_title', max(src.title),
+                       'reference', (array_agg(s.heading ORDER BY s.ordinal))[1]))
+              FROM sections s
+              JOIN sources src ON src.id = s.source_id
+              JOIN (SELECT (e->>'k')::int AS unit_key, e->>'p' AS pos
+                    FROM jsonb_array_elements(${JSON.stringify(placed)}::jsonb) e) v
+                ON v.unit_key = COALESCE(s.unit_ordinal, -s.ordinal)
+              WHERE src.slug = ${slug} AND src.status = 'published'
+                AND (s.source_url IS NULL OR NOT EXISTS (
+                       SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
+                       WHERE lower(s.source_url) LIKE '%' || d || '%'))
+                AND EXISTS (SELECT 1 FROM studies st WHERE st.id = ${studyId} AND st.user_id = ${userId} AND st.deleted_at IS NULL)
+              GROUP BY v.unit_key, v.pos
+              RETURNING id
+            ),
+            bump AS (
+              UPDATE studies SET updated_at = now()
+              WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
+                AND EXISTS (SELECT 1 FROM ins)
+              RETURNING id
+            )
+            SELECT id FROM ins WHERE EXISTS (SELECT 1 FROM bump)`,
       ]);
       const inserted = (rows as unknown[]).length;
       if (inserted > 0) return { ok: true, inserted };
