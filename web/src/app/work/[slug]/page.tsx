@@ -23,7 +23,7 @@ import type { WorkSource, WorkTocUnit } from '@/lib/work';
 import { WorkReader, type WorkReaderSeek } from '@/components/work-reader';
 import { WorkToc } from '@/components/work-toc';
 import { TextSkeleton } from '@/components/skeleton';
-import { useSignedIn } from '@/lib/auth/use-signed-in';
+import { useSignedIn, useUserId } from '@/lib/auth/use-signed-in';
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
@@ -57,6 +57,10 @@ export default function WorkPage() {
   // both readers; inferring this from a fetch here while /read reads the session would show
   // swatches on one and "Sign in to highlight" on the other inside a single session.
   const signedIn = useSignedIn();
+  // The signed-in reader's identity, not merely the boolean. Passed to WorkHeader/SaveToShelf so a
+  // cross-tab change of account (which never flips `signedIn` through false) still resets and
+  // refetches the shelf — see use-signed-in.ts.
+  const userId = useUserId();
   const [tocOpen, setTocOpen] = useState(false);
   const [progress, setProgress] = useState<{ ordinal: number; scrollPct: number } | null>(null);
   const [seek, setSeek] = useState<WorkReaderSeek | null>(null);
@@ -339,6 +343,7 @@ export default function WorkPage() {
         initialScrollPct={landing.scrollPct}
         seek={seek}
         signedIn={signedIn}
+        userId={userId}
         onOpenToc={() => setTocOpen(true)}
         onProgress={handleProgress}
         // The landing glow marks where a SHARED/STUDY link dropped the reader — deep links

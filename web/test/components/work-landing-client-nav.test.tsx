@@ -22,7 +22,7 @@ const SLUG = 'qa-landing-work';
 const DEEP_ORDINAL = 171;
 
 let signedIn = false;
-vi.mock('@/lib/auth/use-signed-in', () => ({ useSignedIn: () => signedIn }));
+vi.mock('@/lib/auth/use-signed-in', () => ({ useSignedIn: () => signedIn, useUserId: () => undefined }));
 vi.mock('next/navigation', () => ({
   useParams: () => ({ slug: SLUG }),
   usePathname: () => `/work/${SLUG}`,

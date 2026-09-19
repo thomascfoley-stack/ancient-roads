@@ -35,7 +35,7 @@ const SLUG = 'qa-continue-work';
 // The session. The chip is independent of auth, but the page pulls `useSignedIn`, so the mock
 // must return a stable boolean (the default true keeps the account-sync effect quiet).
 let signedIn = true;
-vi.mock('@/lib/auth/use-signed-in', () => ({ useSignedIn: () => signedIn }));
+vi.mock('@/lib/auth/use-signed-in', () => ({ useSignedIn: () => signedIn, useUserId: () => undefined }));
 // `usePathname` joined `useParams` when F24 landed: the page re-checks the hash whenever the
 // route settles. A stable string keeps that effect keyed on the deps that actually move here.
 vi.mock('next/navigation', () => ({ useParams: () => ({ slug: SLUG }), usePathname: () => `/work/${SLUG}` }));

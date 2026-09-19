@@ -23,7 +23,7 @@ import type { WorkSource } from '@/lib/work';
  * repaint a button is worse than briefly showing a state the server has not confirmed. On failure
  * the previous state comes back, so the button never ends up lying about what was stored.
  */
-function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
+function SaveToShelf({ slug, signedIn, userId }: { slug: string; signedIn: boolean; userId?: string }) {
   // `undefined` = not asked yet, which is NOT the same as `null` = asked, not shelved. The
   // distinction is what keeps the control from flashing "Save" at a reader whose work is saved.
   const [shelf, setShelf] = useState<string | null | undefined>(undefined);
@@ -37,8 +37,19 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
   const [failed, setFailed] = useState<null | 'save' | 'remove'>(null);
   const url = `/api/work/${encodeURIComponent(slug)}/shelf`;
 
+  // Keyed on the user's IDENTITY, not merely on whether someone is signed in. The boolean
+  // `signedIn` cannot detect a cross-tab change of account on a shared device: the session atom
+  // transitions A -> B directly via a fresh `/get-session` refetch (never through `false`), so this
+  // effect would never re-run for account B and account A's shelf value would keep rendering as a
+  // lie about B's stored state. `userId` in the deps makes the transition re-run the effect.
+  //
+  // `setShelf(undefined)` on every run (not only on the sign-out branch) is what hides the control
+  // while the new account's GET is in flight — the A -> B case where both ends are signed in. The
+  // guard below then skips the fetch only when there is genuinely nobody to fetch for. Mirrors the
+  // reset `useRailGroups` in the sidebar applies to the same transition (sidebar.tsx).
   useEffect(() => {
-    if (!signedIn) return;
+    setShelf(undefined);
+    if (!signedIn || !userId) return;
     let cancelled = false;
     fetch(url)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
@@ -51,7 +62,7 @@ function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [url, signedIn]);
+  }, [url, signedIn, userId]);
 
   const toggle = useCallback(async () => {
     if (busy || shelf === undefined) return;
@@ -104,12 +115,16 @@ export function WorkHeader({
   source,
   slug,
   signedIn = false,
+  userId,
   onOpenToc,
   ref,
 }: {
   source: WorkSource;
   slug: string;
   signedIn?: boolean;
+  /** The signed-in reader's id; forwarded to `SaveToShelf` so a change of account resets and
+   *  refetches the shelf. `undefined` while signed out. */
+  userId?: string;
   onOpenToc: () => void;
   /** The reader measures the header's live bottom edge for scroll/progress math (React 19
    *  ref-as-prop). */
@@ -148,7 +163,7 @@ export function WorkHeader({
             </p>
           )}
         </div>
-        <SaveToShelf slug={slug} signedIn={signedIn} />
+        <SaveToShelf slug={slug} signedIn={signedIn} userId={userId} />
         <ReaderSettings />
       </div>
     </header>

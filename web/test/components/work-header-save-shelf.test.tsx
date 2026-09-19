@@ -54,8 +54,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const renderHeader = (signedIn: boolean) =>
-  render(<WorkHeader source={SOURCE} slug={SLUG} signedIn={signedIn} onOpenToc={() => {}} />);
+// `userId` defaults to a stable signed-in identity when `signedIn` is true: SaveToShelf now keys
+// its shelf GET on the user (so a cross-tab change of account resets and refetches), so the round
+// trip needs a real id to fetch for. The cross-account transition has its own file next door.
+const renderHeader = (signedIn: boolean, userId: string | undefined = signedIn ? 'user-a' : undefined) =>
+  render(<WorkHeader source={SOURCE} slug={SLUG} signedIn={signedIn} userId={userId} onOpenToc={() => {}} />);
 
 describe('N3 — the Book Reader can put a work on the reader’s shelf', () => {
   it('asks the shelf route what the state is, and offers Save', async () => {
