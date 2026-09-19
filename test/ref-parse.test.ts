@@ -5,6 +5,7 @@ import {
   resolveBookSlug,
   typeahead,
   scanReferences,
+  scanReferenceSpans,
   CHAPTER_END_SENTINEL,
   type VerseCountProvider,
 } from '../src/bible/ref-parse';
@@ -503,6 +504,42 @@ describe('scanReferences — overlap dedupe (the 1/2/3-John residual)', () => {
   it('non-overlapping references all survive — the dedupe is positional, not greedy', () => {
     expect(books('Ephesians 2:8-9 and 1 Peter 5:7')).toEqual(['Ephesians 2:8–9', '1 Peter 5:7']);
     expect(books('Genesis 1:1-3 and Revelation 22:20')).toEqual(['Genesis 1:1–3', 'Revelation 22:20']);
+  });
+
+  // The test above pins only the TWO-candidate happy path — there is no transient intermediate,
+  // so the three-candidate veto chain that broke the contract from day one (e033023, 2026-08-21)
+  // never triggered. The cases below are the shape that was never covered: a spurious ordinal
+  // candidate `B` steals the trailing digit of a real citation `A`, then laps over into the
+  // adjacent real citation `C`, so `B` overlaps BOTH while `A` and `C` do NOT overlap each other.
+  // The old one-pass `filter` let a doomed `B` vote against `C` (silent drop), and when `B` was
+  // the LONGEST it won outright (fabrication). These would have caught the bug at introduction.
+
+  it('a spurious ordinal bridge that LOSES still drops the non-overlapping third ref (the silent drop)', () => {
+    // A = John 1:1–3 [0,10), B = 3 John 6 [9,17) steals the trailing "3", C = John 6 [11,17).
+    // A↔B overlap, B↔C overlap, A does NOT overlap C (10 ≤ 11) — yet the old filter dropped C.
+    expect(books('john 1:1-3 john 6')).toEqual(['John 1:1–3', 'John 6']);
+    expect(books('john 1:1-3 john 3')).toEqual(['John 1:1–3', 'John 3']);
+  });
+
+  it('a spurious ordinal bridge that WINS no longer fabricates a passage the user did not cite', () => {
+    // A = Revelation 1 [0,5), C = John 3 [6,12), B = 1 John 3 [4,12) steals the trailing "1".
+    // B is the LONGEST, so the old filter returned ["1 John 3"] — a passage in NEITHER input —
+    // dropping BOTH real citations. The contract ("non-overlapping candidates are all kept")
+    // requires A and C to survive and the bridge B to be dropped.
+    expect(books('rev 1 john 3')).toEqual(['Revelation 1', 'John 3']);
+    // The fabricated reference must never appear in the output, for any input shape.
+    expect(books('rev 1 john 3')).not.toContain('1 John 3');
+  });
+
+  it('the kept SPANS are exactly the non-overlapping real citations (proof at the source-span level)', () => {
+    // The bug is structural (a doomed intermediate vetoing by source span), so pin the spans,
+    // not just the displays. For "rev 1 john 3" the kept spans are [0,5) and [6,12) — the
+    // bridge [4,12) is gone — and they are non-overlapping and in source order.
+    const spans = scanReferenceSpans('rev 1 john 3').map((s) => [s.start, s.end] as const);
+    expect(spans).toEqual([[0, 5], [6, 12]]);
+    for (let i = 1; i < spans.length; i++) {
+      expect(spans[i - 1]![1]).toBeLessThanOrEqual(spans[i]![0]); // no kept span overlaps another
+    }
   });
 
   it('the bare alias alone is untouched', () => {

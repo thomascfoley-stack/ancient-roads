@@ -594,12 +594,38 @@ export function scanReferenceSpans(text: string, opts: ParseOptions = {}): Scann
       consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length, m[1]!, false);
     }
   }
-  const keep = candidates.filter((c) =>
-    !candidates.some((o) =>
-      o !== c && o.start < c.end && c.start < o.end &&
-      (o.end - o.start > c.end - c.start ||
-        (o.end - o.start === c.end - c.start && (o.start < c.start || (o.start === c.start && candidates.indexOf(o) < candidates.indexOf(c))))),
-    ));
+  // Resolve overlaps so the STATED CONTRACT holds: non-overlapping candidates are all kept,
+  // and among genuinely-overlapping pairs the longer span wins (ties → earlier start, then
+  // earlier insertion order). The old one-pass `filter` judged each candidate against the
+  // WHOLE pool, so a spurious ordinal candidate `B` — its digit stolen from the tail of a
+  // real citation `A` — could still vote after it had itself lost. `B` overlaps both `A`
+  // and the next real citation `C` while `A` and `C` do NOT overlap each other: a bridge
+  // across two separate refs. Two symptoms of the one flaw: "john 1:1-3 john 6" silently
+  // dropped the non-overlapping "John 6", and "rev 1 john 3" — where `B` is the LONGEST —
+  // fabricated "1 John 3" in place of the user's "Revelation 1" and "John 3". The resolver:
+  //   (1) DROP bridge candidates — one spanning two mutually non-overlapping citations is
+  //       the ordinal pass's artefact, not a real ref, and must go BEFORE the longer-wins
+  //       rule runs, else (being longest) it wins and fabricates a passage the user didn't cite.
+  //   (2) Resolve remaining (genuine pair) overlaps greedily by the longer-wins rule, so a
+  //       candidate that loses can no longer vote against a non-overlapping third.
+  const isBridge = (b: (typeof candidates)[number]): boolean => {
+    const touching = candidates.filter((o) => o !== b && o.start < b.end && b.start < o.end);
+    for (let i = 0; i < touching.length; i++) {
+      for (let j = i + 1; j < touching.length; j++) {
+        const p = touching[i]!, q = touching[j]!;
+        if (!(p.start < q.end && q.start < p.end)) return true; // p, q mutually non-overlapping
+      }
+    }
+    return false;
+  };
+  const ordered = candidates
+    .map((c, i) => ({ c, i }))
+    .filter((x) => !isBridge(x.c))
+    .sort((x, y) => (y.c.end - y.c.start) - (x.c.end - x.c.start) || x.c.start - y.c.start || x.i - y.i);
+  const keep: typeof candidates = [];
+  for (const { c } of ordered) {
+    if (!keep.some((k) => k.start < c.end && c.start < k.end)) keep.push(c);
+  }
   keep.sort((a, b) => a.start - b.start);
   const out: ScannedSpan[] = [];
   const seen = new Set<string>();
